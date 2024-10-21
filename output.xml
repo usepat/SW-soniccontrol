@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.0.1 (Python 3.10.12 on linux)" generated="2024-10-21T22:17:19.806330" rpa="false" schemaversion="5">
+<suite id="s1" name="Test Sonicpackage" source="/home/usepat/GitHub/SW-soniccontrol/tests_robot/test_cases/test_sonicpackage.robot">
+<kw name="Connect to device" type="SETUP">
+<kw name="Log" owner="BuiltIn">
+<msg time="2024-10-21T22:17:20.365177" level="INFO">SIMULATION_EXE_PATH: /home/usepat/GitHub/sonic-firmware/build/linux/test/cli/cli_simulation_mvp/cli_simulation_mvp</msg>
+<arg>SIMULATION_EXE_PATH: ${SIMULATION_EXE_PATH}</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2024-10-21T22:17:20.365060" elapsed="0.000161"/>
+</kw>
+<if>
+<branch type="IF" condition="'${TARGET}' == 'simulation'">
+<if>
+<branch type="IF" condition="${{$SIMULATION_EXE_PATH is None}}">
+<kw name="${SIMULATION_EXE_PATH}= Get Environment Variable">
+<arg>SIMULATION_EXE_PATH</arg>
+<arg>${None}</arg>
+<status status="NOT RUN" start="2024-10-21T22:17:20.368791" elapsed="0.000034"/>
+</kw>
+<status status="NOT RUN" start="2024-10-21T22:17:20.365437" elapsed="0.003422"/>
+</branch>
+<status status="PASS" start="2024-10-21T22:17:20.365428" elapsed="0.003449"/>
+</if>
+<kw name="Log" owner="BuiltIn">
+<msg time="2024-10-21T22:17:20.369062" level="INFO">Simulation path: /home/usepat/GitHub/sonic-firmware/build/linux/test/cli/cli_simulation_mvp/cli_simulation_mvp</msg>
+<arg>Simulation path: ${SIMULATION_EXE_PATH}</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2024-10-21T22:17:20.368946" elapsed="0.000147"/>
+</kw>
+<kw name="Connect via process to" owner="RemoteController">
+<msg time="2024-10-21T22:17:20.369253" level="INFO">Connect to /home/usepat/GitHub/sonic-firmware/build/linux/test/cli/cli_simulation_mvp/cli_simulation_mvp</msg>
+<msg time="2024-10-21T22:17:28.902812" level="INFO">Connected via process to /home/usepat/GitHub/sonic-firmware/build/linux/test/cli/cli_simulation_mvp/cli_simulation_mvp</msg>
+<arg>${SIMULATION_EXE_PATH}</arg>
+<status status="PASS" start="2024-10-21T22:17:20.369161" elapsed="8.533737"/>
+</kw>
+<status status="PASS" start="2024-10-21T22:17:20.365333" elapsed="8.537609"/>
+</branch>
+<branch type="ELSE">
+<if>
+<branch type="IF" condition="${URL} == ${None}">
+<kw name="Fail" owner="BuiltIn">
+<arg>No URL to the serial port was provided</arg>
+<doc>Fails the test with the given message and optionally alters its tags.</doc>
+<status status="NOT RUN" start="2024-10-21T22:17:28.903164" elapsed="0.000014"/>
+</kw>
+<status status="NOT RUN" start="2024-10-21T22:17:28.903054" elapsed="0.000151"/>
+</branch>
+<status status="NOT RUN" start="2024-10-21T22:17:28.903041" elapsed="0.000179"/>
+</if>
+<kw name="Connect via serial to" owner="RemoteController">
+<arg>${URL}</arg>
+<status status="NOT RUN" start="2024-10-21T22:17:28.903278" elapsed="0.000012"/>
+</kw>
+<status status="NOT RUN" start="2024-10-21T22:17:28.902983" elapsed="0.000327"/>
+</branch>
+<status status="PASS" start="2024-10-21T22:17:20.365313" elapsed="8.538010"/>
+</if>
+<status status="PASS" start="2024-10-21T22:17:20.364760" elapsed="8.538609"/>
+</kw>
+<test id="s1-t1" name="Set frequency updates device state" line="19">
+<kw name="Set &quot;frequency&quot; to &quot;1000000&quot;" owner="RemoteController" source_name="Set &quot;${attr}&quot; to &quot;${val}&quot;">
+<msg time="2024-10-21T22:17:28.905302" level="INFO">${frequency} = 1000000 Hz
+</msg>
+<var>${frequency}</var>
+<status status="PASS" start="2024-10-21T22:17:28.903834" elapsed="0.001490"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${frequency}</arg>
+<arg>1000000 Hz</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2024-10-21T22:17:28.905523" elapsed="0.000134"/>
+</kw>
+<status status="PASS" start="2024-10-21T22:17:28.903442" elapsed="0.002391"/>
+</test>
+<kw name="Disconnect" owner="RemoteController" type="TEARDOWN">
+<status status="PASS" start="2024-10-21T22:17:28.906423" elapsed="0.000801"/>
+</kw>
+<status status="PASS" start="2024-10-21T22:17:19.806981" elapsed="9.100272"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat pass="1" fail="0" skip="0" id="s1" name="Test Sonicpackage">Test Sonicpackage</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

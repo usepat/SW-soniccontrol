@@ -21,8 +21,9 @@ class RobotRemoteController:
 
     @keyword('Connect via process to')
     def connect_via_process(self, process_file: str) -> None:
+        logger.info(f"Connect to {process_file}")
         self._loop.run_until_complete(self._controller.connect_via_process(Path(process_file)))
-        logger.info(f"Connected via process to ${process_file}")
+        logger.info(f"Connected via process to {process_file}")
 
     @keyword('Set "${attr}" to "${val}"')
     def set_attr(self, attr: str, val: str) -> str:

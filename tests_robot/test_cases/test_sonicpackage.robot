@@ -17,23 +17,37 @@ ${URL}  ${None}
 *** Test Cases ***
 
 Set frequency updates device state
-    ${frequency}=    RemoteController.Set "frequency" to "10000"
-    Should Contain    ${frequency}    10000 Hz
+    ${frequency}=    RemoteController.Set "frequency" to "1000000"
+    Should Contain    ${frequency}    1000000 Hz
 
 
 
 *** Keywords ***
-
 Connect to device
-    IF    "${TARGET}" == 'simulation'
-        IF  ${SIMULATION_EXE_PATH} is None
-            Set Suite Variable    ${SIMULATION_EXE_PATH}    %{SIMULATION_EXE_PATH}    # robotcode: ignore
+    # Debugging: log the value of SIMULATION_EXE_PATH
+    Log    SIMULATION_EXE_PATH: ${SIMULATION_EXE_PATH}
+
+    IF  '${TARGET}' == 'simulation'
+        # Check if SIMULATION_EXE_PATH is empty or None and set it accordingly
+        IF    ${{$SIMULATION_EXE_PATH is None}}
+            ${SIMULATION_EXE_PATH}= Get Environment Variable    SIMULATION_EXE_PATH    ${None}
         END
+        
+
+        # Log the final simulation path for debugging
+        Log    Simulation path: ${SIMULATION_EXE_PATH}
+
+        # Connect via process to SIMULATION_EXE_PATH
         RemoteController.Connect via process to    ${SIMULATION_EXE_PATH}
     ELSE
-        IF    "${URL}" == 'url'
-            Fail    msg=No url to the serial port was provided
+        # Check for URL
+        IF  ${URL} == ${None}
+            Fail    No URL to the serial port was provided
         END
         RemoteController.Connect via serial to    ${URL}
     END
+
+
+
+
        

@@ -8,7 +8,7 @@ from serial_asyncio import open_serial_connection
 
 @attrs.define()
 class ConnectionFactory(abc.ABC):
-    connection_name : str = attrs.field(init=True)
+    # connection_name : str = attrs.field(init=True)
 
     @abc.abstractmethod
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:

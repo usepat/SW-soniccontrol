@@ -253,3 +253,5 @@ tests_robot/results/
 
 # Ignore doxygen generated documentation
 docs/output
+
+.secrets/

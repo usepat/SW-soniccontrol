@@ -79,9 +79,10 @@ Delete simulation memory file
 
 
 Open device window
-    IF  ${SIMULATION_EXE_PATH} is None
-        Set Suite Variable    ${SIMULATION_EXE_PATH}    %{SIMULATION_EXE_PATH}    # robotcode: ignore
+    IF  '${SIMULATION_EXE_PATH}' == '${None}'
+        Set Suite Variable    ${SIMULATION_EXE_PATH}    Get Environment Variable    SIMULATION_EXE_PATH    ${None}
     END
+    Log    Simulation path: ${SIMULATION_EXE_PATH}
     Gui.Open app    ${SIMULATION_EXE_PATH}
 
     IF  "${TARGET}" == "simulation"
