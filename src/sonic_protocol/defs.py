@@ -250,7 +250,6 @@ class SonicTextAnswerFieldAttrs:
     """!
     The SonicTextAnswerAttrs are used to define how the AnswerField is formatted.
     """
-    allowed_values_str: List[str] | None = attrs.field(default=None)
     prefix: str = attrs.field(default="") #! The prefix is added at front of the final message
     postfix: str = attrs.field(default="") #! The postfix is added at the end of the final message
 
