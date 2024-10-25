@@ -52,8 +52,8 @@ class Status:
             return getattr(self, key.value)
         
         field_name = key[0]
-        assert (isinstance(field_name, str))
-        field = getattr(self, field_name)
+        assert (isinstance(field_name, EFieldName))
+        field = getattr(self, field_name.value)
         
         if len(key) == 1:
             return field
@@ -74,13 +74,13 @@ class Status:
             return
 
         field_name = key[0]
-        assert (isinstance(field_name, str))
+        assert (isinstance(field_name, EFieldName))
         
         if len(key) == 1:
-            setattr(self, field_name, value)
+            setattr(self, field_name.value, value)
             return
         elif len(key) == 2:
-            field = getattr(self, field_name)
+            field = getattr(self, field_name.value)
 
             if isinstance(field, Dict):
                 assert (not isinstance(key[1], DerivedFromParam))
@@ -95,12 +95,12 @@ class Status:
             return hasattr(self, key.value)
 
         field_name = key[0]
-        assert (isinstance(field_name, str))
+        assert (isinstance(field_name, EFieldName))
         
         if len(key) == 1:
-            return hasattr(self, field_name)
+            return hasattr(self, field_name.value)
         elif len(key) == 2:
-            field = getattr(self, field_name)
+            field = getattr(self, field_name.value)
             
             if isinstance(field, Dict):
                 assert (not isinstance(key[1], DerivedFromParam))

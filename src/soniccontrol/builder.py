@@ -26,11 +26,9 @@ class DeviceBuilder:
         status_fields: Dict[EFieldName, type[Any]] = {}
         for lookup in command_lookups.values():
             for answer_field in lookup.answer_def.fields:
-                field_name = answer_field.field_path[0]
-                assert (isinstance(field_name, str))
-                if field_name in [status_attr.value for status_attr in EFieldName]:
-                    status_attr = EFieldName(field_name)
-                    status_fields[status_attr] = answer_field.field_type.field_type
+                status_attr = answer_field.field_path[0]  
+                assert(isinstance(status_attr, EFieldName))  
+                status_fields[status_attr] = answer_field.field_type.field_type
         return status_fields
 
 
