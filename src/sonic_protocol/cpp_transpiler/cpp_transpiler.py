@@ -11,7 +11,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 import importlib.resources as rs
 import shutil
-import sonic_protocol.cpp_transpiler.sonic_protocol_lib as sonic_protocol_lib
+import sonic_protocol.cpp_transpiler
 
 CPP_NULLOPT_T = "std::nullopt"
 
@@ -94,9 +94,9 @@ class CppTransCompiler:
         self._transpiled_output = ""
         
         # copy protocol definitions to output directory
-        for source_file in rs.files(sonic_protocol_lib).iterdir():
-            with rs.as_file(source_file) as file_path:
-                shutil.copy(file_path, output_dir)
+        shutil.rmtree(output_dir, ignore_errors=True)
+        lib_path = rs.files(sonic_protocol.cpp_transpiler).joinpath("sonic_protocol_lib")
+        shutil.copytree(Path(str(lib_path)), output_dir)
     
         lib_dir = output_dir / "include" / "sonic_protocol_lib"
         protocol_count = len(protocol_versions)
