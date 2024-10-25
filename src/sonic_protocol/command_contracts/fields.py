@@ -1,8 +1,8 @@
 from sonic_protocol.defs import DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, Version
-from sonic_protocol.field_names import StatusAttr
+from sonic_protocol.field_names import EFieldName
 
 field_termination = AnswerFieldDef(
-	field_path=["termination"],
+	field_path=[EFieldName.TERMINATION],
 	field_type=FieldType(field_type=bool),
 )
 
@@ -12,15 +12,9 @@ field_type_comm_channel = FieldType(
 )
 
 field_device_type = AnswerFieldDef(
-	field_path=["device_type"],
+	field_path=[EFieldName.DEVICE_TYPE],
 	field_type=FieldType(DeviceType, converter_ref=ConverterType.ENUM),
 )
-
-def create_version_field(name: str) -> AnswerFieldDef:
-	return AnswerFieldDef(
-		field_path=[name], 
-		field_type=FieldType(Version, converter_ref=ConverterType.VERSION), 
-	)
 
 field_type_frequency = FieldType(
     field_type=int,
@@ -31,7 +25,7 @@ field_type_frequency = FieldType(
 )
 
 field_frequency = AnswerFieldDef(
-    field_path=[StatusAttr.FREQUENCY.value],
+    field_path=[EFieldName.FREQUENCY.value],
     field_type=field_type_frequency,
 )
 
@@ -44,12 +38,12 @@ field_type_gain = FieldType(
 )
 
 field_gain = AnswerFieldDef(
-    field_path=[StatusAttr.GAIN],
+    field_path=[EFieldName.GAIN],
     field_type=field_type_gain
 )
 
 field_signal = AnswerFieldDef(
-    field_path=[StatusAttr.SIGNAL],
+    field_path=[EFieldName.SIGNAL],
     field_type=FieldType(field_type=bool, converter_ref=ConverterType.SIGNAL),
 )
 
@@ -62,7 +56,7 @@ swf_field_type = FieldType(
 )
 
 field_swf = AnswerFieldDef(
-    field_path=[StatusAttr.SWF],
+    field_path=[EFieldName.SWF],
     field_type=swf_field_type
 )
 
@@ -73,7 +67,7 @@ field_type_temperature = FieldType(
 )
 
 field_temperature = AnswerFieldDef(
-    field_path=[StatusAttr.TEMPERATURE],
+    field_path=[EFieldName.TEMPERATURE],
     field_type=field_type_temperature
 )
 
@@ -102,26 +96,26 @@ ts_flag_field_type = FieldType(
 )
 
 field_urms = AnswerFieldDef(
-    field_path=[StatusAttr.URMS],
+    field_path=[EFieldName.URMS],
     field_type=urms_field_type
 )
 
 field_irms = AnswerFieldDef(
-    field_path=[StatusAttr.IRMS],
+    field_path=[EFieldName.IRMS],
     field_type=irms_field_type
 )
 
 field_phase = AnswerFieldDef(
-    field_path=[StatusAttr.PHASE],
+    field_path=[EFieldName.PHASE],
     field_type=phase_field_type
 )
 
 field_ts_flag = AnswerFieldDef(
-    field_path=["ts_flag"],
+    field_path=[EFieldName.TS_FLAG],
     field_type=ts_flag_field_type
 )
 
 field_unknown_answer = AnswerFieldDef(
-	field_path=["unknown_answer"],
+	field_path=[EFieldName.UNKNOWN_ANSWER],
 	field_type=FieldType(str)
 )

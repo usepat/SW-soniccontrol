@@ -4,7 +4,7 @@
 #include "param_def.hpp"
 #include "command_code.hpp"
 
-namespace sonic::protocol_defs {
+namespace sonic_protocol_lib {
 
 struct CommandDef {
     CommandCode code;

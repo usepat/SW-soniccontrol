@@ -4,7 +4,7 @@
 #include <cstdint>
 
 
-namespace sonic::protocol_defs {
+namespace sonic_protocol_lib {
 
 
 enum class DataType {
@@ -53,20 +53,17 @@ enum class SIPrefix {
     GIGA,
 };
 
-struct FieldLimits { 
-};
-
 template <typename T>
-struct FieldLimitsImpl : FieldLimits {
-    std::initializer_list<T> allowed_values;
-    std::optional<T> min;
-    std::optional<T> max;
+struct FieldLimits {
+    constexpr std::optional<T> min;
+    constexpr std::optional<T> max;
+    constexpr std::optional<std::initializer_list<T>> allowed_values;
 };
 
 struct FieldTypeDef {
     DataType type {DataType::INT};
     ConverterReference converter_reference {ConverterReference::PRIMITIVE};
-    FieldLimits *limits {nullptr}; // should never be null, but we need to initialize it with nullptr, because of undefined behaviour
+    const void * limits {nullptr}; // should never be null, but we need to initialize it with nullptr, because of undefined behaviour
     std::optional<SIUnit> si_unit {std::nullopt};
     std::optional<SIPrefix> si_prefix {std::nullopt};
 };

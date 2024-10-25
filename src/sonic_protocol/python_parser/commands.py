@@ -1,7 +1,7 @@
 from typing import Any, Dict
 import attrs
 from sonic_protocol.defs import CommandCode
-from sonic_protocol.field_names import StatusAttr
+from sonic_protocol.field_names import EFieldName
 
 
 class Command:
@@ -52,21 +52,21 @@ class SetFrequency(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_FREQ)
 
-    value: int = attrs.field(alias=StatusAttr.FREQUENCY.value)   
+    value: int = attrs.field(alias=EFieldName.FREQUENCY.value)   
 
 @attrs.define()
 class SetSwf(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_SWF)
 
-    value: int = attrs.field(alias=StatusAttr.SWF.value)
+    value: int = attrs.field(alias=EFieldName.SWF.value)
 
 @attrs.define()
 class SetGain(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_GAIN)
 
-    value: int = attrs.field(alias=StatusAttr.GAIN.value)
+    value: int = attrs.field(alias=EFieldName.GAIN.value)
 
 @attrs.define()
 class SetOn(Command):
@@ -84,7 +84,7 @@ class SetAtf(Command):
         super().__init__(code=CommandCode.SET_ATF)
 
     index: int = attrs.field()
-    value: int = attrs.field(alias=StatusAttr.ATF.value)
+    value: int = attrs.field(alias=EFieldName.ATF.value)
 
 @attrs.define()
 class SetAtk(Command):
@@ -92,7 +92,7 @@ class SetAtk(Command):
         super().__init__(code=CommandCode.SET_ATK)
 
     index: int = attrs.field()
-    value: int = attrs.field(alias=StatusAttr.ATK.value)
+    value: int = attrs.field(alias=EFieldName.ATK.value)
 
 @attrs.define()
 class SetAtt(Command):
@@ -100,7 +100,7 @@ class SetAtt(Command):
         super().__init__(code=CommandCode.SET_ATT)
 
     index: int = attrs.field()
-    value: int = attrs.field(alias=StatusAttr.ATT.value)
+    value: int = attrs.field(alias=EFieldName.ATT.value)
 
 @attrs.define()
 class SetAton(Command):
@@ -108,7 +108,7 @@ class SetAton(Command):
         super().__init__(code=CommandCode.SET_ATON)
 
     index: int = attrs.field()
-    value: int = attrs.field(alias=StatusAttr.ATF.value)
+    value: int = attrs.field(alias=EFieldName.ATF.value)
 
 @attrs.define()
 class SetRamp(Command):

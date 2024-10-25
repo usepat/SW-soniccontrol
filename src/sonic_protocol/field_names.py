@@ -1,7 +1,12 @@
 from enum import Enum
 
 
-class StatusAttr(Enum):
+class EFieldName(Enum):
+    UNKNOWN_ANSWER = "unknown_answer"
+    
+    LIST_COMMANDS = "list_commands"
+    HELP = "help"
+
     FREQUENCY = "freq"
     SWF = "swf"
     GAIN = "gain"
@@ -10,14 +15,31 @@ class StatusAttr(Enum):
     URMS = "urms"
     IRMS = "irms"
     PHASE = "phase"
+    TS_FLAG = "ts_flag"
+    PROCEDURE = "procedure"
+    ERROR_CODE = "error_code"
 
     ATF = "atf"
     ATK = "atk"
     ATT = "att"
     ATON = "aton"
 
-    COMM_MODE = "communication_mode"
+    DEVICE_TYPE = "device_type"
+    PROTOCOL_VERSION = "protocol_version"
+    IS_RELEASE = "is_release"
 
-    PROCEDURE = "procedure"
+    BUILD_DATE = "build_date"
+    BUILD_HASH = "build_hash"
+    HARDWARE_VERSION = "hardware_version"
+    FIRMWARE_VERSION = "firmware_version"
+
+    INPUT_SOURCE = "input_source"
+    COMM_MODE = "communication_mode"
+    COMMUNICATION_CHANNEL = "communication_channel"
+    COMMUNICATION_PROTOCOL = "communication_protocol"
+    TERMINATION = "termination"
 
     TIME_STAMP = "time_stamp"
+
+    INDEX = "index"
+

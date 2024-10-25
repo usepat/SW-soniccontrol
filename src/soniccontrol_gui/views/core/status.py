@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, Tuple
 import ttkbootstrap as ttk
 from sonic_protocol.python_parser.answer_field_converter import AnswerFieldToStringConverter
-from sonic_protocol.field_names import StatusAttr
+from sonic_protocol.field_names import EFieldName
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import View
 from soniccontrol.device_data import Status
@@ -20,7 +20,7 @@ class StatusBar(UIComponent):
         self._logger = logging.getLogger(parent.logger.name + "." + StatusBar.__name__)
         
         self._field_converters = {
-            StatusAttr.FREQUENCY: AnswerFieldToStringConverter(field_frequency),
+            EFieldName.FREQUENCY: AnswerFieldToStringConverter(field_frequency),
             # TODO: ...
         }
 
@@ -74,12 +74,12 @@ class StatusBarView(View):
     def __init__(
         self,
         master: ttk.Frame,
-        status_fields: Iterable[StatusAttr],
+        status_fields: Iterable[EFieldName],
         *args,
         **kwargs
     ) -> None:
         self._status_field_names = status_fields
-        self._status_field_labels: Dict[StatusAttr, ttk.Label] = {}
+        self._status_field_labels: Dict[EFieldName, ttk.Label] = {}
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
@@ -94,7 +94,7 @@ class StatusBarView(View):
         self._scrolled_info.hide_scrollbars()
 
         for status_field in self._status_field_names:
-            if status_field == StatusAttr.SIGNAL:
+            if status_field == EFieldName.SIGNAL:
                 continue # Skip signal, because that will have an own special label
 
             label = ttk.Label(
@@ -117,7 +117,7 @@ class StatusBarView(View):
             compound=ttk.LEFT,
         )
         signal_label.pack(side=ttk.RIGHT, ipadx=3)
-        self._status_field_labels[StatusAttr.SIGNAL] = signal_label
+        self._status_field_labels[EFieldName.SIGNAL] = signal_label
         WidgetRegistry.register_widget(signal_label, "signal_label", tab_name)
 
         self.configure(bootstyle=ttk.SECONDARY)
@@ -144,7 +144,7 @@ class StatusBarView(View):
         for label in self._status_field_labels.values():
             label.bind(events.CLICKED_EVENT, lambda _e: command())
 
-    def update_labels(self, field_texts: Dict[StatusAttr, str]):
+    def update_labels(self, field_texts: Dict[EFieldName, str]):
         for status_field, text in field_texts.items():
             label = self._status_field_labels[status_field]
             label.configure(text=text)

@@ -2,9 +2,10 @@ from sonic_protocol.defs import (
     CommandCode, CommunicationChannel, CommunicationProtocol, ConverterType, FieldType, InputSource, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
     AnswerFieldDef, CommandContract
 )
+from sonic_protocol.field_names import EFieldName
 
 field_termination = AnswerFieldDef(
-    field_path=["termination"],
+    field_path=[EFieldName.TERMINATION],
     field_type=FieldType(field_type=bool),
 )
 
@@ -12,7 +13,7 @@ set_termination = CommandContract(
     code=CommandCode.SET_TERMINATION,
     command_defs=CommandDef(
         setter_param=CommandParamDef(
-            name="termination",
+            name=EFieldName.TERMINATION,
             param_type=FieldType(field_type=bool)
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
@@ -34,7 +35,7 @@ field_type_comm_channel = FieldType(
     converter_ref=ConverterType.ENUM
 )
 field_comm_channel = AnswerFieldDef(
-    field_path=["communication_channel"],
+    field_path=(EFieldName.COMMUNICATION_CHANNEL, ),
     field_type=field_type_comm_channel,
 )
 
@@ -42,7 +43,7 @@ set_physical_comm_channel = CommandContract(
     code=CommandCode.SET_PHYS_COM_CHANNEL,
     command_defs=CommandDef(
         setter_param=CommandParamDef(
-            name="communication_channel",
+            name=EFieldName.COMMUNICATION_CHANNEL,
             param_type=field_type_comm_channel
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
@@ -64,7 +65,7 @@ field_type_comm_protocol = FieldType(
     converter_ref=ConverterType.ENUM
 )
 field_comm_protocol = AnswerFieldDef(
-    field_path=["communication_protocol"],
+    field_path=[EFieldName.COMMUNICATION_PROTOCOL],
     field_type=field_type_comm_protocol
 )
 
@@ -72,7 +73,7 @@ set_comm_protocol = CommandContract(
     code=CommandCode.SET_PHYS_COM_CHANNEL,
     command_defs=CommandDef(
         setter_param=CommandParamDef(
-            name="communication_protocol",
+            name=EFieldName.COMMUNICATION_PROTOCOL,
             param_type=field_type_comm_protocol
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
@@ -94,7 +95,7 @@ field_type_input_source = FieldType(
     converter_ref=ConverterType.ENUM
 )
 field_input_source = AnswerFieldDef(
-    field_path=["input_source"],
+    field_path=[EFieldName.INPUT_SOURCE],
     field_type=field_type_input_source
 )
 
@@ -102,7 +103,7 @@ set_input_source = CommandContract(
     code=CommandCode.SET_INPUT_SOURCE,
     command_defs=CommandDef(
         setter_param=CommandParamDef(
-            name="input_source",
+            name=EFieldName.INPUT_SOURCE,
             param_type=field_type_input_source
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
@@ -124,6 +125,6 @@ field_type_comm_channel = FieldType(
     converter_ref=ConverterType.ENUM
 )
 field_comm_channel = AnswerFieldDef(
-    field_path=["communication_channel"],
+    field_path=[EFieldName.COMMUNICATION_CHANNEL],
     field_type=field_type_comm_channel,
 )

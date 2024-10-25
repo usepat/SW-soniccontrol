@@ -15,6 +15,7 @@ from sonic_protocol.command_contracts.transducer_commands import (
 from sonic_protocol.command_contracts.communication_commands import (
      set_termination, set_physical_comm_channel, set_comm_protocol, set_input_source,
 )
+from sonic_protocol.field_names import EFieldName
 
 # Version instance
 version = Version(major=1, minor=0, patch=0)
@@ -28,7 +29,7 @@ version = Version(major=1, minor=0, patch=0)
 """
 
 field_device_type = AnswerFieldDef(
-    field_path=["device_type"],
+    field_path=[EFieldName.DEVICE_TYPE],
     field_type=FieldType(DeviceType, converter_ref=ConverterType.ENUM),
 )
 
@@ -42,9 +43,9 @@ get_protocol = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             field_device_type,
-            create_version_field("version"),
+            create_version_field(EFieldName.PROTOCOL_VERSION),
             AnswerFieldDef(
-                field_path=["is_release"], 
+                field_path=[EFieldName.IS_RELEASE], 
                 field_type=FieldType(bool, converter_ref=ConverterType.BUILD_TYPE), 
             )
         ]
@@ -53,12 +54,12 @@ get_protocol = CommandContract(
 )
 
 build_date_field = AnswerFieldDef(
-    field_path=["build_date"],
+    field_path=[EFieldName.BUILD_DATE],
     field_type=FieldType(str)
 )
 
 build_hash_field = AnswerFieldDef(
-    field_path=["build_hash"],
+    field_path=[EFieldName.BUILD_HASH],
     field_type=FieldType(str)
 )
 
@@ -72,8 +73,8 @@ get_info = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             field_device_type,
-            create_version_field("hardware_version"),
-            create_version_field("firmware_version"),
+            create_version_field(EFieldName.HARDWARE_VERSION),
+            create_version_field(EFieldName.FIRMWARE_VERSION),
             build_hash_field,
             build_date_field,
         ]
@@ -91,7 +92,7 @@ list_available_commands = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_path=["list_commands"],
+                field_path=[EFieldName.LIST_COMMANDS],
                 field_type=FieldType(str)
             )
         ]
@@ -113,7 +114,7 @@ get_help = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_path=["help"],
+                field_path=[EFieldName.HELP],
                 field_type=FieldType(str)
             )
         ]
@@ -126,12 +127,12 @@ get_help = CommandContract(
 )
 
 error_code_field = AnswerFieldDef(
-    field_path=["error_code"],
+    field_path=[EFieldName.ERROR_CODE],
     field_type=FieldType(field_type=int)
 )
 
 procedure_field = AnswerFieldDef(
-    field_path=["procedure"],
+    field_path=[EFieldName.PROCEDURE],
     field_type=FieldType(field_type=int)
 )
 

@@ -7,15 +7,15 @@ from typing import Any, Callable, Dict, List,  Optional
 
 import attrs
 
-from sonic_protocol.field_names import StatusAttr
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.converters import Converter
 from sonic_protocol.defs import CommandCode, DerivedFromParam, FieldName, FieldPath
 
 
 def convert_field_name_to_str(field_name: FieldName):
     if isinstance(field_name, DerivedFromParam):
-        return "x_" + field_name.param
-    if isinstance(field_name, StatusAttr):
+        return "x_" + field_name.param.value
+    if isinstance(field_name, EFieldName):
         return field_name.value
     return str(field_name)
 

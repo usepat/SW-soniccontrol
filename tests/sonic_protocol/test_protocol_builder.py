@@ -1,4 +1,4 @@
-from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandCode, CommandContract, CommandDef, CommandExport, CommandListExport, DeviceType, MetaExport, MetaExportDescriptor, Protocol, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandCode, CommandContract, CommandDef, CommandExport, CommandListExport, DeviceParamConstants, DeviceType, MetaExport, MetaExportDescriptor, Protocol, SonicTextCommandAttrs, Version
 import pytest
 
 from sonic_protocol.protocol_builder import ProtocolBuilder
@@ -59,6 +59,7 @@ set_switching_frequency_command = CommandContract(
 # Protocol instance
 protocol = Protocol(
     version=Version(1, 0, 0),
+    consts=DeviceParamConstants(),
     commands=[
         CommandListExport(
             exports=[

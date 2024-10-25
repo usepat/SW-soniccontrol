@@ -2,8 +2,9 @@
 from typing import List
 from sonic_protocol.defs import AnswerDef, AnswerFieldDef, ConverterType, FieldType, MetaExport, MetaExportDescriptor, Version, VersionTuple
 from sonic_protocol.command_contracts.fields import field_unknown_answer
+from sonic_protocol.field_names import EFieldName
 
-def create_version_field(name: str) -> AnswerFieldDef:
+def create_version_field(name: EFieldName) -> AnswerFieldDef:
     return AnswerFieldDef(
         field_path=[name], 
         field_type=FieldType(Version, converter_ref=ConverterType.VERSION), 

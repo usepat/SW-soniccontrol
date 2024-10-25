@@ -1,8 +1,9 @@
 #pragma once
 #include "field_type_def.hpp"
+#include "field_names.hpp"
 #include <string_view>
 
-namespace sonic::protocol_defs {
+namespace sonic_protocol_lib {
 
 enum class ParamType {
     SETTER,
@@ -10,7 +11,7 @@ enum class ParamType {
 };
 
 struct ParamDef {
-    std::string_view name;
+    FieldName field_name;
     ParamType param_type {ParamType::SETTER};
     FieldTypeDef field_type;
 };

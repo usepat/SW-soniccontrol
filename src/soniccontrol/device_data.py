@@ -9,7 +9,7 @@ import attrs
 from icecream import ic
 
 from sonic_protocol.defs import DerivedFromParam, FieldPath, Version
-from sonic_protocol.field_names import StatusAttr
+from sonic_protocol.field_names import EFieldName
 
 
 def default_if_none(default: Any, type_: type = int) -> Callable[[Any], Any]:
@@ -47,8 +47,8 @@ class Status:
         self._changed_data: Dict[FieldPath, Any] = {}
         self._remote_proc_finished_running: asyncio.Event = asyncio.Event()
         
-    def __getitem__(self, key: FieldPath | StatusAttr) -> Any:
-        if isinstance(key, StatusAttr):
+    def __getitem__(self, key: FieldPath | EFieldName) -> Any:
+        if isinstance(key, EFieldName):
             return getattr(self, key.value)
         
         field_name = key[0]
@@ -68,8 +68,8 @@ class Status:
         # Until then it will stay like this
         
 
-    def __setitem__(self, key: FieldPath | StatusAttr, value: Any):
-        if isinstance(key, StatusAttr):
+    def __setitem__(self, key: FieldPath | EFieldName, value: Any):
+        if isinstance(key, EFieldName):
             setattr(self, key.value, value)
             return
 
@@ -90,8 +90,8 @@ class Status:
         raise NotImplementedError()
 
 
-    def has_attr(self, key: FieldPath | StatusAttr) -> bool:
-        if isinstance(key, StatusAttr):
+    def has_attr(self, key: FieldPath | EFieldName) -> bool:
+        if isinstance(key, EFieldName):
             return hasattr(self, key.value)
 
         field_name = key[0]
@@ -115,7 +115,7 @@ class Status:
     async def update(self, fields: Dict[FieldPath, Any]) -> Status:
         self._changed.clear()
         self._changed_data.clear()
-        timestamp_key: FieldPath = (StatusAttr.TIME_STAMP.value, )
+        timestamp_key: FieldPath = (EFieldName.TIME_STAMP, )
         fields[timestamp_key] = (
             datetime.datetime.now()
             if timestamp_key not in fields
@@ -147,7 +147,7 @@ class Status:
 class StatusBuilder:
     counter: int = 0
 
-    def create_status(self, field_dict: Dict[StatusAttr, type[Any]]) -> Status:
+    def create_status(self, field_dict: Dict[EFieldName, type[Any]]) -> Status:
         name = "status" + str(StatusBuilder.counter)
         StatusBuilder.counter += 1
         attrs_dict =  { k.value: self._create_attr_field(v) for k, v in field_dict.items() }

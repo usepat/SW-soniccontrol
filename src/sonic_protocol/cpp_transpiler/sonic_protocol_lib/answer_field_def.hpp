@@ -1,11 +1,11 @@
 #pragma once
 #include "field_type_def.hpp"
+#include "field_names.hpp"
 #include <string_view>
 
-namespace sonic::protocol_defs {
+namespace sonic_protocol_lib {
 
-using FieldName_UnderlyingType = int16_t;
-using FieldPath = std::initializer_list<FieldName_UnderlyingType>;
+using FieldPath = std::initializer_list<FieldName_t>;
 
 struct AnswerFieldDef {
     FieldPath path {{}};

@@ -1,9 +1,9 @@
 from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative
 from sonic_protocol.defs import (
-	CommandCode, DerivedFromParam, FieldType, MetaExport, MetaExportDescriptor, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
-	AnswerFieldDef, CommandContract, Version
+	CommandCode, DerivedFromParam, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
+	AnswerFieldDef, CommandContract
 )
-from sonic_protocol.field_names import StatusAttr
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.command_contracts.fields import (
     field_unknown_answer, field_type_frequency, field_type_temperature,
     field_frequency, field_gain, field_signal, field_swf,
@@ -13,7 +13,7 @@ from sonic_protocol.command_contracts.fields import (
 
 
 param_frequency = CommandParamDef(
-    name=StatusAttr.FREQUENCY.value,
+    name=EFieldName.FREQUENCY,
     param_type=field_type_frequency,
     user_manual_attrs=UserManualAttrs(
         description="Frequency of the transducer"
@@ -57,7 +57,7 @@ get_frequency = CommandContract(
 )
 
 param_gain = CommandParamDef(
-    name="gain",
+    name=EFieldName.GAIN,
     param_type=field_type_gain,
     user_manual_attrs=UserManualAttrs(
         description="Gain of the transducer"
@@ -135,7 +135,7 @@ set_off = CommandContract(
 )
 
 param_swf = CommandParamDef(
-    name="swf",
+    name=EFieldName.SWF,
     param_type=swf_field_type,
     user_manual_attrs=UserManualAttrs(
         description="Switching frequency of the transducer"
@@ -179,7 +179,7 @@ get_swf = CommandContract(
 )
 
 param_temp = CommandParamDef(
-    name="temperature",
+    name=EFieldName.TEMPERATURE,
     param_type=field_type_temperature,
     user_manual_attrs=UserManualAttrs(
         description="Temperature of the device"
@@ -227,12 +227,12 @@ get_uipt = CommandContract(
 )
 
 param_index = CommandParamDef(
-    name="index",
+    name=EFieldName.INDEX,
     param_type=FieldType(field_type=int)
 )
 
 field_atf = AnswerFieldDef(
-    field_path=[StatusAttr.ATF, DerivedFromParam("index")],
+    field_path=[EFieldName.ATF, DerivedFromParam(EFieldName.INDEX)],
     field_type=field_type_frequency
 )
 
@@ -274,7 +274,7 @@ set_atf = CommandContract(
 )
 
 field_att = AnswerFieldDef(
-    field_path=[StatusAttr.ATT, DerivedFromParam("index")],
+    field_path=[EFieldName.ATT, DerivedFromParam(EFieldName.INDEX)],
     field_type=field_type_temperature
 )
 
@@ -316,7 +316,7 @@ set_att = CommandContract(
 )
 
 field_atk = AnswerFieldDef(
-    field_path=[StatusAttr.ATK, DerivedFromParam("index")],
+    field_path=[EFieldName.ATK, DerivedFromParam(EFieldName.INDEX)],
     field_type=FieldType(float)
 )
 
@@ -343,7 +343,7 @@ set_atk = CommandContract(
     command_defs=CommandDef(
         index_param=param_index,
         setter_param=CommandParamDef(
-            name="atk",
+            name=EFieldName.ATK,
             param_type=FieldType(float)
         ),
         sonic_text_attrs=SonicTextCommandAttrs(

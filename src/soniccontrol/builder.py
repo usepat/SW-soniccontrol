@@ -6,7 +6,7 @@ import attrs
 
 from sonic_protocol import protocol
 from sonic_protocol.defs import CommandCode, DeviceType, FieldPath, Version
-from sonic_protocol.field_names import StatusAttr
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 from soniccontrol.command import LegacyAnswerValidator, LegacyCommand
 from soniccontrol.command_executor import CommandExecutor
@@ -22,14 +22,14 @@ import sonic_protocol.python_parser.commands as cmds
 
 
 class DeviceBuilder:
-    def _extract_status_fields(self, command_lookups: CommandLookUpTable) -> Dict[StatusAttr, type[Any]]:
-        status_fields: Dict[StatusAttr, type[Any]] = {}
+    def _extract_status_fields(self, command_lookups: CommandLookUpTable) -> Dict[EFieldName, type[Any]]:
+        status_fields: Dict[EFieldName, type[Any]] = {}
         for lookup in command_lookups.values():
             for answer_field in lookup.answer_def.fields:
                 field_name = answer_field.field_path[0]
                 assert (isinstance(field_name, str))
-                if field_name in [status_attr.value for status_attr in StatusAttr]:
-                    status_attr = StatusAttr(field_name)
+                if field_name in [status_attr.value for status_attr in EFieldName]:
+                    status_attr = EFieldName(field_name)
                     status_fields[status_attr] = answer_field.field_type.field_type
         return status_fields
 
@@ -118,7 +118,7 @@ class DeviceBuilder:
         builder_logger.debug("Serial connection is open, start building device")
 
         handshake: Dict[str, Any] = self._parse_legacy_handshake(comm) if isinstance(comm, LegacySerialCommunicator) else {}
-        result_dict: Dict[FieldPath, Any] = { (k, ): v for k, v in handshake.items() }
+        result_dict: Dict[FieldPath, Any] = { (EFieldName(k), ): v for k, v in handshake.items() }
         
         device_type: DeviceType = DeviceType.UNKNOWN
         protocol_version: Version = Version(1, 0, 0)
@@ -133,12 +133,12 @@ class DeviceBuilder:
             builder_logger.debug("Try to figure out which protocol to use with ?protocol")
             answer = await executor.send_command(cmds.GetProtocol())
             if answer.valid:
-                assert(("device_type",) in answer.field_value_dict)
-                assert(("protocol_version",) in answer.field_value_dict)
-                assert(("is_release",) in answer.field_value_dict)
-                device_type = answer.field_value_dict[("device_type",)]
-                protocol_version = answer.field_value_dict[("protocol_version",)]
-                is_release = answer.field_value_dict[("is_release",)]
+                assert((EFieldName.DEVICE_TYPE,) in answer.field_value_dict)
+                assert((EFieldName.PROTOCOL_VERSION,) in answer.field_value_dict)
+                assert((EFieldName.IS_RELEASE,) in answer.field_value_dict)
+                device_type = answer.field_value_dict[(EFieldName.DEVICE_TYPE,)]
+                protocol_version = answer.field_value_dict[(EFieldName.PROTOCOL_VERSION,)]
+                is_release = answer.field_value_dict[(EFieldName.IS_RELEASE,)]
                 result_dict.update(answer.field_value_dict)
             else:
                 builder_logger.debug("Device does not understand ?protocol command. Try to figure out which device it is with ?info, ?type, ?")
@@ -146,7 +146,8 @@ class DeviceBuilder:
                 device_type = parsed_values.get("device_type", DeviceType.UNKNOWN)
                 protocol_version = parsed_values.get("protocol_version", Version(0, 0, 0))
                 is_release = True # old devices are not anymore in development. There exists only release versions of them
-                result_dict.update({ (k,): v for k, v in parsed_values.items() })
+                result_dict.update({ (EFieldName(k),): v for k, v in parsed_values.items() })
+                # TODO: we need to support strings that are also not in the enum EFieldName
 
         # create device
         builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release" if is_release else "build", str(protocol_version))
