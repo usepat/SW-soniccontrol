@@ -98,10 +98,11 @@ class CppTransCompiler:
             with rs.as_file(source_file) as file_path:
                 shutil.copy(file_path, output_dir)
     
+        lib_dir = output_dir / "include" / "sonic_protocol_lib"
         protocol_count = len(protocol_versions)
         protocols = self._transpile_protocols(protocol_versions)
         self._inject_code_into_file(
-            output_dir / "protocol.hpp", 
+            lib_dir / "protocol.hpp", 
             PROTOCOLS=protocols, 
             PROTOCOL_COUNT=protocol_count, 
             TRANSPILED_OUTPUT=self._transpiled_output
@@ -109,13 +110,13 @@ class CppTransCompiler:
 
         field_name_members = convert_to_cpp_enum_members(EFieldName)
         self._inject_code_into_file(
-            output_dir / "field_names.hpp",
+            lib_dir / "field_names.hpp",
             FIELD_NAME_MEMBERS=field_name_members
         )
 
         command_code_members = convert_to_cpp_enum_members(CommandCode)
         self._inject_code_into_file(
-            output_dir / "command_code.hpp",
+            lib_dir / "command_code.hpp",
             COMMAND_CODE_MEMBERS=command_code_members
         )
         
