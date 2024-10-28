@@ -21,7 +21,9 @@ classifiers = [
     "Operating System :: Linux",
     "Programming Language :: Python :: 3"
 ]
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [project.gui-scripts]
 soniccontrol = "soniccontrol_gui:start_gui"
@@ -31,11 +33,6 @@ requires = [
     "setuptools>=42", 
     "wheel", 
     "setuptools-git-versioning>=2.0,<3",
-    "attrs>=23.2.0",
-    "importlib_metadata>=8.0.0",
-    "importlib_resources>=6.4.0",
-    # TODO: add other dependencies
-
 ]
 build-backend = "setuptools.build_meta"
 
