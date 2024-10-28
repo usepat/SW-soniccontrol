@@ -11,8 +11,8 @@ struct Protocol {
     std::initializer_list<AnswerDef> answers;
 };
 
-#define TRANSPILED_OUTPUT
-/**/TRANSPILED_OUTPUT/**/ // the python script will replace this
+#define FIELD_LIMITS
+/**/FIELD_LIMITS/**/ // the python script will replace this
 
 constexpr std::size_t protocol_count() {
     constexpr auto PROTOCOL_COUNT {0}; // default value

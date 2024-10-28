@@ -1,12 +1,12 @@
 
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, List, Literal
+from typing import Any, Generic, List, Literal, TypeVar
 
 import attrs
 from sonic_protocol import protocol
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import DerivedFromParam, FieldPath, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import DerivedFromParam, FieldPath, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 import importlib.resources as rs
@@ -84,14 +84,20 @@ class ProtocolVersion:
     device_type: DeviceType = attrs.field()
     is_release: bool = attrs.field(default=True)
 
+T = TypeVar("T")
+@attrs.define(hash=True)
+class FieldLimits(Generic[T]):
+    minimum: T | None = attrs.field()
+    maximum: T | None = attrs.field()
+    allowed_values: List[T] | None = attrs.field()
+
 class CppTransCompiler:
     def __init__(self):
         self._var_id_counter: int = 0
-        self._transpiled_output: str = ""
+        self._field_limits_cache: dict[FieldLimits, str] = {}
 
-    def generate_transpiled_protocol_lib(self, protocol_versions: List[ProtocolVersion], output_dir: Path): 
+    def generate_transpiled_protocol_lib(self, protocol: Protocol, protocol_versions: List[ProtocolVersion], output_dir: Path): 
         self._var_id_counter = 0
-        self._transpiled_output = ""
         
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
@@ -100,12 +106,13 @@ class CppTransCompiler:
     
         lib_dir = output_dir / "include" / "sonic_protocol_lib"
         protocol_count = len(protocol_versions)
-        protocols = self._transpile_protocols(protocol_versions)
+        protocols = self._transpile_protocols(protocol, protocol_versions)
+        field_limits = self._transpile_field_limits_from_cache()
         self._inject_code_into_file(
             lib_dir / "protocol.hpp", 
             PROTOCOLS=protocols, 
             PROTOCOL_COUNT=protocol_count, 
-            TRANSPILED_OUTPUT=self._transpiled_output
+            FIELD_LIMITS=field_limits
         )
 
         field_name_members = convert_to_cpp_enum_members(EFieldName)
@@ -128,8 +135,8 @@ class CppTransCompiler:
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
-    def _transpile_protocols(self, protocol_versions: List[ProtocolVersion]) -> str:
-        protocol_builder = ProtocolBuilder(protocol.protocol)
+    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> str:
+        protocol_builder = ProtocolBuilder(protocol)
         transpiled_protocols = []
         for protocol_version in protocol_versions:
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
@@ -141,7 +148,7 @@ class CppTransCompiler:
             self, command_list: CommandLookUpTable) -> str:
         answer_defs = []
         command_defs = []
-        for code, command_lookup in command_list.items():
+        for code, command_lookup in sorted(command_list.items()):
             command_defs.append(self._transpile_command_def(code, command_lookup.command_def))
             answer_defs.append(self._transpile_answer_def(code, command_lookup.answer_def))
 
@@ -214,17 +221,18 @@ class CppTransCompiler:
         return cpp_answer_field_def
 
     def _transpile_field_type(self, field_type: FieldType) -> str:
-        allowed_values = convert_to_cpp_initializer_list(field_type.allowed_values) if field_type.allowed_values else CPP_NULLOPT_T  
-        cpp_field_limits: str = f"""
-            FieldLimits<uint32_t> {{
-                .min = {nullopt_if_none(field_type.min_value)},
-                .max = {nullopt_if_none(field_type.max_value)},
-                .allowed_values = {allowed_values}
-            }}
-        """ 
-        self._var_id_counter += 1
-        cpp_limits_var: str = f"limits_{self._var_id_counter}"
-        self._transpiled_output += f"constexpr auto {cpp_limits_var} {{ {cpp_field_limits} }};\n"
+        field_limits = FieldLimits(
+            minimum=field_type.min_value,
+            maximum=field_type.max_value,
+            allowed_values=field_type.allowed_values
+        )
+        if field_limits in self._field_limits_cache:
+            cpp_limits_var: str = self._field_limits_cache[field_limits]
+        else:
+            self._var_id_counter += 1
+            cpp_limits_var: str = f"limits_{self._var_id_counter}"
+            self._field_limits_cache[field_limits] = cpp_limits_var
+
         cpp_field_type_def: str = f"""
             FieldTypeDef {{
                 .type = {convert_to_enum_data_type(field_type.field_type)},
@@ -237,9 +245,29 @@ class CppTransCompiler:
         
         return cpp_field_type_def
 
+    def _transpile_field_limits_from_cache(self) -> str:
+        transpilation_output = ""
+        for field_limits, var_name in self._field_limits_cache.items():
+            transpilation_output += self._transpile_field_limits(field_limits, var_name)
+        return transpilation_output
+
+    def _transpile_field_limits(self, field_limits: FieldLimits, var_name: str) -> str:
+        allowed_values = convert_to_cpp_initializer_list(field_limits.allowed_values) if field_limits.allowed_values else CPP_NULLOPT_T  
+        cpp_field_limits: str = f"""
+            FieldLimits<uint32_t> {{
+                .min = {nullopt_if_none(field_limits.minimum)},
+                .max = {nullopt_if_none(field_limits.maximum)},
+                .allowed_values = {allowed_values}
+            }}
+        """ 
+        return f"constexpr auto {var_name} {{ {cpp_field_limits} }};\n"
+
+
+
 if __name__ == "__main__":
     compiler = CppTransCompiler()
     compiler.generate_transpiled_protocol_lib(
+        protocol=protocol.protocol,
         protocol_versions=[
             ProtocolVersion(Version(1, 0, 0), DeviceType.MVP_WORKER),
             ProtocolVersion(Version(1, 0, 0), DeviceType.DESCALE),
