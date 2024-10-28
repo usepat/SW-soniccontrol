@@ -1,0 +1,50 @@
+name: Test with firmware
+
+on: [push]
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    container:
+      image: testing_container:latest  # Specify the local Docker image directly
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Enable Debug Logging
+        run: |
+          echo "Enabling debug logging"
+          export ACTIONS_RUNNER_DEBUG=true
+          ls -la
+
+      - name: Create Simulation
+        run: |
+          SONICFIRMWARE_REPO=/testing_environment/FW-sonic-firmware  # Use absolute path
+          cd $SONICFIRMWARE_REPO
+          
+          mkdir build && cd build
+          echo "Running CMake"
+          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-pthread" -DCMAKE_EXE_LINKER_FLAGS="-pthread" ..
+          cmake --build . --target cli_simulation_mvp
+
+      - name: Run Robot Tests
+        run: |
+          SIMULATION_EXE_PATH=/testing_environment/FW-sonic-firmware/build/test/cli/cli_simulation_mvp/cli_simulation_mvp  # Use absolute path
+          ls -la
+          ls -la $SIMULATION_EXE_PATH
+          . /testing_environment/venv/bin/activate
+          python -m pip install --upgrade pip
+          
+
+          pip install -r requirements.txt
+          pip install -e .
+
+          echo "Running Robot Tests"
+          robot -v TARGET:simulation -v SIMULATION_EXE_PATH:$SIMULATION_EXE_PATH tests_robot/test_cases/test_sonicpackage.robot
+
+      # Step 5: Upload test results (optional)
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        with:
+          name: robot-results
+          path: output.xml

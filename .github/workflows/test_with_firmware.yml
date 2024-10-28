@@ -21,6 +21,7 @@ jobs:
           # Define constants
           SONICFIRMWARE_URL=git@github.com:usepat/FW-sonic-firmware.git
           SONICFIRMWARE_REPO=$PWD/FW-sonic-firmware  # Use absolute path
+          echo "Inside Set up environment"
 
           # Set up SSH key
           mkdir -p ~/.ssh/

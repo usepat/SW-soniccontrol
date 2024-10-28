@@ -255,3 +255,5 @@ tests_robot/results/
 docs/output
 
 .secrets/
+
+**/ssh_workflow
