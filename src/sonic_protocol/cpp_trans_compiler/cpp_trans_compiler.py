@@ -4,14 +4,14 @@ from pathlib import Path
 from typing import Any, Generic, List, Literal, TypeVar
 
 import attrs
-from sonic_protocol import protocol
+from sonic_protocol import protocol as prot
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.defs import DerivedFromParam, FieldPath, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 import importlib.resources as rs
 import shutil
-import sonic_protocol.cpp_transpiler
+import sonic_protocol.cpp_trans_compiler
 
 CPP_NULLOPT_T = "std::nullopt"
 
@@ -101,7 +101,7 @@ class CppTransCompiler:
         
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
-        lib_path = rs.files(sonic_protocol.cpp_transpiler).joinpath("sonic_protocol_lib")
+        lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
         shutil.copytree(Path(str(lib_path)), output_dir)
     
         lib_dir = output_dir / "include" / "sonic_protocol_lib"
@@ -267,7 +267,7 @@ class CppTransCompiler:
 if __name__ == "__main__":
     compiler = CppTransCompiler()
     compiler.generate_transpiled_protocol_lib(
-        protocol=protocol.protocol,
+        protocol=prot.protocol,
         protocol_versions=[
             ProtocolVersion(Version(1, 0, 0), DeviceType.MVP_WORKER),
             ProtocolVersion(Version(1, 0, 0), DeviceType.DESCALE),
