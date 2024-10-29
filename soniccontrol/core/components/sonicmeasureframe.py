@@ -554,9 +554,17 @@ class SonicMeasure(ttk.Toplevel):
             writer.writeheader()
 
         try:
-            await self.root.sonicamp.set_relay_mode_mhz()
-            await self.root.sonicamp.set_frequency(self.root.set_frequency_var.get())
-            await self.root.sonicamp.set_gain(self.root.set_gain_var.get())
+            # await self.root.sonicamp.set_relay_mode_mhz() 
+            try:
+                logger.debug(f"Frequency is: {self.root.set_frequency_var.get()}")
+                await self.root.sonicamp.set_frequency(self.root.set_frequency_var.get())
+            except Exception as e:
+                logger.warning(e)
+            try:
+                logger.debug(f"Gain is: {self.root.set_gain_var.get()}")
+                await self.root.sonicamp.set_gain(self.root.set_gain_var.get())
+            except Exception as e:
+                logger.warning(e)     
         except Exception as e:
             logger.warning(e)
 

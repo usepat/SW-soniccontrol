@@ -197,6 +197,14 @@ class Commands:
         }
 
     @attrs.define
+    class SetWipe(Command):
+        message: str = attrs.field(default="!WIPE")
+        _validation_pattern: CommandValidationDict = {
+            "pattern": r"\s*([\d]+)",
+            "return_type": int,
+        }
+
+    @attrs.define
     class SetSignalOn(Command):
         message: str = attrs.field(default="!ON")
         _validation_pattern: CommandValidationDict = {
@@ -359,6 +367,7 @@ class CommandValidator:
 
 
 class SerialCommunicator:
+    communication_debug_file = "communication_debug_file.txt"
     def __init__(self, port: str) -> None:
         self.port: str = port
         self.connection_closed: asyncio.Event = asyncio.Event()
@@ -375,9 +384,22 @@ class SerialCommunicator:
         self.writer = None
         self.init_command: Command = Command(response_time=0.5)
 
+        # Open the file for appending logs
+        self.file = open(self.communication_debug_file, "w")
+
     @property
     def connection_open(self) -> asyncio.Event:
         return self._connection_open
+    
+    def _log_with_timestamp(self, message: str) -> None:
+        """Helper method to write a message to the log file with a timestamp."""
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            self.file.write(f"[{timestamp}] {message}\n")
+            self.file.flush()  # Force the buffer to flush after each write
+            logger.debug(f"Wrote to file {self.communication_debug_file}")
+        except Exception as e:
+            logger.debug(e)
 
     async def setup(self) -> None:
         try:
@@ -405,6 +427,9 @@ class SerialCommunicator:
             command = await self.command_queue.get()
             async with self.lock:
                 try:
+                    # Write command to the file with timestamp
+                    self._log_with_timestamp(f"Sending command: {command.byte_message}")
+
                     self.writer.write(command.byte_message)
                     await self.writer.drain()
 
@@ -413,6 +438,10 @@ class SerialCommunicator:
                         if command.expects_long_answer
                         else self.read_message(response_time=command.response_time)
                     )
+
+                    # Write response to the file with timestamp
+                    self._log_with_timestamp(f"Received response: {response}")
+                    
                     command.receive_answer(response)
                     command.answer_received.set()
                     await self.answer_queue.put(command)
@@ -461,10 +490,21 @@ class SerialCommunicator:
         return message
 
     def disconnect(self) -> None:
-        self.writer.close()
+        self.writer.close() 
         self.reader = None
         self._connection_open.clear()
         self.connection_closed.set()
+
+    async def await_writer_closed(self) -> None:
+        self.writer.close() 
+        await self.writer.wait_closed()
+        self.reader = None
+        self._connection_open.clear()
+        self.connection_closed.set()
+
+    def __del__(self):
+        # Ensure that the file is closed properly
+        self.file.close()
 
 
 class CalcStrategy:
@@ -886,10 +926,14 @@ class SonicParser:
         "hold",
         "startloop",
         "endloop",
+        "!WIPE",
+        "WIPE",
+        "wipe",
         # "chirp_ramp_freq",
         # "chirp_ramp_gain",
         "!AUTO",
         "AUTO",
+        "auto"
     ]
 
     def parse_text(self, text: str) -> dict[str, Union[tuple[Any, ...], str]]:
@@ -998,7 +1042,7 @@ class SonicParser:
                 "Argument(s) could not have been correctly converted to  integers,\nplease call for support or try again"
             )
 
-        elif any(command not in self.SUPPORTED_TOKENS for command in commands):
+        elif any(command not in self.SUPPORTED_TOKENS and not command.startswith("!") for command in commands):
             raise ValueError("One or more commands are illegal or written wrong")
 
 
@@ -1112,6 +1156,8 @@ class Sequence:
                 await self._sonicamp.ramp_gain(*command["argument"], event=self.running)
             case "!AUTO" | "AUTO" | "auto":
                 await self._sonicamp.set_signal_auto()
+            case "WIPE" | "!WIPE" | "wipe":
+                await self._sonicamp.set_wipe()
             case "hold":
                 self._current_command = self._sonicamp.holder
                 await self._sonicamp.hold(*command["argument"], event=self.running)
@@ -1120,8 +1166,11 @@ class Sequence:
             case "off":
                 await self._sonicamp.set_signal_off()
             case _:
-                self.running.clear()
-                raise ValueError(f"{command} is not valid.")
+                if command["command"].startswith("!"):
+                    await self._sonicamp.send_command(command["command"])
+                else:
+                    self.running.clear()
+                    raise ValueError(f"{command} is not valid.")
 
 
 class SonicAmpFactory:
@@ -1140,6 +1189,8 @@ class SonicAmpFactory:
         info: Info = Info.from_firmware(
             firmware_info=firmware.answer_string, device_type=device_type.answer_string
         )
+        if info.device_type == "soniccatch" and info.version == 0.4:
+            return SonicCatch(serial, info=info)
 
         if info.device_type == "soniccatch" and info.version == 0.4:
             return SonicCatch(serial, info=info)
@@ -1211,7 +1262,7 @@ class SonicAmp:
         )
         self.status_changed.set()
         self.status_changed.clear()
-        logger.debug(f"Status updated: {self.status}")
+        logger.debug(f"Status updated from Amp: {self.status}")
 
     def scan_command(self, command) -> None:
         if isinstance(command, Commands.GetOverview):
@@ -1222,6 +1273,7 @@ class SonicAmp:
             self.update_status(command, signal=True)
         elif isinstance(command, Commands.SetSignalOff):
             self.update_status(command, signal=False, urms=0.0, irms=0.0, phase=0.0)
+            logger.debug(f"Status updated set signal off: {self.status}")
 
     def get_status(self) -> Status:
         ...
@@ -1343,6 +1395,7 @@ class SonicCatch(SonicAmp):
                 Commands.SetATK3,
                 Commands.SetATT1,
                 Commands.GetATT1,
+                Commands.SetWipe,
             )
         )
 
@@ -1354,7 +1407,7 @@ class SonicCatch(SonicAmp):
         elif isinstance(command, Commands.GetStatus):
             self.status = Status.from_status_command(command, old_status=self.status)
             self.update_status(command, signal=True if self.status.frequency else False)
-            logger.debug(f"Status updated: {self.status}")
+            logger.debug(f"Status updated from GetStatus: {self.status}")
             self.status_changed.set()
             self.status_changed.clear()
         elif isinstance(command, Commands.GetSens):
@@ -1363,7 +1416,7 @@ class SonicCatch(SonicAmp):
                 old_status=self.status,
                 calculation_strategy=FactorisedCalcStrategy(),
             )
-            logger.debug(f"Status updated: {self.status}")
+            logger.debug(f"Status updated from GetSens: {self.status}")
             self.status_changed.set()
             self.status_changed.clear()
         elif isinstance(command, Commands.SetSignalAuto):
@@ -1382,7 +1435,7 @@ class SonicCatch(SonicAmp):
             return super().scan_command(command)
 
     async def update_strategy(self) -> Status:
-        if self.status.signal and self.status.relay_mode == "mhz":
+        if self.status.signal: # and self.status.relay_mode == "mhz"
             status = await self.get_sens()
         elif (time.time() - self.last_overview_timestamp) > 10:
             status = await self.get_overview()
@@ -1472,6 +1525,10 @@ class SonicCatch(SonicAmp):
 
     async def set_relay_mode_mhz(self) -> str:
         command = await self.execute_command(Commands.SetMhzMode())
+        return command.answer_string
+
+    async def set_wipe(self) -> str:
+        command = await self.execute_command(Commands.SetWipe())
         return command.answer_string
 
 

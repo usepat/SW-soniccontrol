@@ -267,6 +267,7 @@ class SettingsFrame(RootChild, Connectable):
         if answer == "cancel":
             return
         self.event_generate(const.Events.FIRMWARE_FLASH)
+        logger.debug(f"Throw event {const.Events.FIRMWARE_FLASH}")
 
     def get_flash_file(self) -> None:
         self.file_entry.configure(bootstyle=ttk.DARK)
@@ -283,7 +284,7 @@ class SettingsFrame(RootChild, Connectable):
             return
 
         self.file_entry.configure(bootstyle=ttk.SUCCESS)
-        self.file_entry_textvar.set("File specified and validated")
+        self.root.firmware_flash_file_var.set("File specified and validated")
         self.upload_button.configure(state=ttk.NORMAL)
 
     def load_config_json(self) -> None:

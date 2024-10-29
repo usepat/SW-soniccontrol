@@ -1,0 +1,161 @@
+[2024-10-29 12:36:30] Sending command: b'?type\n'
+[2024-10-29 12:36:30] Received response: soniccatch
+[2024-10-29 12:36:30] Sending command: b'?info\n'
+[2024-10-29 12:36:31] Received response: ['SonicAmp Firmware', 'usePAT GmbH', 'Ver.0.4, 19_9_2023', 'A00-000: f=0 KHz']
+[2024-10-29 12:36:31] Sending command: b'?atf1\n'
+[2024-10-29 12:36:32] Received response: ['2098333', '-232.27']
+[2024-10-29 12:36:32] Sending command: b'-\n'
+[2024-10-29 12:36:32] Received response: 0#0#50#101#0#30.20#19891#15#8894300
+[2024-10-29 12:36:32] Sending command: b'?atf2\n'
+[2024-10-29 12:36:33] Received response: ['1400500', '-40.99']
+[2024-10-29 12:36:33] Sending command: b'-\n'
+[2024-10-29 12:36:33] Received response: 0#0#50#101#0#30.29#19851#15#8875900
+[2024-10-29 12:36:33] Sending command: b'?atf3\n'
+[2024-10-29 12:36:34] Received response: ['600000', '0.00']
+[2024-10-29 12:36:34] Sending command: b'-\n'
+[2024-10-29 12:36:34] Received response: 0#0#50#101#0#30.23#19771#15#8864800
+[2024-10-29 12:36:34] Sending command: b'?att1\n'
+[2024-10-29 12:36:34] Received response: 25.00
+[2024-10-29 12:36:35] Sending command: b'-\n'
+[2024-10-29 12:36:35] Received response: 0#0#50#101#0#30.29#19811#15#8862700
+[2024-10-29 12:36:35] Sending command: b'-\n'
+[2024-10-29 12:36:36] Received response: 0#0#50#101#0#30.26#19811#15#8857900
+[2024-10-29 12:36:36] Sending command: b'-\n'
+[2024-10-29 12:36:37] Received response: 0#0#50#101#0#30.33#19811#15#8857700
+[2024-10-29 12:36:37] Sending command: b'-\n'
+[2024-10-29 12:36:37] Received response: 0#0#50#101#0#30.29#19851#15#8841900
+[2024-10-29 12:36:38] Sending command: b'-\n'
+[2024-10-29 12:36:38] Received response: 0#0#50#101#0#30.29#19771#15#8845800
+[2024-10-29 12:36:39] Sending command: b'-\n'
+[2024-10-29 12:36:39] Received response: 0#0#50#101#0#30.26#19771#15#8841000
+[2024-10-29 12:36:40] Sending command: b'-\n'
+[2024-10-29 12:36:40] Received response: 0#0#50#101#0#30.23#19931#15#8835000
+[2024-10-29 12:36:41] Sending command: b'-\n'
+[2024-10-29 12:36:41] Received response: 0#0#50#101#0#30.33#19931#15#8825300
+[2024-10-29 12:36:41] Sending command: b'-\n'
+[2024-10-29 12:36:42] Received response: 0#0#50#101#0#30.26#19811#15#8827000
+[2024-10-29 12:36:42] Sending command: b'-\n'
+[2024-10-29 12:36:43] Received response: 0#0#50#101#0#30.23#19891#15#8825900
+[2024-10-29 12:36:49] Sending command: b'!ON\n'
+[2024-10-29 12:36:49] Received response: Signal ON
+[2024-10-29 12:36:49] Sending command: b'-\n'
+[2024-10-29 12:36:51] Received response: 
+[2024-10-29 12:36:51] Sending command: b'?sens\n'
+[2024-10-29 12:36:52] Received response: 0#1000000#50#101#1#30.29#6196816#30735#7601400
+[2024-10-29 12:36:52] Sending command: b'-\n'
+[2024-10-29 12:36:52] Received response: 1000000 6197136 30739 94951248
+[2024-10-29 12:36:53] Sending command: b'?sens\n'
+[2024-10-29 12:36:53] Received response: 0#1000000#50#101#1#30.26#6195655#30737#7594900
+[2024-10-29 12:36:53] Sending command: b'-\n'
+[2024-10-29 12:36:53] Received response: 1000000 6196215 30735 94950000
+[2024-10-29 12:36:53] Sending command: b'?sens\n'
+[2024-10-29 12:36:53] Received response: 0#1000000#50#101#1#30.23#6195454#30729#7595200
+[2024-10-29 12:36:54] Sending command: b'-\n'
+[2024-10-29 12:36:54] Received response: 1000000 6195894 30730 94882496
+[2024-10-29 12:36:54] Sending command: b'?sens\n'
+[2024-10-29 12:36:54] Received response: 0#1000000#50#101#1#30.26#6194893#30735#7592600
+[2024-10-29 12:36:54] Sending command: b'-\n'
+[2024-10-29 12:36:55] Received response: 1000000 6195654 30731 94928752
+[2024-10-29 12:36:55] Sending command: b'?sens\n'
+[2024-10-29 12:36:55] Received response: 0#1000000#50#101#1#30.26#6194813#30721#7595300
+[2024-10-29 12:36:55] Sending command: b'-\n'
+[2024-10-29 12:36:55] Received response: 1000000 6195574 30728 94912496
+[2024-10-29 12:36:56] Sending command: b'?sens\n'
+[2024-10-29 12:36:56] Received response: 0#1000000#50#101#1#30.29#6194533#30721#7593100
+[2024-10-29 12:36:56] Sending command: b'-\n'
+[2024-10-29 12:36:56] Received response: 1000000 6194813 30725 94926248
+[2024-10-29 12:36:58] Sending command: b'!g=20\n'
+[2024-10-29 12:36:58] Received response: 0#1000000#50#101#1#30.26#6194933#30716#7590000
+[2024-10-29 12:36:58] Sending command: b'?sens\n'
+[2024-10-29 12:36:58] Received response: Gain=20
+[2024-10-29 12:36:58] Sending command: b'!ON\n'
+[2024-10-29 12:36:59] Received response: 1000000 4288535 19909 81093752
+[2024-10-29 12:36:59] Sending command: b'-\n'
+[2024-10-29 12:36:59] Received response: Signal ON
+[2024-10-29 12:36:59] Sending command: b'?sens\n'
+[2024-10-29 12:36:59] Received response: 0#1000000#20#101#1#30.29#4287895#19905#6486800
+[2024-10-29 12:36:59] Sending command: b'-\n'
+[2024-10-29 12:37:00] Received response: 1000000 4287974 19906 81022496
+[2024-10-29 12:37:00] Sending command: b'?sens\n'
+[2024-10-29 12:37:00] Received response: 0#1000000#20#101#1#30.33#4287454#19902#6469200
+[2024-10-29 12:37:00] Sending command: b'-\n'
+[2024-10-29 12:37:00] Received response: 1000000 4288135 19907 81002496
+[2024-10-29 12:37:01] Sending command: b'?sens\n'
+[2024-10-29 12:37:01] Received response: 0#1000000#20#101#1#30.29#4287334#19902#6472900
+[2024-10-29 12:37:01] Sending command: b'-\n'
+[2024-10-29 12:37:01] Received response: 1000000 4287734 19903 80982496
+[2024-10-29 12:37:01] Sending command: b'?sens\n'
+[2024-10-29 12:37:01] Received response: 0#1000000#20#101#1#30.29#4287935#19902#6472500
+[2024-10-29 12:37:02] Sending command: b'-\n'
+[2024-10-29 12:37:02] Received response: 1000000 4287694 19901 80955000
+[2024-10-29 12:37:02] Sending command: b'?sens\n'
+[2024-10-29 12:37:02] Received response: 0#1000000#20#101#1#30.29#4287815#19903#6478700
+[2024-10-29 12:37:02] Sending command: b'-\n'
+[2024-10-29 12:37:03] Received response: 1000000 4287334 19900 80913752
+[2024-10-29 12:37:03] Sending command: b'?sens\n'
+[2024-10-29 12:37:03] Received response: 0#1000000#20#101#1#30.26#4287815#19908#6483800
+[2024-10-29 12:37:03] Sending command: b'-\n'
+[2024-10-29 12:37:03] Received response: 1000000 4287174 19900 80910000
+[2024-10-29 12:37:04] Sending command: b'?sens\n'
+[2024-10-29 12:37:04] Received response: 0#1000000#20#101#1#30.29#4287775#19900#6483200
+[2024-10-29 12:37:04] Sending command: b'-\n'
+[2024-10-29 12:37:04] Received response: 1000000 4287414 19898 80948752
+[2024-10-29 12:37:04] Sending command: b'?sens\n'
+[2024-10-29 12:37:04] Received response: 0#1000000#20#101#1#30.29#4287615#19900#6475700
+[2024-10-29 12:37:05] Sending command: b'-\n'
+[2024-10-29 12:37:05] Received response: 1000000 4287334 19895 80962496
+[2024-10-29 12:37:05] Sending command: b'?sens\n'
+[2024-10-29 12:37:05] Received response: 0#1000000#20#101#1#30.29#4287374#19892#6473000
+[2024-10-29 12:37:05] Sending command: b'-\n'
+[2024-10-29 12:37:06] Received response: 1000000 4287614 19897 80981248
+[2024-10-29 12:37:06] Sending command: b'?sens\n'
+[2024-10-29 12:37:06] Received response: 0#1000000#20#101#1#30.33#4287174#19896#6474600
+[2024-10-29 12:37:06] Sending command: b'-\n'
+[2024-10-29 12:37:06] Received response: 1000000 4287734 19897 80956248
+[2024-10-29 12:37:07] Sending command: b'?sens\n'
+[2024-10-29 12:37:07] Received response: 0#1000000#20#101#1#30.26#4287053#19896#6461200
+[2024-10-29 12:37:07] Sending command: b'-\n'
+[2024-10-29 12:37:07] Received response: 1000000 4287734 19897 80976248
+[2024-10-29 12:37:07] Sending command: b'!OFF\n'
+[2024-10-29 12:37:07] Received response: ['0#1000000#20#101#1#30.33#4286933#19899#6454200']
+[2024-10-29 12:37:07] Sending command: b'?sens\n'
+[2024-10-29 12:37:08] Received response: Signal OFF
+[2024-10-29 12:37:08] Sending command: b'-\n'
+[2024-10-29 12:37:08] Received response: Error: Signal OFF
+[2024-10-29 12:37:09] Sending command: b'-\n'
+[2024-10-29 12:37:09] Received response: 0#0#20#101#0#30.26#19811#15#8522300
+[2024-10-29 12:37:09] Sending command: b'-\n'
+[2024-10-29 12:37:09] Received response: 0#0#20#101#0#30.26#19771#15#8528100
+[2024-10-29 12:37:10] Sending command: b'-\n'
+[2024-10-29 12:37:10] Received response: 0#0#20#101#0#30.23#19851#15#8525800
+[2024-10-29 12:37:10] Sending command: b'!g=61\n'
+[2024-10-29 12:37:10] Received response: 0#0#20#101#0#30.26#19891#15#8521800
+[2024-10-29 12:37:10] Sending command: b'-\n'
+[2024-10-29 12:37:10] Received response: Gain=61
+[2024-10-29 12:37:11] Sending command: b'-\n'
+[2024-10-29 12:37:11] Received response: 0#0#61#101#0#30.29#19851#15#8527700
+[2024-10-29 12:37:11] Sending command: b'-\n'
+[2024-10-29 12:37:12] Received response: 0#0#61#101#0#30.26#19771#15#8516000
+[2024-10-29 12:37:12] Sending command: b'-\n'
+[2024-10-29 12:37:12] Received response: 0#0#61#101#0#30.23#19891#15#8528600
+[2024-10-29 12:37:12] Sending command: b'!g=71\n'
+[2024-10-29 12:37:12] Received response: 0#0#61#101#0#30.26#19811#15#8520200
+[2024-10-29 12:37:13] Sending command: b'-\n'
+[2024-10-29 12:37:13] Received response: Gain=71
+[2024-10-29 12:37:13] Sending command: b'!g=81\n'
+[2024-10-29 12:37:13] Received response: 0#0#71#101#0#30.26#19891#15#8528000
+[2024-10-29 12:37:13] Sending command: b'-\n'
+[2024-10-29 12:37:13] Received response: Gain=81
+[2024-10-29 12:37:14] Sending command: b'-\n'
+[2024-10-29 12:37:14] Received response: 0#0#81#101#0#30.23#19891#15#8515800
+[2024-10-29 12:37:14] Sending command: b'-\n'
+[2024-10-29 12:37:14] Received response: 0#0#81#101#0#30.23#19971#15#8520100
+[2024-10-29 12:37:15] Sending command: b'-\n'
+[2024-10-29 12:37:15] Received response: 0#0#81#101#0#30.23#19931#15#8523600
+[2024-10-29 12:37:15] Sending command: b'-\n'
+[2024-10-29 12:37:16] Received response: 0#0#81#101#0#30.26#19891#15#8518400
+[2024-10-29 12:37:16] Sending command: b'-\n'
+[2024-10-29 12:37:16] Received response: 0#0#81#101#0#30.23#19971#15#8527300
+[2024-10-29 12:37:17] Sending command: b'-\n'
+[2024-10-29 12:37:17] Received response: 0#0#81#101#0#30.20#19851#15#8527500
+[2024-10-29 12:37:17] Sending command: b'-\n'

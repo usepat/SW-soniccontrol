@@ -10,6 +10,10 @@ from PIL.ImageTk import PhotoImage
 import attrs
 from async_tkinter_loop import async_handler
 from async_tkinter_loop.mixins import AsyncTk
+from tkinter import messagebox
+import platform
+import subprocess
+import time
 
 import soniccontrol.core.interfaces as interfaces
 import soniccontrol.constants as const
@@ -107,7 +111,7 @@ class Root(tk.Tk, AsyncTk, interfaces.Resizable):
         self.firmware_flash_file_var.trace_add(
             "write",
             lambda var, index, mode: self._file_path_specified(
-                var, self.firmware_flash_file
+                self.firmware_flash_file_var, self.firmware_flash_file
             ),
         )
 
@@ -286,9 +290,50 @@ class Root(tk.Tk, AsyncTk, interfaces.Resizable):
 
     def on_resizing(self, event: Any, *args, **kwargs) -> None:
         return self.resizer.resize(event=event, *args, **kwargs)
+    
+    def reinitialize(self) -> None:
+        messagebox.showinfo("Application Restart", "Flashing succeeded, restart soniccontrol")
+    
+        # Close the application
+        self.destroy()
 
-    def on_firmware_flash(self) -> None:
-        pass
+    def on_firmware_flash(self, event=None) -> None:
+        asyncio.create_task(self._async_on_firmware_flash(event))
+
+    async def _async_on_firmware_flash(self, event=None) -> None:
+        logger.debug("Close serial connection")
+        port: str = self.serial.port
+        await self.serial.await_writer_closed()
+        
+        try:
+            print(platform.system())
+            if platform.system() == "Linux":
+                command = f'"avrdude/Linux/avrdude" -v -p atmega328p -c arduino -P {port} -b 115200 -D -U flash:w:"{self.firmware_flash_file}":i'
+            elif platform.system() == "Windows":
+                command = f'"avrdude/Windows/avrdude.exe" -v -p atmega328p -c arduino -P {port} -b 115200 -D -U flash:w:"{self.firmware_flash_file}":i'
+            
+            msgbox = messagebox.showwarning(
+                "Process about to start",
+                "The program is about to flash a new firmware on your device, please do NOT disconnect or turn off your device during that process",
+            )
+            
+            if msgbox:
+                try:
+                    result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+                    logger.info(f"Command output: {result.stdout}")
+                    self.reinitialize()
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"Command '{command}' failed with error: {e.stderr}")
+                except Exception as e:
+                    logger.error(f"An unexpected error occurred: {e}")
+                
+            else:
+                messagebox.showerror("Error", "Cancled the update")
+        except WindowsError:
+            messagebox.showerror(
+                "Error",
+                "Something went wrong, please try again. Maybe restart the device and the program",
+            )
 
     def on_disconnect(self) -> None:
         pass

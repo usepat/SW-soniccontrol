@@ -6,6 +6,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from async_tkinter_loop import async_handler
 from PIL.ImageTk import PhotoImage
 from soniccontrol.core.interfaces import RootChild, Connectable, WidthLayout, Root
+from soniccontrol.sonicpackage.sonicamp import SonicCatch
 
 
 class HomeFrame(RootChild, Connectable):
@@ -95,7 +96,7 @@ class HomeFrame(RootChild, Connectable):
 
         self.set_val_btn: ttk.Button = ttk.Button(
             self.control_frame,
-            text="Set Frequency and Gain",
+            text="Set Signal on",
             bootstyle=ttk.DARK,
             command=self.set_values,
         )
@@ -103,10 +104,10 @@ class HomeFrame(RootChild, Connectable):
         self.us_control_frame: ttk.Frame = ttk.Frame(self.main_frame)
         self.us_on_button: ttk.Button = ttk.Button(
             self.us_control_frame,
-            text="ON",
+            text="WIPE",
             bootstyle=ttk.SUCCESS,
             width=10,
-            command=self.set_signal_on,
+            command=self.set_signal_wipe,
         )
 
         self.us_auto_button: ttk.Button = ttk.Button(
@@ -170,13 +171,14 @@ class HomeFrame(RootChild, Connectable):
         self.gain_spinbox.grid(row=0, column=0, padx=10, pady=10)
         self.gain_scale.grid(row=0, column=1, padx=10, pady=10, sticky=tk.EW)
 
-        self.mode_frame.pack(side=tk.TOP, fill=tk.X)
-        self.wipemode_button.pack(
-            side=ttk.LEFT, expand=True, fill=ttk.X, padx=10, pady=10
-        )
-        self.catchmode_button.pack(
-            side=ttk.LEFT, expand=True, fill=ttk.X, padx=10, pady=10
-        )
+        if not isinstance(self.root.sonicamp, SonicCatch): 
+            self.mode_frame.pack(side=tk.TOP, fill=tk.X)
+            self.wipemode_button.pack(
+                side=ttk.LEFT, expand=True, fill=ttk.X, padx=10, pady=10
+            )
+            self.catchmode_button.pack(
+                side=ttk.LEFT, expand=True, fill=ttk.X, padx=10, pady=10
+            )
 
         self.set_val_btn.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
@@ -242,12 +244,22 @@ class HomeFrame(RootChild, Connectable):
 
     @async_handler
     async def set_values(self) -> None:
+        try:
+            self.on_feedback(
+                await self.root.sonicamp.set_frequency(self.root.set_frequency_var.get())
+            )
+        except Exception as e:
+            pass
+        try:
+            self.on_feedback(
+                await self.root.sonicamp.set_gain(self.root.set_gain_var.get())
+            )
+        except Exception as e:
+            pass
         self.on_feedback(
-            await self.root.sonicamp.set_frequency(self.root.set_frequency_var.get())
+            await self.root.sonicamp.set_signal_on()
         )
-        self.on_feedback(
-            await self.root.sonicamp.set_gain(self.root.set_gain_var.get())
-        )
+
 
     @async_handler
     async def set_signal_on(self) -> None:
@@ -260,6 +272,10 @@ class HomeFrame(RootChild, Connectable):
     @async_handler
     async def set_signal_auto(self) -> None:
         self.on_feedback(await self.root.sonicamp.set_signal_auto())
+
+    @async_handler
+    async def set_signal_wipe(self) -> None:
+        self.on_feedback(await self.root.sonicamp.set_wipe())
 
     def on_feedback(self, text: str) -> None:
         ttk.Label(self.feedback_frame, text=text, font=("Consolas", 10)).pack(

@@ -154,7 +154,7 @@ class ScriptingFrame(RootChild, Connectable, Scriptable):
                 self.current_task_var.set("")
             await asyncio.sleep(0.05)
 
-        if self.sequence_task.exception() is not None:
+        if self.sequence_task._exception is not None:
             logger.warning(f"{self.sequence_task.exception()}")
             Messagebox.show_warning(f"{self.sequence_task.exception()}")
 
