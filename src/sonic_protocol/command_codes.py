@@ -18,6 +18,11 @@ class CommandCode(IntEnum):
     GET_HELP = 4
     # NOTIFY = 5 (commented out in the original)
     GET_PROTOCOL = 6
+    INTERNAL_COMMAND = 7
+    # internal command of the device, that is not part of the protocol
+    # the firmware uses this for internal commands, that should not be exposed to the user
+    # this enum member just functions as a placeholder for the command code
+
     EQUALSIGN = 10
     DASH = 20
 

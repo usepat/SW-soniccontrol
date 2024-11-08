@@ -7,7 +7,7 @@ from sonic_protocol.field_names import EFieldName
 
 VersionTuple = Tuple[int, int, int]
 
-@attrs.define(order=True) # order True, lets attrs define automatically comparision methods
+@attrs.define(auto_attribs=True, order=True) # order True, lets attrs define automatically comparision methods
 class Version:
     major: int = attrs.field()
     minor: int = attrs.field()
@@ -89,7 +89,7 @@ class CommunicationProtocol(Enum):
     SONIC = "sonic"
     MODBUS = "modbus"
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class DeviceParamConstants:
     max_frequency: int = attrs.field(default=10000001)
     min_frequency: int = attrs.field(default=100000)
@@ -106,7 +106,7 @@ class DeviceParamConstantType(Enum):
     MAX_SWF = "max_swf"
     MIN_SWF = "min_swf"
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class MetaExportDescriptor:
     """
     The MetaExportDescriptor is used to define the conditions under which the export is valid.
@@ -131,7 +131,7 @@ class MetaExportDescriptor:
         return True
 
 E = TypeVar("E")
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class MetaExport(Generic[E]):
     """!
     With the MetaExport you can define under which conditions, you want to export the data.
@@ -140,7 +140,7 @@ class MetaExport(Generic[E]):
     exports: E = attrs.field()
     descriptor: MetaExportDescriptor = attrs.field()
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class SonicTextAnswerFieldAttrs:
     """!
     The SonicTextAnswerAttrs are used to define how the AnswerField is formatted.
@@ -148,16 +148,16 @@ class SonicTextAnswerFieldAttrs:
     prefix: str = attrs.field(default="") #! The prefix is added at front of the final message
     postfix: str = attrs.field(default="") #! The postfix is added at the end of the final message
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class SonicTextAnswerAttrs:
     separator: str = attrs.field(default="#") #! The separator is used to separate the answer fields
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class SonicTextCommandAttrs:
     string_identifier: str | List[str] = attrs.field() #! The string identifier is used to identify the command
     kwargs: Dict[str, Any] = attrs.field(default={}) #! The kwargs are passed to the communicator. Needed for the old legacy communicator
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class UserManualAttrs:
     description: str | None = attrs.field(default=None)
     example: str | None = attrs.field(default=None)
@@ -166,7 +166,7 @@ class UserManualAttrs:
 T = TypeVar("T", int, float, bool, str, Version, Enum)
 AttrsExport = E | List[MetaExport[E]]
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class FieldType(Generic[T]):
     """!
     Defines the type of a field in the protocol. 
@@ -186,13 +186,13 @@ def to_field_type(value: Any) -> FieldType:
         return value
     return FieldType(value)
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class CommandParamDef(Generic[T]):
     name: EFieldName = attrs.field(converter=EFieldName)
     param_type: FieldType[T] = attrs.field(converter=to_field_type)
     user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class CommandDef():
     """!
     The CommandDef defines a command call in the protocol.
@@ -204,7 +204,7 @@ class CommandDef():
     setter_param: CommandParamDef | None = attrs.field(default=None)
     user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
 
-@attrs.define(hash=True)
+@attrs.define(auto_attribs=True, hash=True)
 class DerivedFromParam:
     """!
     DerivedFromParam is used to define that the field name is derived from a command parameter.
@@ -221,7 +221,7 @@ def to_field_path(value: Any) -> FieldPath:
         return tuple(map(lambda v: v if isinstance(v, DerivedFromParam) else EFieldName(v), value))
     return (EFieldName(value), )
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class AnswerFieldDef(Generic[T]):
     """!
     The AnswerFieldDef defines a field in the answer of a command.
@@ -232,7 +232,7 @@ class AnswerFieldDef(Generic[T]):
     sonic_text_attrs: AttrsExport[SonicTextAnswerFieldAttrs] = attrs.field(default=SonicTextAnswerFieldAttrs())
 
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class AnswerDef():
     """!
     The AnswerDef defines the answer of a command.
@@ -243,7 +243,7 @@ class AnswerDef():
     sonic_text_attrs: AttrsExport[SonicTextAnswerAttrs] = attrs.field(default=SonicTextAnswerAttrs())
 
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class CommandContract:
     """!
     The CommandContract defines a command and the corresponding answer in the protocol.
@@ -259,7 +259,7 @@ class CommandContract:
 CommandExport = MetaExport[CommandContract]
 CommandListExport = MetaExport[List[CommandContract]]
 
-@attrs.define()
+@attrs.define(auto_attribs=True)
 class Protocol:
     """!
     The Protocol defines the protocol of the sonic device.
