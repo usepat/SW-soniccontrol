@@ -6,7 +6,7 @@ from typing import Any, Generic, List, Literal, TypeVar
 import attrs
 from sonic_protocol import protocol as prot
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import DerivedFromParam, FieldPath, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import DerivedFromParam, FieldPath, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 import importlib.resources as rs
@@ -67,6 +67,32 @@ def convert_to_cpp_enum_members(enum: type[Enum]) -> str:
 
     return enum_members
 
+def create_string_to_enum_conversions(enum: type[Enum]) -> str:
+    enum_member_assignments = [
+        f'\tif (str == "{member.value}") return {enum.__name__}::{member.name};'
+        for member in enum
+    ]
+    enum_member_assignments = "\n".join(enum_member_assignments)
+
+    return f"""
+        {enum_member_assignments}
+        assert(false);
+    """
+
+def create_enum_to_string_conversions(enum: type[Enum]) -> str:
+    enum_member_assignments = [
+        f'\tcase {enum.__name__}::{member.name}: return "{member.value}";'
+        for member in enum
+    ]
+    enum_member_assignments = "\n".join(enum_member_assignments)
+
+    return f"""
+        switch (value) {{
+            {enum_member_assignments}
+        }}
+        assert(false);
+    """
+
 def convert_field_path_to_cpp(field_path: FieldPath) -> str:
     converted_fields = []
     for field_name in field_path:
@@ -125,6 +151,49 @@ class CppTransCompiler:
         self._inject_code_into_file(
             lib_dir / "command_code.hpp",
             COMMAND_CODE_MEMBERS=command_code_members
+        )
+
+        si_unit_members = convert_to_cpp_enum_members(SIUnit)
+        si_prefix_members = convert_to_cpp_enum_members(SIPrefix)
+        si_unit_to_str_conversions = create_enum_to_string_conversions(SIUnit)
+        si_prefix_to_str_conversions = create_enum_to_string_conversions(SIPrefix)
+        self._inject_code_into_file(
+            lib_dir / "si_units.hpp",
+            SI_UNIT_MEMBERS=si_unit_members,
+            SI_PREFIX_MEMBERS=si_prefix_members,
+            SI_UNIT_TO_STR_CONVERSIONS=si_unit_to_str_conversions,
+            SI_PREFIX_TO_STR_CONVERSIONS=si_prefix_to_str_conversions
+        )
+
+        device_type_members = convert_to_cpp_enum_members(DeviceType)
+        communication_channel_members = convert_to_cpp_enum_members(CommunicationChannel)
+        communication_protocol_members = convert_to_cpp_enum_members(CommunicationProtocol)
+        input_source_members = convert_to_cpp_enum_members(InputSource)
+        
+        device_type_to_str_conversions = create_enum_to_string_conversions(DeviceType)
+        communication_channel_to_str_conversions = create_enum_to_string_conversions(CommunicationChannel)
+        communication_protocol_to_str_conversions = create_enum_to_string_conversions(CommunicationProtocol)
+        input_source_to_str_conversions = create_enum_to_string_conversions(InputSource)
+        
+        str_to_communication_channel_conversions = create_string_to_enum_conversions(CommunicationChannel)
+        str_to_communication_protocol_conversions = create_string_to_enum_conversions(CommunicationProtocol)
+        str_to_input_source_conversions = create_string_to_enum_conversions(InputSource)
+
+        self._inject_code_into_file(
+            lib_dir / "enums.hpp",
+            DEVICE_TYPE_MEMBERS=device_type_members,
+            COMMUNICATION_CHANNEL_MEMBERS=communication_channel_members,
+            COMMUNICATION_PROTOCOL_MEMBERS=communication_protocol_members,
+            INPUT_SOURCE_MEMBERS=input_source_members,
+
+            DEVICE_TYPE_TO_STR_CONVERSIONS=device_type_to_str_conversions,
+            COMMUNICATION_CHANNEL_TO_STR_CONVERSIONS=communication_channel_to_str_conversions,
+            COMMUNICATION_PROTOCOL_TO_STR_CONVERSIONS=communication_protocol_to_str_conversions,
+            INPUT_SOURCE_TO_STR_CONVERSIONS=input_source_to_str_conversions,
+
+            STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS=str_to_communication_channel_conversions,
+            STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS=str_to_communication_protocol_conversions,
+            STR_TO_INPUT_SOURCE_CONVERSIONS=str_to_input_source_conversions
         )
         
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:

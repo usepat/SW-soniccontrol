@@ -18,6 +18,7 @@ class EFieldName(Enum):
     TS_FLAG = "ts_flag"
     PROCEDURE = "procedure"
     ERROR_CODE = "error_code"
+    ERROR_MESSAGE = "error_message"
 
     ATF = "atf"
     ATK = "atk"

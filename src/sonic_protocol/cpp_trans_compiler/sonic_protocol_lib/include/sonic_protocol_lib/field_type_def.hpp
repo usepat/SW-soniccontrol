@@ -3,6 +3,7 @@
 #include <initializer_list>
 #include <cstdint>
 
+#include "si_units.hpp"
 
 namespace sonic_protocol_lib {
 
@@ -30,27 +31,6 @@ enum class ConverterReference {
     SIGNAL,
     VERSION,
     BUILD_TYPE,
-};
-
-enum class SIUnit {
-    METER,
-    SECOND,
-    HERTZ,
-    CELSIUS,
-    AMPERE,
-    VOLTAGE,
-    PERCENT,
-    DEGREE,
-};
-
-enum class SIPrefix {
-    NANO,
-    MICRO,
-    MILLI,
-    NONE,
-    KILO,
-    MEGA,
-    GIGA,
 };
 
 template <typename T>
