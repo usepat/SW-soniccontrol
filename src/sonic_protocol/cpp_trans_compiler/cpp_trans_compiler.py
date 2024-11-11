@@ -13,10 +13,10 @@ import importlib.resources as rs
 import shutil
 import sonic_protocol.cpp_trans_compiler
 
-CPP_NULLOPT_T = "std::nullopt"
+CPP_NULLOPT = "std::nullopt"
 
 def nullopt_if_none(value):
-    return CPP_NULLOPT_T if value is None else value
+    return CPP_NULLOPT if value is None else value
 
 def convert_to_cpp_literal(value: Any) -> str:
     if isinstance(value, str):
@@ -76,7 +76,6 @@ def create_string_to_enum_conversions(enum: type[Enum]) -> str:
 
     return f"""
         {enum_member_assignments}
-        assert(false);
     """
 
 def create_enum_to_string_conversions(enum: type[Enum]) -> str:
@@ -296,8 +295,8 @@ class CppTransCompiler:
                 .type = {convert_to_enum_data_type(field_type.field_type)},
                 .converter_reference = ConverterReference::{field_type.converter_ref.name},
                 .limits = static_cast<const void *>(&{cpp_limits_var}),
-                .si_unit = {f"SIUnit::{field_type.si_unit.name}" if field_type.si_unit is not None else CPP_NULLOPT_T},
-                .si_prefix = {f"SIPrefix::{field_type.si_prefix.name}" if field_type.si_prefix is not None else CPP_NULLOPT_T}
+                .si_unit = {f"SIUnit::{field_type.si_unit.name}" if field_type.si_unit is not None else CPP_NULLOPT},
+                .si_prefix = {f"SIPrefix::{field_type.si_prefix.name}" if field_type.si_prefix is not None else CPP_NULLOPT}
             }}
         """
         
@@ -310,7 +309,7 @@ class CppTransCompiler:
         return transpilation_output
 
     def _transpile_field_limits(self, field_limits: FieldLimits, var_name: str) -> str:
-        allowed_values = convert_to_cpp_initializer_list(field_limits.allowed_values) if field_limits.allowed_values else CPP_NULLOPT_T  
+        allowed_values = convert_to_cpp_initializer_list(field_limits.allowed_values) if field_limits.allowed_values else CPP_NULLOPT  
         cpp_field_limits: str = f"""
             FieldLimits<uint32_t> {{
                 .min = {nullopt_if_none(field_limits.minimum)},

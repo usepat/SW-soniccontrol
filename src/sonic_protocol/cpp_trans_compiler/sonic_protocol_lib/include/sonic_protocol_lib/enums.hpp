@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <cassert>
+#include <optional>
 
 namespace sonic_protocol_lib {
 
@@ -32,20 +33,23 @@ enum class DeviceType : char {
 
 
 #define STR_TO_INPUT_SOURCE_CONVERSIONS assert(false);
-InputSource convert_string_to_input_source(const std::string_view &str) {
+std::optional<InputSource> convert_string_to_input_source(const std::string_view &str) {
     /**/STR_TO_INPUT_SOURCE_CONVERSIONS/**/  // the python script will replace this
+    return std::nullopt;
 }
 #undef STR_TO_INPUT_SOURCE_CONVERSIONS
 
 #define STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS assert(false);
-CommunicationChannel convert_string_to_communication_channel(const std::string_view &str) {
+std::optional<CommunicationChannel> convert_string_to_communication_channel(const std::string_view &str) {
     /**/STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS/**/  // the python script will replace this
+    return std::nullopt;
 }
 #undef STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS
 
 #define STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS assert(false);
-CommunicationProtocol convert_string_to_communication_protocol(const std::string_view &str) {
+std::optional<CommunicationProtocol> convert_string_to_communication_protocol(const std::string_view &str) {
     /**/STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS/**/  // the python script will replace this
+    return std::nullopt;
 }
 #undef STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS
 
