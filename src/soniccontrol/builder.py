@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple, Union
 import attrs
 
 from sonic_protocol import protocol
-from sonic_protocol.defs import CommandCode, DeviceType, FieldPath, Version
+from sonic_protocol.defs import CommandCode, DeviceType, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 from soniccontrol.command import LegacyAnswerValidator, LegacyCommand

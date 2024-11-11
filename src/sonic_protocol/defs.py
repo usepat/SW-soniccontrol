@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Any, Dict, List, Tuple, TypeVar, Generic
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, Generic, Union
 import attrs
 
 from sonic_protocol.command_codes import CommandCode
@@ -112,12 +112,12 @@ class MetaExportDescriptor:
     The MetaExportDescriptor is used to define the conditions under which the export is valid.
     """
     min_protocol_version: Version = attrs.field(converter=Version.to_version) #! The minimum protocol version that is required for this export  
-    deprecated_protocol_version: Version | None = attrs.field(
+    deprecated_protocol_version: Optional[Version] = attrs.field(
         converter=attrs.converters.optional(Version.to_version), # this is needed to support none values
         default=None
     ) #! The protocol version after which this export is deprecated, so it is the maximum version
-    included_device_types: List[DeviceType] | None = attrs.field(default=None) #! The device types that are included in this export
-    excluded_device_types: List[DeviceType] | None = attrs.field(default=None) #! The device types that are excluded from this export
+    included_device_types: Optional[List[DeviceType]] = attrs.field(default=None) #! The device types that are included in this export
+    excluded_device_types: Optional[List[DeviceType]] = attrs.field(default=None) #! The device types that are excluded from this export
 
     def is_valid(self, version: Version, device_type: DeviceType) -> bool:
         if self.min_protocol_version > version:
@@ -154,17 +154,16 @@ class SonicTextAnswerAttrs:
 
 @attrs.define(auto_attribs=True)
 class SonicTextCommandAttrs:
-    string_identifier: str | List[str] = attrs.field() #! The string identifier is used to identify the command
+    string_identifier: Union[str, List[str]] = attrs.field() #! The string identifier is used to identify the command
     kwargs: Dict[str, Any] = attrs.field(default={}) #! The kwargs are passed to the communicator. Needed for the old legacy communicator
 
 @attrs.define(auto_attribs=True)
 class UserManualAttrs:
-    description: str | None = attrs.field(default=None)
-    example: str | None = attrs.field(default=None)
-
+    description: Optional[str] = attrs.field(default=None)
+    example: Optional[str] = attrs.field(default=None)
 
 T = TypeVar("T", int, float, bool, str, Version, Enum)
-AttrsExport = E | List[MetaExport[E]]
+AttrsExport = Union[E, List[MetaExport[E]]]
 
 @attrs.define(auto_attribs=True)
 class FieldType(Generic[T]):
@@ -173,11 +172,11 @@ class FieldType(Generic[T]):
     Can be used for an answer field or command parameter.
     """
     field_type: type[T] = attrs.field()
-    allowed_values: List[T] | None = attrs.field(default=None)
-    max_value: T | None | DeviceParamConstantType = attrs.field(default=None)
-    min_value: T | None | DeviceParamConstantType = attrs.field(default=None)
-    si_unit: SIUnit | None = attrs.field(default=None)
-    si_prefix: SIPrefix | None = attrs.field(default=None)
+    allowed_values: Optional[List[T]] = attrs.field(default=None)
+    max_value: Union[T, None, DeviceParamConstantType] = attrs.field(default=None)
+    min_value: Union[T, None, DeviceParamConstantType] = attrs.field(default=None)
+    si_unit: Optional[SIUnit] = attrs.field(default=None)
+    si_prefix: Optional[SIPrefix] = attrs.field(default=None)
     converter_ref: ConverterType = attrs.field(default=ConverterType.PRIMITIVE) #! converters are defined in the code and the protocol only references to them
 
 
@@ -187,9 +186,9 @@ def to_field_type(value: Any) -> FieldType:
     return FieldType(value)
 
 @attrs.define(auto_attribs=True)
-class CommandParamDef(Generic[T]):
+class CommandParamDef():
     name: EFieldName = attrs.field(converter=EFieldName)
-    param_type: FieldType[T] = attrs.field(converter=to_field_type)
+    param_type: FieldType = attrs.field(converter=to_field_type)
     user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
 
 @attrs.define(auto_attribs=True)
@@ -200,34 +199,18 @@ class CommandDef():
     Additional params are not defined yet. And not foreseen for the future.
     """
     sonic_text_attrs: AttrsExport[SonicTextCommandAttrs] = attrs.field()
-    index_param: CommandParamDef | None = attrs.field(default=None)
-    setter_param: CommandParamDef | None = attrs.field(default=None)
+    index_param: Optional[CommandParamDef] = attrs.field(default=None)
+    setter_param: Optional[CommandParamDef] = attrs.field(default=None)
     user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
 
-@attrs.define(auto_attribs=True, hash=True)
-class DerivedFromParam:
-    """!
-    DerivedFromParam is used to define that the field name is derived from a command parameter.
-    We need this flexibility to support commands like atk and atf, where we cannot deduce else wise for
-    which atf 0-4 we are talking about.
-    """
-    param: EFieldName = attrs.field(converter=EFieldName)
-
-FieldName = EFieldName | DerivedFromParam
-FieldPath = Tuple[FieldName, ...]
-
-def to_field_path(value: Any) -> FieldPath:
-    if isinstance(value, (list, set, tuple)):
-        return tuple(map(lambda v: v if isinstance(v, DerivedFromParam) else EFieldName(v), value))
-    return (EFieldName(value), )
 
 @attrs.define(auto_attribs=True)
-class AnswerFieldDef(Generic[T]):
+class AnswerFieldDef():
     """!
     The AnswerFieldDef defines a field in the answer of a command.
     """
-    field_path: FieldPath = attrs.field(converter=to_field_path) #! The field path is used to define the attribute name. It is a path to support nested attributes
-    field_type: FieldType[T] = attrs.field(converter=to_field_type)
+    field_path: EFieldName = attrs.field() #! The field path is used to define the attribute name. It is a path to support nested attributes
+    field_type: FieldType = attrs.field(converter=to_field_type)
     user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
     sonic_text_attrs: AttrsExport[SonicTextAnswerFieldAttrs] = attrs.field(default=SonicTextAnswerFieldAttrs())
 
@@ -250,8 +233,8 @@ class CommandContract:
     It is a contract on how to communicate with each other.
     """
     code: CommandCode = attrs.field()
-    command_defs: CommandDef | List[MetaExport[CommandDef]] = attrs.field()
-    answer_defs: AnswerDef | List[MetaExport[AnswerDef]] = attrs.field()
+    command_defs: Union[CommandDef, List[MetaExport[CommandDef]]] = attrs.field()
+    answer_defs: Union[AnswerDef, List[MetaExport[AnswerDef]]] = attrs.field()
     is_release: bool = attrs.field(default=False) #! some commands are only for debugging. They should not be included in release
     tags: List[str] = attrs.field(default=[]) #! tags are used to group commands and to filter them
     user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
@@ -269,7 +252,7 @@ class Protocol:
     for which version and device type the command is valid.
     """
     version: Version = attrs.field()
-    commands: List[CommandExport | CommandListExport] = attrs.field()
-    consts: DeviceParamConstants | List[MetaExport[DeviceParamConstants]] = attrs.field(default=DeviceParamConstants())
+    commands: List[Union[CommandExport, CommandListExport]] = attrs.field()
+    consts: Union[DeviceParamConstants, List[MetaExport[DeviceParamConstants]]] = attrs.field(default=DeviceParamConstants())
 
 

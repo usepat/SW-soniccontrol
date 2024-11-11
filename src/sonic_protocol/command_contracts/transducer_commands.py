@@ -1,6 +1,6 @@
 from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative
 from sonic_protocol.defs import (
-	CommandCode, DerivedFromParam, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
+	CommandCode, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
 	AnswerFieldDef, CommandContract
 )
 from sonic_protocol.field_names import EFieldName
@@ -232,7 +232,7 @@ param_index = CommandParamDef(
 )
 
 field_atf = AnswerFieldDef(
-    field_path=[EFieldName.ATF, DerivedFromParam(EFieldName.INDEX)],
+    field_path=EFieldName.ATF,
     field_type=field_type_frequency
 )
 
@@ -274,7 +274,7 @@ set_atf = CommandContract(
 )
 
 field_att = AnswerFieldDef(
-    field_path=[EFieldName.ATT, DerivedFromParam(EFieldName.INDEX)],
+    field_path=EFieldName.ATT,
     field_type=field_type_temperature
 )
 
@@ -316,7 +316,7 @@ set_att = CommandContract(
 )
 
 field_atk = AnswerFieldDef(
-    field_path=[EFieldName.ATK, DerivedFromParam(EFieldName.INDEX)],
+    field_path=EFieldName.ATK,
     field_type=FieldType(float)
 )
 

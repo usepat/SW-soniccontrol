@@ -29,7 +29,7 @@ version = Version(major=1, minor=0, patch=0)
 """
 
 field_device_type = AnswerFieldDef(
-    field_path=[EFieldName.DEVICE_TYPE],
+    field_path=EFieldName.DEVICE_TYPE,
     field_type=FieldType(DeviceType, converter_ref=ConverterType.ENUM),
 )
 
@@ -45,7 +45,7 @@ get_protocol = CommandContract(
             field_device_type,
             create_version_field(EFieldName.PROTOCOL_VERSION),
             AnswerFieldDef(
-                field_path=[EFieldName.IS_RELEASE], 
+                field_path=EFieldName.IS_RELEASE, 
                 field_type=FieldType(bool, converter_ref=ConverterType.BUILD_TYPE), 
             )
         ]
@@ -54,12 +54,12 @@ get_protocol = CommandContract(
 )
 
 build_date_field = AnswerFieldDef(
-    field_path=[EFieldName.BUILD_DATE],
+    field_path=EFieldName.BUILD_DATE,
     field_type=FieldType(str)
 )
 
 build_hash_field = AnswerFieldDef(
-    field_path=[EFieldName.BUILD_HASH],
+    field_path=EFieldName.BUILD_HASH,
     field_type=FieldType(str)
 )
 
@@ -92,7 +92,7 @@ list_available_commands = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_path=[EFieldName.LIST_COMMANDS],
+                field_path=EFieldName.LIST_COMMANDS,
                 field_type=FieldType(str)
             )
         ]
@@ -114,7 +114,7 @@ get_help = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_path=[EFieldName.HELP],
+                field_path=EFieldName.HELP,
                 field_type=FieldType(str)
             )
         ]
@@ -127,12 +127,12 @@ get_help = CommandContract(
 )
 
 error_code_field = AnswerFieldDef(
-    field_path=[EFieldName.ERROR_CODE],
+    field_path=EFieldName.ERROR_CODE,
     field_type=FieldType(field_type=int)
 )
 
 procedure_field = AnswerFieldDef(
-    field_path=[EFieldName.PROCEDURE],
+    field_path=EFieldName.PROCEDURE,
     field_type=FieldType(field_type=int)
 )
 
