@@ -2,7 +2,7 @@ from sonic_protocol.defs import DeviceParamConstantType, DeviceType, FieldType, 
 from sonic_protocol.field_names import EFieldName
 
 field_termination = AnswerFieldDef(
-	field_path=EFieldName.TERMINATION,
+	field_name=EFieldName.TERMINATION,
 	field_type=FieldType(field_type=bool),
 )
 
@@ -12,7 +12,7 @@ field_type_comm_channel = FieldType(
 )
 
 field_device_type = AnswerFieldDef(
-	field_path=EFieldName.DEVICE_TYPE,
+	field_name=EFieldName.DEVICE_TYPE,
 	field_type=FieldType(DeviceType, converter_ref=ConverterType.ENUM),
 )
 
@@ -25,7 +25,7 @@ field_type_frequency = FieldType(
 )
 
 field_frequency = AnswerFieldDef(
-    field_path=EFieldName.FREQUENCY,
+    field_name=EFieldName.FREQUENCY,
     field_type=field_type_frequency,
 )
 
@@ -38,12 +38,12 @@ field_type_gain = FieldType(
 )
 
 field_gain = AnswerFieldDef(
-    field_path=EFieldName.GAIN,
+    field_name=EFieldName.GAIN,
     field_type=field_type_gain
 )
 
 field_signal = AnswerFieldDef(
-    field_path=EFieldName.SIGNAL,
+    field_name=EFieldName.SIGNAL,
     field_type=FieldType(field_type=bool, converter_ref=ConverterType.SIGNAL),
 )
 
@@ -56,7 +56,7 @@ swf_field_type = FieldType(
 )
 
 field_swf = AnswerFieldDef(
-    field_path=EFieldName.SWF,
+    field_name=EFieldName.SWF,
     field_type=swf_field_type
 )
 
@@ -67,7 +67,7 @@ field_type_temperature = FieldType(
 )
 
 field_temperature = AnswerFieldDef(
-    field_path=EFieldName.TEMPERATURE,
+    field_name=EFieldName.TEMPERATURE,
     field_type=field_type_temperature
 )
 
@@ -96,26 +96,26 @@ ts_flag_field_type = FieldType(
 )
 
 field_urms = AnswerFieldDef(
-    field_path=EFieldName.URMS,
+    field_name=EFieldName.URMS,
     field_type=urms_field_type
 )
 
 field_irms = AnswerFieldDef(
-    field_path=EFieldName.IRMS,
+    field_name=EFieldName.IRMS,
     field_type=irms_field_type
 )
 
 field_phase = AnswerFieldDef(
-    field_path=EFieldName.PHASE,
+    field_name=EFieldName.PHASE,
     field_type=phase_field_type
 )
 
 field_ts_flag = AnswerFieldDef(
-    field_path=EFieldName.TS_FLAG,
+    field_name=EFieldName.TS_FLAG,
     field_type=ts_flag_field_type
 )
 
 field_unknown_answer = AnswerFieldDef(
-	field_path=EFieldName.UNKNOWN_ANSWER,
+	field_name=EFieldName.UNKNOWN_ANSWER,
 	field_type=FieldType(str)
 )

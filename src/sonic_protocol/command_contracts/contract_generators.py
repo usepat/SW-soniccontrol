@@ -6,7 +6,7 @@ from sonic_protocol.field_names import EFieldName
 
 def create_version_field(name: EFieldName) -> AnswerFieldDef:
     return AnswerFieldDef(
-        field_path=[name], 
+        field_name=name, 
         field_type=FieldType(Version, converter_ref=ConverterType.VERSION), 
     )
 

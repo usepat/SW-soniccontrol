@@ -209,7 +209,7 @@ class AnswerFieldDef():
     """!
     The AnswerFieldDef defines a field in the answer of a command.
     """
-    field_path: EFieldName = attrs.field() #! The field path is used to define the attribute name. It is a path to support nested attributes
+    field_name: EFieldName = attrs.field() #! The field path is used to define the attribute name. It is a path to support nested attributes
     field_type: FieldType = attrs.field(converter=to_field_type)
     user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
     sonic_text_attrs: AttrsExport[SonicTextAnswerFieldAttrs] = attrs.field(default=SonicTextAnswerFieldAttrs())

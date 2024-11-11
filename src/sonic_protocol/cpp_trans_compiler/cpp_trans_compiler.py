@@ -6,7 +6,7 @@ from typing import Any, Generic, List, Literal, TypeVar
 import attrs
 from sonic_protocol import protocol as prot
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import DerivedFromParam, FieldPath, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 import importlib.resources as rs
@@ -92,17 +92,6 @@ def create_enum_to_string_conversions(enum: type[Enum]) -> str:
         }}
         assert(false);
     """
-
-def convert_field_path_to_cpp(field_path: FieldPath) -> str:
-    converted_fields = []
-    for field_name in field_path:
-        if isinstance(field_name, DerivedFromParam):
-            # derived fields are just saved as the negative field_name enum value
-            converted_field =  "-(FieldName_t)" + convert_to_cpp_field_name(field_name.param)
-        else:
-            converted_field = "(FieldName_t)" + convert_to_cpp_field_name(field_name)
-        converted_fields.append(converted_field)
-    return "{" + ", ".join(converted_fields) + "}"
 
 @attrs.define()
 class ProtocolVersion:
@@ -281,7 +270,7 @@ class CppTransCompiler:
         assert isinstance(field.sonic_text_attrs, SonicTextAnswerFieldAttrs)
         cpp_answer_field_def: str = f"""
             AnswerFieldDef {{
-                .path = {convert_field_path_to_cpp(field.field_path)},
+                .name = {convert_to_cpp_field_name(field.field_name)},
                 .type = {self._transpile_field_type(field.field_type)},
                 .prefix = "{field.sonic_text_attrs.prefix}",
                 .postfix = "{field.sonic_text_attrs.postfix}"

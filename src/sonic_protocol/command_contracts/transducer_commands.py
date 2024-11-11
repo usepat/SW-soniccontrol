@@ -232,7 +232,7 @@ param_index = CommandParamDef(
 )
 
 field_atf = AnswerFieldDef(
-    field_path=EFieldName.ATF,
+    field_name=EFieldName.ATF,
     field_type=field_type_frequency
 )
 
@@ -274,7 +274,7 @@ set_atf = CommandContract(
 )
 
 field_att = AnswerFieldDef(
-    field_path=EFieldName.ATT,
+    field_name=EFieldName.ATT,
     field_type=field_type_temperature
 )
 
@@ -316,7 +316,7 @@ set_att = CommandContract(
 )
 
 field_atk = AnswerFieldDef(
-    field_path=EFieldName.ATK,
+    field_name=EFieldName.ATK,
     field_type=FieldType(float)
 )
 

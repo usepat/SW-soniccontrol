@@ -5,10 +5,9 @@
 
 namespace sonic_protocol_lib {
 
-using FieldPath = std::initializer_list<FieldName_t>;
 
 struct AnswerFieldDef {
-    FieldPath path {{}};
+    FieldName name;
     FieldTypeDef type;
     std::string_view prefix {""};
     std::string_view postfix {""};

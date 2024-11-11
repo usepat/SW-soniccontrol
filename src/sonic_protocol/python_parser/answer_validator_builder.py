@@ -1,15 +1,15 @@
 from typing import Dict, List
 from sonic_protocol.python_parser.answer import AfterConverter, AnswerValidator
 from sonic_protocol.python_parser.converters import Converter, get_converter
-from sonic_protocol.defs import AnswerDef, AnswerFieldDef, ConverterType, FieldPath
+from sonic_protocol.defs import AnswerDef, AnswerFieldDef, ConverterType, EFieldName
 
 
 class AnswerValidatorBuilder:
     def create_answer_validator(self, answer_def: AnswerDef) -> AnswerValidator: 
-        value_dict: Dict[FieldPath, Converter | AfterConverter] = {}
+        value_dict: Dict[EFieldName, Converter | AfterConverter] = {}
         for field in answer_def.fields:
             field_type = field.field_type.field_type
-            value_dict[field.field_path] = get_converter(field.field_type.converter_ref, field_type)
+            value_dict[field.field_name] = get_converter(field.field_type.converter_ref, field_type)
 
         regex = self._create_regex_for_answer(answer_def)
         

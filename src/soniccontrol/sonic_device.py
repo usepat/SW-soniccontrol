@@ -3,9 +3,9 @@ import logging
 from typing import Any, Dict
 
 import attrs
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.python_parser.commands import Command
-from sonic_protocol.defs import FieldPath
 from sonic_protocol.protocol_builder import CommandLookUpTable
 from soniccontrol.command_executor import CommandExecutor
 from soniccontrol.device_data import Info, Status
@@ -51,7 +51,7 @@ class SonicDevice(Scriptable):
         self,
         command: Command | str,
         should_log: bool = True,
-        status_kwargs_if_valid_command: Dict[FieldPath, Any] = {},
+        status_kwargs_if_valid_command: Dict[EFieldName, Any] = {},
         **kwargs
     ) -> Answer:
         """

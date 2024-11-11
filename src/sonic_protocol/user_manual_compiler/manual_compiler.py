@@ -85,7 +85,7 @@ class MarkdownManualCompiler(ManualCompiler):
         if isinstance(description_attrs, UserManualAttrs):
             description = description_attrs.description
 
-        field_path = make_field_path_alias(field_def.field_path)
+        field_path = make_field_path_alias(field_def.field_name)
         field_entry = self.create_field_type_entry(field_path, field_def.field_type, description)
 
         return field_entry

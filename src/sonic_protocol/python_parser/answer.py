@@ -9,18 +9,7 @@ import attrs
 
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.converters import Converter
-from sonic_protocol.defs import CommandCode, DerivedFromParam, FieldName, FieldPath
-
-
-def convert_field_name_to_str(field_name: FieldName):
-    if isinstance(field_name, DerivedFromParam):
-        return "x_" + field_name.param.value
-    if isinstance(field_name, EFieldName):
-        return field_name.value
-    return str(field_name)
-
-def make_field_path_alias(field_path: FieldPath):
-    return "__".join(map(convert_field_name_to_str, field_path))
+from sonic_protocol.defs import CommandCode, EFieldName
 
 
 @attrs.define()    
@@ -30,7 +19,7 @@ class Answer:
     valid: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
     was_validated: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
     command_code: CommandCode | None = attrs.field(default=None)
-    field_value_dict: Dict[FieldPath, Any] = attrs.field(default={})
+    field_value_dict: Dict[EFieldName, Any] = attrs.field(default={})
     # received_timestamp: float = attrs.field(factory=time.time, init=False, on_setattr=attrs.setters.NO_OP)
 
     def is_error_msg(self) -> bool:
@@ -38,20 +27,7 @@ class Answer:
 
     @property
     def value_dict(self) -> Dict[str, Any]:
-        return { make_field_path_alias(k): v for k, v in self.field_value_dict.items() }
-
-    def update_field_paths(self, params: Dict[str, Any]):
-        def update_field_name(field_name: FieldName) -> FieldName:
-            if isinstance(field_name, DerivedFromParam) and field_name.param in params:
-                return params[field_name.param]
-            return field_name
-
-        updated_dict: Dict[FieldPath, Any] = {}
-        for field_path, value in self.field_value_dict.items():
-            updated_field_path = tuple(map(update_field_name, field_path))
-            updated_dict[updated_field_path] = value
-        self.field_value_dict = updated_dict
-
+        return { k.value: v for k, v in self.field_value_dict.items() }
 
 
 @attrs.define()
@@ -64,16 +40,16 @@ class AfterConverter:
 class AnswerValidator:
     pattern: str = attrs.field(on_setattr=attrs.setters.NO_OP)
     _named_pattern: str = attrs.field(init=False)
-    _converters: Dict[FieldPath, Converter] = attrs.field(init=False, repr=False)
-    _after_converters: Dict[FieldPath, AfterConverter] = attrs.field(init=False, repr=False)
+    _converters: Dict[EFieldName, Converter] = attrs.field(init=False, repr=False)
+    _after_converters: Dict[EFieldName, AfterConverter] = attrs.field(init=False, repr=False)
     _compiled_pattern: re.Pattern[str] = attrs.field(init=False, repr=False)
-    _field_path_aliases: Dict[str, FieldPath] = attrs.field(init=False, default={})
+    _field_names: Dict[str, EFieldName] = attrs.field(init=False, default={})
 
 
     def __init__(
         self,
         pattern: str,
-        field_converters: Dict[FieldPath, Converter | AfterConverter] = {},
+        field_converters: Dict[EFieldName, Converter | AfterConverter] = {},
     ) -> None:
         """
         Initializes the CommandValidator instance with the specified pattern and converters.
@@ -105,8 +81,8 @@ class AnswerValidator:
         Returns:
             None
         """
-        workers: dict[FieldPath, Converter] = dict()
-        after_workers: dict[FieldPath, AfterConverter] = dict()
+        workers: dict[EFieldName, Converter] = dict()
+        after_workers: dict[EFieldName, AfterConverter] = dict()
 
         for keyword, worker in field_converters.items():
             if isinstance(worker, AfterConverter):
@@ -118,13 +94,10 @@ class AnswerValidator:
         self.pattern = pattern
         self._converters = workers
         self._after_converters = after_workers
-        self._field_path_aliases = {}
-        for field_path in self._converters.keys():
-            alias = make_field_path_alias(field_path)
-            self._field_path_aliases[alias] = field_path
+        self._field_names = [field_name.value for field_name in self._converters.keys()]
             
         self._named_pattern = self.generate_named_pattern(
-            pattern=self.pattern, keywords=list(self._field_path_aliases.keys())
+            pattern=self.pattern, keywords=self._field_names
         )
         self._compiled_pattern = re.compile(
             pattern=self._named_pattern,
@@ -191,22 +164,22 @@ class AnswerValidator:
         if result is None:
             return Answer(data, False, True)
 
-        result_dict: Dict[FieldPath, Any] = {}
+        result_dict: Dict[EFieldName, Any] = {}
         for keyword, value in result.groupdict().items():
-            field_path = self._field_path_aliases[keyword]
-            converter = self._converters[field_path]
+            field_name = EFieldName(keyword)
+            converter = self._converters[field_name]
 
             if not converter.validate_val(value):
                 return Answer(data, False, True) 
-            result_dict[field_path] = converter.convert_val(value)
+            result_dict[field_name] = converter.convert_val(value)
 
-        for field_path, worker in self._after_converters.items():
+        for field_name, worker in self._after_converters.items():
             kwargs = {
-                k: result_dict.get(self._field_path_aliases[k])
+                k: result_dict.get(field_name)
                 for k in worker.keywords
                 if k in result.groupdict()
             }
-            result_dict[field_path] = worker.convert_func(kwargs)
+            result_dict[field_name] = worker.convert_func(kwargs)
 
         answer = Answer(data, True, True, field_value_dict=result_dict)
 

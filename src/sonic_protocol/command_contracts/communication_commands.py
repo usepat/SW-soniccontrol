@@ -5,7 +5,7 @@ from sonic_protocol.defs import (
 from sonic_protocol.field_names import EFieldName
 
 field_termination = AnswerFieldDef(
-    field_path=[EFieldName.TERMINATION],
+    field_name=EFieldName.TERMINATION,
     field_type=FieldType(field_type=bool),
 )
 
@@ -35,7 +35,7 @@ field_type_comm_channel = FieldType(
     converter_ref=ConverterType.ENUM
 )
 field_comm_channel = AnswerFieldDef(
-    field_path=(EFieldName.COMMUNICATION_CHANNEL, ),
+    field_name=EFieldName.COMMUNICATION_CHANNEL,
     field_type=field_type_comm_channel,
 )
 
@@ -65,7 +65,7 @@ field_type_comm_protocol = FieldType(
     converter_ref=ConverterType.ENUM
 )
 field_comm_protocol = AnswerFieldDef(
-    field_path=[EFieldName.COMMUNICATION_PROTOCOL],
+    field_name=EFieldName.COMMUNICATION_PROTOCOL,
     field_type=field_type_comm_protocol
 )
 
@@ -95,7 +95,7 @@ field_type_input_source = FieldType(
     converter_ref=ConverterType.ENUM
 )
 field_input_source = AnswerFieldDef(
-    field_path=[EFieldName.INPUT_SOURCE],
+    field_name=EFieldName.INPUT_SOURCE,
     field_type=field_type_input_source
 )
 
@@ -125,6 +125,6 @@ field_type_comm_channel = FieldType(
     converter_ref=ConverterType.ENUM
 )
 field_comm_channel = AnswerFieldDef(
-    field_path=[EFieldName.COMMUNICATION_CHANNEL],
+    field_name=EFieldName.COMMUNICATION_CHANNEL,
     field_type=field_type_comm_channel,
 )

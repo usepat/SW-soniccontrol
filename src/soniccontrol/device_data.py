@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, Literal
 import attrs
 from icecream import ic
 
-from sonic_protocol.defs import DerivedFromParam, FieldPath, Version
+from sonic_protocol.defs import Version
 from sonic_protocol.field_names import EFieldName
 
 
@@ -44,78 +44,27 @@ class Status:
 
     def __attrs_post_init__(self):
         self._changed: asyncio.Event = asyncio.Event()
-        self._changed_data: Dict[FieldPath, Any] = {}
+        self._changed_data: Dict[EFieldName, Any] = {}
         self._remote_proc_finished_running: asyncio.Event = asyncio.Event()
         
-    def __getitem__(self, key: FieldPath | EFieldName) -> Any:
-        if isinstance(key, EFieldName):
-            return getattr(self, key.value)
+    def __getitem__(self, key: EFieldName) -> Any:
+        return getattr(self, key.value)
         
-        field_name = key[0]
-        assert (isinstance(field_name, EFieldName))
-        field = getattr(self, field_name.value)
-        
-        if len(key) == 1:
-            return field
-        elif len(key) == 2:
-            if isinstance(field, Dict):
-                assert (not isinstance(key[1], DerivedFromParam))
-                return field[key[1]]
-        
-        raise NotImplementedError()
-        # TODO: we could extend this to handle a path that is of arbitrary length
-        # YAGNI: only do this at the point where it is really needed
-        # Until then it will stay like this
-        
-
-    def __setitem__(self, key: FieldPath | EFieldName, value: Any):
-        if isinstance(key, EFieldName):
-            setattr(self, key.value, value)
-            return
-
-        field_name = key[0]
-        assert (isinstance(field_name, EFieldName))
-        
-        if len(key) == 1:
-            setattr(self, field_name.value, value)
-            return
-        elif len(key) == 2:
-            field = getattr(self, field_name.value)
-
-            if isinstance(field, Dict):
-                assert (not isinstance(key[1], DerivedFromParam))
-                field[key[1]] = value
-                return 
-
-        raise NotImplementedError()
+    def __setitem__(self, key: EFieldName, value: Any):
+        setattr(self, key.value, value)
 
 
-    def has_attr(self, key: FieldPath | EFieldName) -> bool:
-        if isinstance(key, EFieldName):
-            return hasattr(self, key.value)
-
-        field_name = key[0]
-        assert (isinstance(field_name, EFieldName))
-        
-        if len(key) == 1:
-            return hasattr(self, field_name.value)
-        elif len(key) == 2:
-            field = getattr(self, field_name.value)
-            
-            if isinstance(field, Dict):
-                assert (not isinstance(key[1], DerivedFromParam))
-                return key[1] in field
-        # Yeah, it is already 18:24. You can read the time and my tiredness by the quality of this shitty code
-        raise NotImplementedError()
+    def has_attr(self, key: EFieldName) -> bool:
+        return hasattr(self, key.value)
 
     @property 
     def remote_proc_finished_running(self) -> asyncio.Event:
         return self._remote_proc_finished_running
 
-    async def update(self, fields: Dict[FieldPath, Any]) -> Status:
+    async def update(self, fields: Dict[EFieldName, Any]) -> Status:
         self._changed.clear()
         self._changed_data.clear()
-        timestamp_key: FieldPath = (EFieldName.TIME_STAMP, )
+        timestamp_key: EFieldName = EFieldName.TIME_STAMP
         fields[timestamp_key] = (
             datetime.datetime.now()
             if timestamp_key not in fields
