@@ -41,12 +41,10 @@ class SpectrumMeasure(Procedure):
         values = [start + i * args.step for i in range(int((stop - start) / args.step)) ]
 
         try:
-            await self._updater.stop()
             await device.get_overview()
             await self._ramp(device, list(values), args.hold_on, args.hold_off)
         finally:
             await device.set_signal_off()
-            self._updater.start()
 
     async def _ramp(
         self,

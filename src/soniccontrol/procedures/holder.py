@@ -31,6 +31,8 @@ def convert_to_holder_args(obj: Any) -> HolderArgs:
         return HolderArgs(*obj)
     elif isinstance(obj, HolderArgs):
         return obj
+    elif isinstance(obj, int):
+        return HolderArgs(obj, "s")
     else:
         raise TypeError(f"No known conversion from {type(obj)} to {HolderArgs}")
 
