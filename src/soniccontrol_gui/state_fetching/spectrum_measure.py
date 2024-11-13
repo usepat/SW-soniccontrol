@@ -42,7 +42,7 @@ class SpectrumMeasure(Procedure):
 
         try:
             await device.get_overview()
-            await self._ramp(device, list(values), args.hold_on, args.hold_off)
+            await self._ramp(device, list(values), args.hold_on, args.hold_off, args.time_offset_measure)
         finally:
             await device.set_signal_off()
 
@@ -52,6 +52,7 @@ class SpectrumMeasure(Procedure):
         values: List[Union[int, float]],
         hold_on: HolderArgs,
         hold_off: HolderArgs,
+        time_offset_measure: HolderArgs
     ) -> None:
         for  i in range(len(values)):
             value = values[i]
@@ -59,8 +60,9 @@ class SpectrumMeasure(Procedure):
             await device.execute_command(f"!f={value}") # FIXME use internal freq command of device
             if hold_off.duration:
                 await device.set_signal_on()
+            await Holder.execute(time_offset_measure)
             asyncio.get_running_loop().create_task(self._updater.update())
-            await Holder.execute(hold_on)
+            await Holder.execute(hold_on - time_offset_measure)
 
             if hold_off.duration:
                 await device.set_signal_off()
