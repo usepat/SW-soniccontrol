@@ -35,9 +35,9 @@ enum class ConverterReference {
 
 template <typename T>
 struct FieldLimits {
-    constexpr std::optional<T> min;
-    constexpr std::optional<T> max;
-    constexpr std::optional<std::initializer_list<T>> allowed_values;
+    std::optional<T> min;
+    std::optional<T> max;
+    std::optional<std::initializer_list<T>> allowed_values;
 };
 
 struct FieldTypeDef {
