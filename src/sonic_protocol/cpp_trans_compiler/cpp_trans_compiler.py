@@ -110,24 +110,13 @@ class CppTransCompiler:
         self._var_id_counter: int = 0
         self._field_limits_cache: dict[FieldLimits, str] = {}
 
-    def generate_transpiled_protocol_lib(self, protocol: Protocol, protocol_versions: List[ProtocolVersion], output_dir: Path): 
-        self._var_id_counter = 0
-        
+    def generate_sonic_protocol_lib(self, output_dir: Path):
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
         shutil.copytree(Path(str(lib_path)), output_dir)
     
         lib_dir = output_dir / "include" / "sonic_protocol_lib"
-        protocol_count = len(protocol_versions)
-        protocols = self._transpile_protocols(protocol, protocol_versions)
-        field_limits = self._transpile_field_limits_from_cache()
-        self._inject_code_into_file(
-            lib_dir / "protocol.hpp", 
-            PROTOCOLS=protocols, 
-            PROTOCOL_COUNT=protocol_count, 
-            FIELD_LIMITS=field_limits
-        )
 
         field_name_members = convert_to_cpp_enum_members(EFieldName)
         self._inject_code_into_file(
@@ -182,6 +171,23 @@ class CppTransCompiler:
             STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS=str_to_communication_channel_conversions,
             STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS=str_to_communication_protocol_conversions,
             STR_TO_INPUT_SOURCE_CONVERSIONS=str_to_input_source_conversions
+        )
+
+    def generate_transpiled_protocol(self, protocol: Protocol, protocol_versions: List[ProtocolVersion], output_dir: Path): 
+        self._var_id_counter = 0
+        
+        protocol_template_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib").joinpath("generated_protocol.hpp")
+        generated_protocol_path = output_dir / "generated_protocol.hpp"
+        shutil.copyfile(str(protocol_template_path), generated_protocol_path)
+
+        protocol_count = len(protocol_versions)
+        protocols = self._transpile_protocols(protocol, protocol_versions)
+        field_limits = self._transpile_field_limits_from_cache()
+        self._inject_code_into_file(
+            generated_protocol_path, 
+            PROTOCOLS=protocols, 
+            PROTOCOL_COUNT=protocol_count, 
+            FIELD_LIMITS=field_limits
         )
         
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
@@ -323,11 +329,15 @@ class CppTransCompiler:
 
 if __name__ == "__main__":
     compiler = CppTransCompiler()
-    compiler.generate_transpiled_protocol_lib(
+    output_dir=Path("./generated")
+    compiler.generate_sonic_protocol_lib(
+        output_dir=output_dir
+    )
+    compiler.generate_transpiled_protocol(
         protocol=prot.protocol,
         protocol_versions=[
             ProtocolVersion(Version(1, 0, 0), DeviceType.MVP_WORKER),
             ProtocolVersion(Version(1, 0, 0), DeviceType.DESCALE),
         ],
-        output_dir=Path("./generated")
+        output_dir=output_dir
     )
