@@ -41,6 +41,6 @@ class EFieldName(Enum):
     TERMINATION = "termination"
 
     TIME_STAMP = "time_stamp"
-
+    TIMING = "timing"
     INDEX = "index"
 
