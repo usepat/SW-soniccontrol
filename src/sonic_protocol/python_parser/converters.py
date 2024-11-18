@@ -33,6 +33,21 @@ class SignalConverter(Converter):
     def convert_str(self, text: str) -> Any:
         assert(self.validate_str(text))
         return text.lower() in ["true", "on"]
+    
+class TerminationConverter(Converter):
+    def validate_val(self, value: Any) -> bool: 
+        return isinstance(value, bool)
+
+    def convert_val(self, value: Any) -> str: 
+        assert(self.validate_val(value))
+        return "activated" if value else "deactivated"
+    
+    def validate_str(self, text: str) -> bool: 
+        return "activated" in text or "deactivated" in text
+
+    def convert_str(self, text: str) -> Any:
+        assert(self.validate_str(text))
+        return "activated" in text
 
 class VersionConverter(Converter):
     def validate_val(self, value: Any) -> bool:
@@ -117,6 +132,8 @@ def get_converter(converter_type: ConverterType, target_class: Any) -> Converter
     match converter_type:
         case ConverterType.SIGNAL:
             return SignalConverter()
+        case ConverterType.TERMINATION:
+            return TerminationConverter()
         case ConverterType.ENUM:
             assert(issubclass(target_class, Enum))
             return EnumConverter(target_class)

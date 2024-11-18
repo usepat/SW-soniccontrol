@@ -74,6 +74,7 @@ class ConverterType(Enum):
     ENUM = auto()
     BUILD_TYPE = auto()
     PRIMITIVE = auto()
+    TERMINATION = auto()
 
 class InputSource(Enum):
     MANUAL = "manual" #! control by the user pressing buttons on the device
