@@ -20,6 +20,7 @@ enum class DataType {
     E_COMMUNICATION_CHANNEL,
     E_COMMUNICATION_PROTOCOL,
     E_INPUT_SOURCE,
+    E_PROCEDURE
 
     // Classes
     VERSION,
