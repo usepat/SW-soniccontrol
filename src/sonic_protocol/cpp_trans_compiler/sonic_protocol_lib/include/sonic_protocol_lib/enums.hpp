@@ -31,6 +31,11 @@ enum class DeviceType : char {
 };
 #undef DEVICE_TYPE_MEMBERS
 
+#define PROCEDURE_MEMBERS
+enum class Procedure : char {
+    /**/PROCEDURE_MEMBERS/**/  // the python script will replace this
+};
+#undef PROCEDURE_MEMBERS
 
 #define STR_TO_INPUT_SOURCE_CONVERSIONS assert(false);
 std::optional<InputSource> convert_string_to_input_source(const std::string_view &str) {
@@ -79,6 +84,11 @@ std::string_view convert_input_source_to_string(InputSource value) {
 }
 #undef INPUT_SOURCE_TO_STR_CONVERSIONS
 
+#define PROCEDURE_TO_STR_CONVERSIONS assert(false);
+std::string_view convert_procedure_to_string(Procedure value) {
+    /**/PROCEDURE_TO_STR_CONVERSIONS/**/  // the python script will replace this
+}
+#undef PROCEDURE_TO_STR_CONVERSIONS
 
 
 }

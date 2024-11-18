@@ -6,7 +6,7 @@ from typing import Any, Generic, List, Literal, TypeVar
 import attrs
 from sonic_protocol import protocol as prot
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 import importlib.resources as rs
@@ -49,6 +49,8 @@ def convert_to_enum_data_type(data_type: type[Any]) -> str:
         enum_member = "E_INPUT_SOURCE"
     elif issubclass(data_type, Version):
         enum_member = "VERSION"
+    elif issubclass(data_type, Procedure):
+        enum_member = "E_PROCEDURE"
     else:
         raise ValueError(f"Unknown data type: {data_type}")
 
@@ -146,6 +148,7 @@ class CppTransCompiler:
         communication_channel_members = convert_to_cpp_enum_members(CommunicationChannel)
         communication_protocol_members = convert_to_cpp_enum_members(CommunicationProtocol)
         input_source_members = convert_to_cpp_enum_members(InputSource)
+        procedure_members = convert_to_cpp_enum_members(Procedure)
         
         device_type_to_str_conversions = create_enum_to_string_conversions(DeviceType)
         communication_channel_to_str_conversions = create_enum_to_string_conversions(CommunicationChannel)
@@ -155,6 +158,7 @@ class CppTransCompiler:
         str_to_communication_channel_conversions = create_string_to_enum_conversions(CommunicationChannel)
         str_to_communication_protocol_conversions = create_string_to_enum_conversions(CommunicationProtocol)
         str_to_input_source_conversions = create_string_to_enum_conversions(InputSource)
+        procedure_to_str_conversions = create_enum_to_string_conversions(Procedure)
 
         self._inject_code_into_file(
             lib_dir / "enums.hpp",
@@ -162,6 +166,7 @@ class CppTransCompiler:
             COMMUNICATION_CHANNEL_MEMBERS=communication_channel_members,
             COMMUNICATION_PROTOCOL_MEMBERS=communication_protocol_members,
             INPUT_SOURCE_MEMBERS=input_source_members,
+            PROCEDURE_MEMBERS=procedure_members,
 
             DEVICE_TYPE_TO_STR_CONVERSIONS=device_type_to_str_conversions,
             COMMUNICATION_CHANNEL_TO_STR_CONVERSIONS=communication_channel_to_str_conversions,
@@ -170,7 +175,8 @@ class CppTransCompiler:
 
             STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS=str_to_communication_channel_conversions,
             STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS=str_to_communication_protocol_conversions,
-            STR_TO_INPUT_SOURCE_CONVERSIONS=str_to_input_source_conversions
+            STR_TO_INPUT_SOURCE_CONVERSIONS=str_to_input_source_conversions,
+            PROCEDURE_TO_STR_CONVERSIONS=procedure_to_str_conversions
         )
 
     def generate_transpiled_protocol(self, protocol: Protocol, protocol_versions: List[ProtocolVersion], output_dir: Path): 

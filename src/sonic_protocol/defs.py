@@ -74,6 +74,7 @@ class ConverterType(Enum):
     ENUM = auto()
     BUILD_TYPE = auto()
     PRIMITIVE = auto()
+    TERMINATION = auto()
 
 class InputSource(Enum):
     MANUAL = "manual" #! control by the user pressing buttons on the device
@@ -88,6 +89,13 @@ class CommunicationChannel(Enum):
 class CommunicationProtocol(Enum):
     SONIC = "sonic"
     MODBUS = "modbus"
+
+class Procedure(Enum):
+    AUTO = "auto"
+    TUNE = "tune"
+    SCAN = "scan"
+    WIPE = "wipe"
+    RAMP = "ramp"
 
 @attrs.define(auto_attribs=True)
 class DeviceParamConstants:

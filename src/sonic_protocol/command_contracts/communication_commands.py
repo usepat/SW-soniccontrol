@@ -1,8 +1,10 @@
 from sonic_protocol.defs import (
     CommandCode, CommunicationChannel, CommunicationProtocol, ConverterType, FieldType, InputSource, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
-    AnswerFieldDef, CommandContract
+    AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs
 )
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative
+
 
 field_termination = AnswerFieldDef(
     field_name=EFieldName.TERMINATION,
@@ -127,4 +129,35 @@ field_type_comm_channel = FieldType(
 field_comm_channel = AnswerFieldDef(
     field_name=EFieldName.COMMUNICATION_CHANNEL,
     field_type=field_type_comm_channel,
+)
+
+
+field_termination = AnswerFieldDef(
+    field_name=EFieldName.TERMINATION,
+    field_type=FieldType(field_type=bool, converter_ref=ConverterType.TERMINATION),
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(
+        prefix="Termination resistor: ",
+        postfix=""
+    )
+)
+
+set_termination = CommandContract(
+    code=CommandCode.SET_TERMINATION,
+    command_defs=CommandDef(
+        setter_param=CommandParamDef(
+            name=EFieldName.TERMINATION,
+            param_type=bool
+        ),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!term"]
+        )
+    ),
+    answer_defs=create_list_with_unknown_answer_alternative(
+        AnswerDef(fields=[field_termination])
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to activate the rs485 termination resistor"
+    ),
+    is_release=True,
+    tags=["rs485"]
 )

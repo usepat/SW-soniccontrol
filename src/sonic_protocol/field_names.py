@@ -20,6 +20,8 @@ class EFieldName(Enum):
     PROCEDURE_ARG = "procedure_arg"
     ERROR_CODE = "error_code"
     ERROR_MESSAGE = "error_message"
+    TIMING = "timing"
+    MESSAGE = "message"
 
     ATF = "atf"
     ATK = "atk"
@@ -42,6 +44,5 @@ class EFieldName(Enum):
     TERMINATION = "termination"
 
     TIME_STAMP = "time_stamp"
-
     INDEX = "index"
 
