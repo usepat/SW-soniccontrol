@@ -47,7 +47,7 @@ class CommandCode(IntEnum):
     GET_TUNE = 310
     GET_WIPE = 320
 
-    SET_INPUT_SOURCE = 1010
+    SET_EXTERN = 1010
     SET_ANALOG = 1020
     SET_DAC0 = 1031
     SET_DAC1 = 1032

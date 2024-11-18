@@ -17,6 +17,7 @@ class EFieldName(Enum):
     PHASE = "phase"
     TS_FLAG = "ts_flag"
     PROCEDURE = "procedure"
+    PROCEDURE_ARG = "procedure_arg"
     ERROR_CODE = "error_code"
     ERROR_MESSAGE = "error_message"
 

@@ -7,7 +7,7 @@ from sonic_protocol.field_names import EFieldName
 def create_version_field(name: EFieldName) -> AnswerFieldDef:
     return AnswerFieldDef(
         field_name=name, 
-        field_type=FieldType(Version, converter_ref=ConverterType.VERSION), 
+        field_type=FieldType(field_type=Version, converter_ref=ConverterType.VERSION), 
     )
 
 def create_list_with_unknown_answer_alternative(
