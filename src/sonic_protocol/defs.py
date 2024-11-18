@@ -89,6 +89,13 @@ class CommunicationProtocol(Enum):
     SONIC = "sonic"
     MODBUS = "modbus"
 
+class Procedure(Enum):
+    AUTO = "auto"
+    TUNE = "tune"
+    SCAN = "scan"
+    WIPE = "wipe"
+    RAMP = "ramp"
+
 @attrs.define(auto_attribs=True)
 class DeviceParamConstants:
     max_frequency: int = attrs.field(default=10000001)

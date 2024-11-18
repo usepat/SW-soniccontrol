@@ -1,4 +1,4 @@
-from sonic_protocol.defs import DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, Version
+from sonic_protocol.defs import Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, Version
 from sonic_protocol.field_names import EFieldName
 
 field_termination = AnswerFieldDef(
@@ -45,6 +45,11 @@ field_gain = AnswerFieldDef(
 field_signal = AnswerFieldDef(
     field_name=EFieldName.SIGNAL,
     field_type=FieldType(field_type=bool, converter_ref=ConverterType.SIGNAL),
+)
+
+field_procedure = AnswerFieldDef(
+    field_name=EFieldName.PROCEDURE,
+    field_type=FieldType(field_type=Procedure, converter_ref=ConverterType.ENUM),
 )
 
 swf_field_type = FieldType(

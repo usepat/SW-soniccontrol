@@ -8,7 +8,7 @@ from sonic_protocol.command_contracts.fields import (
     field_unknown_answer, field_type_frequency, field_type_temperature,
     field_frequency, field_gain, field_signal, field_swf,
     field_type_gain, swf_field_type, field_temperature,
-    field_urms, field_irms, field_phase, field_ts_flag
+    field_urms, field_irms, field_phase, field_ts_flag, field_procedure
 )
 
 
@@ -358,4 +358,22 @@ set_atk = CommandContract(
     ),
     is_release=True,
     tags=["transducer", "config"]
+)
+
+
+set_auto = CommandContract(
+    code=CommandCode.SET_AUTO,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!auto", "!AUTO"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_procedure]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Start Auto procedure"
+    ),
+    is_release=True,
+    #tags=["procedure"]
 )
