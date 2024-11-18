@@ -101,26 +101,65 @@ field_input_source = AnswerFieldDef(
     field_type=field_type_input_source
 )
 
-set_input_source = CommandContract(
-    code=CommandCode.SET_INPUT_SOURCE,
+# set_input_source = CommandContract(
+#     code=CommandCode.SET_INPUT_SOURCE,
+#     command_defs=CommandDef(
+#         setter_param=CommandParamDef(
+#             name=EFieldName.INPUT_SOURCE,
+#             param_type=field_type_input_source
+#         ),
+#         sonic_text_attrs=SonicTextCommandAttrs(
+#             string_identifier=["!input", "set_input_source"]
+#         )
+#     ),
+#     answer_defs=AnswerDef(
+#         fields=[field_input_source]
+#     ),
+#     user_manual_attrs=UserManualAttrs(
+#         description="Command to set the input source. Where to get commands from"
+#     ),
+#     is_release=True,
+#     tags=["communication"]
+# )
+field_success = AnswerFieldDef(
+    field_name=EFieldName.SUCCESS,
+    field_type=FieldType(field_type=str)
+)
+
+set_analog = CommandContract(
+    code=CommandCode.SET_ANALOG,
     command_defs=CommandDef(
-        setter_param=CommandParamDef(
-            name=EFieldName.INPUT_SOURCE,
-            param_type=field_type_input_source
-        ),
         sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!input", "set_input_source"]
+            string_identifier=["!analog"]
         )
     ),
     answer_defs=AnswerDef(
-        fields=[field_input_source]
+        fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the input source. Where to get commands from"
+        description="Command to set the communication channel to analog"
     ),
     is_release=True,
     tags=["communication"]
 )
+
+set_extern = CommandContract(
+    code=CommandCode.SET_EXTERN,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!analog"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_success]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the communication channel to analog"
+    ),
+    is_release=True,
+    tags=["communication"]
+)
+
 
 field_type_comm_channel = FieldType(
     field_type=CommunicationChannel, 
