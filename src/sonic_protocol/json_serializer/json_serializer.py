@@ -1,6 +1,7 @@
 from enum import Enum
 import json
 import attrs
+import numpy as np
 from sonic_protocol.protocol import protocol
 
 class ProtocolJSONEncoder(json.JSONEncoder):
@@ -25,6 +26,8 @@ class ProtocolJSONEncoder(json.JSONEncoder):
             return [self.default(value) for value in obj]
         if isinstance(obj, (int, float, str, bool)):
             return obj
+        if isinstance(obj, np.integer):
+            return int(obj)
         return json.dumps(obj=obj)
 
 if __name__ == "__main__":

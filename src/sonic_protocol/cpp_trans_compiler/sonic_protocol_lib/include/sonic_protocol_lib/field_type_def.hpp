@@ -10,8 +10,10 @@ namespace sonic_protocol_lib {
 
 enum class DataType {
     // Primitive
-    INT,
-    DOUBLE,
+    UINT8,
+    UINT16,
+    UINT32,
+    FLOAT,
     STRING,
     BOOL,
 

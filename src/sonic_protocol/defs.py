@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Generic, Union
 import attrs
+import numpy as np
 
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import EFieldName
@@ -170,7 +171,7 @@ class UserManualAttrs:
     description: Optional[str] = attrs.field(default=None)
     example: Optional[str] = attrs.field(default=None)
 
-T = TypeVar("T", int, float, bool, str, Version, Enum)
+T = TypeVar("T", int, np.uint8, np.uint16, np.uint32, float, bool, str, Version, Enum)
 AttrsExport = Union[E, List[MetaExport[E]]]
 
 @attrs.define(auto_attribs=True)

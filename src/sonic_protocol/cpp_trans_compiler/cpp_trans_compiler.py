@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Generic, List, Literal, TypeVar
 
 import attrs
+import numpy as np
 from sonic_protocol import protocol as prot
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.defs import Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
@@ -32,9 +33,15 @@ def convert_to_cpp_initializer_list(value: List[Any]) -> str:
 
 def convert_to_enum_data_type(data_type: type[Any]) -> str:
     if data_type is int:
-        enum_member = "INT"
+        enum_member = "UINT32"
+    elif data_type is np.uint32:
+        enum_member = "UINT32"
+    elif data_type is np.uint16:
+        enum_member = "UINT16"
+    elif data_type is np.uint8:
+        enum_member = "UINT8"
     elif data_type is float:
-        enum_member = "DOUBLE"
+        enum_member = "FLOAT"
     elif data_type is str:
         enum_member = "STRING"
     elif data_type is bool:
