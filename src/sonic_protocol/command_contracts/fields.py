@@ -1,4 +1,4 @@
-from sonic_protocol.defs import Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, Version
+from sonic_protocol.defs import Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, Version
 from sonic_protocol.field_names import EFieldName
 
 field_termination = AnswerFieldDef(
@@ -123,4 +123,71 @@ field_ts_flag = AnswerFieldDef(
 field_unknown_answer = AnswerFieldDef(
 	field_name=EFieldName.UNKNOWN_ANSWER,
 	field_type=FieldType(str)
+)
+
+field_type_time_span = FieldType(
+    field_type=int,
+    min_value=0,
+    si_unit=SIUnit.SECONDS,
+    si_prefix=SIPrefix.MILLI
+)
+
+field_scan_f_step = AnswerFieldDef(
+    field_name=EFieldName.SCAN_F_STEP,
+    field_type=field_type_frequency,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Scst: ")
+)
+
+field_scan_f_half_range = AnswerFieldDef(
+    field_name=EFieldName.SCAN_F_RANGE,
+    field_type=field_type_frequency,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Rang: ")
+)
+
+field_scan_t_step = AnswerFieldDef(
+    field_name=EFieldName.SCAN_T_STEP,
+    field_type=field_type_time_span,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: ")
+)
+
+field_tune_f_step = AnswerFieldDef(
+    field_name=EFieldName.TUNE_F_STEP,
+    field_type=field_type_frequency,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
+)
+
+field_tune_t_time = AnswerFieldDef(
+    field_name=EFieldName.TUNE_T_TIME,
+    field_type=field_type_time_span,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
+)
+
+field_wipe_f_step = AnswerFieldDef(
+    field_name=EFieldName.WIPE_F_STEP,
+    field_type=field_type_frequency,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Step: ")
+)
+
+field_wipe_f_range = AnswerFieldDef(
+    field_name=EFieldName.WIPE_F_RANGE,
+    field_type=field_type_frequency,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Rang: ")
+)
+
+field_wipe_t_on = AnswerFieldDef(
+    field_name=EFieldName.WIPE_T_ON,
+    field_type=field_type_time_span,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: ")
+)
+
+field_wipe_t_off = AnswerFieldDef(
+    field_name=EFieldName.WIPE_T_OFF,
+    field_type=field_type_time_span,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Toff: ")
+)
+
+field_wipe_t_pause = AnswerFieldDef(
+    field_name=EFieldName.WIPE_T_PAUSE,
+    field_type=field_type_time_span,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Paus: ")
 )

@@ -16,6 +16,7 @@ from sonic_protocol.command_contracts.communication_commands import (
      set_termination, set_physical_comm_channel, set_comm_protocol, set_input_source,
 )
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.command_contracts.procedure_commands import all_proc_commands
 
 # Version instance
 version = Version(major=1, minor=0, patch=0)
@@ -224,7 +225,14 @@ protocol = Protocol(
                 min_protocol_version=Version(major=1, minor=0, patch=0),
                 included_device_types=[DeviceType.DESCALE]
             )
-        )
+        ),
+        CommandListExport(
+            exports=all_proc_commands,
+            descriptor = MetaExportDescriptor(
+                min_protocol_version=Version(major=1, minor=0, patch=0),
+                excluded_device_types=[DeviceType.DESCALE]
+            )
+        ),
     ]
 )
 
