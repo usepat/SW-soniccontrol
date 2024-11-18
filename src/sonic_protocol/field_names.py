@@ -3,6 +3,7 @@ from enum import Enum
 
 class EFieldName(Enum):
     UNKNOWN_ANSWER = "unknown_answer"
+    SUCCESS = "success"
     
     LIST_COMMANDS = "list_commands"
     HELP = "help"
