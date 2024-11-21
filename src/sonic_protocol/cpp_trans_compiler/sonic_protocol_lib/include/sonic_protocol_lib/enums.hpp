@@ -67,7 +67,7 @@ inline std::string_view convert_communication_channel_to_string(CommunicationCha
 #undef COMMUNICATION_CHANNEL_TO_STR_CONVERSIONS
 
 #define COMMUNICATION_PROTOCOL_TO_STR_CONVERSIONS assert(false);
-inline inline std::string_view convert_communication_protocol_to_string(CommunicationProtocol value) {
+inline std::string_view convert_communication_protocol_to_string(CommunicationProtocol value) {
     /**/COMMUNICATION_PROTOCOL_TO_STR_CONVERSIONS/**/  // the python script will replace this
 }
 #undef COMMUNICATION_PROTOCOL_TO_STR_CONVERSIONS
