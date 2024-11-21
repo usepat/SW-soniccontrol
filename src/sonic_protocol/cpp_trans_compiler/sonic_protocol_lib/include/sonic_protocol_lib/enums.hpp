@@ -45,7 +45,7 @@ inline std::optional<InputSource> convert_string_to_input_source(const std::stri
 #undef STR_TO_INPUT_SOURCE_CONVERSIONS
 
 #define STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS assert(false);
-inline inline std::optional<CommunicationChannel> convert_string_to_communication_channel(const std::string_view &str) {
+inline  std::optional<CommunicationChannel> convert_string_to_communication_channel(const std::string_view &str) {
     /**/STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS/**/  // the python script will replace this
     return std::nullopt;
 }
