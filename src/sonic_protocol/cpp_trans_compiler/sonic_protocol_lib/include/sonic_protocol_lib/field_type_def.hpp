@@ -44,7 +44,7 @@ struct FieldLimits {
 };
 
 struct FieldTypeDef {
-    DataType type {DataType::INT};
+    DataType type {DataType::UINT16};
     ConverterReference converter_reference {ConverterReference::PRIMITIVE};
     const void * limits {nullptr}; // should never be null, but we need to initialize it with nullptr, because of undefined behaviour
     std::optional<SIUnit> si_unit {std::nullopt};
