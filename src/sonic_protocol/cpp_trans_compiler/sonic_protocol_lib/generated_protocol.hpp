@@ -22,11 +22,13 @@ consteval std::size_t max_command_count() {
 }
 #undef MAX_COMMAND_COUNT
 
+using Protocol = Protocol_Template<sonic_protocol_lib::max_command_count()>;
+
 #define PROTOCOLS {}
 consteval std::array<Protocol, protocol_count()> protocols() {
     return /**/PROTOCOLS/**/; // the python script will replace this
 }
 #undef PROTOCOLS
 
-using Protocol = Protocol<sonic_protocol_lib::max_command_count()>;
+
 }

@@ -15,7 +15,7 @@ struct Version {
 };
 
 template <size_t COMMAND_COUNT>
-struct Protocol {
+struct Protocol_Template {
     Version version;
     DeviceType device;
     bool isRelease;
