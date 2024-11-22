@@ -43,7 +43,7 @@ template <typename T>
 struct FieldLimits {
     std::optional<T> min;
     std::optional<T> max;
-    etl::array<T, MAX_ALLOWED_VALUES> allowed_values;
+    std::optional<etl::array<T, MAX_ALLOWED_VALUES>> allowed_values;
 };
 
 struct FieldTypeDef {
