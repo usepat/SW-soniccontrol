@@ -201,7 +201,6 @@ class CppTransCompiler:
             PROTOCOLS=protocols, 
             PROTOCOL_COUNT=protocol_count, 
             FIELD_LIMITS=field_limits,
-            MAX_COMMAND_COUNT=max_command_count,
         )
         
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
