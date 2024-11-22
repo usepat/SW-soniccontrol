@@ -34,6 +34,7 @@ enum class ConverterReference {
     SIGNAL,
     VERSION,
     BUILD_TYPE,
+    TERMINATION,
 };
 
 template <typename T>

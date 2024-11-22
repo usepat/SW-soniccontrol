@@ -21,14 +21,14 @@ enum class SIPrefix : char {
 
 
 #define SI_UNIT_TO_STR_CONVERSIONS assert(false);
-std::string_view convert_si_unit_to_string(const SIUnit &value) {
+inline std::string_view convert_si_unit_to_string(const SIUnit &value) {
     /**/SI_UNIT_TO_STR_CONVERSIONS/**/  // the python script will replace this
 }
 #undef SI_UNIT_TO_STR_CONVERSIONS 
 
 
 #define SI_PREFIX_TO_STR_CONVERSIONS assert(false);
-std::string_view convert_si_prefix_to_string(const SIPrefix &value) {
+inline std::string_view convert_si_prefix_to_string(const SIPrefix &value) {
     /**/SI_PREFIX_TO_STR_CONVERSIONS/**/  // the python script will replace this
 }
 #undef SI_PREFIX_TO_STR_CONVERSIONS 
