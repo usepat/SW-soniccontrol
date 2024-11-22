@@ -25,4 +25,6 @@ struct Protocol_Template {
     uint16_t commandCount;
 };
 
+struct Protocol;
+
 }
