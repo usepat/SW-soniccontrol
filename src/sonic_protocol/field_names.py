@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class EFieldName(Enum):
+    UNDEFINED = "undefined"
     UNKNOWN_ANSWER = "unknown_answer"
     SUCCESS = "success"
     
