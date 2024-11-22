@@ -1,3 +1,4 @@
+import numpy as np
 from sonic_protocol.command_contracts.contract_generators import create_version_field
 from sonic_protocol.defs import (
     CommandCode, CommandListExport, ConverterType, DeviceParamConstants, FieldType, MetaExportDescriptor, 
@@ -129,7 +130,7 @@ get_help = CommandContract(
 
 error_code_field = AnswerFieldDef(
     field_name=EFieldName.ERROR_CODE,
-    field_type=FieldType(field_type=int)
+    field_type=FieldType(field_type=np.uint16)
 )
 
 procedure_field = AnswerFieldDef(
