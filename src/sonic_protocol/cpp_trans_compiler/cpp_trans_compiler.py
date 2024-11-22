@@ -232,7 +232,7 @@ class CppTransCompiler:
 
         version = protocol_version.version
         protocol_def = f"""
-            Protocol ((
+            Protocol (
                 .version = Version {{
                     .major = {version.major},
                     .minor = {version.minor},
@@ -248,7 +248,7 @@ class CppTransCompiler:
                     {", ".join(answer_defs)}
                 }}
                 .commandCount = {len(command_defs)}
-            ))
+            )
         """
         return protocol_def
 
