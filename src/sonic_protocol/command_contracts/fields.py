@@ -1,3 +1,4 @@
+import numpy as np
 from sonic_protocol.defs import Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, Version
 from sonic_protocol.field_names import EFieldName
 
@@ -30,7 +31,7 @@ field_frequency = AnswerFieldDef(
 )
 
 field_type_gain = FieldType(
-    field_type=int,
+    field_type=np.uint8,
     si_unit=SIUnit.PERCENT,
     si_prefix=SIPrefix.NONE,
 	max_value=DeviceParamConstantType.MAX_GAIN,
