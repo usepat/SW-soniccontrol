@@ -15,7 +15,7 @@ struct Version {
 };
 
 // Placeholder values; these will be overridden by generated_protocol.hpp
-constexpr std::size_t DefaultCommandCount = 1; // Placeholder size
+inline constexpr std::size_t DefaultCommandCount = 1; // Placeholder size
 struct Protocol {
     Version version;
     DeviceType device;

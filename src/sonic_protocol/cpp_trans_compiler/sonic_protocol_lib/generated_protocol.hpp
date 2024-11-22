@@ -17,7 +17,7 @@ consteval std::size_t protocol_count() {
 #undef PROTOCOL_COUNT
 
 #define MAX_COMMAND_COUNT 0
-constexpr std::size_t DefaultCommandCount = /**/MAX_COMMAND_COUNT/**/; // the python script will replace this
+inline constexpr std::size_t DefaultCommandCount = /**/MAX_COMMAND_COUNT/**/; // the python script will replace this
 #undef MAX_COMMAND_COUNT
 
 #define PROTOCOLS {}
