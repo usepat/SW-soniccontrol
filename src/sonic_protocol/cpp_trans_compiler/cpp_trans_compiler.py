@@ -222,7 +222,7 @@ class CppTransCompiler:
             transpiled_protocol = self._transpile_command_contracts(command_lookup_table)
             transpiled_protocols.append(transpiled_protocol)
             command_count.append(len(command_lookup_table))
-            answer_count.append(sum(len(lookup.answer_def.fields) for lookup in command_lookup_table.values()))
+            answer_count.append(len([lookup.answer_def for lookup in command_lookup_table.values() if lookup.answer_def is not None]))
         command_count_str = "{" + ", ".join(map(str, command_count)) + "}"
         answer_count_str = "{" + ", ".join(map(str, answer_count)) + "}"
         return "{" + ", ".join(transpiled_protocols) + "}", command_count_str, answer_count_str
