@@ -248,6 +248,7 @@ class CppTransCompiler:
                 .answers = {{
                     {", ".join(answer_defs)}
                 }}
+                .commandCount = {len(command_defs)}
             }}
         """
         return protocol_def

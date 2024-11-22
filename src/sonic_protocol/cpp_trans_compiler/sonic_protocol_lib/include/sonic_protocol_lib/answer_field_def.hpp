@@ -7,7 +7,7 @@ namespace sonic_protocol_lib {
 
 
 struct AnswerFieldDef {
-    FieldName name;
+    FieldName name{FieldName::UNKNOWN_ANSWER};
     FieldTypeDef type;
     std::string_view prefix {""};
     std::string_view postfix {""};

@@ -22,6 +22,7 @@ struct Protocol {
     std::string_view options;
     etl::array<CommandDef, COMMAND_COUNT> commands;
     etl::array<AnswerDef, COMMAND_COUNT> answers;
+    uint16_t commandCount;
 };
 
 }
