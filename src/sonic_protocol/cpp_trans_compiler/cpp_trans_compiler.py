@@ -232,7 +232,7 @@ class CppTransCompiler:
 
         version = protocol_version.version
         protocol_def = f"""
-            constexpr Protocol {{
+            Protocol {{
                 .version = Version {{
                     .major = {version.major},
                     .minor = {version.minor},
