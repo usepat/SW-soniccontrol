@@ -232,7 +232,7 @@ class CppTransCompiler:
 
         version = protocol_version.version
         protocol_def = f"""
-            Protocol (
+            Protocol {{
                 .version = Version {{
                     .major = {version.major},
                     .minor = {version.minor},
@@ -241,14 +241,14 @@ class CppTransCompiler:
                 .device = DeviceType::{protocol_version.device_type.name},
                 .isRelease = {str(protocol_version.is_release).lower()},
                 .options = "",
-                .commands = {{
+                .commands = etl::array<CommandDef, MAX_COMMAND_COUNT>{{
                     {", ".join(command_defs)}
                 }},
-                .answers = {{
+                .answers = etl::array<AnswerDef, MAX_COMMAND_COUNT>{{
                     {", ".join(answer_defs)}
                 }}
                 .commandCount = {len(command_defs)}
-            )
+            }}
         """
         return protocol_def
 
@@ -267,7 +267,7 @@ class CppTransCompiler:
             CommandDef {{
                 .code = CommandCode::{code.name},
                 .string_identifiers = {convert_to_cpp_initializer_list(string_identifiers)},
-                .params = {{
+                .params = etl::array<ParamDef, MAX_PARAMS>{{
                     { ", ".join(params) }
                 }}
             }}
@@ -289,7 +289,7 @@ class CppTransCompiler:
         cpp_answer_def = f"""
             AnswerDef {{
                 .code = CommandCode::{code.name},
-                .fields = {{ 
+                .fields = etl::array<AnswerFieldDef, MAX_ANSWER_FIELDS>{{ 
                     {", ".join(transpiled_fields)} 
                 }}
             }}
