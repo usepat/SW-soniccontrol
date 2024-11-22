@@ -246,7 +246,7 @@ class CppTransCompiler:
                 }},
                 .answers = etl::array<AnswerDef, MAX_COMMAND_COUNT>{{
                     {", ".join(answer_defs)}
-                }}
+                }},
                 .commandCount = {len(command_defs)}
             }}
         """
