@@ -220,7 +220,7 @@ class CppTransCompiler:
             max_command_count = max(max_command_count, len(command_lookup_table))
             transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table)
             transpiled_protocols.append(transpiled_protocol)
-        return "{" + ", ".join(transpiled_protocols) + "}", max_command_count
+        return "(" + ", ".join(transpiled_protocols) + ")", max_command_count
 
     def _transpile_command_contracts(
             self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable) -> str:
