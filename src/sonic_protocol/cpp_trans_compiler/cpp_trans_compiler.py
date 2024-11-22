@@ -1,6 +1,7 @@
+
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Generic, List, Literal, Tuple, TypeVar
+from typing import Any, Generic, List, Literal, TypeVar
 
 import attrs
 import numpy as np
@@ -193,14 +194,12 @@ class CppTransCompiler:
         shutil.copyfile(str(protocol_template_path), generated_protocol_path)
 
         protocol_count = len(protocol_versions)
-        protocols, command_count, answer_count = self._transpile_protocols(protocol, protocol_versions)
+        protocols = self._transpile_protocols(protocol, protocol_versions)
         field_limits = self._transpile_field_limits_from_cache()
         self._inject_code_into_file(
             generated_protocol_path, 
             PROTOCOLS=protocols, 
             PROTOCOL_COUNT=protocol_count, 
-            COMMAND_COUNT=command_count,
-            ANSWER_COUNT=answer_count,
             FIELD_LIMITS=field_limits
         )
         
@@ -212,31 +211,34 @@ class CppTransCompiler:
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
-    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, str, str]:
+    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> str:
         protocol_builder = ProtocolBuilder(protocol)
         transpiled_protocols = []
-        command_count = []
-        answer_count = []
         for protocol_version in protocol_versions:
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
-            transpiled_protocol = self._transpile_command_contracts(command_lookup_table)
+            transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table)
             transpiled_protocols.append(transpiled_protocol)
-            command_count.append(len(command_lookup_table))
-            answer_count.append(len([lookup.answer_def for lookup in command_lookup_table.values() if lookup.answer_def is not None]))
-        command_count_str = "{" + ", ".join(map(str, command_count)) + "}"
-        answer_count_str = "{" + ", ".join(map(str, answer_count)) + "}"
-        return "{" + ", ".join(transpiled_protocols) + "}", command_count_str, answer_count_str
+        return "{" + ", ".join(transpiled_protocols) + "}"
 
     def _transpile_command_contracts(
-            self, command_list: CommandLookUpTable) -> str:
+            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable) -> str:
         answer_defs = []
         command_defs = []
         for code, command_lookup in sorted(command_list.items()):
             command_defs.append(self._transpile_command_def(code, command_lookup.command_def))
             answer_defs.append(self._transpile_answer_def(code, command_lookup.answer_def))
 
+        version = protocol_version.version
         protocol_def = f"""
             Protocol {{
+                .version = Version {{
+                    .major = {version.major},
+                    .minor = {version.minor},
+                    .patch = {version.patch},
+                }},
+                .device = DeviceType::{protocol_version.device_type.name},
+                .isRelease = {str(protocol_version.is_release).lower()},
+                .options = "",
                 .commands = {{
                     {", ".join(command_defs)}
                 }},
