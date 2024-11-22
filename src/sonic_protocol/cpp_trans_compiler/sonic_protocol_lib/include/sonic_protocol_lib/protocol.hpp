@@ -6,9 +6,10 @@
 
 namespace sonic_protocol_lib {
 
+template <std::size_t CommandCount, std::size_t AnswerCount>
 struct Protocol {
-    std::initializer_list<CommandDef> commands;
-    std::initializer_list<AnswerDef> answers;
+    std::array<CommandDef, CommandCount> commands;
+    std::array<AnswerDef, AnswerCount> answers;
 };
 
 }
