@@ -216,20 +216,29 @@ class CppTransCompiler:
         transpiled_protocols = []
         for protocol_version in protocol_versions:
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
-            transpiled_protocol = self._transpile_command_contracts(command_lookup_table)
+            transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table)
             transpiled_protocols.append(transpiled_protocol)
         return "{" + ", ".join(transpiled_protocols) + "}"
 
     def _transpile_command_contracts(
-            self, command_list: CommandLookUpTable) -> str:
+            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable) -> str:
         answer_defs = []
         command_defs = []
         for code, command_lookup in sorted(command_list.items()):
             command_defs.append(self._transpile_command_def(code, command_lookup.command_def))
             answer_defs.append(self._transpile_answer_def(code, command_lookup.answer_def))
 
+        version = protocol_version.version
         protocol_def = f"""
             Protocol {{
+                .version = Version {{
+                    .major = {version.major},
+                    .minor = {version.minor},
+                    .patch = {version.patch},
+                }},
+                .device = DeviceType::{protocol_version.device_type.name},
+                .isRelease = {str(protocol_version.is_release).lower()},
+                .options = "",
                 .commands = {{
                     {", ".join(command_defs)}
                 }},
