@@ -28,5 +28,5 @@ consteval std::array<Protocol, protocol_count()> protocols() {
 }
 #undef PROTOCOLS
 
-using Protocol = Protocol<Protocol::max_command_count()>;
+using Protocol = Protocol<sonic_protocol_lib::max_command_count()>;
 }
