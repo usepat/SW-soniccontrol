@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "sonic_protocol_lib/protocol.hpp"
+#include "etl/array.h"
 
 namespace sonic_protocol_lib {
 
@@ -15,6 +16,20 @@ consteval std::size_t protocol_count() {
     return /**/PROTOCOL_COUNT/**/; // the python script will replace this
 }
 #undef PROTOCOL_COUNT
+
+#define MAX_COMMAND_COUNT 0
+inline constexpr std::size_t DefaultCommandCount = /**/MAX_COMMAND_COUNT/**/; // the python script will replace this
+#undef MAX_COMMAND_COUNT
+
+struct Protocol {
+    Version version;
+    DeviceType device;
+    bool isRelease;
+    std::string_view options;
+    etl::array<CommandDef, DefaultCommandCount> commands;
+    etl::array<AnswerDef, DefaultCommandCount> answers;
+    uint16_t commandCount;
+};
 
 #define PROTOCOLS {}
 consteval std::array<Protocol, protocol_count()> protocols() {

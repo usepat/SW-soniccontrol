@@ -15,15 +15,7 @@ struct Version {
 };
 
 // Placeholder values; these will be overridden by generated_protocol.hpp
-struct Protocol {
-    Version version;
-    DeviceType device;
-    bool isRelease;
-    std::string_view options;
-    etl::span<const CommandDef> commands;
-    etl::span<const AnswerDef> answers;
-    uint16_t commandCount;
-};
+struct Protocol;
 
 
 }
