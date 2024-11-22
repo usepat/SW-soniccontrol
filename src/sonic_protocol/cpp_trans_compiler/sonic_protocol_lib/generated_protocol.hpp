@@ -20,8 +20,8 @@ consteval std::size_t protocol_count() {
 constexpr uint16_t COMMAND_COUNT = /**/MAX_COMMAND_COUNT/**/; // the python script will replace this
 #undef MAX_COMMAND_COUNT
 
-struct Protocol : public Protocol_Template<MaxCommandCount> {
-    using Protocol_Template<MaxCommandCount>::Protocol_Template; // Inherit constructors if needed
+struct Protocol : public Protocol_Template<COMMAND_COUNT> {
+    using Protocol_Template<COMMAND_COUNT>::Protocol_Template; // Inherit constructors if needed
 };
 
 #define PROTOCOLS {}
