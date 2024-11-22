@@ -1,7 +1,7 @@
 
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Generic, List, Literal, TypeVar
+from typing import Any, Generic, List, Literal, Tuple, TypeVar
 
 import attrs
 import numpy as np
@@ -194,13 +194,14 @@ class CppTransCompiler:
         shutil.copyfile(str(protocol_template_path), generated_protocol_path)
 
         protocol_count = len(protocol_versions)
-        protocols = self._transpile_protocols(protocol, protocol_versions)
+        protocols, max_command_count = self._transpile_protocols(protocol, protocol_versions)
         field_limits = self._transpile_field_limits_from_cache()
         self._inject_code_into_file(
             generated_protocol_path, 
             PROTOCOLS=protocols, 
             PROTOCOL_COUNT=protocol_count, 
-            FIELD_LIMITS=field_limits
+            FIELD_LIMITS=field_limits,
+            MAX_COMMAND_COUNT=max_command_count,
         )
         
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
@@ -211,14 +212,16 @@ class CppTransCompiler:
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
-    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> str:
+    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, int]:
         protocol_builder = ProtocolBuilder(protocol)
         transpiled_protocols = []
+        max_command_count = 0
         for protocol_version in protocol_versions:
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
+            max_command_count = max(max_command_count, len(command_lookup_table))
             transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table)
             transpiled_protocols.append(transpiled_protocol)
-        return "{" + ", ".join(transpiled_protocols) + "}"
+        return "{" + ", ".join(transpiled_protocols) + "}", max_command_count
 
     def _transpile_command_contracts(
             self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable) -> str:

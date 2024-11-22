@@ -16,10 +16,17 @@ consteval std::size_t protocol_count() {
 }
 #undef PROTOCOL_COUNT
 
+#define MAX_COMMAND_COUNT 0
+consteval std::size_t max_command_count() {
+    return /**/MAX_COMMAND_COUNT/**/; // the python script will replace this
+}
+#undef MAX_COMMAND_COUNT
+
 #define PROTOCOLS {}
 consteval std::array<Protocol, protocol_count()> protocols() {
     return /**/PROTOCOLS/**/; // the python script will replace this
 }
 #undef PROTOCOLS
 
+using Protocol = Protocol<Protocol::max_command_count()>;
 }
