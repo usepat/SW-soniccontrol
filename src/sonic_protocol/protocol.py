@@ -135,7 +135,7 @@ error_code_field = AnswerFieldDef(
 
 procedure_field = AnswerFieldDef(
     field_name=EFieldName.PROCEDURE,
-    field_type=FieldType(field_type=int)
+    field_type=FieldType(field_type=np.uint16, converter_ref=ConverterType.ENUM),
 )
 
 get_update = CommandContract(
