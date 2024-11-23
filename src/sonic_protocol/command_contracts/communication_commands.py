@@ -8,7 +8,7 @@ from sonic_protocol.command_contracts.contract_generators import create_list_wit
 
 field_termination = AnswerFieldDef(
     field_name=EFieldName.TERMINATION,
-    field_type=FieldType(field_type=bool),
+    field_type=FieldType(field_type=bool, converter_ref=ConverterType.TERMINATION),
 )
 
 set_termination = CommandContract(
@@ -147,7 +147,7 @@ set_extern = CommandContract(
     code=CommandCode.SET_EXTERN,
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!analog"]
+            string_identifier=["!extern"]
         )
     ),
     answer_defs=AnswerDef(
@@ -158,45 +158,4 @@ set_extern = CommandContract(
     ),
     is_release=True,
     tags=["communication"]
-)
-
-
-field_type_comm_channel = FieldType(
-    field_type=CommunicationChannel, 
-    converter_ref=ConverterType.ENUM
-)
-field_comm_channel = AnswerFieldDef(
-    field_name=EFieldName.COMMUNICATION_CHANNEL,
-    field_type=field_type_comm_channel,
-)
-
-
-field_termination = AnswerFieldDef(
-    field_name=EFieldName.TERMINATION,
-    field_type=FieldType(field_type=bool, converter_ref=ConverterType.TERMINATION),
-    sonic_text_attrs=SonicTextAnswerFieldAttrs(
-        prefix="Termination resistor: ",
-        postfix=""
-    )
-)
-
-set_termination = CommandContract(
-    code=CommandCode.SET_TERMINATION,
-    command_defs=CommandDef(
-        setter_param=CommandParamDef(
-            name=EFieldName.TERMINATION,
-            param_type=bool
-        ),
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!term"]
-        )
-    ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_termination])
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to activate the rs485 termination resistor"
-    ),
-    is_release=True,
-    tags=["rs485"]
 )

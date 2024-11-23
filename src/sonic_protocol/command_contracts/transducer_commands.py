@@ -5,9 +5,9 @@ from sonic_protocol.defs import (
 )
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.command_contracts.fields import (
-    field_unknown_answer, field_type_frequency, field_type_temperature,
+    field_unknown_answer, field_type_frequency, field_type_temperature_celsius,
     field_frequency, field_gain, field_signal, field_swf,
-    field_type_gain, swf_field_type, field_temperature,
+    field_type_gain, swf_field_type, field_temperature_celsius,
     field_urms, field_irms, field_phase, field_ts_flag, field_procedure
 )
 
@@ -178,11 +178,11 @@ get_swf = CommandContract(
     tags=["switching frequency", "transducer"]
 )
 
-param_temp = CommandParamDef(
+param_temp_celsius = CommandParamDef(
     name=EFieldName.TEMPERATURE,
-    param_type=field_type_temperature,
+    param_type=field_type_temperature_celsius,
     user_manual_attrs=UserManualAttrs(
-        description="Temperature of the device"
+        description="Temperature of the device in celsius"
     )
 )
 
@@ -194,10 +194,10 @@ get_temp = CommandContract(
         )
     ),
     answer_defs=AnswerDef(
-        fields=[field_temperature]
+        fields=[field_temperature_celsius]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the temperature of the device."
+        description="Command to get the temperature of the device in celsiuus."
     ),
     is_release=True,
     tags=["temperature", "transducer"]
@@ -228,7 +228,7 @@ get_uipt = CommandContract(
 
 param_index = CommandParamDef(
     name=EFieldName.INDEX,
-    param_type=FieldType(field_type=int)
+    param_type=FieldType(field_type=int) # TODO set this to uint8_t?
 )
 
 field_atf = AnswerFieldDef(
@@ -275,7 +275,7 @@ set_atf = CommandContract(
 
 field_att = AnswerFieldDef(
     field_name=EFieldName.ATT,
-    field_type=field_type_temperature
+    field_type=field_type_temperature_celsius
 )
 
 get_att = CommandContract(
@@ -300,7 +300,7 @@ set_att = CommandContract(
     code=CommandCode.SET_ATT,
     command_defs=CommandDef(
         index_param=param_index,
-        setter_param=param_temp,
+        setter_param=param_temp_celsius, # TODO make a better param for att
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!att"]
         )
@@ -358,22 +358,4 @@ set_atk = CommandContract(
     ),
     is_release=True,
     tags=["transducer", "config"]
-)
-
-
-set_auto = CommandContract(
-    code=CommandCode.SET_AUTO,
-    command_defs=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!auto", "!AUTO"]
-        )
-    ),
-    answer_defs=AnswerDef(
-        fields=[field_procedure]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Start Auto procedure"
-    ),
-    is_release=True,
-    #tags=["procedure"]
 )

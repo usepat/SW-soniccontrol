@@ -6,7 +6,7 @@ from sonic_protocol.defs import (
     AnswerFieldDef, CommandContract, DeviceType,
 )
 from sonic_protocol.command_contracts.fields import (
-    field_frequency, field_gain, field_temperature, field_urms, field_irms, 
+    field_frequency, field_gain, field_temperature_kelvin, field_type_temperature_celsius, field_urms, field_irms, 
     field_phase, field_signal, field_ts_flag,
 )
 from sonic_protocol.command_contracts.transducer_commands import (
@@ -151,7 +151,7 @@ get_update = CommandContract(
             field_frequency,
             field_gain,
             procedure_field,
-            field_temperature,
+            field_temperature_kelvin,
             field_urms,
             field_irms,
             field_phase,

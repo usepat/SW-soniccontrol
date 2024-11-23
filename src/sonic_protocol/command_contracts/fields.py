@@ -18,9 +18,9 @@ field_device_type = AnswerFieldDef(
 )
 
 field_type_frequency = FieldType(
-    field_type=int,
+    field_type=np.uint32,
     si_unit=SIUnit.HERTZ,
-    si_prefix=SIPrefix.KILO,
+    #si_prefix=SIPrefix.KILO,
 	max_value=DeviceParamConstantType.MAX_FREQUENCY,
 	min_value=DeviceParamConstantType.MIN_FREQUENCY,
 )
@@ -54,9 +54,9 @@ field_procedure = AnswerFieldDef(
 )
 
 swf_field_type = FieldType(
-    field_type=int,
+    field_type=np.uint8,
     si_unit=SIUnit.HERTZ,
-    si_prefix=SIPrefix.KILO,
+    #si_prefix=SIPrefix.KILO,
 	max_value=DeviceParamConstantType.MAX_SWF,
 	min_value=DeviceParamConstantType.MIN_SWF,
 )
@@ -66,37 +66,48 @@ field_swf = AnswerFieldDef(
     field_type=swf_field_type
 )
 
-field_type_temperature = FieldType(
-    field_type=int,
+field_type_temperature_kelvin = FieldType(
+    field_type=np.uint32,
+    si_unit=SIUnit.KELVIN,
+    si_prefix=SIPrefix.MILLI,
+)
+
+field_type_temperature_celsius = FieldType(
+    field_type=float,
     si_unit=SIUnit.CELSIUS,
     si_prefix=SIPrefix.NONE,
 )
 
-field_temperature = AnswerFieldDef(
+field_temperature_kelvin = AnswerFieldDef(
     field_name=EFieldName.TEMPERATURE,
-    field_type=field_type_temperature
+    field_type=field_type_temperature_kelvin
+)
+
+field_temperature_celsius = AnswerFieldDef(
+    field_name=EFieldName.TEMPERATURE,
+    field_type=field_type_temperature_celsius
 )
 
 urms_field_type = FieldType(
-    field_type=int,
+    field_type=np.uint32,
     si_unit=SIUnit.VOLTAGE,
     si_prefix=SIPrefix.MICRO,
 )
 
 irms_field_type = FieldType(
-    field_type=int,
+    field_type=np.uint32,
     si_unit=SIUnit.AMPERE,
     si_prefix=SIPrefix.MICRO,
 )
 
 phase_field_type = FieldType(
-    field_type=int,
+    field_type=np.uint32,
     si_unit=SIUnit.DEGREE,
     si_prefix=SIPrefix.MICRO,
 )
 
 ts_flag_field_type = FieldType(
-    field_type=int,
+    field_type=np.uint32,
     si_unit=SIUnit.VOLTAGE,
     si_prefix=SIPrefix.MICRO,
 )
@@ -127,8 +138,8 @@ field_unknown_answer = AnswerFieldDef(
 )
 
 field_type_time_span = FieldType(
-    field_type=int,
-    min_value=0,
+    field_type=np.uint32,
+    min_value=np.uint32(0),
     si_unit=SIUnit.SECONDS,
     si_prefix=SIPrefix.MILLI
 )
@@ -142,7 +153,7 @@ field_scan_f_step = AnswerFieldDef(
 field_scan_f_half_range = AnswerFieldDef(
     field_name=EFieldName.SCAN_F_RANGE,
     field_type=field_type_frequency,
-    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Rang: ")
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Range: ")
 )
 
 field_scan_t_step = AnswerFieldDef(
@@ -172,7 +183,7 @@ field_wipe_f_step = AnswerFieldDef(
 field_wipe_f_range = AnswerFieldDef(
     field_name=EFieldName.WIPE_F_RANGE,
     field_type=field_type_frequency,
-    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Rang: ")
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Range: ")
 )
 
 field_wipe_t_on = AnswerFieldDef(
@@ -190,5 +201,5 @@ field_wipe_t_off = AnswerFieldDef(
 field_wipe_t_pause = AnswerFieldDef(
     field_name=EFieldName.WIPE_T_PAUSE,
     field_type=field_type_time_span,
-    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Paus: ")
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Pause: ")
 )
