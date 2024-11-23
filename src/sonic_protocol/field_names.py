@@ -64,4 +64,6 @@ class EFieldName(Enum):
     RAMP_F_STEP = "ramp_f_step"
     RAMP_T_ON = "ramp_t_on"
     RAMP_T_OFF = "ramp_t_off"
+    DUTY_CYCLE_T_OFF = "duty_cycle_t_off"
+    DUTY_CYCLE_T_ON = "duty_cycle_t_on"
 

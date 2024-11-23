@@ -46,6 +46,7 @@ class CommandCode(IntEnum):
     GET_SCAN = 300
     GET_TUNE = 310
     GET_WIPE = 320
+    GET_DUTY_CYCLE = 330
 
     SET_EXTERN = 1010
     SET_ANALOG = 1020
@@ -84,6 +85,8 @@ class CommandCode(IntEnum):
     SET_FLASH_115200 = 7003
     SET_NOTIFY = 999
     SET_DUTY_CYCLE = 8000
+    SET_DUTY_CYCLE_T_OFF = 8001
+    SET_DUTY_CYCLE_T_ON = 8002
     SET_LOG_DEBUG = 9000
     SET_LOG_INFO = 10000
     SET_LOG_WARN = 11000

@@ -7,7 +7,7 @@ from sonic_protocol.field_names import EFieldName
 import sonic_protocol.command_contracts.fields as fields
 
 
-def generate_start_procedure_contract(command_code: CommandCode, string_identifiers: List[str], description: str | None = None) -> CommandContract:
+def generate_start_procedure_contract(command_code: CommandCode, string_identifiers: List[str], description: str | None = None, release: bool = True) -> CommandContract:
     procedure_name = "".join(command_code.name.split("_")[1:]) # This is a hack. I am lazy
     return CommandContract(
         code=command_code,
@@ -22,13 +22,14 @@ def generate_start_procedure_contract(command_code: CommandCode, string_identifi
         user_manual_attrs=UserManualAttrs(
             description=description
         ),
+        is_release=release,
         tags=["Procedure", procedure_name]
     )
 
 
 def generate_procedure_arg_setter_contract(command_code: CommandCode, string_identifiers: List[str], 
                                            field_name: EFieldName | None = None, description: str | None = None, 
-                                           field_type = FieldType(field_type=int), response_field: AnswerFieldDef | None = None) -> CommandContract:
+                                           field_type = FieldType(field_type=int), response_field: AnswerFieldDef | None = None, release: bool = True) -> CommandContract:
     
     procedure_name = command_code.name.split("_")[1] # This is a hack. I am lazy
     if response_field is None:
@@ -48,6 +49,7 @@ def generate_procedure_arg_setter_contract(command_code: CommandCode, string_ide
                 string_identifier=string_identifiers
             )
         ),
+        is_release=release,
         answer_defs=AnswerDef(
             fields=[response_field]
         ),
@@ -275,5 +277,43 @@ wipe_proc_commands: List[CommandContract] = [
     )
 ]
 
+get_duty_cycle = CommandContract(
+    code=CommandCode.GET_DUTY_CYCLE,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?duty_cycle"]
+        )
+    ), 
+    answer_defs=AnswerDef(
+        fields=[
+            fields.field_duty_cycle_t_on,
+            fields.field_duty_cycle_t_off
+        ]
+    ),
+    tags=["Procedure", "DUTY_CYCLE"]
+)
 
-all_proc_commands = ramp_proc_commands + wipe_proc_commands + scan_proc_commands + tune_proc_commands + auto_proc_commands
+
+duty_cycle_proc_commands: List[CommandContract] = [
+    generate_start_procedure_contract(
+        CommandCode.SET_DUTY_CYCLE,
+        ["!duty_cycle"],
+        description="Starts a duty cycle for defined behaviour"
+    ),
+    get_duty_cycle,
+    generate_procedure_arg_setter_contract(
+        CommandCode.SET_DUTY_CYCLE_T_OFF,
+        ["!duty_cycle_t_off"],
+        EFieldName.TIMING,
+        ""
+    ),
+    generate_procedure_arg_setter_contract(
+        CommandCode.SET_DUTY_CYCLE_T_ON,
+        ["!duty_cycle_t_on"],
+        EFieldName.TIMING,
+        ""
+    ),
+]
+
+
+all_proc_commands = ramp_proc_commands + wipe_proc_commands + scan_proc_commands + tune_proc_commands + auto_proc_commands + duty_cycle_proc_commands

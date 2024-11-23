@@ -203,3 +203,15 @@ field_wipe_t_pause = AnswerFieldDef(
     field_type=field_type_time_span,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Pause: ")
 )
+
+field_duty_cycle_t_on = AnswerFieldDef(
+    field_name=EFieldName.DUTY_CYCLE_T_ON,
+    field_type=field_type_time_span,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: ")
+)
+
+field_duty_cycle_t_off = AnswerFieldDef(
+    field_name=EFieldName.DUTY_CYCLE_T_OFF,
+    field_type=field_type_time_span,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Toff: ")
+)
