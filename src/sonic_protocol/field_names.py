@@ -4,6 +4,7 @@ from enum import Enum
 class EFieldName(Enum):
     UNDEFINED = "undefined"
     UNKNOWN_ANSWER = "unknown_answer"
+    COMMAND_CODE = "command_code"
     SUCCESS = "success"
     
     LIST_COMMANDS = "list_commands"
