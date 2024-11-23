@@ -105,6 +105,7 @@ get_auto = CommandContract(
             string_identifier=["?auto"]
         )
     ), 
+    is_release=True,
     answer_defs=AnswerDef(
         fields=[
             fields.field_scan_f_step,
@@ -133,6 +134,7 @@ get_scan = CommandContract(
             string_identifier=["?scan"]
         )
     ), 
+    is_release=True,
     answer_defs=AnswerDef(
         fields=[
             fields.field_scan_f_step,
@@ -177,6 +179,7 @@ get_tune = CommandContract(
             string_identifier=["?tune"]
         )
     ), 
+    is_release=True,
     answer_defs=AnswerDef(
         fields=[
             fields.field_tune_f_step,
@@ -220,6 +223,7 @@ get_wipe = CommandContract(
             string_identifier=["?wipe"]
         )
     ), 
+    is_release=True,
     answer_defs=AnswerDef(
         fields=[
             fields.field_wipe_f_step,
@@ -284,6 +288,7 @@ get_duty_cycle = CommandContract(
             string_identifier=["?duty_cycle"]
         )
     ), 
+    is_release=True,
     answer_defs=AnswerDef(
         fields=[
             fields.field_duty_cycle_t_on,
