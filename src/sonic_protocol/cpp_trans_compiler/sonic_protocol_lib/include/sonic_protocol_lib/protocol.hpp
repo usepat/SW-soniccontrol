@@ -15,7 +15,7 @@ struct Version {
 };
 
 // Placeholder values; these will be overridden by generated_protocol.hpp
-constexpr uint8_t MAX_COMMAND_COUNT = 30;
+constexpr uint8_t MAX_COMMAND_COUNT = 60;
 struct Protocol {
     Version version;
     DeviceType device;
