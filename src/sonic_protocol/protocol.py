@@ -14,7 +14,7 @@ from sonic_protocol.command_contracts.transducer_commands import (
     set_gain, get_gain, set_on, set_off, get_temp, get_uipt, 
 )
 from sonic_protocol.command_contracts.communication_commands import (
-     set_termination, set_physical_comm_channel, set_comm_protocol, set_extern, set_analog,
+     set_termination, set_physical_comm_channel, set_comm_protocol, set_extern, set_analog, invalid_response,
 )
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.command_contracts.procedure_commands import all_proc_commands, duty_cycle_proc_commands
@@ -180,6 +180,7 @@ protocol = Protocol(
                 set_off,
                 set_frequency,
                 get_frequency,
+                invalid_response
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=0, minor=0, patch=0),
