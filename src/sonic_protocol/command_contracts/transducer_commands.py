@@ -269,6 +269,23 @@ get_atf = CommandContract(
     tags=["transducer", "config"]
 )
 
+get_atf_list = CommandContract(
+    code=CommandCode.GET_ATF_LIST,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?atf_list"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_unknown_answer]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get a list of atfs"
+    ),
+    is_release=True,
+    tags=["transducer", "config"]
+)
+
 set_atf = CommandContract(
     code=CommandCode.SET_ATF,
     command_defs=CommandDef(
@@ -311,6 +328,23 @@ get_att = CommandContract(
     tags=["transducer", "config"]
 )
 
+get_att_list = CommandContract(
+    code=CommandCode.GET_ATT_LIST,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?att_list"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_unknown_answer]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get a list of atts"
+    ),
+    is_release=True,
+    tags=["transducer", "config"]
+)
+
 set_att = CommandContract(
     code=CommandCode.SET_ATT,
     command_defs=CommandDef(
@@ -348,6 +382,23 @@ get_atk = CommandContract(
     ),
     user_manual_attrs=UserManualAttrs(
         description="Command to get the atk"
+    ),
+    is_release=True,
+    tags=["transducer", "config"]
+)
+
+get_atk_list = CommandContract(
+    code=CommandCode.GET_ATK_LIST,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?atk_list"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_unknown_answer]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get a list of atks"
     ),
     is_release=True,
     tags=["transducer", "config"]
