@@ -113,6 +113,7 @@ class FieldLimits(Generic[T]):
     minimum: T | None = attrs.field()
     maximum: T | None = attrs.field()
     allowed_values: List[T] | None = attrs.field()
+    type: T = attrs.field()
 
 class CppTransCompiler:
     def __init__(self):
@@ -309,10 +310,14 @@ class CppTransCompiler:
         return cpp_answer_field_def
 
     def _transpile_field_type(self, field_type: FieldType) -> str:
+        data_type =  np.uint32
+        if field_type.field_type in (np.uint32, np.uint16, np.uint8, float):
+            data_type = field_type.field_type
         field_limits = FieldLimits(
             minimum=field_type.min_value,
             maximum=field_type.max_value,
-            allowed_values=field_type.allowed_values
+            allowed_values=field_type.allowed_values,
+            type=data_type
         )
         if field_limits in self._field_limits_cache:
             cpp_limits_var: str = self._field_limits_cache[field_limits]
@@ -341,8 +346,17 @@ class CppTransCompiler:
 
     def _transpile_field_limits(self, field_limits: FieldLimits, var_name: str) -> str:
         allowed_values = convert_to_cpp_initializer_list(field_limits.allowed_values) if field_limits.allowed_values else CPP_NULLOPT  
+        data_type = "uint32_t" # TODO choose default data type, how to handle str and bool and enums
+        if field_limits.type is np.uint32:
+            data_type = "uint32_t"
+        elif field_limits.type is np.uint16:
+            data_type = "uint16_t"
+        elif field_limits.type is np.uint8:
+            data_type = "uint8_t"
+        elif field_limits.type is float:
+            data_type = "float"
         cpp_field_limits: str = f"""
-            FieldLimits<uint32_t> {{
+            FieldLimits<{data_type}> {{
                 .min = {nullopt_if_none(field_limits.minimum)},
                 .max = {nullopt_if_none(field_limits.maximum)},
                 .allowed_values = {allowed_values}
