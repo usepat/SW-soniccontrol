@@ -1,3 +1,4 @@
+import numpy as np
 from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative
 from sonic_protocol.defs import (
 	CommandCode, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
@@ -228,7 +229,21 @@ get_uipt = CommandContract(
 
 param_index = CommandParamDef(
     name=EFieldName.INDEX,
-    param_type=FieldType(field_type=int) # TODO set this to uint8_t?
+    param_type=FieldType(field_type=np.uint8) # TODO set this to uint8_t?
+)
+param_atf = CommandParamDef(
+    name=EFieldName.ATF,
+    param_type=field_type_frequency
+)
+
+param_att = CommandParamDef(
+    name=EFieldName.ATT,
+    param_type=field_type_temperature_celsius
+)
+
+param_atk = CommandParamDef(
+    name=EFieldName.ATK,
+    param_type=FieldType(float)
 )
 
 field_atf = AnswerFieldDef(
@@ -258,7 +273,7 @@ set_atf = CommandContract(
     code=CommandCode.SET_ATF,
     command_defs=CommandDef(
         index_param=param_index,
-        setter_param=param_frequency,
+        setter_param=param_atf,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!atf"]
         )
@@ -300,7 +315,7 @@ set_att = CommandContract(
     code=CommandCode.SET_ATT,
     command_defs=CommandDef(
         index_param=param_index,
-        setter_param=param_temp_celsius, # TODO make a better param for att
+        setter_param=param_att, # TODO make a better param for att
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!att"]
         )
@@ -342,10 +357,7 @@ set_atk = CommandContract(
     code=CommandCode.SET_ATK,
     command_defs=CommandDef(
         index_param=param_index,
-        setter_param=CommandParamDef(
-            name=EFieldName.ATK,
-            param_type=FieldType(float)
-        ),
+        setter_param=param_atk,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!atk"]
         )
