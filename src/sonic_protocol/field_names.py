@@ -32,6 +32,7 @@ class EFieldName(Enum):
     DEVICE_TYPE = "device_type"
     PROTOCOL_VERSION = "protocol_version"
     IS_RELEASE = "is_release"
+    ADDITIONAL_OPTIONS = "additional_options"
 
     BUILD_DATE = "build_date"
     BUILD_HASH = "build_hash"

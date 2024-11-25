@@ -48,6 +48,11 @@ get_protocol = CommandContract(
             AnswerFieldDef(
                 field_name=EFieldName.IS_RELEASE, 
                 field_type=FieldType(bool, converter_ref=ConverterType.BUILD_TYPE), 
+            ),
+            AnswerFieldDef(
+                EFieldName.ADDITIONAL_OPTIONS,
+                str,
+                user_manual_attrs=UserManualAttrs("additional options used for future extensions of the protocol")
             )
         ]
     ),
