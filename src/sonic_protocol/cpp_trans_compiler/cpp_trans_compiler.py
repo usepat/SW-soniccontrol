@@ -245,7 +245,7 @@ class CppTransCompiler:
 
         version = protocol_version.version
         protocol_def = f"""
-static constexpr auto {protocol_name} = Protocol<{len(command_defs)}> {{
+constexpr auto {protocol_name}_data = ProtocolData<{len(command_defs)}> {{
     .version = Version {{
         .major = {version.major},
         .minor = {version.minor},
@@ -261,6 +261,7 @@ static constexpr auto {protocol_name} = Protocol<{len(command_defs)}> {{
         {", ".join(answer_defs)}
     }},
 }};
+constexpr Protocol<{len(command_defs)}> {protocol_name}({protocol_name}_data);
         """
         return protocol_def
 

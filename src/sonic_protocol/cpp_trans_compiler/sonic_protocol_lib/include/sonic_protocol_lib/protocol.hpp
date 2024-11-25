@@ -27,37 +27,33 @@ public:
 };
 
 template <size_t CommandCount, size_t AnswerCount>
-struct ProtocolTemplated : public IProtocol {
+struct ProtocolData {
     Version version;
     DeviceType device;
     bool isRelease;
     std::string_view options;
     etl::array<CommandDef, CommandCount> commands;
     etl::array<AnswerDef, AnswerCount> answers;
+};
 
-    // Override virtual functions for runtime use
-    Version getVersion() const override {
-        return version;
-    }
+template <size_t CommandCount, size_t AnswerCount>
+class ProtocolTemplated : public IProtocol {
+private:
+    ProtocolData<CommandCount, AnswerCount> data;
 
-    DeviceType getDevice() const override {
-        return device;
-    }
+public:
+    constexpr ProtocolTemplated(ProtocolData<CommandCount, AnswerCount> data)
+        : data(data) {}
 
-    bool getIsRelease() const override {
-        return isRelease;
-    }
-
-    std::string_view getOptions() const override {
-        return options;
-    }
-
+    Version getVersion() const override { return data.version; }
+    DeviceType getDevice() const override { return data.device; }
+    bool getIsRelease() const override { return data.isRelease; }
+    std::string_view getOptions() const override { return data.options; }
     std::span<const CommandDef> getCommandsSpan() const override {
-        return std::span<const CommandDef>(commands.data(), commands.size());
+        return std::span<const CommandDef>(data.commands.data(), data.commands.size());
     }
-
     std::span<const AnswerDef> getAnswersSpan() const override {
-        return std::span<const AnswerDef>(answers.data(), answers.size());
+        return std::span<const AnswerDef>(data.answers.data(), data.answers.size());
     }
 };
 
