@@ -4,6 +4,7 @@
 
 - [README](../README.md)
 - @subpage ProjectSetup
+- @subpage Requirements
 - @subpage SonicControl
 - @subpage SonicControlGui
 - @subpage SonicControlCli
