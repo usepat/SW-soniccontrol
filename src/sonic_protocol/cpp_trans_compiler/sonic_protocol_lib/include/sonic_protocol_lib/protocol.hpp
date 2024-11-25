@@ -27,7 +27,7 @@ public:
 };
 
 template <size_t CommandCount, size_t AnswerCount>
-struct ProtocolData {
+struct ProtocolDataTemplated {
     Version version;
     DeviceType device;
     bool isRelease;
@@ -39,10 +39,10 @@ struct ProtocolData {
 template <size_t CommandCount, size_t AnswerCount>
 class ProtocolTemplated : public IProtocol {
 private:
-    ProtocolData<CommandCount, AnswerCount> data;
+    ProtocolDataTemplated<CommandCount, AnswerCount> data;
 
 public:
-    constexpr ProtocolTemplated(ProtocolData<CommandCount, AnswerCount> data)
+    constexpr ProtocolTemplated(ProtocolDataTemplated<CommandCount, AnswerCount> data)
         : data(data) {}
 
     Version getVersion() const override { return data.version; }
@@ -60,5 +60,7 @@ public:
 
 template<size_t Count>
 using Protocol = ProtocolTemplated<Count, Count>;
+template<size_t Count>
+using ProtocolData = ProtocolDataTemplated<Count, Count>;
 
 }
