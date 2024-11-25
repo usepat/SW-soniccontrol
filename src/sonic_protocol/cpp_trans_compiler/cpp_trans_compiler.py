@@ -197,11 +197,12 @@ class CppTransCompiler:
         shutil.copyfile(str(protocol_template_path), generated_protocol_path)
 
         protocol_count = len(protocol_versions)
-        protocols, max_command_count = self._transpile_protocols(protocol, protocol_versions)
+        protocol_instances, protocol_return, max_command_count = self._transpile_protocols(protocol, protocol_versions)
         field_limits = self._transpile_field_limits_from_cache()
         self._inject_code_into_file(
             generated_protocol_path, 
-            PROTOCOLS=protocols, 
+            PROTOCOL_INSTANCES=protocol_instances,
+            PROTOCOLS=protocol_return, 
             PROTOCOL_COUNT=protocol_count, 
             FIELD_LIMITS=field_limits,
         )
@@ -214,7 +215,7 @@ class CppTransCompiler:
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
-    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, int]:
+    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, str, int]:
         protocol_builder = ProtocolBuilder(protocol)
         transpiled_protocols = []
         max_command_count = 0
@@ -232,7 +233,7 @@ class CppTransCompiler:
     return std::array<IProtocol*, protocol_count()>{{
         {protocol_names_reference}
     }}"""
-        return "".join(transpiled_protocols) + return_string, max_command_count
+        return "".join(transpiled_protocols), return_string, max_command_count
 
     def _transpile_command_contracts(
             self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name) -> str:
@@ -244,22 +245,22 @@ class CppTransCompiler:
 
         version = protocol_version.version
         protocol_def = f"""
-    static constexpr auto {protocol_name} = Protocol<{len(command_defs)}> {{
-        .version = Version {{
-            .major = {version.major},
-            .minor = {version.minor},
-            .patch = {version.patch},
-        }},
-        .device = DeviceType::{protocol_version.device_type.name},
-        .isRelease = {str(protocol_version.is_release).lower()},
-        .options = "",
-        .commands = etl::array<CommandDef, {len(command_defs)}>{{
-            {", ".join(command_defs)}
-        }},
-        .answers = etl::array<AnswerDef, {len(command_defs)}>{{
-            {", ".join(answer_defs)}
-        }},
-    }};
+static constexpr auto {protocol_name} = Protocol<{len(command_defs)}> {{
+    .version = Version {{
+        .major = {version.major},
+        .minor = {version.minor},
+        .patch = {version.patch},
+    }},
+    .device = DeviceType::{protocol_version.device_type.name},
+    .isRelease = {str(protocol_version.is_release).lower()},
+    .options = "",
+    .commands = etl::array<CommandDef, {len(command_defs)}>{{
+        {", ".join(command_defs)}
+    }},
+    .answers = etl::array<AnswerDef, {len(command_defs)}>{{
+        {", ".join(answer_defs)}
+    }},
+}};
         """
         return protocol_def
 
