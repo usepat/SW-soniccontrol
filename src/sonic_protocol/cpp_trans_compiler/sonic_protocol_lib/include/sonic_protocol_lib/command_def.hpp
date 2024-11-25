@@ -3,7 +3,7 @@
 #include <string_view>
 #include "param_def.hpp"
 #include "command_code.hpp"
-#include <etl/array.h>
+#include <etl/vector.h>
 
 namespace sonic_protocol_lib {
 

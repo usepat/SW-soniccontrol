@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "sonic_protocol_lib/protocol.hpp"
-#include "etl/array.h"
+#include "etl/vector.h"
 
 namespace sonic_protocol_lib {
 

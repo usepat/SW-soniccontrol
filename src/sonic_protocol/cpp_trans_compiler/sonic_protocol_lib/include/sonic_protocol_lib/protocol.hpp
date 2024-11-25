@@ -4,7 +4,7 @@
 #include "answer_def.hpp"
 #include "command_def.hpp"
 #include "enums.hpp"
-#include "etl/array.h"
+#include "etl/vector.h"
 
 namespace sonic_protocol_lib {
 
