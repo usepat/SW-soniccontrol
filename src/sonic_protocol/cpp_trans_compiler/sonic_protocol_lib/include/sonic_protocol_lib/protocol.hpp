@@ -4,7 +4,7 @@
 #include "answer_def.hpp"
 #include "command_def.hpp"
 #include "enums.hpp"
-#include "etl/vector.h"
+#include "etl/array.h"
 
 namespace sonic_protocol_lib {
 
@@ -21,8 +21,8 @@ struct Protocol {
     DeviceType device;
     bool isRelease;
     std::string_view options;
-    etl::vector<CommandDef, MAX_COMMAND_COUNT> commands;
-    etl::vector<AnswerDef, MAX_COMMAND_COUNT> answers;
+    etl::array<CommandDef, MAX_COMMAND_COUNT> commands;
+    etl::array<AnswerDef, MAX_COMMAND_COUNT> answers;
     uint16_t commandCount;
 };
 
