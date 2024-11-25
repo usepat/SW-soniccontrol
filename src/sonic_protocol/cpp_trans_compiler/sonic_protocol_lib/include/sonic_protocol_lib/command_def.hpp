@@ -15,4 +15,4 @@ struct CommandDef {
     etl::vector<ParamDef, MAX_PARAMS> params;
 };
 
-}s
+}
