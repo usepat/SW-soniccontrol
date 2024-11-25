@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "sonic_protocol_lib/protocol.hpp"
+#include "etl/array.h"
 
 namespace sonic_protocol_lib {
 
@@ -20,12 +21,14 @@ consteval std::size_t protocol_count() {
 }
 #undef PROTOCOL_COUNT
 
-} // end anonymous namespace
+#define PROTOCOL_INSTANCES
+/**/PROTOCOL_INSTANCES/**/ // the python script will replace this
 
 #define PROTOCOLS {}
-constexpr std::array<Protocol, protocol_count()> protocols() {
-    return /**/PROTOCOLS/**/; // the python script will replace this
+consteval std::array<const IProtocol*, protocol_count()> protocols() {
+    /**/PROTOCOLS/**/; // the python script will replace this
 }
 #undef PROTOCOLS
+
 
 }

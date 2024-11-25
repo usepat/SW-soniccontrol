@@ -11,7 +11,7 @@ enum class ParamType {
 };
 
 struct ParamDef {
-    FieldName field_name;
+    FieldName field_name{FieldName::UNDEFINED};
     ParamType param_type {ParamType::SETTER};
     FieldTypeDef field_type;
 };

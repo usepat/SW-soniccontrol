@@ -1,22 +1,23 @@
+import numpy as np
 from sonic_protocol.command_contracts.contract_generators import create_version_field
 from sonic_protocol.defs import (
-    CommandCode, CommandListExport, ConverterType, DeviceParamConstants, FieldType, MetaExportDescriptor, 
+    CommandCode, CommandListExport, ConverterType, DeviceParamConstants, FieldType, MetaExportDescriptor, Procedure, 
     Protocol, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType,
 )
 from sonic_protocol.command_contracts.fields import (
-    field_frequency, field_gain, field_temperature, field_urms, field_irms, 
+    field_frequency, field_gain, field_temperature_kelvin, field_type_temperature_celsius, field_urms, field_irms, 
     field_phase, field_signal, field_ts_flag,
 )
 from sonic_protocol.command_contracts.transducer_commands import (
     set_frequency, get_frequency, set_swf, get_swf, get_atf, set_atf, get_att, set_att, get_atk, set_atk,
-    set_gain, get_gain, set_on, set_off, get_temp, get_uipt, 
+    set_gain, get_gain, set_on, set_off, get_temp, get_uipt, get_atf_list, get_att_list, get_atk_list,
 )
 from sonic_protocol.command_contracts.communication_commands import (
-     set_termination, set_physical_comm_channel, set_comm_protocol, set_extern, set_analog,
+     set_termination, set_physical_comm_channel, set_comm_protocol, set_extern, set_analog, invalid_response,
 )
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.command_contracts.procedure_commands import all_proc_commands
+from sonic_protocol.command_contracts.procedure_commands import all_proc_commands, duty_cycle_proc_commands
 
 # Version instance
 version = Version(major=1, minor=0, patch=0)
@@ -134,12 +135,12 @@ get_help = CommandContract(
 
 error_code_field = AnswerFieldDef(
     field_name=EFieldName.ERROR_CODE,
-    field_type=FieldType(field_type=int)
+    field_type=FieldType(field_type=np.uint16)
 )
 
 procedure_field = AnswerFieldDef(
     field_name=EFieldName.PROCEDURE,
-    field_type=FieldType(field_type=int)
+    field_type=FieldType(field_type=Procedure, converter_ref=ConverterType.ENUM),
 )
 
 get_update = CommandContract(
@@ -155,7 +156,7 @@ get_update = CommandContract(
             field_frequency,
             field_gain,
             procedure_field,
-            field_temperature,
+            field_temperature_kelvin,
             field_urms,
             field_irms,
             field_phase,
@@ -184,6 +185,7 @@ protocol = Protocol(
                 set_off,
                 set_frequency,
                 get_frequency,
+                invalid_response
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=0, minor=0, patch=0),
@@ -211,10 +213,13 @@ protocol = Protocol(
         CommandListExport(
             exports=[
                 get_atf,
+                get_atf_list,
                 set_atf,
                 get_att,
+                get_att_list,
                 set_att,
                 get_atk,
+                get_atk_list,
                 set_atk,
             ],
             descriptor = MetaExportDescriptor(
@@ -239,6 +244,13 @@ protocol = Protocol(
                 excluded_device_types=[DeviceType.DESCALE]
             )
         ),
+        CommandListExport(
+            exports=duty_cycle_proc_commands,
+            descriptor = MetaExportDescriptor(
+                min_protocol_version=Version(major=1, minor=0, patch=0),
+                included_device_types=[DeviceType.DESCALE]
+            )
+        )
     ]
 )
 

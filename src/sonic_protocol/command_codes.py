@@ -37,15 +37,19 @@ class CommandCode(IntEnum):
     GET_PROT = 110
     GET_PROT_LIST = 120
     GET_PVAL = 130
-    GET_ATF = 140
+    GET_ATF_LIST = 140
+    GET_ATF = 141
     GET_TON = 150
-    GET_ATK = 160
+    GET_ATK_LIST = 160
+    GET_ATK = 161
+    GET_ATT_LIST = 170
     GET_ATT = 171
     GET_SWF = 180
     GET_AUTO = 210
     GET_SCAN = 300
     GET_TUNE = 310
     GET_WIPE = 320
+    GET_DUTY_CYCLE = 330
 
     SET_EXTERN = 1010
     SET_ANALOG = 1020
@@ -84,6 +88,8 @@ class CommandCode(IntEnum):
     SET_FLASH_115200 = 7003
     SET_NOTIFY = 999
     SET_DUTY_CYCLE = 8000
+    SET_DUTY_CYCLE_T_OFF = 8001
+    SET_DUTY_CYCLE_T_ON = 8002
     SET_LOG_DEBUG = 9000
     SET_LOG_INFO = 10000
     SET_LOG_WARN = 11000
