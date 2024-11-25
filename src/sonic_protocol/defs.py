@@ -50,6 +50,7 @@ class SIUnit(Enum):
     SECONDS = "s"
     HERTZ = "Hz"
     CELSIUS = "C°"
+    KELVIN = "K"
     VOLTAGE = "V"
     AMPERE = "A"
     DEGREE = "°"

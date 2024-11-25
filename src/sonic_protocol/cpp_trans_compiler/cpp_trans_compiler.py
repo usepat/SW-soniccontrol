@@ -1,7 +1,7 @@
 
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Generic, List, Literal, TypeVar
+from typing import Any, Generic, List, Literal, Tuple, TypeVar
 
 import attrs
 import numpy as np
@@ -106,6 +106,8 @@ class ProtocolVersion:
     version: Version = attrs.field()
     device_type: DeviceType = attrs.field()
     is_release: bool = attrs.field(default=True)
+    def to_cpp_var_name(self) -> str:
+        return f"{self.device_type.name}v{self.version.major}_{self.version.minor}_{self.version.patch}"
 
 T = TypeVar("T")
 @attrs.define(hash=True)
@@ -113,6 +115,7 @@ class FieldLimits(Generic[T]):
     minimum: T | None = attrs.field()
     maximum: T | None = attrs.field()
     allowed_values: List[T] | None = attrs.field()
+    data_type: type[T] = attrs.field()
 
 class CppTransCompiler:
     def __init__(self):
@@ -194,13 +197,14 @@ class CppTransCompiler:
         shutil.copyfile(str(protocol_template_path), generated_protocol_path)
 
         protocol_count = len(protocol_versions)
-        protocols = self._transpile_protocols(protocol, protocol_versions)
+        protocol_instances, protocol_return, max_command_count = self._transpile_protocols(protocol, protocol_versions)
         field_limits = self._transpile_field_limits_from_cache()
         self._inject_code_into_file(
             generated_protocol_path, 
-            PROTOCOLS=protocols, 
+            PROTOCOL_INSTANCES=protocol_instances,
+            PROTOCOLS=protocol_return, 
             PROTOCOL_COUNT=protocol_count, 
-            FIELD_LIMITS=field_limits
+            FIELD_LIMITS=field_limits,
         )
         
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
@@ -211,17 +215,28 @@ class CppTransCompiler:
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
-    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> str:
+    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, str, int]:
         protocol_builder = ProtocolBuilder(protocol)
         transpiled_protocols = []
+        max_command_count = 0
+        protocol_names = []
+        protocol_names_reference_lines = []
         for protocol_version in protocol_versions:
+            protocol_names.append(f"protocol_{protocol_version.to_cpp_var_name()}")
+            protocol_names_reference_lines.append(f"&{protocol_names[-1]}")  # Add correct indentation
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
-            transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table)
+            max_command_count = max(max_command_count, len(command_lookup_table))
+            transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_names[-1])
             transpiled_protocols.append(transpiled_protocol)
-        return "{" + ", ".join(transpiled_protocols) + "}"
+        protocol_names_reference = ",\n        ".join(protocol_names_reference_lines)
+        return_string = f"""
+    return std::array<const IProtocol*, protocol_count()>{{
+        {protocol_names_reference}
+    }}"""
+        return "".join(transpiled_protocols), return_string, max_command_count
 
     def _transpile_command_contracts(
-            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable) -> str:
+            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name) -> str:
         answer_defs = []
         command_defs = []
         for code, command_lookup in sorted(command_list.items()):
@@ -230,22 +245,23 @@ class CppTransCompiler:
 
         version = protocol_version.version
         protocol_def = f"""
-            Protocol {{
-                .version = Version {{
-                    .major = {version.major},
-                    .minor = {version.minor},
-                    .patch = {version.patch},
-                }},
-                .device = DeviceType::{protocol_version.device_type.name},
-                .isRelease = {str(protocol_version.is_release).lower()},
-                .options = "",
-                .commands = {{
-                    {", ".join(command_defs)}
-                }},
-                .answers = {{
-                    {", ".join(answer_defs)}
-                }}
-            }}
+constexpr auto {protocol_name}_data = ProtocolData<{len(command_defs)}> {{
+    .version = Version {{
+        .major = {version.major},
+        .minor = {version.minor},
+        .patch = {version.patch},
+    }},
+    .device = DeviceType::{protocol_version.device_type.name},
+    .isRelease = {str(protocol_version.is_release).lower()},
+    .options = "",
+    .commands = etl::array<CommandDef, {len(command_defs)}>{{
+        {", ".join(command_defs)}
+    }},
+    .answers = etl::array<AnswerDef, {len(answer_defs)}>{{
+        {", ".join(answer_defs)}
+    }},
+}};
+constexpr Protocol<{len(command_defs)}> {protocol_name}({protocol_name}_data);
         """
         return protocol_def
 
@@ -264,7 +280,7 @@ class CppTransCompiler:
             CommandDef {{
                 .code = CommandCode::{code.name},
                 .string_identifiers = {convert_to_cpp_initializer_list(string_identifiers)},
-                .params = {{
+                .params = etl::array<ParamDef, MAX_PARAMS>{{
                     { ", ".join(params) }
                 }}
             }}
@@ -286,7 +302,7 @@ class CppTransCompiler:
         cpp_answer_def = f"""
             AnswerDef {{
                 .code = CommandCode::{code.name},
-                .fields = {{ 
+                .fields = etl::array<AnswerFieldDef, MAX_ANSWER_FIELDS>{{ 
                     {", ".join(transpiled_fields)} 
                 }}
             }}
@@ -306,10 +322,14 @@ class CppTransCompiler:
         return cpp_answer_field_def
 
     def _transpile_field_type(self, field_type: FieldType) -> str:
+        data_type =  np.uint32
+        if field_type.field_type in (np.uint32, np.uint16, np.uint8, float):
+            data_type = field_type.field_type
         field_limits = FieldLimits(
             minimum=field_type.min_value,
             maximum=field_type.max_value,
-            allowed_values=field_type.allowed_values
+            allowed_values=field_type.allowed_values,
+            data_type=data_type
         )
         if field_limits in self._field_limits_cache:
             cpp_limits_var: str = self._field_limits_cache[field_limits]
@@ -338,8 +358,17 @@ class CppTransCompiler:
 
     def _transpile_field_limits(self, field_limits: FieldLimits, var_name: str) -> str:
         allowed_values = convert_to_cpp_initializer_list(field_limits.allowed_values) if field_limits.allowed_values else CPP_NULLOPT  
+        data_type = "uint32_t" # TODO choose default data type, how to handle str and bool and enums
+        if field_limits.data_type is np.uint32:
+            data_type = "uint32_t"
+        elif field_limits.data_type is np.uint16:
+            data_type = "uint16_t"
+        elif field_limits.data_type is np.uint8:
+            data_type = "uint8_t"
+        elif field_limits.data_type is float:
+            data_type = "float"
         cpp_field_limits: str = f"""
-            FieldLimits<uint32_t> {{
+            FieldLimits<{data_type}> {{
                 .min = {nullopt_if_none(field_limits.minimum)},
                 .max = {nullopt_if_none(field_limits.maximum)},
                 .allowed_values = {allowed_values}

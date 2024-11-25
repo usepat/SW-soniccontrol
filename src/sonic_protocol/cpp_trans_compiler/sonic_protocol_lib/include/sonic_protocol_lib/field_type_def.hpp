@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "si_units.hpp"
+#include <etl/array.h>
 
 namespace sonic_protocol_lib {
 
@@ -68,11 +69,12 @@ enum class ConverterReference {
     TERMINATION,
 };
 
+constexpr std::size_t MAX_ALLOWED_VALUES = 10;
 template <typename T>
 struct FieldLimits {
     std::optional<T> min;
     std::optional<T> max;
-    std::optional<std::initializer_list<T>> allowed_values;
+    std::optional<etl::array<T, MAX_ALLOWED_VALUES>> allowed_values;
 };
 
 struct FieldTypeDef {
