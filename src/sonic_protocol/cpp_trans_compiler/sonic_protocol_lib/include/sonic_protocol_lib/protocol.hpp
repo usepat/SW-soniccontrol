@@ -44,7 +44,7 @@ private:
 public:
     constexpr ProtocolTemplated(ProtocolDataTemplated<CommandCount, AnswerCount> data)
         : data(data) {}
-
+    constexpr ~ProtocolTemplated() = default;
     Version getVersion() const override { return data.version; }
     DeviceType getDevice() const override { return data.device; }
     bool getIsRelease() const override { return data.isRelease; }
@@ -55,7 +55,7 @@ public:
     std::span<const AnswerDef> getAnswersSpan() const override {
         return std::span<const AnswerDef>(data.answers.data(), data.answers.size());
     }
-    ~ProtocolTemplated() constexpr = default;
+    
 };
 
 

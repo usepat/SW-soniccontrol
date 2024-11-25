@@ -230,7 +230,7 @@ class CppTransCompiler:
             transpiled_protocols.append(transpiled_protocol)
         protocol_names_reference = ",\n        ".join(protocol_names_reference_lines)
         return_string = f"""
-    return std::array<IProtocol*, protocol_count()>{{
+    return std::array<const IProtocol*, protocol_count()>{{
         {protocol_names_reference}
     }}"""
         return "".join(transpiled_protocols), return_string, max_command_count

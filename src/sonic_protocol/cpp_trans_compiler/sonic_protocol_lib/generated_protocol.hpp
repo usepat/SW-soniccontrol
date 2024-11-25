@@ -21,7 +21,7 @@ consteval std::size_t protocol_count() {
 /**/PROTOCOL_INSTANCES/**/ // the python script will replace this
 
 #define PROTOCOLS {}
-consteval std::array<IProtocol*, protocol_count()> protocols() {
+consteval std::array<const IProtocol*, protocol_count()> protocols() {
     /**/PROTOCOLS/**/; // the python script will replace this
 }
 #undef PROTOCOLS
