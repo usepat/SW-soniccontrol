@@ -18,8 +18,8 @@ consteval std::size_t protocol_count() {
 #undef PROTOCOL_COUNT
 
 #define PROTOCOLS {}
-consteval std::array<Protocol, protocol_count()> protocols() {
-    return /**/PROTOCOLS/**/; // the python script will replace this
+consteval std::array<IProtocol, protocol_count()> protocols() {
+    /**/PROTOCOLS/**/; // the python script will replace this
 }
 #undef PROTOCOLS
 

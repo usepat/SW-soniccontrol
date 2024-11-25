@@ -106,6 +106,8 @@ class ProtocolVersion:
     version: Version = attrs.field()
     device_type: DeviceType = attrs.field()
     is_release: bool = attrs.field(default=True)
+    def __str__(self) -> str:
+        return f"{self.device_type.name}v{self.version.major}_{self.version.minor}_{self.version.patch}"
 
 T = TypeVar("T")
 @attrs.define(hash=True)
@@ -216,15 +218,24 @@ class CppTransCompiler:
         protocol_builder = ProtocolBuilder(protocol)
         transpiled_protocols = []
         max_command_count = 0
+        protocol_names = []
+        protocol_names_reference_lines = []
         for protocol_version in protocol_versions:
+            protocol_names.append(f"protocol_{protocol_version}")
+            protocol_names_reference_lines.append(f"&{protocol_names[-1]}")  # Add correct indentation
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
             max_command_count = max(max_command_count, len(command_lookup_table))
-            transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table)
+            transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_names[-1])
             transpiled_protocols.append(transpiled_protocol)
-        return "{" + ", ".join(transpiled_protocols) + "}", max_command_count
+        protocol_names_reference = ",\n        ".join(protocol_names_reference_lines)
+        return_string = f"""
+    return std::array<IProtocol *, protocol_count()>{{
+        {protocol_names_reference}
+    }}"""
+        return "".join(transpiled_protocols) + return_string, max_command_count
 
     def _transpile_command_contracts(
-            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable) -> str:
+            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name) -> str:
         answer_defs = []
         command_defs = []
         for code, command_lookup in sorted(command_list.items()):
@@ -233,23 +244,22 @@ class CppTransCompiler:
 
         version = protocol_version.version
         protocol_def = f"""
-            Protocol {{
-                .version = Version {{
-                    .major = {version.major},
-                    .minor = {version.minor},
-                    .patch = {version.patch},
-                }},
-                .device = DeviceType::{protocol_version.device_type.name},
-                .isRelease = {str(protocol_version.is_release).lower()},
-                .options = "",
-                .commands = etl::array<CommandDef, MAX_COMMAND_COUNT>{{
-                    {", ".join(command_defs)}
-                }},
-                .answers = etl::array<AnswerDef, MAX_COMMAND_COUNT>{{
-                    {", ".join(answer_defs)}
-                }},
-                .commandCount = {len(command_defs)}
-            }}
+    static constexpr auto {protocol_name} = Protocol<{len(command_defs)}> {{
+        .version = Version {{
+            .major = {version.major},
+            .minor = {version.minor},
+            .patch = {version.patch},
+        }},
+        .device = DeviceType::{protocol_version.device_type.name},
+        .isRelease = {str(protocol_version.is_release).lower()},
+        .options = "",
+        .commands = etl::array<CommandDef, {len(command_defs)}>{{
+            {", ".join(command_defs)}
+        }},
+        .answers = etl::array<AnswerDef, {len(command_defs)}>{{
+            {", ".join(answer_defs)}
+        }},
+    }};
         """
         return protocol_def
 
