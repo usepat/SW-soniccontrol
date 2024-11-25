@@ -242,10 +242,10 @@ class CppTransCompiler:
                 .device = DeviceType::{protocol_version.device_type.name},
                 .isRelease = {str(protocol_version.is_release).lower()},
                 .options = "",
-                .commands = etl::array<CommandDef, MAX_COMMAND_COUNT>{{
+                .commands = etl::vector<CommandDef, MAX_COMMAND_COUNT>{{
                     {", ".join(command_defs)}
                 }},
-                .answers = etl::array<AnswerDef, MAX_COMMAND_COUNT>{{
+                .answers = etl::vector<AnswerDef, MAX_COMMAND_COUNT>{{
                     {", ".join(answer_defs)}
                 }},
                 .commandCount = {len(command_defs)}
@@ -268,7 +268,7 @@ class CppTransCompiler:
             CommandDef {{
                 .code = CommandCode::{code.name},
                 .string_identifiers = {convert_to_cpp_initializer_list(string_identifiers)},
-                .params = etl::array<ParamDef, MAX_PARAMS>{{
+                .params = etl::vector<ParamDef, MAX_PARAMS>{{
                     { ", ".join(params) }
                 }}
             }}
@@ -290,7 +290,7 @@ class CppTransCompiler:
         cpp_answer_def = f"""
             AnswerDef {{
                 .code = CommandCode::{code.name},
-                .fields = etl::array<AnswerFieldDef, MAX_ANSWER_FIELDS>{{ 
+                .fields = etl::vector<AnswerFieldDef, MAX_ANSWER_FIELDS>{{ 
                     {", ".join(transpiled_fields)} 
                 }}
             }}

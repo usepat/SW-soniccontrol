@@ -21,8 +21,8 @@ struct Protocol {
     DeviceType device;
     bool isRelease;
     std::string_view options;
-    etl::array<CommandDef, MAX_COMMAND_COUNT> commands;
-    etl::array<AnswerDef, MAX_COMMAND_COUNT> answers;
+    etl::vector<CommandDef, MAX_COMMAND_COUNT> commands;
+    etl::vector<AnswerDef, MAX_COMMAND_COUNT> answers;
     uint16_t commandCount;
 };
 
