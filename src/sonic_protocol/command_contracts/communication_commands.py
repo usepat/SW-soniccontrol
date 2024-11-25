@@ -160,6 +160,7 @@ set_extern = CommandContract(
     tags=["communication"]
 )
 
+# This is needed so the firmware can answer with an error message when parsing failed
 invalid_response = CommandContract(
     code=CommandCode.INVALID,
     command_defs=CommandDef(

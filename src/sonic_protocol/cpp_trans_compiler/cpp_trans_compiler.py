@@ -106,7 +106,7 @@ class ProtocolVersion:
     version: Version = attrs.field()
     device_type: DeviceType = attrs.field()
     is_release: bool = attrs.field(default=True)
-    def __str__(self) -> str:
+    def to_cpp_var_name(self) -> str:
         return f"{self.device_type.name}v{self.version.major}_{self.version.minor}_{self.version.patch}"
 
 T = TypeVar("T")
@@ -115,7 +115,7 @@ class FieldLimits(Generic[T]):
     minimum: T | None = attrs.field()
     maximum: T | None = attrs.field()
     allowed_values: List[T] | None = attrs.field()
-    type: T = attrs.field()
+    data_type: type[T] = attrs.field()
 
 class CppTransCompiler:
     def __init__(self):
@@ -222,7 +222,7 @@ class CppTransCompiler:
         protocol_names = []
         protocol_names_reference_lines = []
         for protocol_version in protocol_versions:
-            protocol_names.append(f"protocol_{protocol_version}")
+            protocol_names.append(f"protocol_{protocol_version.to_cpp_var_name()}")
             protocol_names_reference_lines.append(f"&{protocol_names[-1]}")  # Add correct indentation
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
             max_command_count = max(max_command_count, len(command_lookup_table))
@@ -257,7 +257,7 @@ constexpr auto {protocol_name}_data = ProtocolData<{len(command_defs)}> {{
     .commands = etl::array<CommandDef, {len(command_defs)}>{{
         {", ".join(command_defs)}
     }},
-    .answers = etl::array<AnswerDef, {len(command_defs)}>{{
+    .answers = etl::array<AnswerDef, {len(answer_defs)}>{{
         {", ".join(answer_defs)}
     }},
 }};
@@ -329,7 +329,7 @@ constexpr Protocol<{len(command_defs)}> {protocol_name}({protocol_name}_data);
             minimum=field_type.min_value,
             maximum=field_type.max_value,
             allowed_values=field_type.allowed_values,
-            type=data_type
+            data_type=data_type
         )
         if field_limits in self._field_limits_cache:
             cpp_limits_var: str = self._field_limits_cache[field_limits]
@@ -359,13 +359,13 @@ constexpr Protocol<{len(command_defs)}> {protocol_name}({protocol_name}_data);
     def _transpile_field_limits(self, field_limits: FieldLimits, var_name: str) -> str:
         allowed_values = convert_to_cpp_initializer_list(field_limits.allowed_values) if field_limits.allowed_values else CPP_NULLOPT  
         data_type = "uint32_t" # TODO choose default data type, how to handle str and bool and enums
-        if field_limits.type is np.uint32:
+        if field_limits.data_type is np.uint32:
             data_type = "uint32_t"
-        elif field_limits.type is np.uint16:
+        elif field_limits.data_type is np.uint16:
             data_type = "uint16_t"
-        elif field_limits.type is np.uint8:
+        elif field_limits.data_type is np.uint8:
             data_type = "uint8_t"
-        elif field_limits.type is float:
+        elif field_limits.data_type is float:
             data_type = "float"
         cpp_field_limits: str = f"""
             FieldLimits<{data_type}> {{
