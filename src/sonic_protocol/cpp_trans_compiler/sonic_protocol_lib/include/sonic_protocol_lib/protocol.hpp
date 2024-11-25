@@ -55,6 +55,7 @@ public:
     std::span<const AnswerDef> getAnswersSpan() const override {
         return std::span<const AnswerDef>(data.answers.data(), data.answers.size());
     }
+    ~ProtocolTemplated() constexpr = default;
 };
 
 
