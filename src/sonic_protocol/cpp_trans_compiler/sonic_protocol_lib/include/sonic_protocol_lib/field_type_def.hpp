@@ -28,6 +28,37 @@ enum class DataType {
     VERSION,
 };
 
+inline std::string_view convert_data_type_to_string(DataType value) {
+    switch (value) {
+        case DataType::UINT8:
+            return "uint8";
+        case DataType::UINT16:
+            return "uint16";
+        case DataType::UINT32:
+            return "uint32";
+        case DataType::FLOAT:
+            return "float";
+        case DataType::STRING:
+            return "string";
+        case DataType::BOOL:
+            return "bool";
+        case DataType::E_DEVICE_TYPE:
+            return "e_device_type";
+        case DataType::E_COMMUNICATION_CHANNEL:
+            return "e_communication_channel";
+        case DataType::E_COMMUNICATION_PROTOCOL:
+            return "e_communication_protocol";
+        case DataType::E_INPUT_SOURCE:
+            return "e_input_source";
+        case DataType::E_PROCEDURE:
+            return "e_procedure";
+        case DataType::VERSION:
+            return "version";
+        default:
+            assert (false);
+    }
+}
+
 enum class ConverterReference {
     PRIMITIVE,
     ENUM,
