@@ -26,23 +26,27 @@ consteval std::size_t protocol_count() {
 /**/FIELD_DEFS/**/ // the python script will replace this
 #undef FIELD_DEFS
 
+#define PARAM_DEFS
+/**/PARAM_DEFS/**/ // the python script will replace this
+#undef PARAM_DEFS
+
 #define COMMAND_DEFS
-/**/COMMAND_DEFS/**/ // the python script will replace this
+inline constexpr std::array<ParamDef, 0> EMPTY_PARAMS{};/**/COMMAND_DEFS/**/ // the python script will replace this
 #undef COMMAND_DEFS
 
-#define ANSWER_CONTRACTS
-/**/ANSWER_CONTRACTS/**/ // the python script will replace this
-#undef ANSWER_CONTRACTS
+#define ANSWER_DEFS
+/**/ANSWER_DEFS/**/ // the python script will replace this
+#undef ANSWER_DEFS
 
 #define PROTOCOL_INSTANCES
+constexpr std::array<Protocol, protocol_count()> protocol_instances = {
 /**/PROTOCOL_INSTANCES/**/ // the python script will replace this
+};
 #undef PROTOCOL_INSTANCES
 
-#define PROTOCOLS {}
-consteval std::array<const IProtocol*, protocol_count()> protocols() {
-    /**/PROTOCOLS/**/; // the python script will replace this
+consteval std::span<Protocol> protocols() {
+    return std::span<Protocol>(protocol_instances);
 }
-#undef PROTOCOLS
 
 
 }
