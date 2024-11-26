@@ -280,15 +280,17 @@ class CppTransCompiler:
             answer_defs.append(temp[0])
             field_defs.append(temp[1])
         
+        command_defs_cpp_var_name = protocol_name + "_command_defs"
+        answer_defs_cpp_var_name = protocol_name + "_answer_defs"
         command_defs_array = f"""
 {"".join(param_defs)}
 {"".join(string_identifiers)}
-inline constexpr std::array<CommandDef, {len(command_defs)}> {protocol_name}_command_defs = {{{", ".join(command_defs)}
+inline constexpr std::array<CommandDef, {len(command_defs)}> {command_defs_cpp_var_name} = {{{", ".join(command_defs)}
 }};
         """
         answer_defs_array = f"""
 {"".join(field_defs)}
-inline constexpr std::array<AnswerDef, {len(answer_defs)}> {protocol_name}_answer_defs = {{{", ".join(answer_defs)}
+inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_name} = {{{", ".join(answer_defs)}
 }};"""
         version = protocol_version.version
         protocol_def = f"""    Protocol {{
@@ -300,8 +302,8 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {protocol_name}_answe
         .device = DeviceType::{protocol_version.device_type.name},
         .isRelease = {str(protocol_version.is_release).lower()},
         .options = "",
-        .commands = std::span<CommandDef>({protocol_name}_command_defs),
-        .answers = std::span<AnswerDef>({protocol_name}_answer_defs)
+        .commands = std::span<CommandDef>({command_defs_cpp_var_name}.data(), {command_defs_cpp_var_name}.size()),
+        .answers = std::span<AnswerDef>({answer_defs_cpp_var_name}.data(), {answer_defs_cpp_var_name}.size())
     }}"""
         return (protocol_def, command_defs_array, answer_defs_array)
 
@@ -341,8 +343,8 @@ inline constexpr std::array<std::string_view, {len(string_identifiers)}> {string
         cpp_command_def = f"""
     CommandDef {{
         .code = CommandCode::{code.name},
-        .string_identifiers = std::span<std::string_view>({string_identifiers_cpp_var_name}),
-        .params = std::span<ParamDef>({param_defs_cpp_var_name})
+        .string_identifiers = std::span<std::string_view>({string_identifiers_cpp_var_name}.data(), {string_identifiers_cpp_var_name}.size()),
+        .params = std::span<ParamDef>({param_defs_cpp_var_name}.data(), {param_defs_cpp_var_name}.size())
     }}"""
         return cpp_command_def, param_def_cpp_var, string_identifiers_cpp
 
@@ -379,7 +381,7 @@ inline constexpr std::array<AnswerFieldDef, {len(transpiled_field_references)}> 
         cpp_answer_def = f"""
     AnswerDef {{
         .code = CommandCode::{code.name},
-        .fields = std::span<AnswerFieldDef>({answer_fields_cpp_var_name})
+        .fields = std::span<AnswerFieldDef>({answer_fields_cpp_var_name}.data(), {answer_fields_cpp_var_name}.size())
     }}"""
         return cpp_answer_def, param_def_array_cpp_var
 
@@ -454,7 +456,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 num_allowed_values = len(field_limits.allowed_values)
                 allowed_values_ref = f"{var_name}_{num_allowed_values}_allowed_values"
                 self._allowed_values[field_limits.allowed_values] = allowed_values_ref
-            allowed_values_ref = f"std::span({allowed_values_ref})"
+            allowed_values_ref = f"std::span<{field_limits.cpp_data_type()}>({allowed_values_ref}.data(), {allowed_values_ref}.size())"
         
         cpp_field_limits: str = f"""
     FieldLimits<{field_limits.cpp_data_type()}> {{
