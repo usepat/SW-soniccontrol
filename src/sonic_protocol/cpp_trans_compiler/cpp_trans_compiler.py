@@ -330,9 +330,10 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {protocol_name}_answe
             param_def_cpp_var = ""
             param_defs_cpp_var_name = "EMPTY_PARAMS"
         else:   
+            formatted_references = ",\n    ".join(param_references)
             param_def_cpp_var = f"""
 inline constexpr std::array<ParamDef, {len(param_references)}> {param_defs_cpp_var_name} = {{
-    {",\n    ".join(param_references)}
+    {formatted_references}
 }};"""
         string_identifiers_cpp = f"""
 inline constexpr std::array<std::string_view, {len(string_identifiers)}> {string_identifiers_cpp_var_name} = {convert_to_cpp_initializer_list(string_identifiers)};        
@@ -370,9 +371,10 @@ inline constexpr ParamDef {var_name} = {{
                 self._field_definitions[field] = field_def_cpp_var_name
                 transpiled_field_references.append(field_def_cpp_var_name)    
         answer_fields_cpp_var_name = protocol_name + f"_{code.name}_answer_fields"
+        formatted_transpiled_field_references = ",\n    ".join(transpiled_field_references)
         param_def_array_cpp_var = f"""
 inline constexpr std::array<AnswerFieldDef, {len(transpiled_field_references)}> {answer_fields_cpp_var_name} = {{
-    {",\n    ".join(transpiled_field_references)}
+    {formatted_transpiled_field_references}
 }};"""
         cpp_answer_def = f"""
     AnswerDef {{
