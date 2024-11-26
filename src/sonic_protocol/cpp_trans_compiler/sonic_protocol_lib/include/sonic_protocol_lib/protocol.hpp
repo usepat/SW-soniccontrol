@@ -20,8 +20,8 @@ public:
     DeviceType device;
     bool isRelease;
     std::string_view options;
-    std::span<CommandDef> commands;
-    std::span<AnswerDef> answers;
+    std::span<const CommandDef> commands;
+    std::span<const AnswerDef> answers;
 };
 
 }

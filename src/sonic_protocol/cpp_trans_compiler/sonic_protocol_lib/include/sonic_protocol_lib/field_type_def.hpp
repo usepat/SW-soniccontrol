@@ -43,7 +43,7 @@ template <typename T>
 struct FieldLimits {
     std::optional<T> min;
     std::optional<T> max;
-    std::optional<std::span<T>> allowed_values;
+    std::optional<std::span<const T>> allowed_values;
 };
 
 struct FieldTypeDef {

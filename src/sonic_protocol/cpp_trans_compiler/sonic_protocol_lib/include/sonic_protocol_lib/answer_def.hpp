@@ -9,7 +9,7 @@ namespace sonic_protocol_lib {
 constexpr std::size_t MAX_ANSWER_FIELDS = 20;
 struct AnswerDef {
     CommandCode code{CommandCode::INVALID};
-    std::span<AnswerFieldDef> fields;
+    std::span<const AnswerFieldDef> fields;
 };
 
 }

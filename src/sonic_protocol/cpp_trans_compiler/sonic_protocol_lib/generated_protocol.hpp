@@ -44,8 +44,8 @@ constexpr std::array<Protocol, protocol_count()> protocol_instances = {
 };
 #undef PROTOCOL_INSTANCES
 
-consteval std::span<Protocol> protocols() {
-    return std::span<Protocol>(protocol_instances);
+consteval std::span<const Protocol> protocols() {
+    return std::span<const Protocol>(protocol_instances);
 }
 
 
