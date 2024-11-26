@@ -302,8 +302,8 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_
         .device = DeviceType::{protocol_version.device_type.name},
         .isRelease = {str(protocol_version.is_release).lower()},
         .options = "",
-        .commands = std::span<CommandDef>({command_defs_cpp_var_name}.data(), {command_defs_cpp_var_name}.size()),
-        .answers = std::span<AnswerDef>({answer_defs_cpp_var_name}.data(), {answer_defs_cpp_var_name}.size())
+        .commands = std::span<const CommandDef>({command_defs_cpp_var_name}.data(), {command_defs_cpp_var_name}.size()),
+        .answers = std::span<const AnswerDef>({answer_defs_cpp_var_name}.data(), {answer_defs_cpp_var_name}.size())
     }}"""
         return (protocol_def, command_defs_array, answer_defs_array)
 
@@ -343,8 +343,8 @@ inline constexpr std::array<std::string_view, {len(string_identifiers)}> {string
         cpp_command_def = f"""
     CommandDef {{
         .code = CommandCode::{code.name},
-        .string_identifiers = std::span<std::string_view>({string_identifiers_cpp_var_name}.data(), {string_identifiers_cpp_var_name}.size()),
-        .params = std::span<ParamDef>({param_defs_cpp_var_name}.data(), {param_defs_cpp_var_name}.size())
+        .string_identifiers = std::span<const std::string_view>({string_identifiers_cpp_var_name}.data(), {string_identifiers_cpp_var_name}.size()),
+        .params = std::span<const ParamDef>({param_defs_cpp_var_name}.data(), {param_defs_cpp_var_name}.size())
     }}"""
         return cpp_command_def, param_def_cpp_var, string_identifiers_cpp
 
@@ -381,7 +381,7 @@ inline constexpr std::array<AnswerFieldDef, {len(transpiled_field_references)}> 
         cpp_answer_def = f"""
     AnswerDef {{
         .code = CommandCode::{code.name},
-        .fields = std::span<AnswerFieldDef>({answer_fields_cpp_var_name}.data(), {answer_fields_cpp_var_name}.size())
+        .fields = std::span<const AnswerFieldDef>({answer_fields_cpp_var_name}.data(), {answer_fields_cpp_var_name}.size())
     }}"""
         return cpp_answer_def, param_def_array_cpp_var
 
@@ -456,7 +456,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 num_allowed_values = len(field_limits.allowed_values)
                 allowed_values_ref = f"{var_name}_{num_allowed_values}_allowed_values"
                 self._allowed_values[field_limits.allowed_values] = allowed_values_ref
-            allowed_values_ref = f"std::span<{field_limits.cpp_data_type()}>({allowed_values_ref}.data(), {allowed_values_ref}.size())"
+            allowed_values_ref = f"std::span<const {field_limits.cpp_data_type()}>({allowed_values_ref}.data(), {allowed_values_ref}.size())"
         
         cpp_field_limits: str = f"""
     FieldLimits<{field_limits.cpp_data_type()}> {{
