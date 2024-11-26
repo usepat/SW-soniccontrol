@@ -38,7 +38,6 @@ enum class ConverterReference {
     TERMINATION,
 };
 
-constexpr std::size_t MAX_ALLOWED_VALUES = 10;
 template <typename T>
 struct FieldLimits {
     std::optional<T> min;
