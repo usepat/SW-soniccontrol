@@ -121,6 +121,7 @@ class CppTransCompiler:
     def __init__(self):
         self._var_id_counter: int = 0
         self._field_limits_cache: dict[FieldLimits, str] = {}
+        self._param_definitions: set[CommandParamDef] = set()
 
     def generate_sonic_protocol_lib(self, output_dir: Path):
         # copy protocol definitions to output directory
@@ -215,7 +216,7 @@ class CppTransCompiler:
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
-    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, str, int]:
+    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[List[Tuple[str, str, str]], str, int]:
         protocol_builder = ProtocolBuilder(protocol)
         transpiled_protocols = []
         max_command_count = 0
@@ -226,26 +227,31 @@ class CppTransCompiler:
             protocol_names_reference_lines.append(f"&{protocol_names[-1]}")  # Add correct indentation
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
             max_command_count = max(max_command_count, len(command_lookup_table))
-            transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_names[-1])
-            transpiled_protocols.append(transpiled_protocol)
+            transpiled_protocols.append(self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_names[-1]))
         protocol_names_reference = ",\n        ".join(protocol_names_reference_lines)
-        return_string = f"""
-    return std::array<const IProtocol*, protocol_count()>{{
-        {protocol_names_reference}
-    }}"""
-        return "".join(transpiled_protocols), return_string, max_command_count
+        return transpiled_protocols, protocol_names_reference, max_command_count
 
     def _transpile_command_contracts(
-            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name) -> str:
+            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name) -> Tuple[str, str, str]:
         answer_defs = []
         command_defs = []
         for code, command_lookup in sorted(command_list.items()):
+            # In Transpile Command and answer def add single definition to a set an only return the names of the instances
             command_defs.append(self._transpile_command_def(code, command_lookup.command_def))
             answer_defs.append(self._transpile_answer_def(code, command_lookup.answer_def))
-
+        command_defs_array = f"""
+        constexpr std::array<CommandDef, {len(command_list)}> {protocol_name}_command_defs = {{
+            {", ".join(command_defs)}
+        }};
+        """
+        answer_defs_array = f"""
+        constexpr std::array<AnswerDef, {len(command_list)}> {protocol_name}_answer_defs = {{
+            {", ".join(answer_defs)}
+        }};
+        """
         version = protocol_version.version
         protocol_def = f"""
-constexpr auto {protocol_name}_data = ProtocolData<{len(command_defs)}> {{
+constexpr Protocol {protocol_name} = Protocol {{
     .version = Version {{
         .major = {version.major},
         .minor = {version.minor},
@@ -254,35 +260,35 @@ constexpr auto {protocol_name}_data = ProtocolData<{len(command_defs)}> {{
     .device = DeviceType::{protocol_version.device_type.name},
     .isRelease = {str(protocol_version.is_release).lower()},
     .options = "",
-    .commands = etl::array<CommandDef, {len(command_defs)}>{{
-        {", ".join(command_defs)}
-    }},
-    .answers = etl::array<AnswerDef, {len(answer_defs)}>{{
-        {", ".join(answer_defs)}
-    }},
+    .commands = std::span<CommandDef>({protocol_name}_answer_defs),
+    .answers = std::span<AnswerDef>({protocol_name}_answer_defs)
 }};
-constexpr Protocol<{len(command_defs)}> {protocol_name}({protocol_name}_data);
+
         """
-        return protocol_def
+        return (protocol_def, command_defs_array, answer_defs_array)
 
     def _transpile_command_def(self, code: CommandCode, command_def: CommandDef) -> str:
         assert isinstance(command_def.sonic_text_attrs, SonicTextCommandAttrs)
         string_identifiers = command_def.sonic_text_attrs.string_identifier
         string_identifiers = [string_identifiers] if isinstance(string_identifiers, str) else string_identifiers
-        
+        param_def_cpp_var_name = f"{code.name}"
         params = []
         if command_def.index_param is not None:
             params.append(self._transpile_param_def(command_def.index_param, "INDEX"))
+            param_def_cpp_var_name += "_" + command_def.index_param.to_cpp_var_name()
         if command_def.setter_param is not None:
             params.append(self._transpile_param_def(command_def.setter_param, "SETTER"))
-
+            param_def_cpp_var_name += "_" + command_def.setter_param.to_cpp_var_name()
+        param_def_cpp_var = f"""
+        constexpr std::array<ParamDef, {len(params)}> {param_def_cpp_var_name} = {{
+            {", ".join(params)}
+        }};
+        """
         cpp_command_def = f"""
             CommandDef {{
                 .code = CommandCode::{code.name},
                 .string_identifiers = {convert_to_cpp_initializer_list(string_identifiers)},
-                .params = etl::array<ParamDef, MAX_PARAMS>{{
-                    { ", ".join(params) }
-                }}
+                .params = std::span<ParamDef>({code.name}_param_defs)
             }}
         """
         return cpp_command_def

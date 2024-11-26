@@ -81,7 +81,7 @@ set_gain = CommandContract(
         description="Command to set the gain of the transducer on the device."
     ),
     is_release=True,
-    tags=["gain", "transducer"]
+    tags=["gain", "transducer"],
 )
 
 get_gain = CommandContract(

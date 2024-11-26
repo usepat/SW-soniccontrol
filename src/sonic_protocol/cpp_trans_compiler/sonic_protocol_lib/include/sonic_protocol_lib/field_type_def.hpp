@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "si_units.hpp"
-#include <etl/array.h>
+#include <span>
 
 namespace sonic_protocol_lib {
 
@@ -43,7 +43,7 @@ template <typename T>
 struct FieldLimits {
     std::optional<T> min;
     std::optional<T> max;
-    std::optional<etl::array<T, MAX_ALLOWED_VALUES>> allowed_values;
+    std::optional<std::span<T>> allowed_values;
 };
 
 struct FieldTypeDef {
