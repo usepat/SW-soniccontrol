@@ -341,7 +341,7 @@ inline constexpr std::array<std::string_view, {len(string_identifiers)}> {string
         cpp_command_def = f"""
     CommandDef {{
         .code = CommandCode::{code.name},
-        .string_identifiers = std::span<std::string_view>{string_identifiers_cpp_var_name},
+        .string_identifiers = std::span<std::string_view>({string_identifiers_cpp_var_name}),
         .params = std::span<ParamDef>({param_defs_cpp_var_name})
     }}"""
         return cpp_command_def, param_def_cpp_var, string_identifiers_cpp
