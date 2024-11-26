@@ -14,7 +14,7 @@ struct Version {
   uint8_t patch{0};
 };
 
-class IProtocol {
+class Protocol {
 public:
     Version version;
     DeviceType device;
