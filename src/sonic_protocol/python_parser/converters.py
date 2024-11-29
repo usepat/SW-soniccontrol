@@ -1,6 +1,7 @@
 import abc
 from enum import Enum, IntEnum
 from typing import Any, TypeVar
+import numpy as np
 
 from sonic_protocol.defs import ConverterType, Version
 
@@ -103,7 +104,7 @@ class BuildTypeConverter(Converter):
         assert(self.validate_str(text))
         return text.lower() == "release"
     
-T = TypeVar("T", int, str, bool, float)
+T = TypeVar("T", int, str, bool, float, np.uint8, np.uint16, np.uint32)
 class PrimitiveTypeConverter(Converter):
     def __init__(self, target_class: type[T]):
         self._target_class = target_class

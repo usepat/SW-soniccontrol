@@ -6,6 +6,8 @@ import tkinter as tk
 
 from ttkbootstrap.dialogs.dialogs import Messagebox
 
+from sonic_protocol.command_codes import CommandCode
+from soniccontrol_gui.state_fetching.capture import Capture
 from soniccontrol_gui.state_fetching.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasureModel
 from soniccontrol_gui.ui_component import UIComponent
@@ -163,6 +165,9 @@ class KnownDeviceWindow(DeviceWindow):
             self._interpreter = InterpreterEngine(self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
+            update_answer_fields = self._device.lookup_table[CommandCode.DASH].answer_def.fields
+            update_answer_field_names = [ field.field_name for field in update_answer_fields ] 
+            self._capture = Capture(update_answer_field_names, self._logger)
             self._capture_targets = {
                 CaptureTargets.FREE: CaptureFree(),
                 CaptureTargets.SCRIPT: CaptureScript(self._script_file, self._scripting, self._interpreter),
@@ -175,14 +180,14 @@ class KnownDeviceWindow(DeviceWindow):
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
             self._logging = Logging(self, connection_name)
             self._editor = Editor(self, self._scripting, self._script_file, self._interpreter, self._app_state)
-            self._status_bar = StatusBar(self, self._view.status_bar_slot)
+            self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
             self._info = Info(self)
             self._configuration = Configuration(self, self._device)
             self._flashing = Flashing(self, self._logger, self._device, self._app_state, self._updater)
             self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
             self._proc_controlling = ProcControlling(self, self._proc_controller, self._proc_controlling_model, self._app_state)
-            self._sonicmeasure = Measuring(self, self._capture_targets, self._spectrum_measure_model)
+            self._sonicmeasure = Measuring(self, self._capture , self._capture_targets, self._spectrum_measure_model)
             self._home = Home(self, self._device)
 
             # Views
@@ -204,7 +209,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._logger.debug(list(WidgetRegistry._widget_registry.keys()))
 
             self._logger.debug("add callbacks and listeners to event emitters")
-            self._updater.subscribe("update", lambda e: self._sonicmeasure.on_status_update(e.data["status"]))
+            self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
             self._updater.start()
             self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._serialmonitor.on_execution_state_changed)

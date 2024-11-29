@@ -20,12 +20,14 @@ class SonicDevice(Scriptable):
     command_executor: CommandExecutor = attrs.field(on_setattr=attrs.setters.NO_OP)
     status: Status = attrs.field(on_setattr=attrs.setters.NO_OP)
     info: Info = attrs.field(on_setattr=attrs.setters.NO_OP)
+    lookup_table: CommandLookUpTable = attrs.field(on_setattr=attrs.setters.NO_OP)
 
     def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, status: Status, info: Info, logger: logging.Logger=logging.getLogger()) -> None:
         self.status = status
         self.info = info
         self._logger = logging.getLogger(logger.name + "." + SonicDevice.__name__)
         self._communicator = communicator
+        self.lookup_table = lookup_table
         self.command_executor = CommandExecutor(lookup_table, self._communicator)
 
     @property

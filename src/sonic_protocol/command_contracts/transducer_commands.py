@@ -9,7 +9,7 @@ from sonic_protocol.command_contracts.fields import (
     field_unknown_answer, field_type_frequency, field_type_temperature_celsius,
     field_frequency, field_gain, field_signal, field_swf,
     field_type_gain, swf_field_type, field_temperature_celsius,
-    field_urms, field_irms, field_phase, field_ts_flag, field_procedure
+    field_urms, field_irms, field_phase, field_ts_flag
 )
 
 

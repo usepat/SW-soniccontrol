@@ -1,32 +1,31 @@
 import logging
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Tuple
 import ttkbootstrap as ttk
+from sonic_protocol.defs import AnswerFieldDef
 from sonic_protocol.python_parser.answer_field_converter import AnswerFieldToStringConverter
 from sonic_protocol.field_names import EFieldName
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import View
-from soniccontrol.device_data import Status
 from soniccontrol_gui.constants import (color, events, fonts, sizes,
                                                      style, ui_labels)
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.widgets.horizontal_scrolled_frame import HorizontalScrolledFrame
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
-from sonic_protocol.protocol import field_frequency
 
 class StatusBar(UIComponent):
-    def __init__(self, parent: UIComponent, parent_slot: View):
+    def __init__(self, parent: UIComponent, parent_slot: View, answer_field_defs: List[AnswerFieldDef]):
         self._logger = logging.getLogger(parent.logger.name + "." + StatusBar.__name__)
         
         self._field_converters = {
-            EFieldName.FREQUENCY: AnswerFieldToStringConverter(field_frequency),
-            # TODO: ...
+            answer_field.field_name : AnswerFieldToStringConverter(answer_field)
+            for answer_field in answer_field_defs
         }
 
         self._logger.debug("Create Statusbar")
         self._view = StatusBarView(parent_slot, self._field_converters.keys())
-        self._status_panel = StatusPanel(self, self._view.panel_frame)
+        self._status_panel = StatusPanel(self, self._view.panel_frame, answer_field_defs)
         self._status_panel_expanded = False
         super().__init__(parent, self._view, self._logger)
         self._view.set_status_clicked_command(self.on_expand_status_panel)
@@ -37,11 +36,10 @@ class StatusBar(UIComponent):
         self._status_panel_expanded = not self._status_panel_expanded
         self._view.expand_panel_frame(self._status_panel_expanded)
 
-    def on_update_status(self, status: Status):
-        available_status_fields = filter(status.has_attr, self._field_converters.keys())
+    def on_update_status(self, status: Dict[EFieldName, Any]):
         status_field_text_representations = {
-            field: self._field_converters[field].convert(status[field])
-            for field in  available_status_fields
+            field: converter.convert(status[field])
+            for field, converter in  self._field_converters.items()
         }
 
         self._view.update_labels(status_field_text_representations)
@@ -50,23 +48,44 @@ class StatusBar(UIComponent):
 
 
 class StatusPanel(UIComponent):
-    def __init__(self, parent: UIComponent, parent_slot: View):         
+    def __init__(self, parent: UIComponent, parent_slot: View, answer_field_defs: List[AnswerFieldDef]): 
+        self._answer_field_defs = answer_field_defs  
+        self._field_converters = {
+            answer_field.field_name : AnswerFieldToStringConverter(answer_field)
+            for answer_field in answer_field_defs
+        }
+        self._field_names = self._field_converters.keys()
+
         self._view = StatusPanelView(parent_slot)
         super().__init__(parent, self._view)
 
-    def on_update_status(self, status: Status):
-        # TODO: this needs to be refactored
+    def on_update_status(self, status: Dict[EFieldName, Any]):
+        status_field_text_representations = {
+            field: converter.convert(status[field])
+            for field, converter in  self._field_converters.items()
+        }
+
+        if EFieldName.FREQUENCY in self._field_names:
+            freq = status[EFieldName.FREQUENCY] / 1000
+        elif EFieldName.SWF in self._field_names:
+            freq = status[EFieldName.SWF] / 1000
+        else:
+            freq = 0
+
+        temp = status[EFieldName.TEMPERATURE] if EFieldName.TEMPERATURE in self._field_names else 0
+
         self._view.update_stats(
-            status.frequency / 1000 if hasattr(status, "frequency") else 0,
-            status.gain,
-            status.temperature if hasattr(status, "temperature") else 0.,
-            f"Urms: {status.urms} mV",
-            f"Irms: {status.irms} mA",
-            f"Phase: {status.phase} °",
-            ui_labels.SIGNAL_ON if status.signal else ui_labels.SIGNAL_OFF
+            freq=freq / 1000,
+            gain=status[EFieldName.GAIN],
+            temp=temp,
+            urms=status_field_text_representations[EFieldName.URMS],
+            irms=status_field_text_representations[EFieldName.IRMS],
+            phase=status_field_text_representations[EFieldName.PHASE],
+            signal=ui_labels.SIGNAL_ON if status[EFieldName.SIGNAL] else ui_labels.SIGNAL_OFF
         )
+
         self._view.set_signal_image(
-            images.LED_ICON_GREEN if status.signal else images.LED_ICON_RED, 
+            images.LED_ICON_GREEN if status[EFieldName.SIGNAL] else images.LED_ICON_RED, 
             sizes.LARGE_BUTTON_ICON_SIZE
         )
 
@@ -297,7 +316,7 @@ class StatusPanelView(View):
             sticky=ttk.W,
         )
 
-    def set_signal_image(self, image_path: Path, sizing: Tuple[int, int]) -> None:
+    def set_signal_image(self, image_path: Path | str, sizing: Tuple[int, int]) -> None:
         self._signal_label.configure(
             image=ImageLoader.load_image_resource(str(image_path), sizing)
         )

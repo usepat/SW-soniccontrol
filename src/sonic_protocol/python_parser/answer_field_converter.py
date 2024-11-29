@@ -14,13 +14,10 @@ class AnswerFieldToStringConverter:
         si_unit = field_def.field_type.si_unit
         if si_unit:
             unit += si_unit.value
-        self._format_str = field_def.sonic_text_attrs.prefix + "%s" + unit + field_def.sonic_text_attrs.postfix
+        self._prefix = field_def.sonic_text_attrs.prefix
+        self._postfix = field_def.sonic_text_attrs.postfix
         self._converter_ref = field_def.field_type.converter_ref
         self._target_class = field_def.field_type.field_type
-
-    @property
-    def format_str(self) -> str:
-        return self._format_str
     
     @property
     def converter_ref(self) -> ConverterType | None:
@@ -34,4 +31,4 @@ class AnswerFieldToStringConverter:
             string_repr_value = converted_value
         else:
             string_repr_value = str(value)
-        return self._format_str % string_repr_value
+        return self._prefix + string_repr_value + self._postfix
