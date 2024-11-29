@@ -169,9 +169,9 @@ class AnswerValidator:
             field_name = EFieldName(keyword)
             converter = self._converters[field_name]
 
-            if not converter.validate_val(value):
+            if not converter.validate_str(value):
                 return Answer(data, False, True) 
-            result_dict[field_name] = converter.convert_val(value)
+            result_dict[field_name] = converter.convert_str_to_val(value)
 
         for field_name, worker in self._after_converters.items():
             kwargs = {

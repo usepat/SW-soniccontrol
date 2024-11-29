@@ -143,10 +143,6 @@ class SerialCommunicator(Communicator):
         if request_str != "-":
             self._logger.info("Receive Answer: %s", response)
 
-        # FIXME: Quick fix for removing command code from response
-        index = response.find('#') 
-        response = response[index + 1:] if index != -1 else response 
-
         return response
 
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str:

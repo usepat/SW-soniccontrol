@@ -27,14 +27,13 @@ class CommandExecutor:
         
         answer = await self.send_message(
             request_str, 
-            lookup_command.answer_validator,
-            command.args,  
+            lookup_command.answer_validator, 
             **lookup_command.command_def.sonic_text_attrs.kwargs
         )
 
         return answer
 
-    async def send_message(self, message: str, answer_validator: AnswerValidator | None = None, derived_params: Dict[str, Any] = {}, **kwargs) -> Answer:
+    async def send_message(self, message: str, answer_validator: AnswerValidator | None = None, **kwargs) -> Answer:
         response_str = await self._communicator.send_and_wait_for_response(message, **kwargs)
         
         code: CommandCode | None = None
@@ -47,7 +46,6 @@ class CommandExecutor:
         else:
             answer = answer_validator.validate(response_str)
         
-        answer.update_field_paths(derived_params)
         answer.command_code = code
         return answer
 

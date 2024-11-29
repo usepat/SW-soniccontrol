@@ -9,7 +9,8 @@ import attrs
 from icecream import ic
 
 from sonic_protocol.defs import Version
-from sonic_protocol.field_names import EFieldName
+from sonic_protocol.field_names import EFieldName#
+import numpy as np
 
 
 def default_if_none(default: Any, type_: type = int) -> Callable[[Any], Any]:
@@ -110,11 +111,11 @@ class StatusBuilder:
                 converter=default_if_none(0.0, float),
                 validator=attrs.validators.instance_of(float),
             )
-        if field_type is int:
+        if field_type is int or np.issubdtype(field_type, np.integer):
             return attrs.field(
                 default=0, 
-                converter=default_if_none(0, int),
-                validator=attrs.validators.instance_of(int)
+                converter=default_if_none(0, field_type),
+                validator=attrs.validators.instance_of(field_type)
             )
         if field_type is bool:  
             return attrs.field(
@@ -126,6 +127,11 @@ class StatusBuilder:
             return attrs.field(
                 default="",
                 validator=attrs.validators.instance_of(str),
+            )
+        if field_type is Version:
+            return attrs.field(
+                default=Version(0, 0, 0),
+                validator=attrs.validators.instance_of(Version),
             )
         if issubclass(field_type, Enum):
             assert len(list(field_type)) > 0,  "The enum provided has no members"

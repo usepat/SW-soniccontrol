@@ -35,7 +35,7 @@ class DeviceBuilder:
     def _parse_legacy_handshake(self, ser: LegacySerialCommunicator) -> Dict[str, Any]:
         init_command = LegacyCommand(
             estimated_response_time=0.5,
-            validators=[
+            _validators=[
                 LegacyAnswerValidator(pattern=r".*(khz|mhz).*", relay_mode=str),
                 LegacyAnswerValidator(
                     pattern=r".*freq[uency]*\s*=?\s*([\d]+).*", frequency=int
@@ -131,9 +131,9 @@ class DeviceBuilder:
             builder_logger.debug("Try to figure out which protocol to use with ?protocol")
             answer = await executor.send_command(cmds.GetProtocol())
             if answer.valid:
-                assert((EFieldName.DEVICE_TYPE,) in answer.field_value_dict)
-                assert((EFieldName.PROTOCOL_VERSION,) in answer.field_value_dict)
-                assert((EFieldName.IS_RELEASE,) in answer.field_value_dict)
+                assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
+                assert(EFieldName.PROTOCOL_VERSION in answer.field_value_dict)
+                assert(EFieldName.IS_RELEASE in answer.field_value_dict)
                 device_type = answer.field_value_dict[EFieldName.DEVICE_TYPE]
                 protocol_version = answer.field_value_dict[EFieldName.PROTOCOL_VERSION]
                 is_release = answer.field_value_dict[EFieldName.IS_RELEASE]
@@ -166,11 +166,10 @@ class DeviceBuilder:
             answer = await device.execute_command(cmds.GetInfo(), should_log=False)
             result_dict.update(answer.field_value_dict)
         
-        for info_attr in attrs.fields(Info):
-            key = (info_attr.name, )
-            if key in result_dict:
-                value = result_dict[key]
-                setattr(info, info_attr.name, value)
+        info.device_type = result_dict.get(EFieldName.DEVICE_TYPE, DeviceType.UNKNOWN)
+        # TODO: firmware info
+        info.firmware_version = result_dict.get(EFieldName.FIRMWARE_VERSION, Version(0, 0, 0))
+        info.protocol_version = result_dict.get(EFieldName.PROTOCOL_VERSION, Version(0, 0, 0))
 
         builder_logger.info("Device type: %s", info.device_type)
         builder_logger.info("Firmware version: %s", info.firmware_version)

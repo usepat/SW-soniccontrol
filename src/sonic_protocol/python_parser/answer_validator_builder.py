@@ -2,6 +2,7 @@ from typing import Dict, List
 from sonic_protocol.python_parser.answer import AfterConverter, AnswerValidator
 from sonic_protocol.python_parser.converters import Converter, get_converter
 from sonic_protocol.defs import AnswerDef, AnswerFieldDef, ConverterType, EFieldName
+import numpy as np
 
 
 class AnswerValidatorBuilder:
@@ -32,16 +33,18 @@ class AnswerValidatorBuilder:
         sonic_text_attrs = answer_field.sonic_text_attrs
 
         value_str = ""
-
+        field_type = answer_field.field_type.field_type
         if answer_field.field_type.converter_ref is ConverterType.PRIMITIVE:
-            if answer_field.field_type is int:
+            if field_type is int or np.issubdtype(field_type, np.integer):
                 value_str = r"[\+\-]?\d+"
-            elif answer_field.field_type is float:
+            elif field_type is float:
                 value_str = r"[\+\-]?\d+(\.\d+)?"
-            elif answer_field.field_type is bool:
+            elif field_type is bool:
                 value_str = r"([Tt]rue)|([Ff]alse)|0|1"
-            elif answer_field.field_type is str:
+            elif field_type is str:
                 value_str = r".*"
+            else:
+                assert (False) # should never happen.
         else:
             value_str = r".*"
 
