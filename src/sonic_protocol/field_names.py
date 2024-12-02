@@ -7,7 +7,6 @@ class EFieldName(Enum):
     COMMAND_CODE = "command_code"
     SUCCESS = "success"
     
-    LIST_COMMANDS = "list_commands"
     HELP = "help"
 
     FREQUENCY = "freq"
