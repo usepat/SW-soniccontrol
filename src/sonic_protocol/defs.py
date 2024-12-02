@@ -93,6 +93,7 @@ class CommunicationProtocol(Enum):
     MODBUS = "modbus"
 
 class Procedure(Enum):
+    NO_PROC = "none"
     AUTO = "auto"
     TUNE = "tune"
     SCAN = "scan"
