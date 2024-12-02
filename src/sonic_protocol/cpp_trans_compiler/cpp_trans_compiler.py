@@ -1,4 +1,3 @@
-
 from enum import Enum, IntEnum
 from pathlib import Path
 from typing import Any, Generic, List, Literal, Tuple, TypeVar
@@ -101,6 +100,19 @@ def create_enum_to_string_conversions(enum: type[Enum]) -> str:
         assert(false);
     """
 
+def py_type_to_cpp_type(data_type: type) -> str:
+    if data_type is np.uint32:
+        return "uint32_t"
+    elif data_type is np.uint16:
+        return "uint16_t"
+    elif data_type is np.uint8:
+        return "uint8_t"
+    elif data_type is float:
+        return "float"
+    else:
+        return "uint32_t"
+        #raise ValueError(f"Unknown data type: {data_type}")
+
 @attrs.define()
 class ProtocolVersion:
     version: Version = attrs.field()
@@ -116,11 +128,17 @@ class FieldLimits(Generic[T]):
     maximum: T | None = attrs.field()
     allowed_values: List[T] | None = attrs.field()
     data_type: type[T] = attrs.field()
+    def cpp_data_type(self) -> str:
+        return py_type_to_cpp_type(self.data_type)
 
 class CppTransCompiler:
     def __init__(self):
-        self._var_id_counter: int = 0
+        self._field_limits_id_counter: int = 0
+        self._allowed_values_id_counter: int = 0
         self._field_limits_cache: dict[FieldLimits, str] = {}
+        self._param_definitions: dict[CommandParamDef, str] = {}
+        self._field_definitions: dict[AnswerFieldDef, str] = {}
+        self._allowed_values: dict[List[Any], str] = {}
 
     def generate_sonic_protocol_lib(self, output_dir: Path):
         # copy protocol definitions to output directory
@@ -190,21 +208,28 @@ class CppTransCompiler:
         )
 
     def generate_transpiled_protocol(self, protocol: Protocol, protocol_versions: List[ProtocolVersion], output_dir: Path): 
-        self._var_id_counter = 0
+        self._field_limits_id_counter = 0
         
         protocol_template_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib").joinpath("generated_protocol.hpp")
         generated_protocol_path = output_dir / "generated_protocol.hpp"
         shutil.copyfile(str(protocol_template_path), generated_protocol_path)
 
         protocol_count = len(protocol_versions)
-        protocol_instances, protocol_return, max_command_count = self._transpile_protocols(protocol, protocol_versions)
+        protocol_instances, command_defs, answer_defs = self._transpile_protocols(protocol, protocol_versions)
+        param_defs = self._transpile_param_defs_from_cache()
+        field_defs = self._transpile_field_defs_from_cache()
         field_limits = self._transpile_field_limits_from_cache()
+        allowed_values = self._transpile_allowed_values_from_cache()
         self._inject_code_into_file(
             generated_protocol_path, 
             PROTOCOL_INSTANCES=protocol_instances,
-            PROTOCOLS=protocol_return, 
             PROTOCOL_COUNT=protocol_count, 
             FIELD_LIMITS=field_limits,
+            FIELD_DEFS = field_defs,
+            PARAM_DEFS = param_defs,
+            ALLOWED_VALUES = allowed_values,
+            COMMAND_DEFS = command_defs,
+            ANSWER_DEFS = answer_defs
         )
         
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
@@ -215,109 +240,168 @@ class CppTransCompiler:
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
-    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, str, int]:
+    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, str, str]:
+        """
+        Transpile the given protocol and its versions into C++ code.
+        Args:
+            protocol (Protocol): The protocol to be transpiled.
+            protocol_versions (List[ProtocolVersion]): A list of protocol versions to transpile.
+        Returns:
+            Tuple[str, str, str]: A tuple containing:
+                - protocol_instances (str): The transpiled protocol instances.
+                - command_defs (str): The transpiled command definitions.
+                - answer_defs (str): The transpiled answer definitions.
+        """
+
         protocol_builder = ProtocolBuilder(protocol)
         transpiled_protocols = []
         max_command_count = 0
-        protocol_names = []
-        protocol_names_reference_lines = []
         for protocol_version in protocol_versions:
-            protocol_names.append(f"protocol_{protocol_version.to_cpp_var_name()}")
-            protocol_names_reference_lines.append(f"&{protocol_names[-1]}")  # Add correct indentation
+            protocol_cpp_name = f"protocol_{protocol_version.to_cpp_var_name()}"
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
             max_command_count = max(max_command_count, len(command_lookup_table))
-            transpiled_protocol = self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_names[-1])
-            transpiled_protocols.append(transpiled_protocol)
-        protocol_names_reference = ",\n        ".join(protocol_names_reference_lines)
-        return_string = f"""
-    return std::array<const IProtocol*, protocol_count()>{{
-        {protocol_names_reference}
-    }}"""
-        return "".join(transpiled_protocols), return_string, max_command_count
+            transpiled_protocols.append(self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_cpp_name))
+        protocol_instances = ""
+        command_defs = ""
+        answer_defs = ""
+
+        for protocol_def, command_defs_array, answer_defs_array in transpiled_protocols:
+            protocol_instances += protocol_def + ",\n"
+            command_defs += command_defs_array + "\n"
+            answer_defs += answer_defs_array + "\n"
+        return protocol_instances, command_defs, answer_defs
 
     def _transpile_command_contracts(
-            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name) -> str:
+            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name: str) -> Tuple[str, str, str]:
         answer_defs = []
         command_defs = []
+        param_defs = []
+        string_identifiers = []
+        field_defs = []
         for code, command_lookup in sorted(command_list.items()):
-            command_defs.append(self._transpile_command_def(code, command_lookup.command_def))
-            answer_defs.append(self._transpile_answer_def(code, command_lookup.answer_def))
-
-        version = protocol_version.version
-        protocol_def = f"""
-constexpr auto {protocol_name}_data = ProtocolData<{len(command_defs)}> {{
-    .version = Version {{
-        .major = {version.major},
-        .minor = {version.minor},
-        .patch = {version.patch},
-    }},
-    .device = DeviceType::{protocol_version.device_type.name},
-    .isRelease = {str(protocol_version.is_release).lower()},
-    .options = "",
-    .commands = etl::array<CommandDef, {len(command_defs)}>{{
-        {", ".join(command_defs)}
-    }},
-    .answers = etl::array<AnswerDef, {len(answer_defs)}>{{
-        {", ".join(answer_defs)}
-    }},
+            # In Transpile Command and answer def add single definition to a set an only return the names of the instances
+            command_param_str_identifier_defs_tuple = self._transpile_command_def(code, command_lookup.command_def, protocol_name)
+            command_defs.append(command_param_str_identifier_defs_tuple[0])
+            param_defs.append(command_param_str_identifier_defs_tuple[1])
+            string_identifiers.append(command_param_str_identifier_defs_tuple[2])
+            answer_field_defs_tuple = self._transpile_answer_def(code, command_lookup.answer_def, protocol_name)
+            answer_defs.append(answer_field_defs_tuple[0])
+            field_defs.append(answer_field_defs_tuple[1])
+        
+        command_defs_cpp_var_name = protocol_name + "_command_defs"
+        answer_defs_cpp_var_name = protocol_name + "_answer_defs"
+        command_defs_array = f"""
+{"".join(param_defs)}
+{"".join(string_identifiers)}
+inline constexpr std::array<CommandDef, {len(command_defs)}> {command_defs_cpp_var_name} = {{{", ".join(command_defs)}
 }};
-constexpr Protocol<{len(command_defs)}> {protocol_name}({protocol_name}_data);
         """
-        return protocol_def
+        answer_defs_array = f"""
+{"".join(field_defs)}
+inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_name} = {{{", ".join(answer_defs)}
+}};"""
+        version = protocol_version.version
+        protocol_def = f"""    Protocol {{
+        .version = Version {{
+            .major = {version.major},
+            .minor = {version.minor},
+            .patch = {version.patch},
+        }},
+        .device = DeviceType::{protocol_version.device_type.name},
+        .isRelease = {str(protocol_version.is_release).lower()},
+        .options = "",
+        .commands = {command_defs_cpp_var_name},
+        .answers = {answer_defs_cpp_var_name}
+    }}"""
+        return (protocol_def, command_defs_array, answer_defs_array)
 
-    def _transpile_command_def(self, code: CommandCode, command_def: CommandDef) -> str:
+    def _transpile_command_def(self, code: CommandCode, command_def: CommandDef, protocol_name: str) -> Tuple[str, str, str]:
         assert isinstance(command_def.sonic_text_attrs, SonicTextCommandAttrs)
         string_identifiers = command_def.sonic_text_attrs.string_identifier
         string_identifiers = [string_identifiers] if isinstance(string_identifiers, str) else string_identifiers
-        
-        params = []
+        param_defs_cpp_var_name = protocol_name + f"_{code.name}_param_defs"
+        string_identifiers_cpp_var_name = protocol_name + f"_{code.name}_string_identifiers"
+        param_references = []
         if command_def.index_param is not None:
-            params.append(self._transpile_param_def(command_def.index_param, "INDEX"))
+            if command_def.index_param in self._param_definitions:
+                param_references.append(self._param_definitions[command_def.index_param]) 
+            else:    
+                param_def_refernce_cpp_name = command_def.index_param.to_cpp_var_name() + "_INDEX"
+                self._param_definitions[command_def.index_param] = param_def_refernce_cpp_name
+                param_references.append(param_def_refernce_cpp_name)
         if command_def.setter_param is not None:
-            params.append(self._transpile_param_def(command_def.setter_param, "SETTER"))
-
+            if command_def.setter_param in self._param_definitions:
+                param_references.append(self._param_definitions[command_def.setter_param]) 
+            else:    
+                param_def_refernce_cpp_name = command_def.setter_param.to_cpp_var_name() + "_SETTER"
+                self._param_definitions[command_def.setter_param] = param_def_refernce_cpp_name
+                param_references.append(param_def_refernce_cpp_name)
+        if param_references == []:
+            param_def_cpp_var = ""
+            param_defs_cpp_var_name = "EMPTY_PARAMS"#This is the cpp variable name for empty params, defined in the generate_protocol.hpp template file
+        else:   
+            formatted_references = ",\n    ".join(param_references)
+            param_def_cpp_var = f"""
+inline constexpr std::array<ParamDef, {len(param_references)}> {param_defs_cpp_var_name} = {{
+    {formatted_references}
+}};"""
+        string_identifiers_cpp = f"""
+inline constexpr std::array<std::string_view, {len(string_identifiers)}> {string_identifiers_cpp_var_name} = {convert_to_cpp_initializer_list(string_identifiers)};        
+"""
         cpp_command_def = f"""
-            CommandDef {{
-                .code = CommandCode::{code.name},
-                .string_identifiers = {convert_to_cpp_initializer_list(string_identifiers)},
-                .params = etl::array<ParamDef, MAX_PARAMS>{{
-                    { ", ".join(params) }
-                }}
-            }}
-        """
-        return cpp_command_def
+    CommandDef {{
+        .code = CommandCode::{code.name},
+        .string_identifiers = {string_identifiers_cpp_var_name},
+        .params = {param_defs_cpp_var_name}
+    }}"""
+        return cpp_command_def, param_def_cpp_var, string_identifiers_cpp
 
-    def _transpile_param_def(self, param_def: CommandParamDef, param_type: Literal["SETTER", "INDEX"]) -> str:
+    def _transpile_param_def(self, param_def: CommandParamDef, var_name: str) -> str:
+        if "SETTER" in var_name:
+            param_type = "SETTER"
+        elif "INDEX" in var_name:
+            param_type = "INDEX"
+        else:
+            assert False, f"Unknown param type: {var_name}"
         cpp_param_def: str = f"""
-            ParamDef {{
-                .field_name = {convert_to_cpp_field_name(param_def.name)},
-                .param_type = ParamType::{param_type},
-                .field_type = {self._transpile_field_type(param_def.param_type)}
-            }}
-        """
+inline constexpr ParamDef {var_name} = {{
+    .field_name = {convert_to_cpp_field_name(param_def.name)},
+    .param_type = ParamType::{param_type},
+    .field_type = {self._transpile_field_type(param_def.param_type)}
+}};"""
         return cpp_param_def
 
-    def _transpile_answer_def(self, code: CommandCode, answer_def: AnswerDef) -> str:
-        transpiled_fields = [self._transpile_answer_field(field) for field in answer_def.fields]
+    def _transpile_answer_def(self, code: CommandCode, answer_def: AnswerDef, protocol_name: str) -> Tuple[str,str]:
+        transpiled_field_references = []
+        for field in answer_def.fields:
+            if field in self._field_definitions:
+                transpiled_field_references.append(self._field_definitions[field])
+            else:  
+                field_def_cpp_var_name = field.to_cpp_var_name()
+                self._field_definitions[field] = field_def_cpp_var_name
+                transpiled_field_references.append(field_def_cpp_var_name)    
+        answer_fields_cpp_var_name = protocol_name + f"_{code.name}_answer_fields"
+        formatted_transpiled_field_references = ",\n    ".join(transpiled_field_references)
+        param_def_array_cpp_var = f"""
+inline constexpr std::array<AnswerFieldDef, {len(transpiled_field_references)}> {answer_fields_cpp_var_name} = {{
+    {formatted_transpiled_field_references}
+}};"""
         cpp_answer_def = f"""
-            AnswerDef {{
-                .code = CommandCode::{code.name},
-                .fields = etl::array<AnswerFieldDef, MAX_ANSWER_FIELDS>{{ 
-                    {", ".join(transpiled_fields)} 
-                }}
-            }}
-        """
-        return cpp_answer_def
+    AnswerDef {{
+        .code = CommandCode::{code.name},
+        .fields = {answer_fields_cpp_var_name}
+    }}"""
+        return cpp_answer_def, param_def_array_cpp_var
 
-    def _transpile_answer_field(self, field: AnswerFieldDef) -> str:
+    def _transpile_answer_field(self, field: AnswerFieldDef, var_name: str) -> str:
         assert isinstance(field.sonic_text_attrs, SonicTextAnswerFieldAttrs)
         cpp_answer_field_def: str = f"""
-            AnswerFieldDef {{
-                .name = {convert_to_cpp_field_name(field.field_name)},
-                .type = {self._transpile_field_type(field.field_type)},
-                .prefix = "{field.sonic_text_attrs.prefix}",
-                .postfix = "{field.sonic_text_attrs.postfix}"
-            }}
+inline constexpr AnswerFieldDef {var_name} = {{
+    .name = {convert_to_cpp_field_name(field.field_name)},
+    .type = {self._transpile_field_type(field.field_type)},
+    .prefix = "{field.sonic_text_attrs.prefix}",
+    .postfix = "{field.sonic_text_attrs.postfix}"
+}};
         """
         return cpp_answer_field_def
 
@@ -334,20 +418,17 @@ constexpr Protocol<{len(command_defs)}> {protocol_name}({protocol_name}_data);
         if field_limits in self._field_limits_cache:
             cpp_limits_var: str = self._field_limits_cache[field_limits]
         else:
-            self._var_id_counter += 1
-            cpp_limits_var: str = f"limits_{self._var_id_counter}"
+            self._field_limits_id_counter += 1
+            cpp_limits_var: str = f"limits_{self._field_limits_id_counter}"
             self._field_limits_cache[field_limits] = cpp_limits_var
 
-        cpp_field_type_def: str = f"""
-            FieldTypeDef {{
-                .type = {convert_to_enum_data_type(field_type.field_type)},
-                .converter_reference = ConverterReference::{field_type.converter_ref.name},
-                .limits = static_cast<const void *>(&{cpp_limits_var}),
-                .si_unit = {f"SIUnit::{field_type.si_unit.name}" if field_type.si_unit is not None else CPP_NULLOPT},
-                .si_prefix = {f"SIPrefix::{field_type.si_prefix.name}" if field_type.si_prefix is not None else CPP_NULLOPT}
-            }}
-        """
-        
+        cpp_field_type_def: str = f"""FieldTypeDef {{
+        .type = {convert_to_enum_data_type(field_type.field_type)},
+        .converter_reference = ConverterReference::{field_type.converter_ref.name},
+        .limits = static_cast<const void *>(&{cpp_limits_var}),
+        .si_unit = {f"SIUnit::{field_type.si_unit.name}" if field_type.si_unit is not None else CPP_NULLOPT},
+        .si_prefix = {f"SIPrefix::{field_type.si_prefix.name}" if field_type.si_prefix is not None else CPP_NULLOPT}
+    }}""" 
         return cpp_field_type_def
 
     def _transpile_field_limits_from_cache(self) -> str:
@@ -355,26 +436,44 @@ constexpr Protocol<{len(command_defs)}> {protocol_name}({protocol_name}_data);
         for field_limits, var_name in self._field_limits_cache.items():
             transpilation_output += self._transpile_field_limits(field_limits, var_name)
         return transpilation_output
+    
+    def _transpile_param_defs_from_cache(self) -> str:
+        transpilation_output = ""
+        for param_def, var_name in self._param_definitions.items():
+            transpilation_output += self._transpile_param_def(param_def, var_name)
+        return transpilation_output
+    def _transpile_field_defs_from_cache(self) -> str:
+        transpilation_output = ""
+        for field, var_name in self._field_definitions.items():
+            transpilation_output += self._transpile_answer_field(field, var_name)
+        return transpilation_output
+    
+    def _transpile_allowed_values_from_cache(self) -> str:
+        transpilation_output = ""
+        for allowed_values, var_name in self._allowed_values.items():
+            transpilation_output += f"constexpr std::array<{py_type_to_cpp_type(type(allowed_values))}> {var_name} = {convert_to_cpp_initializer_list(allowed_values)};\n"
+        return transpilation_output
 
     def _transpile_field_limits(self, field_limits: FieldLimits, var_name: str) -> str:
-        allowed_values = convert_to_cpp_initializer_list(field_limits.allowed_values) if field_limits.allowed_values else CPP_NULLOPT  
-        data_type = "uint32_t" # TODO choose default data type, how to handle str and bool and enums
-        if field_limits.data_type is np.uint32:
-            data_type = "uint32_t"
-        elif field_limits.data_type is np.uint16:
-            data_type = "uint16_t"
-        elif field_limits.data_type is np.uint8:
-            data_type = "uint8_t"
-        elif field_limits.data_type is float:
-            data_type = "float"
+        if field_limits.allowed_values is None:
+            allowed_values_ref = CPP_NULLOPT
+        else:
+            if field_limits.allowed_values in self._allowed_values:
+                allowed_values_ref = self._allowed_values[field_limits.allowed_values]
+            else:
+                num_allowed_values = len(field_limits.allowed_values)
+                allowed_values_ref = f"{var_name}_{num_allowed_values}_allowed_values"
+                self._allowed_values[field_limits.allowed_values] = allowed_values_ref
+            allowed_values_ref = f"{allowed_values_ref})"
+        
         cpp_field_limits: str = f"""
-            FieldLimits<{data_type}> {{
-                .min = {nullopt_if_none(field_limits.minimum)},
-                .max = {nullopt_if_none(field_limits.maximum)},
-                .allowed_values = {allowed_values}
-            }}
-        """ 
-        return f"constexpr auto {var_name} {{ {cpp_field_limits} }};\n"
+    FieldLimits<{field_limits.cpp_data_type()}> {{
+        .min = {nullopt_if_none(field_limits.minimum)},
+        .max = {nullopt_if_none(field_limits.maximum)},
+        .allowed_values = {allowed_values_ref}
+    }}
+""" 
+        return f"inline constexpr auto {var_name} {{ {cpp_field_limits} }};\n"
 
 
 
