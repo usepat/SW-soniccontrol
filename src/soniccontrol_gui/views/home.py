@@ -1,11 +1,11 @@
 from typing import Callable
 from async_tkinter_loop import async_handler
 from ttkbootstrap.scrolled import ScrolledFrame
+from sonic_protocol.defs import DeviceType
 from sonic_protocol.python_parser import commands
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
-from soniccontrol.device_data import Version
 from soniccontrol.sonic_device import SonicDevice
 
 import ttkbootstrap as ttk
@@ -20,7 +20,7 @@ from soniccontrol_gui.constants import ui_labels, sizes
 class Home(UIComponent):
     def __init__(self, parent: UIComponent, device: SonicDevice):
         self._device = device
-        self._view = HomeView(parent.view, type=device.info.device_type)
+        self._view = HomeView(parent.view, device_type=device.info.device_type)
         super().__init__(parent, self._view)
         self._view.set_disconnect_button_command(self._on_disconnect_pressed)
         self._view.set_send_button_command(self._on_send_pressed)
@@ -30,7 +30,7 @@ class Home(UIComponent):
         device_type = self._device.info.device_type
         firmware_version = str(self._device.info.firmware_version)
         protocol_version = "v" + str(self._device.communicator.protocol.major_version)
-        self._view.set_device_type(device_type)
+        self._view.set_device_type(device_type.value)
         self._view.set_firmware_version(firmware_version)
         self._view.set_protocol_version(protocol_version)
 
@@ -62,8 +62,8 @@ class Home(UIComponent):
 
 class HomeView(TabView):
     def __init__(self, master: View, *args, **kwargs) -> None:
-        if 'type' in kwargs:
-            self.type = kwargs.pop('type')
+        if 'device_type' in kwargs:
+            self.device_type = kwargs.pop('device_type')
         super().__init__(master, *args, **kwargs)
 
     @property
@@ -104,7 +104,7 @@ class HomeView(TabView):
             self._main_frame, text=ui_labels.HOME_CONTROL_LABEL
         )
         freq_label = ui_labels.FREQUENCY
-        if self.type == 'descale':
+        if self.device_type == DeviceType.DESCALE:
             freq_label = ui_labels.SWITCHING_FREQUENCY
         self._freq_frame: ttk.LabelFrame = ttk.LabelFrame(
             self._control_frame, text=freq_label
@@ -119,7 +119,7 @@ class HomeView(TabView):
         )
         freq_min = 100000
         freq_max = 10000000
-        if self.type == 'descale':
+        if self.device_type == 'descale':
             freq_min = 0
             freq_max = 20
         self._freq_scale: ttk.Scale = ttk.Scale(

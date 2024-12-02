@@ -129,7 +129,7 @@ class CaptureSpectrumMeasure(CaptureTarget):
         self._procedure_controller = procedure_controller
         self._spectrum_measure_model = spectrum_measure_model
         self._spectrum_measure = SpectrumMeasure(self._updater)
-        self._args: Any | None = None
+        self._args: SpectrumMeasureArgs | None = None
         self._is_capturing = False
         self._procedure_controller.subscribe(
             ProcedureController.PROCEDURE_STOPPED, 

@@ -8,7 +8,7 @@ from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.protocol_builder import CommandLookUpTable
 from soniccontrol.command_executor import CommandExecutor
-from soniccontrol.device_data import Info, Status
+from soniccontrol.device_data import Info
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.communication.serial_communicator import Communicator
 
@@ -18,17 +18,16 @@ class SonicDevice(Scriptable):
     _communicator: Communicator = attrs.field()
     _logger: logging.Logger = attrs.field()
     command_executor: CommandExecutor = attrs.field(on_setattr=attrs.setters.NO_OP)
-    status: Status = attrs.field(on_setattr=attrs.setters.NO_OP)
     info: Info = attrs.field(on_setattr=attrs.setters.NO_OP)
     lookup_table: CommandLookUpTable = attrs.field(on_setattr=attrs.setters.NO_OP)
 
-    def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, status: Status, info: Info, logger: logging.Logger=logging.getLogger()) -> None:
-        self.status = status
+    def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, info: Info, logger: logging.Logger=logging.getLogger()) -> None:
         self.info = info
         self._logger = logging.getLogger(logger.name + "." + SonicDevice.__name__)
         self._communicator = communicator
         self.lookup_table = lookup_table
         self.command_executor = CommandExecutor(lookup_table, self._communicator)
+        self._remote_proc_finished_running: asyncio.Event = asyncio.Event()
 
     @property
     def communicator(self) -> Communicator:
@@ -41,7 +40,7 @@ class SonicDevice(Scriptable):
         self.command_executor._communicator = communicator
 
     def get_remote_proc_finished_event(self) -> asyncio.Event:
-        return self.status.remote_proc_finished_running
+        return self._remote_proc_finished_running # TODO: REFACTOR THIS
 
     async def disconnect(self) -> None:
         if self.communicator.connection_opened.is_set():
@@ -53,7 +52,6 @@ class SonicDevice(Scriptable):
         self,
         command: Command | str,
         should_log: bool = True,
-        status_kwargs_if_valid_command: Dict[EFieldName, Any] = {},
         **kwargs
     ) -> Answer:
         """
@@ -89,7 +87,7 @@ class SonicDevice(Scriptable):
                 answer = await self.command_executor.send_message(
                     command, 
                     estimated_response_time=0.4,
-                    expects_long_answer=True
+                    expects_long_answer=True # kwargs needed for the old legacy communicator
                 )
             else:
                 answer = await self.command_executor.send_command(command)
@@ -97,10 +95,6 @@ class SonicDevice(Scriptable):
             self._logger.error(e)
             await self.disconnect()
             return Answer(str(e), False, True)
-
-        field_updates = status_kwargs_if_valid_command if answer.valid else {}
-        field_updates.update(answer.field_value_dict)
-        await self.status.update(field_updates)
 
         return answer
 

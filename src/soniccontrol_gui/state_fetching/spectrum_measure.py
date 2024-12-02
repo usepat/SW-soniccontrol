@@ -23,7 +23,6 @@ class SpectrumMeasureArgs(RamperArgs):
     )
 
 
-# TODO: This class can be easily merged with RamperLocal
 class SpectrumMeasure(Procedure):
     def __init__(self, updater: Updater) -> None:
         self._updater = updater        

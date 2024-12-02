@@ -151,13 +151,9 @@ class DeviceBuilder:
         builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release" if is_release else "build", str(protocol_version))
         command_lookups = protocol_builder.build(device_type, protocol_version, is_release)
 
-        status_fields = self._extract_status_fields(command_lookups)
-        status = StatusBuilder().create_status(status_fields)
         info = Info()
-        device = SonicDevice(comm, command_lookups, status, info, logger)
+        device = SonicDevice(comm, command_lookups, info, logger)
     
-        # update status
-        await status.update(result_dict)
         if device.command_executor.has_command(cmds.GetUpdate()):
             await device.execute_command(cmds.GetUpdate())
 

@@ -7,13 +7,13 @@ class AnswerFieldToStringConverter:
     def __init__(self, field_def: AnswerFieldDef):
         assert (not isinstance(field_def.sonic_text_attrs, list))
 
-        unit = ""
+        self._unit = ""
         si_prefix = field_def.field_type.si_prefix
         if si_prefix:
-            unit += si_prefix.value
+            self._unit += si_prefix.value
         si_unit = field_def.field_type.si_unit
         if si_unit:
-            unit += si_unit.value
+            self._unit += si_unit.value
         self._prefix = field_def.sonic_text_attrs.prefix
         self._postfix = field_def.sonic_text_attrs.postfix
         self._converter_ref = field_def.field_type.converter_ref
@@ -31,4 +31,7 @@ class AnswerFieldToStringConverter:
             string_repr_value = converted_value
         else:
             string_repr_value = str(value)
+        if self._unit != "":
+            string_repr_value += " " + self._unit
         return self._prefix + string_repr_value + self._postfix
+        

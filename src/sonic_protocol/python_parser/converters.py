@@ -95,10 +95,10 @@ class BuildTypeConverter(Converter):
 
     def convert_val_to_str(self, value: Any) -> str: 
         assert(self.validate_val(value))
-        return "RELEASE" if value else "BUILD"
+        return "RELEASE" if value else "DEBUG"
 
     def validate_str(self, text: str) -> bool: 
-        return text.lower() in ["release", "build"]
+        return text.lower() in ["release", "debug"]
 
     def convert_str_to_val(self, text: str) -> Any:
         assert(self.validate_str(text))

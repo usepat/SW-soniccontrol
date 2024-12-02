@@ -159,7 +159,6 @@ class Configuration(UIComponent):
             await self._device.execute_command(commands.SetAtf(i, atconfig.atf))
             await self._device.execute_command(commands.SetAtk(i, atconfig.atk))
             await self._device.execute_command(commands.SetAtt(i, atconfig.att))
-            await self._device.execute_command(commands.SetAton(i, atconfig.aton))
 
         task = asyncio.create_task(self._interpreter_engine())
 

@@ -102,13 +102,6 @@ class SetAtt(Command):
     index: int = attrs.field()
     value: int = attrs.field(alias=EFieldName.ATT.value)
 
-@attrs.define()
-class SetAton(Command):
-    def __attrs_post_init__(self):
-        super().__init__(code=CommandCode.SET_ATON)
-
-    index: int = attrs.field()
-    value: int = attrs.field(alias=EFieldName.ATF.value)
 
 @attrs.define()
 class SetRamp(Command):

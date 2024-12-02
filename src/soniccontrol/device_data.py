@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, Literal
 import attrs
 from icecream import ic
 
-from sonic_protocol.defs import Version
+from sonic_protocol.defs import DeviceType, Version
 from sonic_protocol.field_names import EFieldName#
 import numpy as np
 
@@ -173,7 +173,7 @@ class Modules:
 @attrs.define
 class Info:
     # TODO refactor this
-    device_type: Literal["catch", "wipe", "descale"] = attrs.field(default="descale")
+    device_type: DeviceType = attrs.field(default=DeviceType.UNKNOWN)
     firmware_info: str = attrs.field(default="") # TODO does not match with validators of info command
     firmware_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version) 
     protocol_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version)

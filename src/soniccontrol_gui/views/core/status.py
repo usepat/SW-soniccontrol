@@ -37,8 +37,21 @@ class StatusBar(UIComponent):
         self._view.expand_panel_frame(self._status_panel_expanded)
 
     def on_update_status(self, status: Dict[EFieldName, Any]):
+        field_labels = {
+            EFieldName.FREQUENCY: "Frequency",
+            EFieldName.SWF: "Switching Freq",
+            EFieldName.GAIN: "Gain",
+            EFieldName.IRMS: "Irms",
+            EFieldName.URMS: "Urms",
+            EFieldName.PHASE: "Phase",
+            EFieldName.TEMPERATURE: "Temperature",
+            EFieldName.TS_FLAG: "Transducer Shorted",
+            EFieldName.SIGNAL: "Signal",
+            EFieldName.PROCEDURE: "Procedure",
+            EFieldName.ERROR_CODE: "Error Code",
+        }
         status_field_text_representations = {
-            field: converter.convert(status[field])
+            field: field_labels[field] + ": " + converter.convert(status[field])
             for field, converter in  self._field_converters.items()
         }
 
