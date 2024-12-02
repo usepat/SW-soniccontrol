@@ -220,7 +220,6 @@ class CppTransCompiler:
         field_defs = self._transpile_field_defs_from_cache()
         field_limits = self._transpile_field_limits_from_cache()
         allowed_values = self._transpile_allowed_values_from_cache()
-        protocol_instances = ",\n".join(protocol_instances)
         self._inject_code_into_file(
             generated_protocol_path, 
             PROTOCOL_INSTANCES=protocol_instances,
