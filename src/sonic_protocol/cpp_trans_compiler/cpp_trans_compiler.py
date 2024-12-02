@@ -100,7 +100,7 @@ def create_enum_to_string_conversions(enum: type[Enum]) -> str:
         assert(false);
     """
 
-def numpy_type_to_cpp_type(data_type: type) -> str:
+def py_type_to_cpp_type(data_type: type) -> str:
     if data_type is np.uint32:
         return "uint32_t"
     elif data_type is np.uint16:
@@ -129,7 +129,7 @@ class FieldLimits(Generic[T]):
     allowed_values: List[T] | None = attrs.field()
     data_type: type[T] = attrs.field()
     def cpp_data_type(self) -> str:
-        return numpy_type_to_cpp_type(self.data_type)
+        return py_type_to_cpp_type(self.data_type)
 
 class CppTransCompiler:
     def __init__(self):
@@ -237,30 +237,39 @@ class CppTransCompiler:
         with open(file_path, "r") as source_file:
             content = source_file.read()
         for key, value in kwargs.items():
-            if isinstance(value, list):
-                value = "\n".join(value)
             content = content.replace(f"/**/{key.upper()}/**/", str(value))
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
-    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[List[str], List[str], List[str]]:
+    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, str, str]:
+        """
+        Transpile the given protocol and its versions into C++ code.
+        Args:
+            protocol (Protocol): The protocol to be transpiled.
+            protocol_versions (List[ProtocolVersion]): A list of protocol versions to transpile.
+        Returns:
+            Tuple[str, str, str]: A tuple containing:
+                - protocol_instances (str): The transpiled protocol instances.
+                - command_defs (str): The transpiled command definitions.
+                - answer_defs (str): The transpiled answer definitions.
+        """
+
         protocol_builder = ProtocolBuilder(protocol)
         transpiled_protocols = []
         max_command_count = 0
-        protocol_names = []
         for protocol_version in protocol_versions:
-            protocol_names.append(f"protocol_{protocol_version.to_cpp_var_name()}")
+            protocol_cpp_name = f"protocol_{protocol_version.to_cpp_var_name()}"
             command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
             max_command_count = max(max_command_count, len(command_lookup_table))
-            transpiled_protocols.append(self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_names[-1]))
-        protocol_instances = []
-        command_defs = []
-        answer_defs = []
+            transpiled_protocols.append(self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_cpp_name))
+        protocol_instances = ""
+        command_defs = ""
+        answer_defs = ""
 
         for protocol_def, command_defs_array, answer_defs_array in transpiled_protocols:
-            protocol_instances.append(protocol_def)
-            command_defs.append(command_defs_array)
-            answer_defs.append(answer_defs_array)
+            protocol_instances += protocol_def + ",\n"
+            command_defs += command_defs_array + "\n"
+            answer_defs += answer_defs_array + "\n"
         return protocol_instances, command_defs, answer_defs
 
     def _transpile_command_contracts(
@@ -272,13 +281,13 @@ class CppTransCompiler:
         field_defs = []
         for code, command_lookup in sorted(command_list.items()):
             # In Transpile Command and answer def add single definition to a set an only return the names of the instances
-            temp = self._transpile_command_def(code, command_lookup.command_def, protocol_name)
-            command_defs.append(temp[0])
-            param_defs.append(temp[1])
-            string_identifiers.append(temp[2])
-            temp = self._transpile_answer_def(code, command_lookup.answer_def, protocol_name)
-            answer_defs.append(temp[0])
-            field_defs.append(temp[1])
+            command_param_str_identifier_defs_tuple = self._transpile_command_def(code, command_lookup.command_def, protocol_name)
+            command_defs.append(command_param_str_identifier_defs_tuple[0])
+            param_defs.append(command_param_str_identifier_defs_tuple[1])
+            string_identifiers.append(command_param_str_identifier_defs_tuple[2])
+            answer_field_defs_tuple = self._transpile_answer_def(code, command_lookup.answer_def, protocol_name)
+            answer_defs.append(answer_field_defs_tuple[0])
+            field_defs.append(answer_field_defs_tuple[1])
         
         command_defs_cpp_var_name = protocol_name + "_command_defs"
         answer_defs_cpp_var_name = protocol_name + "_answer_defs"
@@ -330,7 +339,7 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_
                 param_references.append(param_def_refernce_cpp_name)
         if param_references == []:
             param_def_cpp_var = ""
-            param_defs_cpp_var_name = "EMPTY_PARAMS"
+            param_defs_cpp_var_name = "EMPTY_PARAMS"#This is the cpp variable name for empty params, defined in the generate_protocol.hpp template file
         else:   
             formatted_references = ",\n    ".join(param_references)
             param_def_cpp_var = f"""
@@ -443,7 +452,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
     def _transpile_allowed_values_from_cache(self) -> str:
         transpilation_output = ""
         for allowed_values, var_name in self._allowed_values.items():
-            transpilation_output += f"constexpr std::array<{numpy_type_to_cpp_type(type(allowed_values))}> {var_name} = {convert_to_cpp_initializer_list(allowed_values)};\n"
+            transpilation_output += f"constexpr std::array<{py_type_to_cpp_type(type(allowed_values))}> {var_name} = {convert_to_cpp_initializer_list(allowed_values)};\n"
         return transpilation_output
 
     def _transpile_field_limits(self, field_limits: FieldLimits, var_name: str) -> str:
