@@ -33,8 +33,8 @@ class RemoteController:
         )
         self._device = await DeviceBuilder().build_amp(comm=serial, commands=commands, logger=logger)
         await self._device.communicator.connection_opened.wait()
-        self._scripting = LegacyScriptingFacade(self._device)
-        self._proc_controller = ProcedureController(self._device)
+        self._proc_controller = ProcedureController(self._device, updater=None) # FIXME: add updater
+        self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)
 
     async def connect_via_serial(self, url: Path) -> None:
         assert self._device is None

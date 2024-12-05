@@ -20,5 +20,9 @@ class Procedure(abc.ABC):
     @abc.abstractmethod
     def get_args_class(cls) -> Type: ...
 
+    @property
+    @abc.abstractmethod
+    def is_remote(self) -> bool: ...
+
     @abc.abstractmethod
     async def execute(self, device: Scriptable, args: Any) -> None: ...

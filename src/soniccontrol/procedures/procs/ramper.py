@@ -58,14 +58,17 @@ class RamperLocal(Ramper):
         stop = args.freq_center + args.half_range + args.step # add a step to stop so that stop is inclusive
         values = [start + i * args.step for i in range(int((stop - start) / args.step)) ]
 
-        try:
-            await device.get_overview()
-            # TODO: Do we need those two lines?
-            # await device.execute_command(f"!freq={start}")
-            # await device.set_signal_on()
-            await self._ramp(device, list(values), args.hold_on, args.hold_off)
-        finally:
-            await device.set_signal_off()
+        await device.get_overview()
+        # TODO: Do we need those two lines?
+        # await device.execute_command(f"!freq={start}")
+        # await device.set_signal_on()
+        await self._ramp(device, list(values), args.hold_on, args.hold_off)
+    
+        await device.set_signal_off()
+
+    @property
+    def is_remote(self) -> bool:
+        return False
 
     async def _ramp(
         self,
@@ -94,22 +97,21 @@ class RamperRemote(Ramper):
     def __init__(self) -> None:
         super().__init__()
 
+    @property
+    def is_remote(self) -> bool:
+        return True
+
     async def execute(
         self,
         device: Scriptable,
         args: RamperArgs
     ) -> None:
-        try:
-            start = args.freq_center - args.half_range
-            stop = args.freq_center + args.half_range + args.step
+        start = args.freq_center - args.half_range
+        stop = args.freq_center + args.half_range + args.step
 
-            await device.execute_command(f"!ramp_f_start={start}")
-            await device.execute_command(f"!ramp_f_stop={stop}")
-            await device.execute_command(f"!ramp_f_step={args.step}")
-            await device.execute_command(f"!ramp_t_on={int(args.hold_on.duration_in_ms)}")
-            await device.execute_command(f"!ramp_t_off={int(args.hold_off.duration_in_ms)}")
-            await device.execute_command(f"!ramp")
-        except asyncio.CancelledError:
-            await device.set_signal_off()  # TODO Maybe make a !stop command
-        finally:
-            await device.get_remote_proc_finished_event().wait()
+        await device.execute_command(f"!ramp_f_start={start}")
+        await device.execute_command(f"!ramp_f_stop={stop}")
+        await device.execute_command(f"!ramp_f_step={args.step}")
+        await device.execute_command(f"!ramp_t_on={int(args.hold_on.duration_in_ms)}")
+        await device.execute_command(f"!ramp_t_off={int(args.hold_off.duration_in_ms)}")
+        await device.execute_command(f"!ramp")

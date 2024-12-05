@@ -1,8 +1,7 @@
 import asyncio
 import logging
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Union
 
-import attrs
 
 from sonic_protocol import protocol
 from sonic_protocol.defs import CommandCode, DeviceType, Version
@@ -13,7 +12,6 @@ from soniccontrol.command_executor import CommandExecutor
 from soniccontrol.commands import CommandSet, CommandSetLegacy
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.serial_communicator import LegacySerialCommunicator
-from soniccontrol.device_data import StatusBuilder
 from soniccontrol.sonic_device import (
     Info,
     SonicDevice,
@@ -22,16 +20,6 @@ import sonic_protocol.python_parser.commands as cmds
 
 
 class DeviceBuilder:
-    def _extract_status_fields(self, command_lookups: CommandLookUpTable) -> Dict[EFieldName, type[Any]]:
-        status_fields: Dict[EFieldName, type[Any]] = {}
-        for lookup in command_lookups.values():
-            for answer_field in lookup.answer_def.fields:
-                status_attr = answer_field.field_name 
-                assert(isinstance(status_attr, EFieldName))  
-                status_fields[status_attr] = answer_field.field_type.field_type
-        return status_fields
-
-
     def _parse_legacy_handshake(self, ser: LegacySerialCommunicator) -> Dict[str, Any]:
         init_command = LegacyCommand(
             estimated_response_time=0.5,
@@ -163,8 +151,8 @@ class DeviceBuilder:
             result_dict.update(answer.field_value_dict)
         
         info.device_type = result_dict.get(EFieldName.DEVICE_TYPE, DeviceType.UNKNOWN)
-        # TODO: firmware info
         info.firmware_version = result_dict.get(EFieldName.FIRMWARE_VERSION, Version(0, 0, 0))
+        # TODO: firmware info
         info.protocol_version = result_dict.get(EFieldName.PROTOCOL_VERSION, Version(0, 0, 0))
 
         builder_logger.info("Device type: %s", info.device_type)
@@ -179,110 +167,110 @@ class DeviceBuilder:
         # This is the old code used
         # Before we remove it, we need to add the command contracts into the protocol
 
-        if try_deduce_protocol:
-            builder_logger.debug("Try to figure out which device it is with ?info, ?type, ?")
-            if isinstance(commands, CommandSetLegacy):
-                await commands.get_type.execute(should_log=False)
-                if commands.get_type.answer.valid:
-                    result_dict.update(commands.get_type.status_result)
+        # if try_deduce_protocol:
+        #     builder_logger.debug("Try to figure out which device it is with ?info, ?type, ?")
+        #     if isinstance(commands, CommandSetLegacy):
+        #         await commands.get_type.execute(should_log=False)
+        #         if commands.get_type.answer.valid:
+        #             result_dict.update(commands.get_type.status_result)
 
-            await commands.get_info.execute(should_log=False)
-            if commands.get_info.answer.valid:
-                result_dict.update(commands.get_info.status_result)
+        #     await commands.get_info.execute(should_log=False)
+        #     if commands.get_info.answer.valid:
+        #         result_dict.update(commands.get_info.status_result)
 
-            if isinstance(commands, CommandSetLegacy):
-                await commands.get_overview.execute(should_log=False)
-                if commands.get_overview.answer.valid:
-                    result_dict.update(commands.get_overview.status_result)
-        else:
-            builder_logger.debug("Skip ?info and ?type")
+        #     if isinstance(commands, CommandSetLegacy):
+        #         await commands.get_overview.execute(should_log=False)
+        #         if commands.get_overview.answer.valid:
+        #             result_dict.update(commands.get_overview.status_result)
+        # else:
+        #     builder_logger.debug("Skip ?info and ?type")
 
-        info = Info()
-        await status.update(**result_dict)
-        info.update(**result_dict)
-        info.firmware_info = commands.get_info.answer.string
-        builder_logger.info("Device type: %s", info.device_type)
-        builder_logger.info("Firmware version: %s", info.firmware_version)
-        builder_logger.info("Firmware info: %s", info.firmware_info)
+        # info = Info()
+        # await status.update(**result_dict)
+        # info.update(**result_dict)
+        # info.firmware_info = commands.get_info.answer.string
+        # builder_logger.info("Device type: %s", info.device_type)
+        # builder_logger.info("Firmware version: %s", info.firmware_version)
+        # builder_logger.info("Firmware info: %s", info.firmware_info)
 
-        builder_logger.debug("Build device")
-        sonicamp: SonicDevice = SonicDevice(_communicator=comm, info=info, status=status, _logger=logger)
+        # builder_logger.debug("Build device")
+        # sonicamp: SonicDevice = SonicDevice(_communicator=comm, info=info, status=status, _logger=logger)
 
-        if isinstance(commands, CommandSet):
-            builder_logger.debug("Get list of available commands of device")
-            await commands.get_command_list.execute(should_log=False)
-            if commands.get_command_list.answer.valid:
-                self._add_commands_from_list_command_answer(
-                    commands, sonicamp, commands.get_command_list.answer
-                )
-                builder_logger.debug("List of the commands that are supported: %s", str(sonicamp.commands.keys()))
-                return sonicamp
-            else:
-                raise Exception("Wtf, the new devices with Sonic Protocol v2 have to implement get_command_list")
-        else:
+        # if isinstance(commands, CommandSet):
+        #     builder_logger.debug("Get list of available commands of device")
+        #     await commands.get_command_list.execute(should_log=False)
+        #     if commands.get_command_list.answer.valid:
+        #         self._add_commands_from_list_command_answer(
+        #             commands, sonicamp, commands.get_command_list.answer
+        #         )
+        #         builder_logger.debug("List of the commands that are supported: %s", str(sonicamp.commands.keys()))
+        #         return sonicamp
+        #     else:
+        #         raise Exception("Wtf, the new devices with Sonic Protocol v2 have to implement get_command_list")
+        # else:
 
-            basic_commands: Tuple[LegacyCommand, ...] = (
-                commands.signal_on,
-                commands.signal_off,
-                commands.get_overview,
-                commands.get_info,
-            )
+        #     basic_commands: Tuple[LegacyCommand, ...] = (
+        #         commands.signal_on,
+        #         commands.signal_off,
+        #         commands.get_overview,
+        #         commands.get_info,
+        #     )
 
-            basic_catch_commands: Tuple[LegacyCommand, ...] = (
-                commands.set_frequency,
-                commands.set_gain,
-                commands.set_serial_mode,
-                commands.set_khz_mode,
-                commands.set_mhz_mode,
-            )
+        #     basic_catch_commands: Tuple[LegacyCommand, ...] = (
+        #         commands.set_frequency,
+        #         commands.set_gain,
+        #         commands.set_serial_mode,
+        #         commands.set_khz_mode,
+        #         commands.set_mhz_mode,
+        #     )
 
-            atf_commands: Tuple[LegacyCommand, ...] = (
-                commands.set_atf1,
-                commands.get_atf1,
-                commands.set_atk1,
-                commands.set_atf2,
-                commands.get_atf2,
-                commands.set_atk2,
-                commands.set_atf3,
-                commands.get_atf3,
-                commands.set_atk3,
-                commands.set_att1,
-                commands.get_att1,
-            )
+        #     atf_commands: Tuple[LegacyCommand, ...] = (
+        #         commands.set_atf1,
+        #         commands.get_atf1,
+        #         commands.set_atk1,
+        #         commands.set_atf2,
+        #         commands.get_atf2,
+        #         commands.set_atk2,
+        #         commands.set_atf3,
+        #         commands.get_atf3,
+        #         commands.set_atk3,
+        #         commands.set_att1,
+        #         commands.get_att1,
+        #     )
 
-            basic_wipe_commands: Tuple[LegacyCommand, ...] = (commands.set_frequency,)
+        #     basic_wipe_commands: Tuple[LegacyCommand, ...] = (commands.set_frequency,)
 
-            basic_descale_commands: Tuple[LegacyCommand, ...] = (
-                commands.set_switching_frequency,
-                commands.set_analog_mode,
-                commands.set_serial_mode,
-                commands.set_gain,
-            )
+        #     basic_descale_commands: Tuple[LegacyCommand, ...] = (
+        #         commands.set_switching_frequency,
+        #         commands.set_analog_mode,
+        #         commands.set_serial_mode,
+        #         commands.set_gain,
+        #     )
 
-            builder_logger.debug("Add commands depending on the version and type of the device")
-            sonicamp.add_commands(basic_commands)
-            if sonicamp.info.firmware_version >= Version(0, 3, 0):
-                sonicamp.add_commands((commands.get_status, commands.get_type))
+        #     builder_logger.debug("Add commands depending on the version and type of the device")
+        #     sonicamp.add_commands(basic_commands)
+        #     if sonicamp.info.firmware_version >= Version(0, 3, 0):
+        #         sonicamp.add_commands((commands.get_status, commands.get_type))
 
-            if sonicamp.info.device_type == "catch":
-                sonicamp.add_commands(basic_catch_commands)
-                if sonicamp.info.firmware_version == Version(0, 3, 0):
-                    sonicamp.add_command(commands.get_sens)
-                elif sonicamp.info.firmware_version == Version(0, 4, 0):
-                    sonicamp.add_command(commands.get_sens_factorised)
-                elif sonicamp.info.firmware_version == Version(0, 5, 0):
-                    sonicamp.add_command(commands.get_sens_fullscale_values)
+        #     if sonicamp.info.device_type == "catch":
+        #         sonicamp.add_commands(basic_catch_commands)
+        #         if sonicamp.info.firmware_version == Version(0, 3, 0):
+        #             sonicamp.add_command(commands.get_sens)
+        #         elif sonicamp.info.firmware_version == Version(0, 4, 0):
+        #             sonicamp.add_command(commands.get_sens_factorised)
+        #         elif sonicamp.info.firmware_version == Version(0, 5, 0):
+        #             sonicamp.add_command(commands.get_sens_fullscale_values)
 
-                if sonicamp.info.firmware_version >= Version(0, 4, 0):
-                    sonicamp.add_commands(atf_commands)
-                    for command in atf_commands:
-                        await sonicamp.execute_command(command)
+        #         if sonicamp.info.firmware_version >= Version(0, 4, 0):
+        #             sonicamp.add_commands(atf_commands)
+        #             for command in atf_commands:
+        #                 await sonicamp.execute_command(command)
 
-            elif sonicamp.info.device_type == "descale":
-                sonicamp.add_commands(basic_descale_commands)
+        #     elif sonicamp.info.device_type == "descale":
+        #         sonicamp.add_commands(basic_descale_commands)
 
-            elif sonicamp.info.device_type == "wipe":
-                sonicamp.add_commands(basic_wipe_commands)
+        #     elif sonicamp.info.device_type == "wipe":
+        #         sonicamp.add_commands(basic_wipe_commands)
 
-            builder_logger.debug("List of the commands that are supported: %s", str(sonicamp.commands.keys()))
-            return sonicamp
+        #     builder_logger.debug("List of the commands that are supported: %s", str(sonicamp.commands.keys()))
+        #     return sonicamp

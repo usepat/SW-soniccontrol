@@ -31,6 +31,10 @@ class SpectrumMeasure(Procedure):
     def get_args_class(cls) -> Type: 
         return SpectrumMeasureArgs
 
+    @property
+    def is_remote(self) -> bool:
+        return False
+
     async def execute(
         self,
         device: Scriptable,

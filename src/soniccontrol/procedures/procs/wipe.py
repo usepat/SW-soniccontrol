@@ -39,15 +39,14 @@ class WipeProc(Procedure):
     def get_args_class(cls) -> Type: 
         return WipeArgs
 
+    @property
+    def is_remote(self) -> bool:
+        return True
+
     async def execute(self, device: Scriptable, args: WipeArgs) -> None:
-        try:
-            await device.execute_command(f"!wipe_f_range={args.Wipe_f_range_Hz}")
-            await device.execute_command(f"!wipe_f_step={args.Wipe_f_step_Hz}")
-            await device.execute_command(f"!wipe_t_on={int(args.Wipe_t_on_ms.duration_in_ms)}")
-            await device.execute_command(f"!wipe_t_off={int(args.Wipe_t_off_ms.duration_in_ms)}")
-            await device.execute_command(f"!wipe_t_pause={int(args.Wipe_t_pause_ms.duration_in_ms)}")
-            await device.execute_command("!wipe")
-        except asyncio.CancelledError:
-            await device.set_signal_off()
-        finally:
-            await device.get_remote_proc_finished_event().wait()
+        await device.execute_command(f"!wipe_f_range={args.Wipe_f_range_Hz}")
+        await device.execute_command(f"!wipe_f_step={args.Wipe_f_step_Hz}")
+        await device.execute_command(f"!wipe_t_on={int(args.Wipe_t_on_ms.duration_in_ms)}")
+        await device.execute_command(f"!wipe_t_off={int(args.Wipe_t_off_ms.duration_in_ms)}")
+        await device.execute_command(f"!wipe_t_pause={int(args.Wipe_t_pause_ms.duration_in_ms)}")
+        await device.execute_command("!wipe")

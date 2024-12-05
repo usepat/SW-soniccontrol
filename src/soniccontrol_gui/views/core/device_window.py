@@ -23,7 +23,7 @@ from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.state_fetching.logger import LogStorage, NotDeviceLogFilter
 from soniccontrol_gui.state_fetching.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
-from soniccontrol.events import Event
+from soniccontrol.events import Event, EventManager
 from soniccontrol_gui.views.configuration.configuration import Configuration
 from soniccontrol_gui.views.configuration.flashing import Flashing
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
@@ -104,6 +104,7 @@ class RescueWindow(DeviceWindow):
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
 
 
+            self
             self._logger.debug("Create logStorage for storing logs")
             self._logStorage = LogStorage()
             log_storage_handler = self._logStorage.create_log_handler()
@@ -113,8 +114,10 @@ class RescueWindow(DeviceWindow):
             log_storage_handler.setLevel(logging.DEBUG)
 
              # Models
+            self._proc_controller = ProcedureController(self._device, EventManager()) # FIXME: what to do if devices do not support updates?
             self._scripting = LegacyScriptingFacade(
                 self._device, 
+                self._proc_controller,
                 include_command_aliases=[BuiltInFunctions.ON, BuiltInFunctions.OFF, BuiltInFunctions.HOLD]
             )
             self._script_file = ScriptFile(logger=self._logger)
@@ -158,9 +161,9 @@ class KnownDeviceWindow(DeviceWindow):
 
             # Models
             self._updater = Updater(self._device)
-            self._proc_controller = ProcedureController(self._device)
+            self._proc_controller = ProcedureController(self._device, self._updater)
             self._proc_controlling_model = ProcControllingModel()
-            self._scripting = LegacyScriptingFacade(self._device)
+            self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)
             self._script_file = ScriptFile(logger=self._logger)
             self._interpreter = InterpreterEngine(self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
@@ -182,7 +185,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._editor = Editor(self, self._scripting, self._script_file, self._interpreter, self._app_state)
             self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
             self._info = Info(self)
-            self._configuration = Configuration(self, self._device)
+            self._configuration = Configuration(self, self._device, self._proc_controller)
             self._flashing = Flashing(self, self._logger, self._device, self._app_state, self._updater)
             self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))

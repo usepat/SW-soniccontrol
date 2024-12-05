@@ -37,9 +37,9 @@ class Flashing(UIComponent):
     RECONNECT_EVENT = "Reconnect"
     FAILED_EVENT = "Flashing failed"
     def __init__(self, parent: UIComponent, logger: logging.Logger, device: SonicDevice, app_state: AppState, updater: Updater | None = None):
-        self._writer = device._communicator.writer
-        self._reader = device._communicator.reader
-        self._communicator = device._communicator
+        self._writer = device.communicator.writer
+        self._reader = device.communicator.reader
+        self._communicator = device.communicator
 
         self._updater = updater
         self._device = device

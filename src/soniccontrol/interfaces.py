@@ -21,8 +21,6 @@ class Scriptable(abc.ABC):
     @abc.abstractmethod
     async def set_signal_off(self) -> Answer: ...
 
-    @abc.abstractmethod
-    def get_remote_proc_finished_event(self) -> asyncio.Event: ...
 
 
 

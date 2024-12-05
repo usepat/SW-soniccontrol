@@ -41,15 +41,14 @@ class ScanProc(Procedure):
     def get_args_class(cls) -> Type: 
         return ScanArgs
 
+    @property
+    def is_remote(self) -> bool:
+        return True
+
     async def execute(self, device: Scriptable, args: ScanArgs) -> None:
-        try:
-            await device.execute_command(f"!f={args.Scanning_f_center_Hz}")
-            await device.execute_command(f"!scan_gain={args.Scanning_gain}")
-            await device.execute_command(f"!scan_f_range={args.Scanning_f_range_Hz}")
-            await device.execute_command(f"!scan_f_step={args.Scanning_f_step_Hz}")
-            await device.execute_command(f"!scan_t_step={int(args.Scanning_t_step_ms.duration_in_ms)}")
-            await device.execute_command("!scan")
-        except asyncio.CancelledError:
-            await device.set_signal_off()
-        finally:
-            await device.get_remote_proc_finished_event().wait()
+        await device.execute_command(f"!f={args.Scanning_f_center_Hz}")
+        await device.execute_command(f"!scan_gain={args.Scanning_gain}")
+        await device.execute_command(f"!scan_f_range={args.Scanning_f_range_Hz}")
+        await device.execute_command(f"!scan_f_step={args.Scanning_f_step_Hz}")
+        await device.execute_command(f"!scan_t_step={int(args.Scanning_t_step_ms.duration_in_ms)}")
+        await device.execute_command("!scan")

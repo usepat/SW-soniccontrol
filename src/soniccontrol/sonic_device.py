@@ -15,7 +15,7 @@ from soniccontrol.communication.serial_communicator import Communicator
 
 @attrs.define(kw_only=True)
 class SonicDevice(Scriptable):
-    _communicator: Communicator = attrs.field()
+    communicator: Communicator = attrs.field(on_setattr=attrs.setters.NO_OP)
     _logger: logging.Logger = attrs.field()
     command_executor: CommandExecutor = attrs.field(on_setattr=attrs.setters.NO_OP)
     info: Info = attrs.field(on_setattr=attrs.setters.NO_OP)
@@ -24,23 +24,10 @@ class SonicDevice(Scriptable):
     def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, info: Info, logger: logging.Logger=logging.getLogger()) -> None:
         self.info = info
         self._logger = logging.getLogger(logger.name + "." + SonicDevice.__name__)
-        self._communicator = communicator
+        self.communicator = communicator
         self.lookup_table = lookup_table
-        self.command_executor = CommandExecutor(lookup_table, self._communicator)
-        self._remote_proc_finished_running: asyncio.Event = asyncio.Event()
+        self.command_executor = CommandExecutor(lookup_table, self.communicator)
 
-    @property
-    def communicator(self) -> Communicator:
-        return self._communicator
-
-    @communicator.setter
-    def communicator(self, communicator: Communicator) -> None:
-        # TODO: Where the fuck do I set the communicator on the device, like this? Delete this!
-        self._communicator = communicator
-        self.command_executor._communicator = communicator
-
-    def get_remote_proc_finished_event(self) -> asyncio.Event:
-        return self._remote_proc_finished_running # TODO: REFACTOR THIS
 
     async def disconnect(self) -> None:
         if self.communicator.connection_opened.is_set():
