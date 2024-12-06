@@ -54,6 +54,9 @@ class RemoteController:
         await self._connect(connection_factory, connection_name)
         assert self._device is not None
 
+    def is_connected(self) -> bool:
+        return self._device is not None and self._device.communicator.connection_opened.is_set()
+
     async def set_attr(self, attr: str, val: str) -> Tuple[str, bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command("!" + attr + "=" + val)

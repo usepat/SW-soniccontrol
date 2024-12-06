@@ -16,11 +16,11 @@ def deduce_param_limits(param_def: CommandParamDef | None) -> List[str]:
     if max_val is not None:
         param_limits.append(max_val)
         # Also create example commands that should be wrong, but not fail. Commands should never fail
-        param_limits.append(max_val + 1) #type: ignore
+        param_limits.append(int(max_val) + 1) #type: ignore
     if min_val is not None:
         param_limits.append(min_val)
         # Also create example commands that should be wrong, but not fail. Commands should never fail
-        param_limits.append(min_val - 1) #type: ignore
+        param_limits.append(int(min_val) - 1) #type: ignore
     if allowed_values is not None:
         param_limits.extend(allowed_values)
     

@@ -31,11 +31,13 @@ class Updater(EventManager):
         # HINT: If ever needed to update different device attributes, we can do that, by checking what components the device has
         # and then additionally call other commands to get this information
         answer = await self._device.execute_command(commands.GetUpdate(), should_log=False)
-        self.emit(Event("update", status=answer.field_value_dict))
+        if answer.valid:
+            self.emit(Event("update", status=answer.field_value_dict))
 
     async def _loop(self) -> None:
         try:
-            while self._running.is_set():
+            open_connection_flag = self._device.communicator.connection_opened
+            while self._running.is_set() and open_connection_flag.is_set():
                 await self.update()
                 if self._time_waiting_between_updates_ms > 0:
                     await asyncio.sleep(self._time_waiting_between_updates_ms)

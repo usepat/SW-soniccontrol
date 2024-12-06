@@ -26,6 +26,10 @@ class RobotRemoteController:
         self._loop.run_until_complete(self._controller.connect_via_process(Path(process_file)))
         logger.info(f"Connected via process to ${process_file}")
 
+    @keyword('Is connected to device')
+    def is_connected(self) -> bool:
+        return self._controller.is_connected()
+
     @keyword('Set "${attr}" to "${val}"')
     def set_attr(self, attr: str, val: str) -> Tuple[str, bool]:
         return self._loop.run_until_complete(self._controller.set_attr(attr, val))
