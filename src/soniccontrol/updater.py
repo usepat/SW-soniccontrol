@@ -5,11 +5,12 @@ from sonic_protocol.python_parser import commands
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.events import Event, EventManager
 
-# TODO: move this class into sonic control
+
 class Updater(EventManager):
-    def __init__(self, device: SonicDevice) -> None:
+    def __init__(self, device: SonicDevice, time_waiting_between_updates_ms: int = 0) -> None:
         super().__init__()
         self._device = device
+        self._time_waiting_between_updates_ms = time_waiting_between_updates_ms
         self._running: asyncio.Event = asyncio.Event()
         self._task: Optional[asyncio.Task] = None
 
@@ -36,6 +37,8 @@ class Updater(EventManager):
         try:
             while self._running.is_set():
                 await self.update()
+                if self._time_waiting_between_updates_ms > 0:
+                    await asyncio.sleep(self._time_waiting_between_updates_ms)
         except Exception as e:
             raise
         

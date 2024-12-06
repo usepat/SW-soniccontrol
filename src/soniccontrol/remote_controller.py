@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from sonic_protocol.python_parser.commands import Command
 from soniccontrol.builder import DeviceBuilder
@@ -11,6 +11,7 @@ from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
 from soniccontrol.scripting.scripting_facade import ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol.updater import Updater
 
 
 class RemoteController:
@@ -21,6 +22,7 @@ class RemoteController:
         self._scripting: Optional[ScriptingFacade] = None
         self._proc_controller: Optional[ProcedureController] = None
         self._log_path: Optional[Path] = log_path
+        self._updater: Optional[Updater] = None
 
     async def _connect(self, connection_factory: ConnectionFactory, connection_name: str):
         if self._log_path:
@@ -33,7 +35,9 @@ class RemoteController:
         )
         self._device = await DeviceBuilder().build_amp(comm=serial, commands=commands, logger=logger)
         await self._device.communicator.connection_opened.wait()
-        self._proc_controller = ProcedureController(self._device, updater=None) # FIXME: add updater
+        self._updater = Updater(self._device)
+        self._updater.start()
+        self._proc_controller = ProcedureController(self._device, updater=self._updater)
         self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)
 
     async def connect_via_serial(self, url: Path) -> None:
@@ -50,20 +54,20 @@ class RemoteController:
         await self._connect(connection_factory, connection_name)
         assert self._device is not None
 
-    async def set_attr(self, attr: str, val: str) -> str:
+    async def set_attr(self, attr: str, val: str) -> Tuple[str, bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command("!" + attr + "=" + val)
-        return answer.message
+        return answer.message, answer.valid
 
-    async def get_attr(self, attr: str) -> str:
+    async def get_attr(self, attr: str) -> Tuple[str, bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command("?" + attr)
-        return answer.message
+        return answer.message, answer.valid
     
-    async def send_command(self, command: str | Command) -> str:
+    async def send_command(self, command: str | Command) -> Tuple[str, bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command(command)
-        return answer.message
+        return answer.message, answer.valid
 
     async def execute_script(self, text: str) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
@@ -94,9 +98,15 @@ class RemoteController:
         await self._proc_controller.stop_proc()
     
     async def disconnect(self) -> None:
+        if self._updater is not None:
+            await self._updater.stop()
+            self._updater = None
+
         if self._device is not None:
             await self._device.disconnect()
             self._scripting = None
             self._proc_controller = None
             self._device = None
+
         assert self._device is None
+        assert self._updater is None

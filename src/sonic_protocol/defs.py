@@ -102,7 +102,7 @@ class Procedure(Enum):
 
 @attrs.define(auto_attribs=True)
 class DeviceParamConstants:
-    max_frequency: int = attrs.field(default=10000001)
+    max_frequency: int = attrs.field(default=10000000)
     min_frequency: int = attrs.field(default=100000)
     max_gain: int = attrs.field(default=150)
     min_gain: int = attrs.field(default=0)

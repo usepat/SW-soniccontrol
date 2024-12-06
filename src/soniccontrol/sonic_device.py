@@ -33,7 +33,6 @@ class SonicDevice(Scriptable):
         if self.communicator.connection_opened.is_set():
             self._logger.info("Disconnect")
             await self.communicator.close_communication()
-            del self
 
     async def execute_command(
         self,

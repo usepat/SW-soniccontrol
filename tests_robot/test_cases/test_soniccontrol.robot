@@ -11,16 +11,25 @@ Suite Teardown    RemoteController.Disconnect
 ${TARGET}             simulation        # can be either "simulation" or "url"
 ${SIMULATION_EXE_PATH}  ${None}
 ${URL}  ${None}
+@{command_examples}    ${EMPTY}
+
 
 
 
 *** Test Cases ***
 
 Set frequency updates device state
-    ${frequency}=    RemoteController.Set "frequency" to "10000"
-    Should Contain    ${frequency}    10000 Hz
+    ${frequency_answer}=    RemoteController.Set "frequency" to "10000"
+    Should Contain    ${frequency_answer}[0]    10000 Hz
+    Should Be True    ${frequency_answer}[1]
 
-
+Send Example Commands
+    [Template]    Send Command    
+    [Teardown]    RemoteController.Send Command     !OFF
+    FOR  ${command_example}  IN  @{command_examples}
+        ${command_example}
+    END
+    
 
 *** Keywords ***
 
@@ -36,4 +45,11 @@ Connect to device
         END
         RemoteController.Connect via serial to    ${URL}
     END
-       
+    ${command_examples_list}=    RemoteController.Deduce list of command examples
+    Set Suite Variable    ${command_examples}    ${command_examples_list}
+    
+Send Command
+    [Arguments]    ${command_request}
+    ${answer}=    RemoteController.Send Command     ${command_request}
+    Should Be True    ${answer}[1]        # check if answer is valid
+

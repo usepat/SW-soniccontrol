@@ -1,8 +1,10 @@
 import asyncio
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
+from typing_extensions import List
 from robot.api.deco import keyword, library
 import robot.api.logger as logger
+from sonic_robot.deduce_command_examples import deduce_command_examples
 from soniccontrol.procedures.procedure_controller import ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.remote_controller import RemoteController
@@ -25,16 +27,22 @@ class RobotRemoteController:
         logger.info(f"Connected via process to ${process_file}")
 
     @keyword('Set "${attr}" to "${val}"')
-    def set_attr(self, attr: str, val: str) -> str:
+    def set_attr(self, attr: str, val: str) -> Tuple[str, bool]:
         return self._loop.run_until_complete(self._controller.set_attr(attr, val))
 
     @keyword('Get "${attr}"')
-    def get_attr(self, attr: str) -> str:
+    def get_attr(self, attr: str) -> Tuple[str, bool]:
         return self._loop.run_until_complete(self._controller.get_attr(attr))
 
     @keyword('Send Command ')
-    def send_command(self, command_str: str) -> str:
+    def send_command(self, command_str: str) -> Tuple[str, bool]:
         return self._loop.run_until_complete(self._controller.send_command(command_str))
+
+    @keyword('Deduce list of command examples')
+    def deduce_command_examples(self) -> List[str]:
+        assert (self._controller._device is not None)
+        info = self._controller._device.info
+        return deduce_command_examples(info.protocol_version, info.device_type)
 
     @keyword('Execute script')
     def execute_script(self, text: str) -> None:
@@ -55,3 +63,4 @@ class RobotRemoteController:
     @keyword('Disconnect')
     def disconnect(self) -> None:
         self._loop.run_until_complete(self._controller.disconnect())
+
