@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List
 from sonic_protocol import protocol
 from sonic_protocol.defs import CommandParamDef, DeviceType, Version
@@ -23,6 +24,14 @@ def deduce_param_limits(param_def: CommandParamDef | None) -> List[str]:
         param_limits.append(int(min_val) - 1) #type: ignore
     if allowed_values is not None:
         param_limits.extend(allowed_values)
+    
+    field_type = param_def.param_type.field_type
+    if field_type is bool:
+        param_limits.append("true")
+        param_limits.append("false")
+    if issubclass(field_type, Enum):
+        enum_members = [ member.value for member in field_type ]
+        param_limits.extend(enum_members)
     
     return list(map(str, param_limits))
     

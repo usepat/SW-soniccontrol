@@ -1,7 +1,7 @@
 import numpy as np
 from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative
 from sonic_protocol.defs import (
-	CommandCode, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
+	CommandCode, DeviceParamConstantType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
 	AnswerFieldDef, CommandContract
 )
 from sonic_protocol.field_names import EFieldName
@@ -229,7 +229,11 @@ get_uipt = CommandContract(
 
 param_index = CommandParamDef(
     name=EFieldName.INDEX,
-    param_type=FieldType(field_type=np.uint8) # TODO set this to uint8_t?
+    param_type=FieldType(
+        field_type=np.uint8,
+        min_value=DeviceParamConstantType.MIN_TRANSDUCER_INDEX,
+        max_value=DeviceParamConstantType.MAX_TRANSDUCER_INDEX,
+    )
 )
 param_atf = CommandParamDef(
     name=EFieldName.ATF,
