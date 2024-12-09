@@ -121,7 +121,7 @@ get_help = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.HELP,
+                field_name=EFieldName.MESSAGE,
                 field_type=FieldType(str)
             )
         ]
