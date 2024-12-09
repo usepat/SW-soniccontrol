@@ -1,6 +1,7 @@
 import numpy as np
 from sonic_protocol.defs import Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, Version
 from sonic_protocol.field_names import EFieldName
+import attrs
 
 field_termination = AnswerFieldDef(
 	field_name=EFieldName.TERMINATION,
@@ -168,9 +169,11 @@ field_tune_f_step = AnswerFieldDef(
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
 )
 
+field_type_tune_t_time_dict = attrs.asdict(field_type_time_span)
+field_type_tune_t_time_dict.update({"min_value": np.uint32(1)})
 field_tune_t_time = AnswerFieldDef(
     field_name=EFieldName.TUNE_T_TIME,
-    field_type=field_type_time_span,
+    field_type=FieldType(**field_type_tune_t_time_dict),
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
 )
 
