@@ -159,21 +159,3 @@ set_extern = CommandContract(
     is_release=True,
     tags=["communication"]
 )
-
-# This is needed so the firmware can answer with an error message when parsing failed
-invalid_response = CommandContract(
-    code=CommandCode.INVALID,
-    command_defs=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!invalid"]
-        )
-    ),
-    answer_defs=AnswerDef(
-        fields=[AnswerFieldDef(
-            field_name=EFieldName.ERROR_MESSAGE,
-            field_type=FieldType(str)
-        )]
-    ),
-    is_release=True,
-    tags=["communication"]
-)

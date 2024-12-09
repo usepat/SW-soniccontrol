@@ -8,7 +8,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.command_contracts.fields import (
     field_unknown_answer, field_type_frequency, field_type_temperature_celsius,
     field_frequency, field_gain, field_signal, field_swf,
-    field_type_gain, swf_field_type, field_temperature_celsius,
+    field_type_gain, swf_field_type, field_temperature_kelvin,
     field_urms, field_irms, field_phase, field_ts_flag
 )
 
@@ -195,7 +195,7 @@ get_temp = CommandContract(
         )
     ),
     answer_defs=AnswerDef(
-        fields=[field_temperature_celsius]
+        fields=[field_temperature_kelvin]
     ),
     user_manual_attrs=UserManualAttrs(
         description="Command to get the temperature of the device in celsiuus."
