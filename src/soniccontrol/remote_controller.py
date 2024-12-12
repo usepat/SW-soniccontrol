@@ -57,20 +57,20 @@ class RemoteController:
     def is_connected(self) -> bool:
         return self._device is not None and self._device.communicator.connection_opened.is_set()
 
-    async def set_attr(self, attr: str, val: str) -> Tuple[str, bool]:
+    async def set_attr(self, attr: str, val: str) -> Tuple[str, dict, bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command("!" + attr + "=" + val)
-        return answer.message, answer.valid
+        return answer.message, answer.value_dict,  answer.valid
 
-    async def get_attr(self, attr: str) -> Tuple[str, bool]:
+    async def get_attr(self, attr: str) -> Tuple[str, dict, bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command("?" + attr)
-        return answer.message, answer.valid
+        return answer.message, answer.value_dict, answer.valid
     
-    async def send_command(self, command: str | Command) -> Tuple[str, bool]:
+    async def send_command(self, command: str | Command) -> Tuple[str, dict, bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command(command)
-        return answer.message, answer.valid
+        return answer.message, answer.value_dict, answer.valid
 
     async def execute_script(self, text: str) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED

@@ -1,6 +1,6 @@
 
 
-from typing import Any, Dict
+from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.defs import CommandCode, CommandDef
 from sonic_protocol.protocol_builder import CommandLookUpTable
@@ -12,6 +12,7 @@ class CommandExecutor:
     def __init__(self, command_lookup_table: CommandLookUpTable, communicator: Communicator):
         self._command_lookup_table = command_lookup_table
         self._communicator = communicator
+        self._command_deserializer = CommandDeserializer(self._command_lookup_table)
 
     def has_command(self, command: CommandCode | Command) -> bool:
         if isinstance(command, Command):
@@ -33,13 +34,18 @@ class CommandExecutor:
 
         return answer
 
-    async def send_message(self, message: str, answer_validator: AnswerValidator | None = None, **kwargs) -> Answer:
+    async def send_message(self, message: str, answer_validator: AnswerValidator| None = None, try_deduce_answer_validator: bool = False, **kwargs) -> Answer:
         response_str = await self._communicator.send_and_wait_for_response(message, **kwargs)
         
         code: CommandCode | None = None
         if "#" in response_str:
             code_str, response_str  = response_str.split(sep="#", maxsplit=1)
             code = CommandCode(int(code_str))
+        
+        if try_deduce_answer_validator and answer_validator is None:
+            command_code = self._command_deserializer.get_deserialized_command_code(message.strip())
+            if command_code:
+                answer_validator = self._command_lookup_table[command_code].answer_validator
         
         if answer_validator is None:
             answer = Answer(response_str, True, was_validated=False)

@@ -46,7 +46,7 @@ Set gain over serial updates status bar
     ${gain_label}=    Gui.Get text of widget "${STATUS_BAR_GAIN_LABEL}"
     Should Contain    ${gain_label}    50    # TODO: use a better check
 
-Execute test scriptf holds application
+Execute test script holds application
     Gui.Set text of widget "${EDITOR_TEXT_EDITOR}" to "${TEST_SCRIPT_HOLD}"
     Gui.Press button "${EDITOR_START_PAUSE_CONTINUE_BUTTON}"
     Gui.Let the app run free for "500" ms

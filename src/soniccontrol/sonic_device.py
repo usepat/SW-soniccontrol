@@ -1,9 +1,6 @@
-import asyncio
 import logging
-from typing import Any, Dict
 
 import attrs
-from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.protocol_builder import CommandLookUpTable
@@ -20,6 +17,7 @@ class SonicDevice(Scriptable):
     command_executor: CommandExecutor = attrs.field(on_setattr=attrs.setters.NO_OP)
     info: Info = attrs.field(on_setattr=attrs.setters.NO_OP)
     lookup_table: CommandLookUpTable = attrs.field(on_setattr=attrs.setters.NO_OP)
+
 
     def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, info: Info, logger: logging.Logger=logging.getLogger()) -> None:
         self.info = info
@@ -38,6 +36,7 @@ class SonicDevice(Scriptable):
         self,
         command: Command | str,
         should_log: bool = True,
+        try_deduce_command_if_str: bool = True,
         **kwargs
     ) -> Answer:
         """
@@ -72,6 +71,7 @@ class SonicDevice(Scriptable):
             if isinstance(command, str):
                 answer = await self.command_executor.send_message(
                     command, 
+                    try_deduce_answer_validator=try_deduce_command_if_str,
                     estimated_response_time=0.4,
                     expects_long_answer=True # kwargs needed for the old legacy communicator
                 )

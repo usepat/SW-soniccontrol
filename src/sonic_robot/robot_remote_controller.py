@@ -31,15 +31,15 @@ class RobotRemoteController:
         return self._controller.is_connected()
 
     @keyword('Set "${attr}" to "${val}"')
-    def set_attr(self, attr: str, val: str) -> Tuple[str, bool]:
+    def set_attr(self, attr: str, val: str) -> Tuple[str, dict, bool]:
         return self._loop.run_until_complete(self._controller.set_attr(attr, val))
 
     @keyword('Get "${attr}"')
-    def get_attr(self, attr: str) -> Tuple[str, bool]:
+    def get_attr(self, attr: str) -> Tuple[str, dict, bool]:
         return self._loop.run_until_complete(self._controller.get_attr(attr))
 
     @keyword('Send Command ')
-    def send_command(self, command_str: str) -> Tuple[str, bool]:
+    def send_command(self, command_str: str) -> Tuple[str, dict, bool]:
         return self._loop.run_until_complete(self._controller.send_command(command_str))
 
     @keyword('Deduce list of command examples')
