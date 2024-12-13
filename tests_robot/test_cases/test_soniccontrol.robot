@@ -30,7 +30,7 @@ ${MAX_INDEX}    ${4}
 *** Test Cases ***
 
 Set frequency
-    Send command and check response    !freq\=${MIN_GAIN}    ${FIELD_FREQUENCY}=${MIN_GAIN}
+    Send command and check response    !freq\=${MIN_FREQUENCY}    ${FIELD_FREQUENCY}=${MIN_FREQUENCY}
     
 
 Check if aliases are working
@@ -73,26 +73,23 @@ Check limits of parameters
 
 Check setter commands get blocked during procedure run
     [Tags]    -descaler
-    [Teardown]    RemoteController.Send Command    !OFF
+    [Setup]    Set Ramp Args
+    [Teardown]    RemoteController.Send Command    !stop
     ${EXPECTED_PROCEDURE}=    Convert to procedure    ramp
-    Send command and check response    !ramp_f_start\=100000
-    Send command and check response    !ramp_f_stop\=100010
-    Send command and check response    !ramp_f_step\=1
-    Send command and check response    !ramp_t_on\=100
-    Send command and check response    !ramp_t_off\=0
     Send command and check response    !ramp    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
     Sleep    300ms
     Send command and check response    !freq\=${MIN_FREQUENCY}    ${False}
 
 
 
-Send Example Command
+Send Example Commands
     [Tags]    expensive_to_run
     ${command_examples_list}=    RemoteController.Deduce list of command examples
     FOR  ${command_example}  IN  @{command_examples_list}
         Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
         Reconnect if disconnected
     END
+
 
 *** Keywords ***
 
@@ -143,4 +140,11 @@ Send command and check response
     FOR  ${field_name}    ${expected_value}  IN  &{expected_answer_values}
         Should Be Equal    ${answer_value_dict}[${field_name}]    ${expected_value}
     END
-    
+
+Set Ramp Args
+    [Arguments]    ${f_start}=100000    ${f_stop}=100010    ${f_step}=1    ${t_on}=100    ${t_off}=0
+    Send Command And Check Response    !ramp_f_start\=${f_start}
+    Send Command And Check Response    !ramp_f_stop\=${f_stop}
+    Send Command And Check Response    !ramp_f_step\=${f_step}
+    Send Command And Check Response    !ramp_t_on\=${t_on}
+    Send Command And Check Response    !ramp_t_off\=${t_off} 

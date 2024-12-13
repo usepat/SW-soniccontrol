@@ -80,6 +80,8 @@ class CommandCode(IntEnum):
     SET_GEXT = 1320
     SET_ATT = 1330
     SET_ATON = 1340
+    SET_STOP = 1350
+    SET_CONTINUE = 1360
 
     SET_DEFAULT = 6000
     SET_FLASH_USB = 7001

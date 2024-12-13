@@ -321,4 +321,22 @@ duty_cycle_proc_commands: List[CommandContract] = [
 ]
 
 
-all_proc_commands = ramp_proc_commands + wipe_proc_commands + scan_proc_commands + tune_proc_commands + auto_proc_commands + duty_cycle_proc_commands
+stop_command =  generate_start_procedure_contract(
+    CommandCode.SET_STOP,
+    ["!stop", "!stop_procedure"],
+    ""
+)
+continue_command =  generate_start_procedure_contract(
+    CommandCode.SET_CONTINUE,
+    ["!continue", "!continue_procedure"],
+    ""
+)
+
+
+all_proc_commands = [stop_command, continue_command]
+all_proc_commands.extend(ramp_proc_commands)
+all_proc_commands.extend(wipe_proc_commands)
+all_proc_commands.extend(scan_proc_commands)
+all_proc_commands.extend(tune_proc_commands)
+all_proc_commands.extend(auto_proc_commands)
+all_proc_commands.extend(duty_cycle_proc_commands)
