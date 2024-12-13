@@ -79,9 +79,10 @@ class ConverterType(Enum):
     TERMINATION = auto()
 
 class InputSource(Enum):
-    MANUAL = "manual" #! control by the user pressing buttons on the device
     EXTERNAL_COMMUNICATION = "external" #! control by sending commands over a communication channel
     ANALOG = "analog" #! control over pins and analog signals, that have predefined meanings
+    # MANUAL = "manual" #! control by the user pressing buttons on the device
+    # Manual command should not be allowed to be send over serial
 
 class CommunicationChannel(Enum):
     USB = "usb"
