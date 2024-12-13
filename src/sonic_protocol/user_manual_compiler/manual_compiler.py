@@ -2,7 +2,6 @@ import abc
 from enum import Enum
 from sonic_protocol.defs import AnswerFieldDef, CommandCode, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
 from sonic_protocol.protocol_builder import CommandLookUp, ProtocolBuilder
-from sonic_protocol.python_parser.answer import make_field_path_alias
 
 
 class ManualCompiler(abc.ABC):
@@ -75,7 +74,7 @@ class MarkdownManualCompiler(ManualCompiler):
         if isinstance(description_attrs, UserManualAttrs):
             description = description_attrs.description
 
-        param_entry = self.create_field_type_entry(param_def.name, param_def.param_type, description)
+        param_entry = self.create_field_type_entry(param_def.name.value, param_def.param_type, description)
         return param_entry
 
 
@@ -85,8 +84,7 @@ class MarkdownManualCompiler(ManualCompiler):
         if isinstance(description_attrs, UserManualAttrs):
             description = description_attrs.description
 
-        field_path = make_field_path_alias(field_def.field_name)
-        field_entry = self.create_field_type_entry(field_path, field_def.field_type, description)
+        field_entry = self.create_field_type_entry(field_def.field_name.value, field_def.field_type, description)
 
         return field_entry
 
@@ -133,5 +131,5 @@ if __name__ == "__main__":
     manual_compiler = MarkdownManualCompiler(protocol)
     manual = manual_compiler.compile_manual_for_specific_device(device_type, protocol_version, is_release)
 
-    with open("manual.md", "w") as file:
+    with open("./output/manual.md", "w") as file:
         file.write(manual)

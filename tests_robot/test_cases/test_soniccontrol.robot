@@ -1,5 +1,7 @@
 *** Settings ***
 Library    sonic_robot.RobotRemoteController    log_path=${OUTPUT_DIR}    AS    RemoteController
+Library    sonic_robot.conversion_utils
+
 Variables    sonic_robot.variables
 Variables    sonic_robot.field_names
 
@@ -69,6 +71,20 @@ Check limits of parameters
     ?atf${${MIN_INDEX} - 1}    ${False}
 
 
+Check setter commands get blocked during procedure run
+    [Tags]    -descaler
+    [Teardown]    RemoteController.Send Command    !OFF
+    ${EXPECTED_PROCEDURE}=    Convert to procedure    ramp
+    Send command and check response    !ramp_f_start\=100000
+    Send command and check response    !ramp_f_stop\=100010
+    Send command and check response    !ramp_f_step\=1
+    Send command and check response    !ramp_t_on\=100
+    Send command and check response    !ramp_t_off\=0
+    Send command and check response    !ramp    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
+    Sleep    300ms
+    Send command and check response    !freq\=${MIN_FREQUENCY}    ${False}
+
+
 
 Send Example Command
     [Tags]    expensive_to_run
@@ -104,8 +120,12 @@ Reconnect if disconnected
 Send command and check if the device crashes
     [Arguments]    ${command_request}
     ${answer}=    RemoteController.Send Command     ${command_request}
-    Log    Answer received: "${answer}[0]"
-    Log    Is Answer Valid: "${answer}[2]"
+    ${answer_message}=    Set Variable    ${answer}[0]
+    ${is_answer_valid}=    Set Variable    ${answer}[2]
+
+    Log    Answer received: "${answer_message}"
+    Log    Is Answer Valid: "${is_answer_valid}"
+
     ${is_connected}=    RemoteController.Is connected to device
     Should Be True    ${is_connected}
 
@@ -113,9 +133,14 @@ Send command and check if the device crashes
 Send command and check response
     [Arguments]    ${command_request}    ${should_be_valid}=${True}    &{expected_answer_values}
     ${answer}=    RemoteController.Send Command     ${command_request}
-    Log    Answer received: "${answer}[0]"
-    Should Be Equal    ${answer}[2]    ${should_be_valid}
+    ${answer_message}=    Set Variable    ${answer}[0]
+    ${answer_value_dict}=    Set Variable    ${answer}[1]
+    ${is_answer_valid}=    Set Variable    ${answer}[2]
+
+    Log    Answer received: "${answer_message}"
+
+    Should Be Equal    ${is_answer_valid}    ${should_be_valid}
     FOR  ${field_name}    ${expected_value}  IN  &{expected_answer_values}
-        Should Be Equal    ${answer}[1][${field_name}]    ${expected_value}
+        Should Be Equal    ${answer_value_dict}[${field_name}]    ${expected_value}
     END
     
