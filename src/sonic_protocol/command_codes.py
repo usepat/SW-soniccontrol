@@ -51,8 +51,8 @@ class CommandCode(IntEnum):
     GET_WIPE = 320
     GET_DUTY_CYCLE = 330
 
-    SET_EXTERN = 1010
-    SET_ANALOG = 1020
+    SET_INPUT_SOURCE = 1010
+    # = 1020
     SET_DAC0 = 1031
     SET_DAC1 = 1032
     SET_KHZ = 1040
@@ -81,7 +81,6 @@ class CommandCode(IntEnum):
     SET_ATT = 1330
     SET_ATON = 1340
 
-    SET_MANUAL = 5000
     SET_DEFAULT = 6000
     SET_FLASH_USB = 7001
     SET_FLASH_9600 = 7002
