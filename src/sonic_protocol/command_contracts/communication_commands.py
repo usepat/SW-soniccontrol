@@ -72,7 +72,7 @@ field_comm_protocol = AnswerFieldDef(
 )
 
 set_comm_protocol = CommandContract(
-    code=CommandCode.SET_PHYS_COM_CHANNEL,
+    code=CommandCode.SET_COM_PROT,
     command_defs=CommandDef(
         setter_param=CommandParamDef(
             name=EFieldName.COMMUNICATION_PROTOCOL,

@@ -37,7 +37,7 @@ Check if aliases are working
     [Template]    Send command and check response
     !g\=${MIN_GAIN}    ${True}
     !gain\=${MIN_GAIN}    ${True}
-    get_gain\=${MIN_GAIN}    ${True}
+    set_gain\=${MIN_GAIN}    ${True}
 
     -    ${True}
     get_update    ${True}
@@ -50,9 +50,10 @@ Check if aliases are working
 Check if invalid syntax throws error
     [Template]    Send command and check response
     !gain\=-1000    ${False}
+    !gain\=    ${False}
     !gain${MIN_INDEX}    ${False}
+    !gain    ${False}
     !gain\=asdf    ${False}
-    !gain\=${MIN_GAIN}    ${False}
     ?gain\=${MIN_GAIN}    ${False}
     ?gain${MIN_INDEX}    ${False}
     ?gainappendedtext    ${False}

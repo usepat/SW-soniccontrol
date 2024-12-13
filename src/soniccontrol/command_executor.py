@@ -48,7 +48,7 @@ class CommandExecutor:
                 answer_validator = self._command_lookup_table[command_code].answer_validator
         
         if answer_validator is None:
-            answer = Answer(response_str, True, was_validated=False)
+            answer = Answer(response_str, False, was_validated=False)
         else:
             answer = answer_validator.validate(response_str)
         
