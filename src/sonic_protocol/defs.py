@@ -213,6 +213,7 @@ class CommandParamDef():
         return hash((self.name, self.param_type.field_type, self.param_type.converter_ref, self.param_type.si_unit, self.param_type.si_prefix, self.param_type.max_value, self.param_type.min_value))
 
     def to_cpp_var_name(self):
+        # TODO: move this into cpp trans compiler
         si_unit_name = self.param_type.si_unit.name.lower() if self.param_type.si_unit else "none"
         si_prefix_name = self.param_type.si_prefix.name.lower() if self.param_type.si_prefix else "none"
         if isinstance(self.param_type.min_value, DeviceParamConstantType):
@@ -224,6 +225,7 @@ class CommandParamDef():
         else:
             max_value_name = str(self.param_type.max_value) if self.param_type.max_value else "none"
         var_name = f"{self.name.value.lower()}_{self.param_type.field_type.__name__.lower()}_{si_unit_name}_{si_prefix_name}_{min_value_name}_{max_value_name}"
+        var_name = var_name.replace("-", "minus")
         return var_name
 
 @attrs.define(auto_attribs=True)
