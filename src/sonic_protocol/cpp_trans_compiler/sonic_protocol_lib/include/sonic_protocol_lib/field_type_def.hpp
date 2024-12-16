@@ -55,6 +55,10 @@ inline std::string_view convert_data_type_to_string(DataType value) {
             return "e_input_source";
         case DataType::E_PROCEDURE:
             return "e_procedure";
+        case DataType::E_WAVEFORM:
+            return "e_waveform";
+        case DataType::TIMESTAMP:
+            return "timestamp";
         case DataType::VERSION:
             return "version";
         default:
@@ -69,6 +73,7 @@ enum class ConverterReference {
     VERSION,
     BUILD_TYPE,
     TERMINATION,
+    TIMESTAMP
 };
 
 template <typename T>
