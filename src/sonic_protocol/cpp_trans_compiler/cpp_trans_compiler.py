@@ -199,6 +199,7 @@ class CppTransCompiler:
             COMMUNICATION_PROTOCOL_MEMBERS=communication_protocol_members,
             INPUT_SOURCE_MEMBERS=input_source_members,
             PROCEDURE_MEMBERS=procedure_members,
+            WAVEFORM_MEMBERS=convert_to_cpp_enum_members(Waveform),
 
             DEVICE_TYPE_TO_STR_CONVERSIONS=device_type_to_str_conversions,
             COMMUNICATION_CHANNEL_TO_STR_CONVERSIONS=communication_channel_to_str_conversions,

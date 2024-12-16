@@ -37,6 +37,12 @@ enum class Procedure : char {
 };
 #undef PROCEDURE_MEMBERS
 
+#define WAVEFORM_MEMBERS
+enum class Waveform : char {
+    /**/WAVEFORM_MEMBERS/**/  // the python script will replace this
+};
+#undef WAVEFORM_MEMBERS
+
 #define STR_TO_INPUT_SOURCE_CONVERSIONS assert(false);
 inline std::optional<InputSource> convert_string_to_input_source(const std::string_view &str) {
     /**/STR_TO_INPUT_SOURCE_CONVERSIONS/**/  // the python script will replace this
