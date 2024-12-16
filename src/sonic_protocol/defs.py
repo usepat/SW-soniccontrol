@@ -225,7 +225,8 @@ class CommandParamDef():
         else:
             max_value_name = str(self.param_type.max_value) if self.param_type.max_value else "none"
         var_name = f"{self.name.value.lower()}_{self.param_type.field_type.__name__.lower()}_{si_unit_name}_{si_prefix_name}_{min_value_name}_{max_value_name}"
-        var_name = var_name.replace("-", "minus")
+        var_name = var_name.replace("-", "minus") # fix for negative numbers
+        var_name = var_name.replace(".", "_") # fix for floats
         return var_name
 
 @attrs.define(auto_attribs=True)
@@ -272,7 +273,8 @@ class AnswerFieldDef():
             prefix = "none"
             postfix = "none"
         var_name = f"{self.field_name.value.lower()}_{self.field_type.field_type.__name__.lower()}_{si_unit_name}_{si_prefix_name}_{min_value_name}_{max_value_name}_{prefix}_{postfix}"
-        var_name = var_name.replace("-", "minus")
+        var_name = var_name.replace("-", "minus") # fix for negative numbers
+        var_name = var_name.replace(".", "_") # fix for floats
         return var_name
 
 
