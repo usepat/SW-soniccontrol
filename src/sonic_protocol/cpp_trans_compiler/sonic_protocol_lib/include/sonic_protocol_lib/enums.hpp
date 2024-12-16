@@ -44,7 +44,7 @@ enum class Waveform : char {
 #undef WAVEFORM_MEMBERS
 
 #define LOG_LEVEL_MEMBERS
-enum class LogLevel : char {
+enum class Loglevel : char {
     /**/LOG_LEVEL_MEMBERS/**/  // the python script will replace this
 };
 #undef LOG_LEVEL_MEMBERS
