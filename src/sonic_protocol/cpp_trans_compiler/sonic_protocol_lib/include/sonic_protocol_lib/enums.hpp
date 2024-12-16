@@ -84,7 +84,7 @@ inline std::optional<Waveform> convert_string_to_waveform(const std::string_view
 #undef STR_TO_WAVEFORM_CONVERSIONS
 
 #define STR_TO_LOGLEVEL_CONVERSIONS assert(false);
-inline std::optional<LogLevel> convert_string_to_log_level(const std::string_view &str) {
+inline std::optional<Loglevel> convert_string_to_log_level(const std::string_view &str) {
     /**/STR_TO_LOGLEVEL_CONVERSIONS/**/  // the python script will replace this
     return std::nullopt;
 }
@@ -134,7 +134,7 @@ inline std::string_view convert_waveform_to_string(Waveform value) {
 #undef WAVEFORM_TO_STR_CONVERSIONS
 
 #define LOG_LEVEL_TO_STR_CONVERSIONS assert(false);
-inline std::string_view convert_log_level_to_string(LogLevel value) {
+inline std::string_view convert_log_level_to_string(Loglevel value) {
     /**/LOG_LEVEL_TO_STR_CONVERSIONS/**/  // the python script will replace this
 }
 #undef LOG_LEVEL_TO_STR_CONVERSIONS
