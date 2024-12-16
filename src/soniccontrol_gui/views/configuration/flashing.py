@@ -67,10 +67,10 @@ class Flashing(UIComponent):
             # TODO implement legacy flashing
             self._logger.info("Executed command FLASH_LEGACY")
         elif selected_flash_mode == ui_labels.FLASH_UART_SLOW:
-            flasher = NewFirmwareFlasher(self._logger, 9600, selected_file)
+            flasher = NewFirmwareFlasher(self._logger, 9600, selected_file, 0.3)
             self._logger.info("Executed command FLASH_UART_SLOW")
         elif selected_flash_mode == ui_labels.FLASH_UART_FAST:
-            flasher = NewFirmwareFlasher(self._logger, 115200, selected_file)
+            flasher = NewFirmwareFlasher(self._logger, 115200, selected_file, 0.3)
             self._logger.info("Executed command FLASH_UART_FAST")
         elif selected_flash_mode == ui_labels.FLASH_USB:
             flasher = NewFirmwareFlasher(self._logger, 115200, selected_file)

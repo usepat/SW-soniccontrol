@@ -133,11 +133,12 @@ class LegacyFirmwareFlasher(FirmwareFlasher):
 
 
 class NewFirmwareFlasher(FirmwareFlasher):
-    def __init__(self, logger: logging.Logger, baudrate: int, file: pathlib.Path) -> None:
+    def __init__(self, logger: logging.Logger, baudrate: int, file: pathlib.Path, wait_time_before_read = 0.01) -> None:
         super().__init__()
         self._logger = logging.getLogger(logger.name + "." + NewFirmwareFlasher.__name__)
         self.baudrate = baudrate
         self.file_path = file
+        self.wait_time_before_read = wait_time_before_read
 
     async def find_flashable_device(self) -> Tuple[Optional[asyncio.StreamWriter], Optional[asyncio.StreamReader], Optional[str]]:
         ports = [port.device for port in list_ports.comports()]
@@ -148,7 +149,7 @@ class NewFirmwareFlasher(FirmwareFlasher):
                     reader, writer = await open_serial_connection(url=port, baudrate=self.baudrate)
                 except Exception as e:
                     self._logger.info(f"{e}")
-                    pass
+                    continue
                 # Flush the read buffer (read until there is nothing left, or timeout)
                 try:
                     await asyncio.wait_for(reader.read(1024), timeout=2)
@@ -205,7 +206,7 @@ class NewFirmwareFlasher(FirmwareFlasher):
             if self.img.Data is None or self.img.Addr <= -1:
                 self._logger.info(f"Image empty or address incorrect")
                 return False
-            self.protocol = Protocol_RP2040(self._logger, writer, reader)
+            self.protocol = Protocol_RP2040(self._logger, writer, reader, self.wait_time_before_read)
             self._logger.info("Start erasing the flash")
             success = await self.erase_flash()
             if not success:

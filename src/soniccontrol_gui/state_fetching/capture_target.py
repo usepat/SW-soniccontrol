@@ -143,6 +143,7 @@ class CaptureSpectrumMeasure(CaptureTarget):
         self.emit(Event(CaptureTarget.COMPLETED_EVENT))
 
     async def before_start_capture(self) -> None:
+        await self._updater.stop()
         proc_args = self._spectrum_measure_model.form_fields
         self._args = SpectrumMeasureArgs(**proc_args)
         self._is_capturing = True
@@ -155,4 +156,5 @@ class CaptureSpectrumMeasure(CaptureTarget):
         self._is_capturing = False
         if self._procedure_controller.is_proc_running:
             await self._procedure_controller.stop_proc()
+        self._updater.start()
         

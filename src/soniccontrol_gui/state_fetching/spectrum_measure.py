@@ -45,12 +45,10 @@ class SpectrumMeasure(Procedure):
         values = [start + i * args.step for i in range(int((stop - start) / args.step)) ]
 
         try:
-            await self._updater.stop()
             await device.get_overview()
-            await self._ramp(device, list(values), args.hold_on, args.hold_off)
+            await self._ramp(device, list(values), args.hold_on, args.hold_off, args.time_offset_measure)
         finally:
             await device.set_signal_off()
-            self._updater.start()
 
     async def _ramp(
         self,
@@ -58,6 +56,7 @@ class SpectrumMeasure(Procedure):
         values: List[Union[int, float]],
         hold_on: HolderArgs,
         hold_off: HolderArgs,
+        time_offset_measure: HolderArgs
     ) -> None:
         for  i in range(len(values)):
             value = int(values[i])
@@ -65,8 +64,9 @@ class SpectrumMeasure(Procedure):
             await device.execute_command(commands.SetFrequency(value))
             if hold_off.duration:
                 await device.set_signal_on()
+            await Holder.execute(time_offset_measure)
             asyncio.get_running_loop().create_task(self._updater.update())
-            await Holder.execute(hold_on)
+            await Holder.execute(hold_on - time_offset_measure)
 
             if hold_off.duration:
                 await device.set_signal_off()

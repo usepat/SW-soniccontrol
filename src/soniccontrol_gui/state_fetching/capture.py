@@ -39,6 +39,7 @@ class Capture(EventManager):
 
         self._target = capture_target
         await self._target.before_start_capture()
+        self._data_provider.clear_data()
 
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         capture_filename = files.LOG_DIR / self._capture_file_format.format(timestamp)

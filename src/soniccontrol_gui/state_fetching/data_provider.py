@@ -26,3 +26,7 @@ class DataProvider(EventManager):
         self._data = pd.DataFrame(list(self._dataqueue), columns=row.keys())
 
         self.emit(PropertyChangeEvent("data", None, self._data))
+
+    def clear_data(self):
+        self._data = pd.DataFrame()
+        self._dataqueue.clear()

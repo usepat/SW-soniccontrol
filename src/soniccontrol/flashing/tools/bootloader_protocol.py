@@ -21,7 +21,6 @@ class PicoInfo:
 @dataclass
 class Protocol_RP2040:
     MAX_SYNC_ATTEMPTS: ClassVar[int] = 3  # Class-level constant
-    wait_time_before_read: float = 0.01  # seconds
     
     Opcodes: ClassVar[dict] = {
         'Sync': b'SYNC',
@@ -43,11 +42,13 @@ class Protocol_RP2040:
     _writer: StreamWriter = field(init=False)  # Instance-level fields, initialized later
     _reader: StreamReader = field(init=False)
 
-    def __init__(self, logger: logging.Logger, writer: StreamWriter, reader: StreamReader):
+    def __init__(self, logger: logging.Logger, writer: StreamWriter, reader: StreamReader, wait_time_before_read):
         super().__init__()
         self._logger = logging.getLogger(logger.name + "." + Protocol_RP2040.__name__)
         self._writer = writer
         self._reader = reader
+        if wait_time_before_read:
+            self.wait_time_before_read = wait_time_before_read
 
     async def write(self, data: bytes) -> bool:
         try:
@@ -70,8 +71,11 @@ class Protocol_RP2040:
         return True
             
 
-    async def read(self, response_len, wait_before_read = wait_time_before_read) -> Tuple[bytes, bytes]:
-        await asyncio.sleep(wait_before_read)
+    async def read(self, response_len, wait_before_read = None) -> Tuple[bytes, bytes]:
+        if wait_before_read:
+            await asyncio.sleep(wait_before_read)
+        else:
+            await asyncio.sleep(self.wait_time_before_read)
         response = b""
         try:
             response = await asyncio.wait_for(self._reader.read(response_len), timeout=1.0)

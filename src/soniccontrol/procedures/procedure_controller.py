@@ -116,6 +116,12 @@ class ProcedureController(EventManager):
         half_range = (stop - start) // 2
         freq_center = start + half_range
         assert(half_range > 0)
+        if isinstance(hold_on_unit, int):
+            hold_off_time = hold_on_unit
+            hold_on_unit = "ms"
+        if isinstance(hold_off_unit, int):
+            hold_off_unit = "ms"
+
 
         return await self.ramp_freq_range(
             freq_center, 
@@ -137,6 +143,11 @@ class ProcedureController(EventManager):
     ) -> None:
         if self._ramp is None:
             raise Exception("No Ramp procedure available for the current device")
+        if isinstance(hold_on_unit, int):
+            hold_off_time = hold_on_unit
+            hold_on_unit = "ms"
+        if isinstance(hold_off_unit, int):
+            hold_off_unit = "ms"
 
         return await self._ramp.execute(
             self._device,
