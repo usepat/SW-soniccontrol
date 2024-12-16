@@ -127,14 +127,14 @@ param_type_timestamp = FieldType(
 )
 
 field_timestamp = AnswerFieldDef(
-    field_name=EFieldName.TIME_STAMP,
+    field_name=EFieldName.TIMESTAMP,
     field_type=param_type_timestamp
 )
 set_datetime = CommandContract(
     code=CommandCode.SET_DATETIME,
     command_defs=CommandDef(
         setter_param=CommandParamDef(
-            name=EFieldName.TIME_STAMP,
+            name=EFieldName.TIMESTAMP,
             param_type=param_type_timestamp
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
