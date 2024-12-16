@@ -245,9 +245,15 @@ param_att = CommandParamDef(
     param_type=field_type_temperature_celsius
 )
 
+field_type_atk = FieldType(
+    float,
+    min_value=float(np.finfo(np.float32).min),
+    max_value=float(np.finfo(np.float32).max),
+)
+
 param_atk = CommandParamDef(
     name=EFieldName.ATK,
-    param_type=FieldType(float)
+    param_type=field_type_atk
 )
 
 field_atf = AnswerFieldDef(
@@ -370,7 +376,7 @@ set_att = CommandContract(
 
 field_atk = AnswerFieldDef(
     field_name=EFieldName.ATK,
-    field_type=FieldType(float)
+    field_type=field_type_atk
 )
 
 get_atk = CommandContract(

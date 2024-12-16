@@ -111,6 +111,8 @@ class DeviceParamConstants:
     min_swf: int = attrs.field(default=0)
     max_transducer_index: int = attrs.field(default=4)
     min_transducer_index: int = attrs.field(default=1)
+    max_frequency_step: int = attrs.field(default=5000000)
+    min_frequency_step: int = attrs.field(default=100)
 
 class DeviceParamConstantType(Enum):
     MAX_FREQUENCY = "max_frequency"
@@ -121,6 +123,8 @@ class DeviceParamConstantType(Enum):
     MIN_SWF = "min_swf"
     MAX_TRANSDUCER_INDEX = "max_transducer_index"
     MIN_TRANSDUCER_INDEX = "min_transducer_index"
+    MAX_FREQUENCY_STEP = "max_frequency_step"
+    MIN_FREQUENCY_STEP = "min_frequency_step"
 
 @attrs.define(auto_attribs=True)
 class MetaExportDescriptor:

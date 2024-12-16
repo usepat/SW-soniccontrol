@@ -26,6 +26,14 @@ field_type_frequency = FieldType(
 	min_value=DeviceParamConstantType.MIN_FREQUENCY,
 )
 
+field_type_frequency_step = FieldType(
+    field_type=np.uint32,
+    si_unit=SIUnit.HERTZ,
+    #si_prefix=SIPrefix.KILO,
+	max_value=DeviceParamConstantType.MAX_FREQUENCY_STEP,
+	min_value=DeviceParamConstantType.MIN_FREQUENCY_STEP,
+)
+
 field_frequency = AnswerFieldDef(
     field_name=EFieldName.FREQUENCY,
     field_type=field_type_frequency,
@@ -69,12 +77,16 @@ field_swf = AnswerFieldDef(
 
 field_type_temperature_kelvin = FieldType(
     field_type=np.uint32,
+    min_value=np.uint32(0),
+    max_value=np.uint32(6273150), # The sun is 6000 °C warm. max limit is that converted into kelvin
     si_unit=SIUnit.KELVIN,
     si_prefix=SIPrefix.MILLI,
 )
 
 field_type_temperature_celsius = FieldType(
     field_type=float,
+    min_value=-273.15, # Absolute zero point
+    max_value=6000., # The sun is 6000 °C warm.
     si_unit=SIUnit.CELSIUS,
     si_prefix=SIPrefix.NONE,
 )
@@ -147,13 +159,13 @@ field_type_time_span = FieldType(
 
 field_scan_f_step = AnswerFieldDef(
     field_name=EFieldName.SCAN_F_STEP,
-    field_type=field_type_frequency,
+    field_type=field_type_frequency_step,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Scst: ")
 )
 
 field_scan_f_half_range = AnswerFieldDef(
     field_name=EFieldName.SCAN_F_RANGE,
-    field_type=field_type_frequency,
+    field_type=field_type_frequency_step,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Range: ")
 )
 
@@ -165,7 +177,7 @@ field_scan_t_step = AnswerFieldDef(
 
 field_tune_f_step = AnswerFieldDef(
     field_name=EFieldName.TUNE_F_STEP,
-    field_type=field_type_frequency,
+    field_type=field_type_frequency_step,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
 )
 
@@ -179,13 +191,13 @@ field_tune_t_time = AnswerFieldDef(
 
 field_wipe_f_step = AnswerFieldDef(
     field_name=EFieldName.WIPE_F_STEP,
-    field_type=field_type_frequency,
+    field_type=field_type_frequency_step,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Step: ")
 )
 
 field_wipe_f_range = AnswerFieldDef(
     field_name=EFieldName.WIPE_F_RANGE,
-    field_type=field_type_frequency,
+    field_type=field_type_frequency_step,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Range: ")
 )
 

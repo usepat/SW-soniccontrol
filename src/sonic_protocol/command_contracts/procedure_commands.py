@@ -73,15 +73,18 @@ ramp_proc_commands: List[CommandContract] = [
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_F_STOP, 
-    ["!ramp_f_stop"], 
+    ["!ramp_f_stop"],
     EFieldName.RAMP_F_STOP, 
     ""
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_F_STEP, 
     ["!ramp_f_step"], 
-    EFieldName.RAMP_F_STEP, 
-    ""
+    description="",
+    response_field=AnswerFieldDef(
+        EFieldName.RAMP_F_STEP,
+        fields.field_type_frequency_step
+    )
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_T_ON, 

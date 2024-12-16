@@ -30,6 +30,7 @@ ${MAX_INDEX}    ${4}
 *** Test Cases ***
 
 Set frequency
+    [Tags]    -descaler
     Send command and check response    !freq\=${MIN_FREQUENCY}    ${FIELD_FREQUENCY}=${MIN_FREQUENCY}
     
 
@@ -72,22 +73,74 @@ Check limits of parameters
     ?atf${${MIN_INDEX} - 1}    ${False}
 
 
+Check basic setter commands are working
+    [Tags]    -descaler
+    [Template]    Send command and check response
+    !ON
+    !OFF
+    !gain\=100
+    !frequency\=${MIN_FREQUENCY}
+
+    !att4\=${0}
+    !atk1\=${100}
+    !atf2\=${MIN_FREQUENCY}
+
+    !wipe_f_step\=${MIN_FREQUENCY}
+    !wipe_t_on\=${100}
+    !scan_f_step\=${1000}
+    !ramp_f_start\=${MIN_FREQUENCY}
+    !tune_f_step\=${1000}
+
+
+Test if value set by setter can be retrieved with getter
+    Send Command And Check Response    !gain\=${MIN_GAIN}
+    Send Command And Check Response    ?gain    ${FIELD_GAIN}=${MIN_GAIN}
+    Send Command And Check Response    !gain\=${MAX_GAIN}
+    Send Command And Check Response    ?gain    ${FIELD_GAIN}=${MAX_GAIN}
+
+
+Check procedure command returns error, if ramp_f_start and ramp_f_stop are the same
+    [Tags]    -descaler
+    [Setup]    Set Ramp Args
+    [Teardown]    RemoteController.Send Command    !stop
+    Send Command And Check Response    !ramp_f_start\=${100100}
+    Send Command And Check Response    !ramp_f_stop\=${100100}
+    Send command and check response    !ramp    ${False}
+
 Check setter commands get blocked during procedure run
     [Tags]    -descaler
     [Setup]    Set Ramp Args
     [Teardown]    RemoteController.Send Command    !stop
-    ${EXPECTED_PROCEDURE}=    Convert to procedure    ramp
+    ${EXPECTED_PROCEDURE}=    Convert to procedure    RAMP
     Send command and check response    !ramp    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
     Sleep    300ms
     Send command and check response    !freq\=${MIN_FREQUENCY}    ${False}
 
+Check getter commands are allowed during procedure run
+    [Tags]    -descaler
+    [Setup]    Set Ramp Args
+    [Teardown]    RemoteController.Send Command    !stop
+    ${EXPECTED_PROCEDURE}=    Convert to procedure    RAMP
+    Send command and check response    !ramp    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
+    Sleep    300ms
+    Send command and check response    ?freq    ${True}
 
+Test Stop turns off procedure
+    [Tags]    -descaler
+    [Setup]    Set Ramp Args
+    [Teardown]    RemoteController.Send Command    !stop
+    ${EXPECTED_PROCEDURE}=    Convert to procedure    RAMP
+    Send command and check response    !ramp    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
+    Sleep    300ms
+    ${EXPECTED_PROCEDURE}=    Convert to procedure    NO_PROC
+    Send command and check response    !stop    ${True}    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
 
 Send Example Commands
     [Tags]    expensive_to_run
     ${command_examples_list}=    RemoteController.Deduce list of command examples
     FOR  ${command_example}  IN  @{command_examples_list}
         Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
+        Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
         Reconnect if disconnected
     END
 
