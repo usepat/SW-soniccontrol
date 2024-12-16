@@ -24,9 +24,11 @@ enum class DataType {
     E_COMMUNICATION_PROTOCOL,
     E_INPUT_SOURCE,
     E_PROCEDURE,
+    E_WAVEFORM,
 
     // Classes
     VERSION,
+    TIMESTAMP
 };
 
 inline std::string_view convert_data_type_to_string(DataType value) {

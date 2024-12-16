@@ -6,7 +6,7 @@ import attrs
 import numpy as np
 from sonic_protocol import protocol as prot
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 import importlib.resources as rs
@@ -57,6 +57,10 @@ def convert_to_enum_data_type(data_type: type[Any]) -> str:
         enum_member = "VERSION"
     elif issubclass(data_type, Procedure):
         enum_member = "E_PROCEDURE"
+    elif issubclass(data_type, Waveform):
+        enum_member = "E_WAVEFORM"
+    elif issubclass(data_type, Timestamp):
+        enum_member = "TIMESTAMP"
     else:
         raise ValueError(f"Unknown data type: {data_type}")
 
