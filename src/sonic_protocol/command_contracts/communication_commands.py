@@ -192,7 +192,7 @@ set_log_level = CommandContract(
             name=EFieldName.LOGGER_NAME,
             param_type=FieldType(
                 field_type=LoggerName,
-                converter_ref=ConverterType.ENUM
+                converter_ref=ConverterType.ENUM,
             )
         ),
         setter_param=CommandParamDef(
@@ -207,13 +207,23 @@ set_log_level = CommandContract(
         )
     ),
     answer_defs=AnswerDef(
-        fields=[AnswerFieldDef(
-            field_name=EFieldName.LOG_LEVEL,
-            field_type=FieldType(
-                field_type=Loglevel,
-                converter_ref=ConverterType.ENUM
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.LOGGER_NAME,
+                field_type=FieldType(
+                    field_type=LoggerName,
+                    converter_ref=ConverterType.ENUM
+                ),
+                sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Set ", postfix=" log level to ")
+            ),
+            AnswerFieldDef(
+                field_name=EFieldName.LOG_LEVEL,
+                field_type=FieldType(
+                    field_type=Loglevel,
+                    converter_ref=ConverterType.ENUM
+                )   
             )
-        )]
+        ]
     ),
     user_manual_attrs=UserManualAttrs(
         description="Command to set the log level"
