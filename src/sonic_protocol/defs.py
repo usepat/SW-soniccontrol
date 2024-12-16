@@ -107,6 +107,20 @@ class Waveform(Enum):
     SINE = "sine"
     SQUARE = "square"
 
+class Loglevel(Enum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+class LoggerName(Enum):
+    APPLOGGER = "applogger"
+    TRANSDUCERLOGGER = "transducerlogger"
+    HWFCLOGGER = "hwfclogger"
+    PROCEDURELOGGER = "procedurelogger"
+    GLOBAL = "global"
+
 class Timestamp():
     hour: int = attrs.field()
     minute: int = attrs.field()

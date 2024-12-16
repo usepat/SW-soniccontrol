@@ -6,7 +6,7 @@ import attrs
 import numpy as np
 from sonic_protocol import protocol as prot
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import LoggerName, Loglevel, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 import importlib.resources as rs
@@ -61,6 +61,10 @@ def convert_to_enum_data_type(data_type: type[Any]) -> str:
         enum_member = "E_WAVEFORM"
     elif issubclass(data_type, Timestamp):
         enum_member = "TIMESTAMP"
+    elif issubclass(data_type, Loglevel):
+        enum_member = "E_LOG_LEVEL"
+    elif issubclass(data_type, LoggerName):
+        enum_member = "E_LOGGER_NAME"
     else:
         raise ValueError(f"Unknown data type: {data_type}")
 
@@ -200,18 +204,25 @@ class CppTransCompiler:
             INPUT_SOURCE_MEMBERS=input_source_members,
             PROCEDURE_MEMBERS=procedure_members,
             WAVEFORM_MEMBERS=convert_to_cpp_enum_members(Waveform),
+            LOG_LEVEL_MEMBERS=convert_to_cpp_enum_members(Loglevel),
+            LOGGER_NAME_MEMBERS=convert_to_cpp_enum_members(LoggerName),
 
             DEVICE_TYPE_TO_STR_CONVERSIONS=device_type_to_str_conversions,
             COMMUNICATION_CHANNEL_TO_STR_CONVERSIONS=communication_channel_to_str_conversions,
             COMMUNICATION_PROTOCOL_TO_STR_CONVERSIONS=communication_protocol_to_str_conversions,
             INPUT_SOURCE_TO_STR_CONVERSIONS=input_source_to_str_conversions,
 
+            STR_TO_LOGLEVEL_CONVERSIONS=create_string_to_enum_conversions(Loglevel),
+            STR_TO_LOGGER_NAME_CONVERSIONS=create_string_to_enum_conversions(LoggerName),
             STR_TO_WAVEFORM_CONVERSIONS=create_string_to_enum_conversions(Waveform),
             STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS=str_to_communication_channel_conversions,
             STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS=str_to_communication_protocol_conversions,
             STR_TO_INPUT_SOURCE_CONVERSIONS=str_to_input_source_conversions,
             PROCEDURE_TO_STR_CONVERSIONS=procedure_to_str_conversions,
             WAVEFORM_TO_STR_CONVERSIONS=create_enum_to_string_conversions(Waveform),
+            LOG_LEVEL_TO_STR_CONVERSIONS=create_enum_to_string_conversions(Loglevel),
+            LOGGER_NAME_TO_STR_CONVERSIONS=create_enum_to_string_conversions(LoggerName),
+
         )
 
     def generate_transpiled_protocol(self, protocol: Protocol, protocol_versions: List[ProtocolVersion], output_dir: Path): 

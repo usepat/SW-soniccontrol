@@ -1,6 +1,6 @@
 from sonic_protocol.defs import (
     CommandCode, CommunicationChannel, CommunicationProtocol, ConverterType, FieldType, InputSource, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
-    AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, Timestamp
+    AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, Timestamp, LoggerName, Loglevel
 )
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative
@@ -183,4 +183,41 @@ get_datetime_pico = CommandContract(
     ),
     is_release=True,
     tags=["datetime"]
+)
+
+set_log_level = CommandContract(
+    code=CommandCode.SET_LOG_LEVEL,
+    command_defs=CommandDef(
+        index_param=CommandParamDef(
+            name=EFieldName.LOGGER_NAME,
+            param_type=FieldType(
+                field_type=LoggerName,
+                converter_ref=ConverterType.ENUM
+            )
+        ),
+        setter_param=CommandParamDef(
+            name=EFieldName.LOG_LEVEL,
+            param_type=FieldType(
+                field_type=Loglevel,
+                converter_ref=ConverterType.ENUM
+            )
+        ),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!log", "set_log_level"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[AnswerFieldDef(
+            field_name=EFieldName.LOG_LEVEL,
+            field_type=FieldType(
+                field_type=Loglevel,
+                converter_ref=ConverterType.ENUM
+            )
+        )]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the log level"
+    ),
+    is_release=True,
+    tags=["log"]
 )

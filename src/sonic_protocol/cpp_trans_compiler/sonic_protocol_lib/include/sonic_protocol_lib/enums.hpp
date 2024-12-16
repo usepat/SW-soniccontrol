@@ -43,6 +43,18 @@ enum class Waveform : char {
 };
 #undef WAVEFORM_MEMBERS
 
+#define LOG_LEVEL_MEMBERS
+enum class LogLevel : char {
+    /**/LOG_LEVEL_MEMBERS/**/  // the python script will replace this
+};
+#undef LOG_LEVEL_MEMBERS
+
+#define LOGGER_NAME_MEMBERS
+enum class LoggerName : char {
+    /**/LOGGER_NAME_MEMBERS/**/  // the python script will replace this
+};
+#undef LOGGER_NAME_MEMBERS
+
 #define STR_TO_INPUT_SOURCE_CONVERSIONS assert(false);
 inline std::optional<InputSource> convert_string_to_input_source(const std::string_view &str) {
     /**/STR_TO_INPUT_SOURCE_CONVERSIONS/**/  // the python script will replace this
@@ -71,7 +83,19 @@ inline std::optional<Waveform> convert_string_to_waveform(const std::string_view
 }
 #undef STR_TO_WAVEFORM_CONVERSIONS
 
+#define STR_TO_LOGLEVEL_CONVERSIONS assert(false);
+inline std::optional<LogLevel> convert_string_to_log_level(const std::string_view &str) {
+    /**/STR_TO_LOGLEVEL_CONVERSIONS/**/  // the python script will replace this
+    return std::nullopt;
+}
+#undef STR_TO_LOGLEVEL_CONVERSIONS
 
+#define STR_TO_LOGGER_NAME_CONVERSIONS assert(false);
+inline std::optional<LoggerName> convert_string_to_logger_name(const std::string_view &str) {
+    /**/STR_TO_LOGGER_NAME_CONVERSIONS/**/  // the python script will replace this
+    return std::nullopt;
+}
+#undef STR_TO_LOGGER_NAME_CONVERSIONS
 
 #define COMMUNICATION_CHANNEL_TO_STR_CONVERSIONS assert(false);
 inline std::string_view convert_communication_channel_to_string(CommunicationChannel value) {
@@ -108,5 +132,17 @@ inline std::string_view convert_waveform_to_string(Waveform value) {
     /**/WAVEFORM_TO_STR_CONVERSIONS/**/  // the python script will replace this
 }
 #undef WAVEFORM_TO_STR_CONVERSIONS
+
+#define LOG_LEVEL_TO_STR_CONVERSIONS assert(false);
+inline std::string_view convert_log_level_to_string(LogLevel value) {
+    /**/LOG_LEVEL_TO_STR_CONVERSIONS/**/  // the python script will replace this
+}
+#undef LOG_LEVEL_TO_STR_CONVERSIONS
+
+#define LOGGER_NAME_TO_STR_CONVERSIONS assert(false);
+inline std::string_view convert_logger_name_to_string(LoggerName value) {
+    /**/LOGGER_NAME_TO_STR_CONVERSIONS/**/  // the python script will replace this
+}
+#undef LOGGER_NAME_TO_STR_CONVERSIONS
 
 }

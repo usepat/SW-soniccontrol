@@ -25,6 +25,8 @@ enum class DataType {
     E_INPUT_SOURCE,
     E_PROCEDURE,
     E_WAVEFORM,
+    E_LOG_LEVEL,
+    E_LOGGER_NAME,
 
     // Classes
     VERSION,
@@ -61,6 +63,10 @@ inline std::string_view convert_data_type_to_string(DataType value) {
             return "timestamp";
         case DataType::VERSION:
             return "version";
+        case DataType::E_LOG_LEVEL:
+            return "e_log_level";
+        case DataType::E_LOGGER_NAME:    
+            return "e_logger_name";
         default:
             assert (false);
     }

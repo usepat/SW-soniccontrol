@@ -69,3 +69,6 @@ class EFieldName(Enum):
     DUTY_CYCLE_T_OFF = "duty_cycle_t_off"
     DUTY_CYCLE_T_ON = "duty_cycle_t_on"
 
+    LOG_LEVEL = "log_level"
+    LOGGER_NAME = "logger_name"
+
