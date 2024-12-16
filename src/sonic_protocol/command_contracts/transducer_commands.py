@@ -247,8 +247,8 @@ param_att = CommandParamDef(
 
 field_type_atk = FieldType(
     float,
-    min_value=float(np.finfo(np.float32).min),
-    max_value=float(np.finfo(np.float32).max),
+    min_value=-10000000,
+    max_value=+10000000
 )
 
 param_atk = CommandParamDef(
