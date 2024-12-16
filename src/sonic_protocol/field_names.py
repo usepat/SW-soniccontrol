@@ -47,7 +47,7 @@ class EFieldName(Enum):
     COMMUNICATION_PROTOCOL = "communication_protocol"
     TERMINATION = "termination"
 
-    TIME_STAMP = "time_stamp"
+    TIMESTAMP = "timestamp"
     INDEX = "index"
 
     SCAN_F_RANGE = "scan_f_range"
