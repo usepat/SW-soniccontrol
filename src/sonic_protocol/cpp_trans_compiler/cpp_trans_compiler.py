@@ -1,6 +1,6 @@
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Generic, List, Literal, Tuple, TypeVar
+from typing import Any, Generic, List, Tuple, TypeVar
 
 import attrs
 import numpy as np

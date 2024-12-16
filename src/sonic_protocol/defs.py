@@ -251,6 +251,7 @@ class AnswerFieldDef():
     def __hash__(self):
         return hash((self.field_name, self.field_type.field_type, self.field_type.converter_ref, self.field_type.si_unit, self.field_type.si_prefix, self.field_type.max_value, self.field_type.min_value))
     def to_cpp_var_name(self):
+        # TODO: move this function out to transcompiler
         si_unit_name = self.field_type.si_unit.name.lower() if self.field_type.si_unit else "none"
         si_prefix_name = self.field_type.si_prefix.name.lower() if self.field_type.si_prefix else "none"
         if isinstance(self.field_type.min_value, DeviceParamConstantType):
@@ -269,6 +270,7 @@ class AnswerFieldDef():
             prefix = "none"
             postfix = "none"
         var_name = f"{self.field_name.value.lower()}_{self.field_type.field_type.__name__.lower()}_{si_unit_name}_{si_prefix_name}_{min_value_name}_{max_value_name}_{prefix}_{postfix}"
+        var_name = var_name.replace("-", "minus")
         return var_name
 
 
