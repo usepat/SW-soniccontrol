@@ -110,14 +110,14 @@ class Waveform(Enum):
 class Loglevel(Enum):
     DEBUG = "DEBUG"
     INFO = "INFO"
-    WARNING = "WARNING"
+    WARN = "WARN"
     ERROR = "ERROR"
 
 class LoggerName(Enum):
-    APPLOGGER = "applogger"
-    TRANSDUCERLOGGER = "transducerlogger"
-    HWFCLOGGER = "hwfclogger"
-    PROCEDURELOGGER = "procedurelogger"
+    APP_LOGGER = "app_logger"
+    TRANSDUCER_LOGGER = "transducer_logger"
+    HWFC_LOGGER = "hwfc_logger"
+    PROCEDURE_LOGGER = "procedure_logger"
     GLOBAL = "global"
 
 class Timestamp():
