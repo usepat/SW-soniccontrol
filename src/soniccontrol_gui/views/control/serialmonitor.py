@@ -6,21 +6,17 @@ from async_tkinter_loop import async_handler
 
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
-from soniccontrol_gui.view import TabView
-from soniccontrol.command import Command
+from soniccontrol_gui.view import TabView, View
+from soniccontrol.command import LegacyCommand
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol_gui.state_fetching.message_fetcher import MessageFetcher
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
 from soniccontrol_gui.constants import sizes, style, ui_labels
-from soniccontrol.communication.serial_communicator import LegacySerialCommunicator
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images
-from soniccontrol_gui.constants import files
-
-from serial_asyncio import open_serial_connection
-
+from soniccontrol_gui.resources import resources
 
 class SerialMonitor(UIComponent):
     def __init__(self, parent: UIComponent, communicator: Communicator):
@@ -72,7 +68,7 @@ class SerialMonitor(UIComponent):
 
     async def _send_and_receive(self, command_str: str) -> str:
         try:
-            answer, _ = await Command(message=command_str).execute(connection=self._communicator)
+            answer, _ = await LegacyCommand(message=command_str).execute(connection=self._communicator)
             return answer.string
         except Exception as e:
             self._logger.error(str(e))
@@ -98,13 +94,13 @@ class SerialMonitor(UIComponent):
         elif command_str == "help":
             help_text = ""
             if self._communicator.protocol.major_version == 1:
-                with open(files.HELPTEXT_SONIC_V1, "r") as file:
+                with open(resources.HELPTEXT_SONIC_V1, "r") as file:
                     help_text = file.read()
             else:
                 help_text = await self._send_and_receive("?help")
             
             help_text += "\n"
-            with open(files.HELPTEXT_INTERNAL_COMMANDS, "r") as file:
+            with open(resources.HELPTEXT_INTERNAL_COMMANDS, "r") as file:
                 help_text += file.read()
             self._view.add_text_line(help_text)
             
@@ -133,7 +129,7 @@ class SerialMonitor(UIComponent):
 
 
 class SerialMonitorView(TabView):
-    def __init__(self, master: ttk.Window, *args, **kwargs) -> None:
+    def __init__(self, master: ttk.Window | View, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
 
     @property

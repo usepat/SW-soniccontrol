@@ -7,6 +7,9 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 import json
+from sonic_protocol.python_parser import commands
+from soniccontrol.procedures.procedure_controller import ProcedureController
+from soniccontrol_gui.state_fetching.updater import Updater
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
@@ -26,7 +29,7 @@ from async_tkinter_loop import async_handler
     
 
 class Configuration(UIComponent):
-    def __init__(self, parent: UIComponent, device: SonicDevice):
+    def __init__(self, parent: UIComponent, device: SonicDevice, procedure_controller: ProcedureController):
         self._logger = logging.getLogger(parent.logger.name + "." + Configuration.__name__)
         
         self._logger.debug("Create Configuration Component")
@@ -36,6 +39,7 @@ class Configuration(UIComponent):
         self._view = ConfigurationView(parent.view, self, self._count_atk_atf)
         self._current_transducer_config: Optional[int] = None
         self._device = device
+        self._procedure_controller = procedure_controller
         super().__init__(parent, self._view, self._logger)
         self._view.set_save_config_command(self._save_config)
         self._view.set_transducer_config_selected_command(self._on_transducer_config_selected)
@@ -154,11 +158,10 @@ class Configuration(UIComponent):
         animation.run(num_repeats=-1)
         
         # Send data
-        for i, atconfig in enumerate(self.view.atconfigs):
-            await self._device.set_atf(i, atconfig.atf)
-            await self._device.set_atk(i, atconfig.atk)
-            await self._device.set_att(i, atconfig.att)
-            await self._device.set_aton(i, atconfig.aton)
+        for i, atconfig in enumerate(self._view.atconfigs):
+            await self._device.execute_command(commands.SetAtf(i, atconfig.atf))
+            await self._device.execute_command(commands.SetAtk(i, atconfig.atk))
+            await self._device.execute_command(commands.SetAtt(i, atconfig.att))
 
         task = asyncio.create_task(self._interpreter_engine())
 
@@ -180,7 +183,7 @@ class Configuration(UIComponent):
 
         self._logger.info("Execute init file")
         self._logger.debug("Init file:\n%s", script)
-        scripting: ScriptingFacade = LegacyScriptingFacade(self._device)
+        scripting: ScriptingFacade = LegacyScriptingFacade(self._device, self._procedure_controller)
         interpreter = scripting.parse_script(script)
 
         try:

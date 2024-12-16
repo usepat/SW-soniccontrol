@@ -1,43 +1,27 @@
 import abc
 import asyncio
 
-
-class Sendable(abc.ABC):
-    def __init__(self) -> None:
-        super().__init__()
-
-    @property
-    @abc.abstractmethod
-    def byte_message(self) -> None: ...
+from sonic_protocol.python_parser.answer import Answer
+from sonic_protocol.python_parser.commands import Command
 
 
 class Scriptable(abc.ABC):
     def __init__(self) -> None:
         super().__init__()
 
-    # @property
-    # @abc.abstractmethod
-    # def script_dictionary(self) -> Dict[str, Callable[[Any], Any]]:
-    #     ...
+    @abc.abstractmethod
+    async def execute_command(self, command: Command | str, **kwargs) -> Answer: ...
 
     @abc.abstractmethod
-    async def execute_command(*args, **kwargs) -> None: ...
+    async def get_overview(self) -> Answer: ...
 
     @abc.abstractmethod
-    async def get_overview() -> None: ...
+    async def set_signal_on(self) -> Answer: ...
 
     @abc.abstractmethod
-    async def set_signal_on() -> None: ...
+    async def set_signal_off(self) -> Answer: ...
 
-    @abc.abstractmethod
-    async def set_signal_off() -> None: ...
 
-    @abc.abstractmethod
-    def get_remote_proc_finished_event() -> asyncio.Event: ...
-
-    # @abc.abstractmethod
-    # def hold(self) -> None:
-    #     ...
 
 
 class FirmwareFlasher:

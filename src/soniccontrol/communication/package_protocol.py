@@ -6,7 +6,7 @@ from soniccontrol.communication.package_parser import Package, PackageParser
 
 
 class ProtocolType(Enum):
-    SONIC_PROTOCOL = "Sonic Protocol"
+    PACAKGE_PROTOCOL = "Package Protocol"
 
 class CommunicationProtocol:
     @property
@@ -35,7 +35,7 @@ class CommunicationProtocol:
     def major_version(self) -> int: ...
 
 
-class LegacySonicProtocol(CommunicationProtocol):
+class LegacyProtocol(CommunicationProtocol):
     def __init__(self):
         super().__init__()
 
@@ -59,7 +59,7 @@ class LegacySonicProtocol(CommunicationProtocol):
     
     @abc.abstractmethod
     def prot_type(self) -> ProtocolType:
-        return ProtocolType.SONIC_PROTOCOL
+        return ProtocolType.PACAKGE_PROTOCOL
 
     @property
     @abc.abstractmethod
@@ -73,11 +73,11 @@ class DeviceLogLevel(Enum):
     INFO = "INFO"
     DEBUG = "DEBUG"
 
-class SonicProtocol(CommunicationProtocol):
+class PackageProtocol(CommunicationProtocol):
     LOG_PREFIX = "LOG="
 
     def __init__(self, logger: logging.Logger = logging.getLogger()):
-        self._logger: logging.Logger = logging.getLogger(logger.name + "." + SonicProtocol.__name__)
+        self._logger: logging.Logger = logging.getLogger(logger.name + "." + PackageProtocol.__name__)
         self._device_logger: logging.Logger = logging.getLogger(logger.name + ".device")
         super().__init__()
 
@@ -95,7 +95,7 @@ class SonicProtocol(CommunicationProtocol):
 
     @staticmethod
     def _extract_log_level(log: str) -> int:
-        log_level_str = log[len(SonicProtocol.LOG_PREFIX):log.index(":")]
+        log_level_str = log[len(PackageProtocol.LOG_PREFIX):log.index(":")]
         match log_level_str:
             case DeviceLogLevel.ERROR:
                 return logging.ERROR
@@ -112,9 +112,9 @@ class SonicProtocol(CommunicationProtocol):
         lines = package.content.splitlines(keepends=True)
         answer = ""
         for line in lines:
-            if line.startswith(SonicProtocol.LOG_PREFIX):
+            if line.startswith(PackageProtocol.LOG_PREFIX):
                 line = line.strip() # remove newline \n at the end
-                log_level = SonicProtocol._extract_log_level(line)
+                log_level = PackageProtocol._extract_log_level(line)
                 self._device_logger.log(log_level, line)
             elif line.isspace() or len(line) == 0:
                 continue  # ignore whitespace
@@ -133,7 +133,7 @@ class SonicProtocol(CommunicationProtocol):
     
     @abc.abstractmethod
     def prot_type(self) -> ProtocolType:
-        return ProtocolType.SONIC_PROTOCOL
+        return ProtocolType.PACAKGE_PROTOCOL
 
     @property
     @abc.abstractmethod

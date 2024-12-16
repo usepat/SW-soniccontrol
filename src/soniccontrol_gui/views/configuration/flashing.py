@@ -37,9 +37,9 @@ class Flashing(UIComponent):
     RECONNECT_EVENT = "Reconnect"
     FAILED_EVENT = "Flashing failed"
     def __init__(self, parent: UIComponent, logger: logging.Logger, device: SonicDevice, app_state: AppState, updater: Updater | None = None):
-        self._writer = device._serial.writer
-        self._reader = device._serial.reader
-        self._communicator = device._serial
+        self._writer = device.communicator.writer
+        self._reader = device.communicator.reader
+        self._communicator = device.communicator
 
         self._updater = updater
         self._device = device
@@ -87,7 +87,7 @@ class Flashing(UIComponent):
         if self._device and isinstance(flasher, NewFirmwareFlasher):
             await self._device.execute_command(command)
             self._logger.info(f"Executed command {command}")
-            await self._device.serial.close_communication(True)
+            await self._device.communicator.close_communication(True)
             self._logger.info("Sleep for 10s")
             await asyncio.sleep(10)
             # Read the response (4 bytes)

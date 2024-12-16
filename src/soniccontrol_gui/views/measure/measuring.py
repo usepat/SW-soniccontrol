@@ -13,7 +13,6 @@ import ttkbootstrap as ttk
 import matplotlib
 
 from soniccontrol_gui.widgets.procedure_widget import ProcedureWidget
-from soniccontrol.device_data import Status
 from soniccontrol_gui.state_fetching.capture import Capture
 from soniccontrol_gui.views.measure.csv_table import CsvTable
 matplotlib.use("TkAgg")
@@ -26,11 +25,11 @@ from soniccontrol_gui.utils.plotlib.plot_builder import PlotBuilder
 
 
 class Measuring(UIComponent):
-    def __init__(self, parent: UIComponent, capture_targets: Dict[CaptureTargets, CaptureTarget], spectrum_measure_model: SpectrumMeasureModel):
+    def __init__(self, parent: UIComponent, capture: Capture, capture_targets: Dict[CaptureTargets, CaptureTarget], spectrum_measure_model: SpectrumMeasureModel):
         self._logger = logging.getLogger(parent.logger.name + "." + Measuring.__name__)
 
         self._logger.debug("Create SonicMeasure")
-        self._capture = Capture(self._logger) # TODO: move this to device window
+        self._capture = capture # TODO: move this to device window
         self._capture_targets = capture_targets
         
         # ensures that capture ends if a target completes
@@ -77,9 +76,6 @@ class Measuring(UIComponent):
 
         self._capture.subscribe(Capture.START_CAPTURE_EVENT, lambda _e: self._view.set_capture_button_label(ui_labels.END_CAPTURE))
         self._capture.subscribe(Capture.END_CAPTURE_EVENT, lambda _e: self._view.set_capture_button_label(ui_labels.START_CAPTURE))
-
-    def on_status_update(self, status: Status):
-        self._capture.on_update(status)
 
     @async_handler
     async def _on_toggle_capture(self):

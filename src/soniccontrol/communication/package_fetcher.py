@@ -3,27 +3,31 @@ import logging
 from typing import Dict
 from asyncio import StreamReader
 
-from soniccontrol.communication.sonicprotocol import SonicProtocol
+from soniccontrol.communication.package_protocol import PackageProtocol
 from soniccontrol.system import PLATFORM
 
 
 class PackageFetcher:
-    def __init__(self, reader: StreamReader, protocol: SonicProtocol, logger: logging.Logger = logging.getLogger()) -> None:
+    def __init__(self, reader: StreamReader, protocol: PackageProtocol, logger: logging.Logger = logging.getLogger()) -> None:
         self._reader = reader
         self._answers: Dict[int, str] = {}
-        self._answer_received = asyncio.Event()
+        self._answer_received: Dict[int, asyncio.Event] = {}
         self._messages = asyncio.Queue(maxsize=100)
         self._task = None
-        self._protocol: SonicProtocol = protocol
+        self._protocol: PackageProtocol = protocol
         self._logger: logging.Logger = logging.getLogger(logger.name + "." + PackageFetcher.__name__)
 
     async def get_answer_of_package(self, package_id: int) -> str:
-        while True:
-            await self._answer_received.wait()
-            self._answer_received.clear()
-            if package_id in self._answers:
-                answer: str = self._answers[package_id]
-                return answer
+        if package_id not in self._answer_received:
+            self._answer_received[package_id] = asyncio.Event()
+
+        flag = self._answer_received[package_id]
+        await flag.wait()
+        flag.clear()
+        self._answer_received.pop(package_id)
+
+        answer: str = self._answers.pop(package_id)
+        return answer
 
     @property
     def is_running(self) -> bool:
@@ -62,7 +66,10 @@ class PackageFetcher:
 
             if len(answer) > 0:
                 self._answers[package_id] = answer
-                self._answer_received.set()
+
+                if package_id not in self._answer_received:
+                    self._answer_received[package_id] = asyncio.Event()
+                self._answer_received[package_id].set()
 
     async def _read_response(self) -> str:
         if self._reader is None:

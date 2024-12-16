@@ -2,12 +2,12 @@ import asyncio
 import pytest
 from unittest.mock import Mock, AsyncMock
 import logging
-from soniccontrol.events import Event
+from soniccontrol.events import Event, EventManager
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol.procedures.procs.ramper import RamperArgs, RamperRemote
+from soniccontrol.procedures.procs.ramper import RamperArgs, RamperLocal
 
 
 @pytest.fixture
@@ -16,15 +16,15 @@ def proc_controller(monkeypatch, request):
     # We have to patch the function in the module it is used and not in the module where it is declared
     monkeypatch.setattr("soniccontrol.procedures.procedure_controller.get_base_logger", lambda _: logging.getLogger())
     monkeypatch.setattr(ProcedureInstantiator, "instantiate_ramp", Mock(return_value=ramp))
-    proc_controller = ProcedureController(Mock(spec=SonicDevice))
+    proc_controller = ProcedureController(Mock(spec=SonicDevice), Mock(spec=EventManager))
 
     return proc_controller
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("proc_controller", [RamperRemote()], indirect=True)
+@pytest.mark.parametrize("proc_controller", [RamperLocal()], indirect=True)
 async def test_stop_raises_event_exactly_once(monkeypatch, proc_controller):
     proc_execute = AsyncMock()
-    monkeypatch.setattr(RamperRemote, "execute", proc_execute)
+    monkeypatch.setattr(RamperLocal, "execute", proc_execute)
     listener = Mock()
     proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, listener)
 
@@ -34,7 +34,7 @@ async def test_stop_raises_event_exactly_once(monkeypatch, proc_controller):
     listener.assert_called_once_with(Event(ProcedureController.PROCEDURE_STOPPED))
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("proc_controller", [RamperRemote()], indirect=True)
+@pytest.mark.parametrize("proc_controller", [RamperLocal()], indirect=True)
 async def test_execute_proc_throws_error_if_a_proc_already_is_running(proc_controller):
     listener = Mock()
     proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, listener)
@@ -52,10 +52,10 @@ def test_execute_proc_throws_error_if_proc_not_available(proc_controller):
     
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("proc_controller", [RamperRemote()], indirect=True)
+@pytest.mark.parametrize("proc_controller", [RamperLocal()], indirect=True)
 async def test_execute_proc_executes_procedure(monkeypatch, proc_controller):
     proc_execute = AsyncMock()
-    monkeypatch.setattr(RamperRemote, "execute", proc_execute)
+    monkeypatch.setattr(RamperLocal, "execute", proc_execute)
     listener = Mock()
     proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, listener)
 

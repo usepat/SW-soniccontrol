@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional, Dict, Any, Union, Tuple
 import copy
 import attrs
+from soniccontrol.events import EventManager
 from soniccontrol.procedures.holder import Holder, convert_to_holder_args
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.scripting.scripting_facade import BuiltInFunctions, Script, ScriptingFacade
@@ -263,9 +264,9 @@ class LegacySequencer(Script):
 
 
 class LegacyScriptingFacade(ScriptingFacade):
-    def __init__(self, device: SonicDevice, **kwargs):
+    def __init__(self, device: SonicDevice, procedure_controller: ProcedureController, **kwargs):
         self._device = device
-        self._proc_controller = ProcedureController(self._device)
+        self._proc_controller = procedure_controller
         self._parser = SonicParser()
         self._logger = get_base_logger(device._logger)
         self._include_command_aliases: Optional[List[BuiltInFunctions]] = kwargs.get("include_command_aliases", None)

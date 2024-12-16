@@ -1,123 +1,44 @@
-import asyncio
-import json
 import logging
-from typing import Any, Literal, Optional, Union, Iterable, Dict
 
 import attrs
-from icecream import ic
-from soniccontrol.device_data import Info, Status
-from soniccontrol.commands import Command, CommandValidator
+from sonic_protocol.python_parser.answer import Answer
+from sonic_protocol.python_parser.commands import Command
+from sonic_protocol.protocol_builder import CommandLookUpTable
+from soniccontrol.command_executor import CommandExecutor
+from soniccontrol.device_data import Info
 from soniccontrol.interfaces import Scriptable
-from soniccontrol.procedures.procs.ramper import Ramper
 from soniccontrol.communication.serial_communicator import Communicator
-
-CommandValitors = Union[CommandValidator, Iterable[CommandValidator]]
-
-parrot_feeder = logging.getLogger("parrot_feeder")
 
 
 @attrs.define(kw_only=True)
 class SonicDevice(Scriptable):
-    _serial: Communicator = attrs.field()
-    _commands: Dict[str, Command] = attrs.field(factory=dict, converter=dict)
-    _logger: logging.Logger = attrs.field(default=logging.getLogger())
+    communicator: Communicator = attrs.field(on_setattr=attrs.setters.NO_OP)
+    _logger: logging.Logger = attrs.field()
+    command_executor: CommandExecutor = attrs.field(on_setattr=attrs.setters.NO_OP)
+    info: Info = attrs.field(on_setattr=attrs.setters.NO_OP)
+    lookup_table: CommandLookUpTable = attrs.field(on_setattr=attrs.setters.NO_OP)
 
-    _status: Status = attrs.field()
-    _info: Info = attrs.field()
-    _ramp: Optional[Ramper] = attrs.field(init=False, default=None)
 
-    def __attrs_post_init__(self) -> None:
-        self._logger = logging.getLogger(self._logger.name + "." + SonicDevice.__name__)
+    def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, info: Info, logger: logging.Logger=logging.getLogger()) -> None:
+        self.info = info
+        self._logger = logging.getLogger(logger.name + "." + SonicDevice.__name__)
+        self.communicator = communicator
+        self.lookup_table = lookup_table
+        self.command_executor = CommandExecutor(lookup_table, self.communicator)
 
-    @property
-    def serial(self) -> Communicator:
-        return self._serial
-
-    @serial.setter
-    def serial(self, serial: Communicator) -> None:
-        self._serial = serial
-
-    @property
-    def commands(self) -> Dict[str, Command]:
-        return self._commands
-
-    @property
-    def status(self) -> Status:
-        return self._status
-
-    @property
-    def info(self) -> Info:
-        return self._info
-
-    def get_remote_proc_finished_event(self) -> asyncio.Event:
-        return self._status.remote_proc_finished_running
 
     async def disconnect(self) -> None:
-        if self.serial.connection_opened.is_set():
+        if self.communicator.connection_opened.is_set():
             self._logger.info("Disconnect")
-            await self.serial.close_communication()
-            del self
-
-    def add_command(
-        self,
-        message: Union[str, Command],
-        validators: Optional[CommandValitors] = None,
-        **kwargs,
-    ) -> None:
-        """
-        Adds a command to the SonicDevice object.
-
-        Args:
-            message (Union[str, Command]): The command message to add. It can be either a string or a Command object.
-            validators (Optional[CommandValitors], optional): The validators to apply to the command. Defaults to None.
-            **kwargs: Additional keyword arguments to pass to the Command constructor.
-
-        Raises:
-            ValueError: If the message argument is not a string or a Command object.
-
-        Returns:
-            None
-        """
-        if isinstance(message, Command):
-            if validators is not None:
-                message.add_validators(validators)
-            self._commands[message.message] = message
-        elif isinstance(message, str):
-            self._commands[message] = Command(
-                message=message, validators=validators, **kwargs
-            )
-        else:
-            raise ValueError("Illegal Argument for message", {message})
-
-    def add_commands(self, commands: Iterable[Command]) -> None:
-        for command in commands:
-            self.add_command(command)
-
-    def has_command(self, command: Union[str, Command]) -> bool:
-        return (
-            self.commands.get(
-                command.message if isinstance(command, Command) else command
-            ) is not None
-        )
-
-    async def send_message(self, message: str = "", argument: Any = "", should_log: bool = True) -> str:
-        return (
-            await Command(
-                message=message,  
-                argument=argument,  
-                estimated_response_time=0.4,
-                expects_long_answer=True,
-                serial_communication=self._serial
-            ).execute(should_log=should_log)
-        )[0].string
+            await self.communicator.close_communication()
 
     async def execute_command(
         self,
-        message: Union[str, Command],
-        argument: Any = "",
+        command: Command | str,
         should_log: bool = True,
-        **status_kwargs_if_valid_command,
-    ) -> str:
+        try_deduce_command_if_str: bool = True,
+        **kwargs
+    ) -> Answer:
         """
         Executes a command by sending a message to the SonicDevice device and updating the status accordingly.
 
@@ -142,94 +63,34 @@ class SonicDevice(Scriptable):
             >>> await sonicamp.execute_command("power_on")
             "Device powered on."
         """
+        if should_log:
+            command_str = command if isinstance(command, str) else str(command.__class__)
+            self._logger.info("Execute command %s", command_str)
+        
         try:
-            message = message if isinstance(message, str) else message.message
-            if should_log:
-                self._logger.info("Execute command %s with argument %s", message, str(argument))
-            if message not in self._commands.keys():
-                self._logger.debug("Command not found in commands of sonicamp %s", message)
-                self._logger.debug("Executing message as a new Command...")
-                return await self.send_message(message=message, argument=argument, should_log=should_log)
-            
-            command: Command = self._commands[message]
-            await command.execute(argument=argument, connection=self._serial, should_log=should_log)
+            if isinstance(command, str):
+                answer = await self.command_executor.send_message(
+                    command, 
+                    try_deduce_answer_validator=try_deduce_command_if_str,
+                    estimated_response_time=0.4,
+                    expects_long_answer=True # kwargs needed for the old legacy communicator
+                )
+            else:
+                answer = await self.command_executor.send_command(command)
         except Exception as e:
             self._logger.error(e)
             await self.disconnect()
-            return str(e)
+            return Answer(str(e), False, True)
 
-        await self._status.update(
-            **command.status_result, **status_kwargs_if_valid_command
-        )
+        return answer
 
-        if should_log:
-            parrot_feeder.debug("DEVICE_STATE(%s)", json.dumps(self._status.get_dict()))
 
-        return command.answer.string
+    async def set_signal_off(self) -> Answer:
+        return await self.execute_command("!OFF")
 
-    async def get_help(self) -> str:
-        return await self.execute_command("?help")
-
-    async def set_signal_off(self) -> str:
-        return await self.execute_command("!OFF", urms=0.0, irms=0.0, phase=0.0)
-
-    async def set_signal_on(self) -> str:
+    async def set_signal_on(self) -> Answer:
         return await self.execute_command("!ON")
 
-    async def set_signal_auto(self) -> str:
-        return await self.execute_command("!AUTO")
-
-    async def get_info(self) -> str:
-        return await self.execute_command("?info")
-
-    async def get_overview(self) -> str:
+    async def get_overview(self) -> Answer:
         return await self.execute_command("?")
-
-    async def get_type(self) -> str:
-        return await self.execute_command("?type")
-
-    async def get_status(self) -> str:
-        return await self.execute_command("-")
-
-    async def get_sens(self) -> str:
-        return await self.execute_command("?sens")
-
-    async def set_serial_mode(self) -> str:
-        return await self.execute_command("!SERIAL")
-
-    async def set_analog_mode(self) -> str:
-        return await self.execute_command("!ANALOG")
-
-    async def set_frequency(self, frequency: int) -> str:
-        return await self.execute_command("!f=", frequency) # FIXME: use command factories / definitions instead of strings
-
-    async def set_switching_frequency(self, frequency: int) -> str:
-        return await self.execute_command("!swf=", frequency)
-
-    async def set_gain(self, gain: int) -> str:
-        return await self.execute_command("!g=", gain) # FIXME: use command factories / definitions instead of strings
-
-    async def set_relay_mode_mhz(self) -> str:
-        return await self.execute_command("!MHZ")
-
-    async def set_relay_mode_khz(self) -> str:
-        return await self.execute_command("!KHZ")
-
-    async def set_atf(self, index: int, frequency: int) -> str:
-        return await self.execute_command(f"!atf{index}=", frequency)
-
-    async def get_atf(self, index: int) -> str:
-        return await self.execute_command(f"?atf{index}")
-
-    async def set_atk(self, index: int, coefficient: float) -> str:
-        return await self.execute_command(f"!atk{index}=", coefficient)
-
-    async def set_att(self, index: int, temperature: float) -> str:
-        return await self.execute_command(f"!att{index}=", temperature)
-
-    async def get_att(self, index: int) -> str:
-        return await self.execute_command(f"?att{index}")
-
-    async def set_aton(self, index: int, time_ms: int) -> str:
-        return await self.execute_command(f"!aton{index}=", time_ms)
 

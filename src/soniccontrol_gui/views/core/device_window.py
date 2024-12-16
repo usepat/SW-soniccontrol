@@ -6,14 +6,15 @@ import tkinter as tk
 
 from ttkbootstrap.dialogs.dialogs import Messagebox
 
+from sonic_protocol.command_codes import CommandCode
+from soniccontrol_gui.state_fetching.capture import Capture
 from soniccontrol_gui.state_fetching.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasureModel
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
-from soniccontrol_gui.view import TabView
+from soniccontrol_gui.view import TabView, View
 from soniccontrol.communication.communicator import Communicator
-from soniccontrol.communication.serial_communicator import LegacySerialCommunicator, SerialCommunicator
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
@@ -22,7 +23,7 @@ from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.state_fetching.logger import LogStorage, NotDeviceLogFilter
 from soniccontrol_gui.state_fetching.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
-from soniccontrol.events import Event
+from soniccontrol.events import Event, EventManager
 from soniccontrol_gui.views.configuration.configuration import Configuration
 from soniccontrol_gui.views.configuration.flashing import Flashing
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
@@ -96,13 +97,14 @@ class RescueWindow(DeviceWindow):
         try:
             self._device = device
             self._view = DeviceWindowView(root, title=f"Rescue Window - {connection_name}")
-            super().__init__(self._logger, self._view, self._device.serial)
+            super().__init__(self._logger, self._view, self._device.communicator)
 
             self._flashing = Flashing(self, self._logger, self._device, self._app_state)
             self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
 
 
+            self
             self._logger.debug("Create logStorage for storing logs")
             self._logStorage = LogStorage()
             log_storage_handler = self._logStorage.create_log_handler()
@@ -112,8 +114,10 @@ class RescueWindow(DeviceWindow):
             log_storage_handler.setLevel(logging.DEBUG)
 
              # Models
+            self._proc_controller = ProcedureController(self._device, EventManager()) # FIXME: what to do if devices do not support updates?
             self._scripting = LegacyScriptingFacade(
                 self._device, 
+                self._proc_controller,
                 include_command_aliases=[BuiltInFunctions.ON, BuiltInFunctions.OFF, BuiltInFunctions.HOLD]
             )
             self._script_file = ScriptFile(logger=self._logger)
@@ -121,7 +125,7 @@ class RescueWindow(DeviceWindow):
             self._app_state = AppState(self._logger)
 
             self._logger.debug("Create views")
-            self._serialmonitor = SerialMonitor(self, self._device.serial)
+            self._serialmonitor = SerialMonitor(self, self._device.communicator)
             self._scripting = Editor(self, self._scripting, self._script_file, self._interpreter, self._app_state)
             self._logging = LoggingTab(self, self._logStorage.logs)
             self._home = Home(self, self._device)
@@ -153,17 +157,20 @@ class KnownDeviceWindow(DeviceWindow):
         try:
             self._device = device
             self._view = DeviceWindowView(root, title=f"Device Window - {connection_name}")
-            super().__init__(self._logger, self._view, self._device.serial)
+            super().__init__(self._logger, self._view, self._device.communicator)
 
             # Models
             self._updater = Updater(self._device)
-            self._proc_controller = ProcedureController(self._device)
+            self._proc_controller = ProcedureController(self._device, self._updater)
             self._proc_controlling_model = ProcControllingModel()
-            self._scripting = LegacyScriptingFacade(self._device)
+            self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)
             self._script_file = ScriptFile(logger=self._logger)
             self._interpreter = InterpreterEngine(self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
+            update_answer_fields = self._device.lookup_table[CommandCode.DASH].answer_def.fields
+            update_answer_field_names = [ field.field_name for field in update_answer_fields ] 
+            self._capture = Capture(update_answer_field_names, self._logger)
             self._capture_targets = {
                 CaptureTargets.FREE: CaptureFree(),
                 CaptureTargets.SCRIPT: CaptureScript(self._script_file, self._scripting, self._interpreter),
@@ -173,17 +180,17 @@ class KnownDeviceWindow(DeviceWindow):
 
             # Components
             self._logger.debug("Create views")
-            self._serialmonitor = SerialMonitor(self, self._device.serial)
+            self._serialmonitor = SerialMonitor(self, self._device.communicator)
             self._logging = Logging(self, connection_name)
             self._editor = Editor(self, self._scripting, self._script_file, self._interpreter, self._app_state)
-            self._status_bar = StatusBar(self, self._view.status_bar_slot)
+            self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
             self._info = Info(self)
-            self._configuration = Configuration(self, self._device)
+            self._configuration = Configuration(self, self._device, self._proc_controller)
             self._flashing = Flashing(self, self._logger, self._device, self._app_state, self._updater)
             self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
             self._proc_controlling = ProcControlling(self, self._proc_controller, self._proc_controlling_model, self._app_state)
-            self._sonicmeasure = Measuring(self, self._capture_targets, self._spectrum_measure_model)
+            self._sonicmeasure = Measuring(self, self._capture , self._capture_targets, self._spectrum_measure_model)
             self._home = Home(self, self._device)
 
             # Views
@@ -205,7 +212,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._logger.debug(list(WidgetRegistry._widget_registry.keys()))
 
             self._logger.debug("add callbacks and listeners to event emitters")
-            self._updater.subscribe("update", lambda e: self._sonicmeasure.on_status_update(e.data["status"]))
+            self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
             self._updater.start()
             self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._serialmonitor.on_execution_state_changed)
@@ -216,7 +223,7 @@ class KnownDeviceWindow(DeviceWindow):
             raise
 
 
-class DeviceWindowView(tk.Toplevel):
+class DeviceWindowView(tk.Toplevel, View):
     def __init__(self, root, *args, **kwargs) -> None:
         title = kwargs.pop("title", "Device Window")
         super().__init__(root, *args, **kwargs)

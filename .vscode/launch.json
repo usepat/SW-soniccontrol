@@ -16,6 +16,14 @@
             "request": "launch",
             "program": "${workspaceFolder}/scripts/run_simulation.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
     ]
 }

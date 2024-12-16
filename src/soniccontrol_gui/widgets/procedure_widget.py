@@ -13,7 +13,8 @@ from soniccontrol.procedures.holder import HoldTuple, HolderArgs
 class IntFieldView(View):
     def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: int = 0, **kwargs):
         self._field_name = field_name
-        self._value: ttk.IntVar = ttk.IntVar(value=default_value)
+        self._default_value = default_value
+        self._value: ttk.StringVar = ttk.StringVar(value=str(default_value))
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
@@ -36,11 +37,15 @@ class IntFieldView(View):
 
     @property
     def value(self) -> int:
-        return self._value.get()
+        try:
+            return int(self._value.get())
+        except Exception as _:
+            # TODO: display error
+            return self._default_value 
     
     @value.setter
     def value(self, v: int) -> None:
-        self._value.set(v)
+        self._value.set(str(v))
  
     def bind_value_change(self, command: Callable[[int], None]):
         self._value.trace_add("write", lambda *args: command(self.value))
@@ -49,7 +54,8 @@ class IntFieldView(View):
 class FloatFieldView(View):
     def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: float = 0., **kwargs):
         self._field_name = field_name
-        self._value: ttk.DoubleVar = ttk.DoubleVar(value=default_value)
+        self._default_value = default_value
+        self._value: ttk.StringVar = ttk.StringVar(value=str(default_value))
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
@@ -72,19 +78,24 @@ class FloatFieldView(View):
 
     @property
     def value(self) -> float:
-        return self._value.get()
+        try:
+            return float(self._value.get())
+        except Exception as _:
+            # TODO: display error
+            return self._default_value 
     
     @value.setter
     def value(self, v: float) -> None:
-        self._value.set(v)
+        self._value.set(str(v))
 
     def bind_value_change(self, command: Callable[[float], None]):
         self._value.trace_add("write", lambda *args: command(self.value))
 
 class TimeFieldView(View):
-    def __init__(self, master: ttk.Frame | View, field_name: str, *args, time: float | int = 0., unit = "ms", **kwargs):
+    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_time: float | int = 0., unit = "ms", **kwargs):
         self._field_name = field_name
-        self._time_value: ttk.DoubleVar = ttk.DoubleVar(value=time)
+        self._default_time = default_time
+        self._time_value: ttk.StringVar = ttk.StringVar(value=str(default_time))
         self._unit_value: ttk.StringVar = ttk.StringVar(value=unit)
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
@@ -117,11 +128,16 @@ class TimeFieldView(View):
 
     @property
     def value(self) -> HoldTuple:
-        return (self._time_value.get(), self._unit_value.get())
+        try:
+            time_value = int(self._time_value.get())
+        except Exception as _:
+            # TODO: display error
+            time_value = int(self._default_time) 
+        return (time_value, self._unit_value.get())
     
     @value.setter
     def value(self, v: HoldTuple) -> None:
-        self._time_value.set(v[0])
+        self._time_value.set(str(v[0]))
         self._unit_value.set(v[1])
         self._unit_button.configure(text=v[1])
 

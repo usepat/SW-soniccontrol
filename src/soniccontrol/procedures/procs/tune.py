@@ -31,13 +31,13 @@ class TuneProc(Procedure):
     def get_args_class(cls) -> Type: 
         return TuneArgs
 
+    @property
+    def is_remote(self) -> bool:
+        return True
+
     async def execute(self, device: Scriptable, args: TuneArgs) -> None:
-        try:
-            await device.execute_command(f"!tune_f_step={args.Tuning_f_step_Hz}")
-            await device.execute_command(f"!tune_t_time={int(args.Tuning_time_ms.duration_in_ms)}")
-            await device.execute_command(f"!tune_t_step={int(args.Tuning_t_step_ms.duration_in_ms)}")
-            await device.execute_command("!tune")
-        except asyncio.CancelledError:
-            await device.execute_command("!OFF")
-        finally:
-            await device.get_remote_proc_finished_event().wait()
+        await device.execute_command(f"!tune_f_step={args.Tuning_f_step_Hz}")
+        await device.execute_command(f"!tune_t_time={int(args.Tuning_time_ms.duration_in_ms)}")
+        await device.execute_command(f"!tune_t_step={int(args.Tuning_t_step_ms.duration_in_ms)}")
+        await device.execute_command("!tune")
+
