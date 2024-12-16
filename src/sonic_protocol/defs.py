@@ -114,10 +114,10 @@ class Loglevel(Enum):
     ERROR = "ERROR"
 
 class LoggerName(Enum):
-    APP_LOGGER = "app_logger"
-    TRANSDUCER_LOGGER = "transducer_logger"
-    HWFC_LOGGER = "hwfc_logger"
-    PROCEDURE_LOGGER = "procedure_logger"
+    APP_LOGGER = "appLogger"
+    TRANSDUCER_LOGGER = "transducerLogger"
+    HWFC_LOGGER = "hwfcLogger"
+    PROCEDURE_LOGGER = "procedureLogger"
     GLOBAL = "global"
 
 class Timestamp():
