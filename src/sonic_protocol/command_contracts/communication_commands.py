@@ -214,7 +214,7 @@ set_log_level = CommandContract(
                     field_type=LoggerName,
                     converter_ref=ConverterType.ENUM
                 ),
-                sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Set ", postfix=" log level to \\") # Escape the # character
+                sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Set ", postfix=r" log level to \\") # Escape the # character
             ),
             AnswerFieldDef(
                 field_name=EFieldName.LOG_LEVEL,
