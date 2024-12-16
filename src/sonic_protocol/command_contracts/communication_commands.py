@@ -1,6 +1,6 @@
 from sonic_protocol.defs import (
     CommandCode, CommunicationChannel, CommunicationProtocol, ConverterType, FieldType, InputSource, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
-    AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs
+    AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, Timestamp
 )
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative
@@ -120,4 +120,67 @@ set_input_source = CommandContract(
     ),
     is_release=True,
     tags=["communication"]
+)
+param_type_timestamp = FieldType(
+    field_type=Timestamp,
+    converter_ref=ConverterType.TIMESTAMP
+)
+
+field_timestamp = AnswerFieldDef(
+    field_name=EFieldName.TIME_STAMP,
+    field_type=param_type_timestamp
+)
+set_datetime = CommandContract(
+    code=CommandCode.SET_DATETIME,
+    command_defs=CommandDef(
+        setter_param=CommandParamDef(
+            name=EFieldName.TIME_STAMP,
+            param_type=param_type_timestamp
+        ),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!datetime", "set_datetime"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_timestamp]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the datetime"
+    ),
+    is_release=True,
+    tags=["datetime"]
+)
+
+get_datetime = CommandContract(
+    code=CommandCode.GET_DATETIME,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?datetime", "get_datetime"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_timestamp]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get the datetime"
+    ),
+    is_release=True,
+    tags=["datetime"]
+)
+
+get_datetime_pico = CommandContract(
+    code=CommandCode.GET_DATETIME_PICO,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?datetime_pico", "get_datetime_pico"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_timestamp]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get the datetime from the rp2040"
+    ),
+    is_release=True,
+    tags=["datetime"]
 )

@@ -14,6 +14,7 @@ class EFieldName(Enum):
     GAIN = "gain"
     TEMPERATURE = "temp"
     SIGNAL = "signal"
+    WAVEFORM = "waveform"
     URMS = "urms"
     IRMS = "irms"
     PHASE = "phase"

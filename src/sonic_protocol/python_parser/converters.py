@@ -3,7 +3,7 @@ from enum import Enum, IntEnum
 from typing import Any, TypeVar
 import numpy as np
 
-from sonic_protocol.defs import ConverterType, Version
+from sonic_protocol.defs import ConverterType, Timestamp, Version
 
 
 class Converter(abc.ABC):
@@ -67,7 +67,28 @@ class VersionConverter(Converter):
             return True
 
     def convert_str_to_val(self, text: str) -> Any: 
+        assert(self.validate_str(text))
         return Version.to_version(text)
+
+class TimestampConverter(Converter):
+    def validate_val(self, value: Any) -> bool:
+        return isinstance(value, Timestamp)
+
+    def convert_val_to_str(self, value: Any) -> str:
+        assert (self.validate_val(value))
+        return str(value)
+
+    def validate_str(self, text: str) -> bool: 
+        try:
+            Timestamp.to_timestamp(text)
+        except Exception as _:
+            return False
+        else:
+            return True
+
+    def convert_str_to_val(self, text: str) -> Any: 
+        assert(self.validate_str(text))
+        return Timestamp.to_timestamp(text)
 
 class EnumConverter(Converter):
     def __init__(self, target_enum_class: type[Enum]):
@@ -144,3 +165,5 @@ def get_converter(converter_type: ConverterType, target_class: Any) -> Converter
             return BuildTypeConverter()
         case ConverterType.PRIMITIVE:
             return PrimitiveTypeConverter(target_class)
+        case ConverterType.TIMESTAMP:
+            return TimestampConverter()
