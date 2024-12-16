@@ -205,10 +205,12 @@ class CppTransCompiler:
             COMMUNICATION_PROTOCOL_TO_STR_CONVERSIONS=communication_protocol_to_str_conversions,
             INPUT_SOURCE_TO_STR_CONVERSIONS=input_source_to_str_conversions,
 
+            STR_TO_WAVEFORM_CONVERSIONS=create_string_to_enum_conversions(Waveform),
             STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS=str_to_communication_channel_conversions,
             STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS=str_to_communication_protocol_conversions,
             STR_TO_INPUT_SOURCE_CONVERSIONS=str_to_input_source_conversions,
-            PROCEDURE_TO_STR_CONVERSIONS=procedure_to_str_conversions
+            PROCEDURE_TO_STR_CONVERSIONS=procedure_to_str_conversions,
+            WAVEFORM_TO_STR_CONVERSIONS=create_enum_to_string_conversions(Waveform),
         )
 
     def generate_transpiled_protocol(self, protocol: Protocol, protocol_versions: List[ProtocolVersion], output_dir: Path): 

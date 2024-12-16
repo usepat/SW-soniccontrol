@@ -58,6 +58,13 @@ inline std::optional<CommunicationProtocol> convert_string_to_communication_prot
 }
 #undef STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS
 
+#define STR_TO_WAVEFORM_CONVERSIONS assert(false);
+inline std::optional<Waveform> convert_string_to_waveform(const std::string_view &str) {
+    /**/STR_TO_WAVEFORM_CONVERSIONS/**/  // the python script will replace this
+    return std::nullopt;
+}
+#undef STR_TO_WAVEFORM_CONVERSIONS
+
 
 
 #define COMMUNICATION_CHANNEL_TO_STR_CONVERSIONS assert(false);
@@ -90,5 +97,10 @@ inline std::string_view convert_procedure_to_string(Procedure value) {
 }
 #undef PROCEDURE_TO_STR_CONVERSIONS
 
+#define WAVEFORM_TO_STR_CONVERSIONS assert(false);
+inline std::string_view convert_waveform_to_string(Waveform value) {
+    /**/WAVEFORM_TO_STR_CONVERSIONS/**/  // the python script will replace this
+}
+#undef WAVEFORM_TO_STR_CONVERSIONS
 
 }
