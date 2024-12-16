@@ -196,7 +196,7 @@ Send command and check response
     END
 
 Set Ramp Args
-    [Arguments]    ${f_start}=100000    ${f_stop}=100010    ${f_step}=1    ${t_on}=100    ${t_off}=0
+    [Arguments]    ${f_start}=100000    ${f_stop}=110000    ${f_step}=1000    ${t_on}=100    ${t_off}=0
     Send Command And Check Response    !ramp_f_start\=${f_start}
     Send Command And Check Response    !ramp_f_stop\=${f_stop}
     Send Command And Check Response    !ramp_f_step\=${f_step}
