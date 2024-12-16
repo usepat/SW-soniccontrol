@@ -112,7 +112,6 @@ class Loglevel(Enum):
     INFO = "INFO"
     WARNING = "WARNING"
     ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
 
 class LoggerName(Enum):
     APPLOGGER = "applogger"
