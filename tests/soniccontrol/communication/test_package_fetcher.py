@@ -1,15 +1,15 @@
 import pytest
 import asyncio
 
+from soniccontrol.communication.package_protocol import PackageProtocol
 from soniccontrol.system import PLATFORM
 from soniccontrol.communication.package_fetcher import PackageFetcher
-from soniccontrol.communication.sonicprotocol import SonicProtocol
 
 
 @pytest.mark.asyncio
 async def test_get_answer_of_package_ensures_that_order_does_not_matter():
     reader = asyncio.StreamReader()
-    protocol = SonicProtocol()
+    protocol = PackageProtocol()
     pkg_fetcher = PackageFetcher(reader, protocol)
 
     msg = "Hello Package Fetcher"

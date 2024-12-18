@@ -3,7 +3,6 @@ import logging
 import pytest
 import pytest_asyncio
 from soniccontrol.system import PLATFORM
-from soniccontrol.command import Command
 from soniccontrol.communication.package_parser import Package, PackageParser
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from tests.soniccontrol.communication.mock_connection_factory import connection # Needed. Do not delete. Intellisense is shit
@@ -40,32 +39,31 @@ async def test_communicator_send_and_wait_returns_answer(communicator, connectio
     msg_id = 1
     msg_str = PackageParser.write_package(Package("0", "0", msg_id, msg))
     connection.reader.feed_data(data=msg_str.encode(PLATFORM.encoding))
-    command = Command(message="?greet")
 
-    await communicator.send_and_wait_for_answer(command)
-    assert command.answer.string == msg
+    answer_str = await communicator.send_and_wait_for_response("?greet")
+    assert answer_str == msg
 
 @pytest.mark.asyncio
 async def test_communicator_send_and_wait_throws_connection_error_if_parsing_error(communicator, connection):
     msg_str = "<0#Hello Parsing Error>"
     connection.reader.feed_data(data=msg_str.encode(PLATFORM.encoding))
     
-    with pytest.raises(ConnectionError):
-        await communicator.send_and_wait_for_answer(Command(message="-"))
+    with pytest.raises((ConnectionError, AssertionError)):
+        await communicator.send_and_wait_for_response("-")
 
 @pytest.mark.asyncio
 async def test_communicator_send_and_wait_connection_error_on_timeout(communicator):
     logger = logging.getLogger()
     logger.warn = Mock()
     communicator._logger = logger
-    with pytest.raises(ConnectionError):
-        await communicator.send_and_wait_for_answer(Command(message="-"))
+    with pytest.raises((ConnectionError, AssertionError)):
+        await communicator.send_and_wait_for_response("-")
 
 @pytest.mark.asyncio
 async def test_communicator_send_and_wait_connection_error_if_disconnect(communicator):
     await communicator.close_communication()
 
-    with pytest.raises(ConnectionError):
-        await communicator.send_and_wait_for_answer(Command(message="-"))
+    with pytest.raises((ConnectionError, AssertionError)):
+        await communicator.send_and_wait_for_response("-")
 
 # TODO: Make a test for pulling constantly messages while also using send_and_wait

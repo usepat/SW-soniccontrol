@@ -1,6 +1,7 @@
 from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandCode, CommandContract, CommandDef, CommandExport, CommandListExport, DeviceParamConstants, DeviceType, MetaExport, MetaExportDescriptor, Protocol, SonicTextCommandAttrs, Version
 import pytest
 
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import ProtocolBuilder
 
 
@@ -9,10 +10,10 @@ cdef_set_frequency_new = CommandDef(SonicTextCommandAttrs(string_identifier=["!f
 cdef_set_frequency_old = CommandDef(SonicTextCommandAttrs(string_identifier="!f"))
 cdef_set_swf = CommandDef(SonicTextCommandAttrs(string_identifier="!swf"))
 adef_frequency = AnswerDef(
-    fields=[AnswerFieldDef("f", int)]
+    fields=[AnswerFieldDef(EFieldName.FREQUENCY, int)]
 )
 adef_swf = AnswerDef(
-    fields=[AnswerFieldDef("swf", int)]
+    fields=[AnswerFieldDef(EFieldName.SWF, int)]
 )
     
 
@@ -102,7 +103,8 @@ def test_build_protocol_chooses_the_right_definitions(device_type, version, rele
         assert command_lookup is None  
     else:
         assert command_lookup is not None
-        assert command_lookup.command_def is expected_command_def
+        assert command_lookup.command_def == expected_command_def
+
 
 # TODO: add test that check that an error is thrown. If a command is defined,
 #  where it is possible with a specific version and device type to have no valid command def or answer def

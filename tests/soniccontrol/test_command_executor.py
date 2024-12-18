@@ -1,9 +1,10 @@
 import pytest
 from unittest.mock import Mock, AsyncMock
 
-import sonic_protocol.commands as cmds
 from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandCode, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs
-from sonic_protocol.answer import AnswerValidator
+from sonic_protocol.field_names import EFieldName
+from sonic_protocol.python_parser.answer import AnswerValidator
+import sonic_protocol.python_parser.commands as cmds
 from soniccontrol.command_executor import CommandExecutor
 from soniccontrol.communication.communicator import Communicator
 from sonic_protocol.protocol_builder import CommandLookUp, CommandLookUpTable
@@ -14,27 +15,31 @@ def lookup_table() -> CommandLookUpTable:
     return {
         CommandCode.GET_GAIN: CommandLookUp(
             CommandDef(SonicTextCommandAttrs(["?g", "?gain"])), 
-            AnswerDef([AnswerFieldDef(["gain"], FieldType(int))]),
+            AnswerDef([AnswerFieldDef(EFieldName.GAIN, FieldType(int))]),
             AnswerValidator("")
         ),
         CommandCode.SET_FREQ: CommandLookUp(
-            CommandDef(SonicTextCommandAttrs(["!f", "!freq", "!frequency"]), setter_param=CommandParamDef("frequency", FieldType(int))), 
-            AnswerDef([AnswerFieldDef(["frequency"], FieldType(int))]),
+            CommandDef(SonicTextCommandAttrs(["!f", "!freq", "!frequency"]), setter_param=CommandParamDef(EFieldName.FREQUENCY, FieldType(int))), 
+            AnswerDef([AnswerFieldDef(EFieldName.FREQUENCY, FieldType(int))]),
             AnswerValidator("")
         ),
         CommandCode.SET_GAIN: CommandLookUp(
-            CommandDef(SonicTextCommandAttrs(["!g", "!gain"]), setter_param=CommandParamDef("gain", FieldType(int))), 
-            AnswerDef([AnswerFieldDef(["gain"], FieldType(int))]),
+            CommandDef(SonicTextCommandAttrs(["!g", "!gain"]), setter_param=CommandParamDef(EFieldName.GAIN, FieldType(int))), 
+            AnswerDef([AnswerFieldDef(EFieldName.GAIN, FieldType(int))]),
             AnswerValidator(pattern="")
         ),
         CommandCode.SET_ON: CommandLookUp(
             CommandDef(SonicTextCommandAttrs("!ON")), 
-            AnswerDef([AnswerFieldDef(["signal"], FieldType(bool))]),
+            AnswerDef([AnswerFieldDef(EFieldName.SIGNAL, FieldType(bool))]),
             AnswerValidator("")
         ),
         CommandCode.SET_ATF: CommandLookUp(
-            CommandDef(SonicTextCommandAttrs("!atf"), index_param=CommandParamDef("atf_index", FieldType(int)), setter_param=CommandParamDef("atf", FieldType(int))), 
-            AnswerDef([AnswerFieldDef(["atf"], FieldType(int))]),
+            CommandDef(
+                SonicTextCommandAttrs("!atf"), 
+                       index_param=CommandParamDef(EFieldName.INDEX, FieldType(int)), 
+                       setter_param=CommandParamDef(EFieldName.ATF, FieldType(int))
+            ), 
+            AnswerDef([AnswerFieldDef(EFieldName.ATF, FieldType(int))]),
             AnswerValidator("")
         ),
     }
