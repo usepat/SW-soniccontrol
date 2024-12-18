@@ -24,9 +24,13 @@ enum class DataType {
     E_COMMUNICATION_PROTOCOL,
     E_INPUT_SOURCE,
     E_PROCEDURE,
+    E_WAVEFORM,
+    E_LOG_LEVEL,
+    E_LOGGER_NAME,
 
     // Classes
     VERSION,
+    TIMESTAMP
 };
 
 inline std::string_view convert_data_type_to_string(DataType value) {
@@ -53,8 +57,16 @@ inline std::string_view convert_data_type_to_string(DataType value) {
             return "e_input_source";
         case DataType::E_PROCEDURE:
             return "e_procedure";
+        case DataType::E_WAVEFORM:
+            return "e_waveform";
+        case DataType::TIMESTAMP:
+            return "timestamp";
         case DataType::VERSION:
             return "version";
+        case DataType::E_LOG_LEVEL:
+            return "e_log_level";
+        case DataType::E_LOGGER_NAME:    
+            return "e_logger_name";
         default:
             assert (false);
     }
@@ -67,6 +79,7 @@ enum class ConverterReference {
     VERSION,
     BUILD_TYPE,
     TERMINATION,
+    TIMESTAMP
 };
 
 template <typename T>

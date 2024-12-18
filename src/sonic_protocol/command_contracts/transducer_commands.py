@@ -9,7 +9,7 @@ from sonic_protocol.command_contracts.fields import (
     field_unknown_answer, field_type_frequency, field_type_temperature_celsius,
     field_frequency, field_gain, field_signal, field_swf,
     field_type_gain, swf_field_type, field_temperature_kelvin,
-    field_urms, field_irms, field_phase, field_ts_flag
+    field_urms, field_irms, field_phase, field_ts_flag, field_waveform, waveform_field_type
 )
 
 
@@ -432,3 +432,27 @@ set_atk = CommandContract(
     is_release=True,
     tags=["transducer", "config"]
 )
+
+param_waveform = CommandParamDef(
+    name=EFieldName.WAVEFORM,
+    param_type=waveform_field_type
+)
+
+set_waveform = CommandContract(
+    code=CommandCode.SET_WAVEFORM,
+    command_defs=CommandDef(
+        setter_param=param_waveform,
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!waveform", "set_waveform"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_waveform]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the waveform of the transducer."
+    ),
+    is_release=True,
+    tags=["transducer", "waveform"]
+)
+

@@ -11,10 +11,11 @@ from sonic_protocol.command_contracts.fields import (
 )
 from sonic_protocol.command_contracts.transducer_commands import (
     set_frequency, get_frequency, set_swf, get_swf, get_atf, set_atf, get_att, set_att, get_atk, set_atk,
-    set_gain, get_gain, set_on, set_off, get_temp, get_uipt, get_atf_list, get_att_list, get_atk_list,
+    set_gain, get_gain, set_on, set_off, get_temp, get_uipt, get_atf_list, get_att_list, get_atk_list, set_waveform
 )
 from sonic_protocol.command_contracts.communication_commands import (
-     set_termination, set_physical_comm_channel, set_comm_protocol, set_input_source,
+     set_termination, set_physical_comm_channel, set_comm_protocol, set_input_source, set_datetime, get_datetime, get_datetime_pico,
+     set_log_level, 
 )
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.command_contracts.procedure_commands import all_proc_commands, duty_cycle_proc_commands
@@ -203,6 +204,10 @@ protocol = Protocol(
                 set_physical_comm_channel,
                 set_comm_protocol,
                 set_input_source,
+                set_datetime,
+                get_datetime,
+                get_datetime_pico,
+                set_log_level
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=1, minor=0, patch=0)
@@ -219,6 +224,7 @@ protocol = Protocol(
                 get_atk,
                 get_atk_list,
                 set_atk,
+                set_waveform,
             ],
             descriptor = MetaExportDescriptor(
                 min_protocol_version=Version(major=1, minor=0, patch=0),

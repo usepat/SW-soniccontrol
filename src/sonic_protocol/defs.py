@@ -5,6 +5,7 @@ import numpy as np
 
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import EFieldName
+import re
 
 VersionTuple = Tuple[int, int, int]
 
@@ -77,6 +78,7 @@ class ConverterType(Enum):
     BUILD_TYPE = auto()
     PRIMITIVE = auto()
     TERMINATION = auto()
+    TIMESTAMP = auto()
 
 class InputSource(Enum):
     EXTERNAL_COMMUNICATION = "external" #! control by sending commands over a communication channel
@@ -100,6 +102,52 @@ class Procedure(Enum):
     SCAN = "scan"
     WIPE = "wipe"
     RAMP = "ramp"
+
+class Waveform(Enum):
+    SINE = "sine"
+    SQUARE = "square"
+
+class Loglevel(Enum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARN = "WARN"
+    ERROR = "ERROR"
+
+class LoggerName(Enum):
+    APP_LOGGER = "appLogger"
+    TRANSDUCER_LOGGER = "transducerLogger"
+    HWFC_LOGGER = "hwfcLogger"
+    PROCEDURE_LOGGER = "procedureLogger"
+    GLOBAL = "global"
+
+class Timestamp():
+    hour: int = attrs.field()
+    minute: int = attrs.field()
+    second: int = attrs.field()
+    day: int = attrs.field()
+    month: int = attrs.field()
+    year: int = attrs.field()
+    def __str__(self) -> str:
+        return f"{self.hour}:{self.minute}:{self.second} {self.day}.{self.month}.{self.year}"
+    
+    @staticmethod
+    def to_timestamp(x: Any) -> "Timestamp":
+        if isinstance(x, Timestamp):
+            return x
+        if isinstance(x, str):
+            # Define the regex pattern for the timestamp
+            pattern = re.compile(
+                r"(\d{1,2})[:._\-](\d{1,2})[:._\-](\d{1,2})[._\- ](\d{1,2})[._\-](\d{1,2})[._\-](\d{4})"
+            )
+
+            match = pattern.match(x)
+            if match:
+                hour, minute, second, day, month, year = map(int, match.groups())
+                return Timestamp(hour=hour, minute=minute, second=second, day=day, month=month, year=year)
+            else:
+                raise ValueError("The string does not match the required timestamp format")
+        else:
+            raise TypeError("The type cannot be converted into a version")
 
 @attrs.define(auto_attribs=True)
 class DeviceParamConstants:

@@ -18,7 +18,7 @@ class DataProvider(EventManager):
     
 
     def add_row(self, row: dict):
-        time_stamp_key = EFieldName.TIME_STAMP.value
+        time_stamp_key = EFieldName.TIMESTAMP.value
         if time_stamp_key in row.keys():
             row[time_stamp_key] = pd.to_datetime(row[time_stamp_key], errors='raise', format="%Y-%m-%d %H:%M:%S.%f")
             

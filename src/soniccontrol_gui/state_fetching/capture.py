@@ -21,7 +21,7 @@ class Capture(EventManager):
         self._logger = logging.getLogger(logger.name + "." + Capture.__name__)
         self._is_capturing = False
         self._data_attrs = data_fields
-        self._has_no_timestamp = EFieldName.TIME_STAMP not in self._data_attrs
+        self._has_no_timestamp = EFieldName.TIMESTAMP not in self._data_attrs
         self._capture_file_format = "sonicmeasure-{}.csv"
         self._data_provider = DataProvider()
         self._csv_data_collector = CsvWriter()
@@ -45,7 +45,7 @@ class Capture(EventManager):
         capture_filename = files.LOG_DIR / self._capture_file_format.format(timestamp)
         header = [ data_attr.value for data_attr in self._data_attrs ]
         if self._has_no_timestamp:
-            header.insert(0, EFieldName.TIME_STAMP.value)
+            header.insert(0, EFieldName.TIMESTAMP.value)
         self._csv_data_collector.open_file(capture_filename, header)
         self._is_capturing = True
         self.emit(Event(Capture.START_CAPTURE_EVENT))
@@ -77,7 +77,7 @@ class Capture(EventManager):
         if self._is_capturing:
             attrs: Dict[str, Any] = {}
             if self._has_no_timestamp:
-                attrs[EFieldName.TIME_STAMP.value] = datetime.datetime.now()
+                attrs[EFieldName.TIMESTAMP.value] = datetime.datetime.now()
             for attr_name in self._data_attrs:
                 attrs[attr_name.value] = status[attr_name]
 

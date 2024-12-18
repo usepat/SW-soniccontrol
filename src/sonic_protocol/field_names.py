@@ -14,6 +14,7 @@ class EFieldName(Enum):
     GAIN = "gain"
     TEMPERATURE = "temp"
     SIGNAL = "signal"
+    WAVEFORM = "waveform"
     URMS = "urms"
     IRMS = "irms"
     PHASE = "phase"
@@ -46,7 +47,7 @@ class EFieldName(Enum):
     COMMUNICATION_PROTOCOL = "communication_protocol"
     TERMINATION = "termination"
 
-    TIME_STAMP = "time_stamp"
+    TIMESTAMP = "timestamp"
     INDEX = "index"
 
     SCAN_F_RANGE = "scan_f_range"
@@ -67,4 +68,7 @@ class EFieldName(Enum):
     RAMP_T_OFF = "ramp_t_off"
     DUTY_CYCLE_T_OFF = "duty_cycle_t_off"
     DUTY_CYCLE_T_ON = "duty_cycle_t_on"
+
+    LOG_LEVEL = "log_level"
+    LOGGER_NAME = "logger_name"
 

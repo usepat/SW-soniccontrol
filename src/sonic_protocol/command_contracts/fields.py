@@ -1,5 +1,5 @@
 import numpy as np
-from sonic_protocol.defs import Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, Version
+from sonic_protocol.defs import Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, Version, Waveform
 from sonic_protocol.field_names import EFieldName
 import attrs
 
@@ -133,6 +133,14 @@ field_urms = AnswerFieldDef(
 field_irms = AnswerFieldDef(
     field_name=EFieldName.IRMS,
     field_type=irms_field_type
+)
+waveform_field_type = FieldType(
+    field_type=Waveform,
+    converter_ref=ConverterType.ENUM
+)
+field_waveform = AnswerFieldDef(
+    field_name=EFieldName.WAVEFORM,
+    field_type=waveform_field_type
 )
 
 field_phase = AnswerFieldDef(
