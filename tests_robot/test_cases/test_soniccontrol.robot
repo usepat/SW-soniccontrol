@@ -98,6 +98,14 @@ Test if value set by setter can be retrieved with getter
     Send Command And Check Response    !gain\=${MAX_GAIN}
     Send Command And Check Response    ?gain    ${FIELD_GAIN}=${MAX_GAIN}
 
+Test if input source can be set, if analog is set
+    [Tags]    -worker    +descaler
+    [Teardown]    Reconnect
+    ${EXPECTED_INPUT_SOURCE}=    Convert to input source    ANALOG
+    Send command and check response    !input_source\=analog    ${FIELD_INPUT_SOURCE}=${EXPECTED_INPUT_SOURCE}
+    ${EXPECTED_INPUT_SOURCE}=    Convert to input source    EXTERNAL
+    Send command and check response    !input_source\=external    ${FIELD_INPUT_SOURCE}=${EXPECTED_INPUT_SOURCE}
+
 
 Check procedure command returns error, if ramp_f_start and ramp_f_stop are the same
     [Tags]    -descaler
@@ -110,7 +118,7 @@ Check procedure command returns error, if ramp_f_start and ramp_f_stop are the s
 Check setter commands get blocked during procedure run
     [Tags]    -descaler
     [Setup]    Set Ramp Args
-    [Teardown]    RemoteController.Send Command    !stop
+    [Teardown]   RemoteController.Send Command    !stop
     ${EXPECTED_PROCEDURE}=    Convert to procedure    RAMP
     Send command and check response    !ramp    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
     Sleep    300ms
@@ -141,6 +149,7 @@ Send Example Commands
     FOR  ${command_example}  IN  @{command_examples_list}
         Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
         Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
+        Run Keyword and Continue on Failure    RemoteController.Send Command    !input_source=external
         Reconnect if disconnected
     END
 
@@ -167,6 +176,10 @@ Reconnect if disconnected
         Connect to device
     END
     
+Reconnect
+    RemoteController.Disconnect
+    Connect to device
+
     
 Send command and check if the device crashes
     [Arguments]    ${command_request}

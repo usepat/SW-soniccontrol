@@ -66,6 +66,9 @@ def deduce_command_examples(protocol_version: Version, device_type: DeviceType, 
 
         for string_identifier in string_identifiers:
             for index_limit in index_limits:
+                if index_limit != "" and not index_limit.isdecimal():
+                    index_limit = f"[{index_limit}]"
+
                 if len(setter_limits) == 0:
                     command_examples.append(f"{string_identifier}{index_limit}")
                 else:

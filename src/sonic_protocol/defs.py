@@ -81,7 +81,7 @@ class ConverterType(Enum):
     TIMESTAMP = auto()
 
 class InputSource(Enum):
-    EXTERNAL_COMMUNICATION = "external" #! control by sending commands over a communication channel
+    EXTERNAL = "external" #! control by sending commands over a communication channel
     ANALOG = "analog" #! control over pins and analog signals, that have predefined meanings
     # MANUAL = "manual" #! control by the user pressing buttons on the device
     # Manual command should not be allowed to be send over serial
