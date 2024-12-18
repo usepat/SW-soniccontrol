@@ -18,14 +18,16 @@ from typing import (
 
 import attrs
 from icecream import ic
-from soniccontrol.communication.communicator import Communicator, Sendable
+from soniccontrol.communication.communicator import Communicator
 from soniccontrol.system import PLATFORM
 
 parrot_feeder = logging.getLogger("parrot_feeder")
 
 
+# TODO: delete this whole file
+
 @attrs.define
-class Converter:
+class LegacyConverter:
     worker: Callable[[Any], Any] = attrs.field()
     _converted: bool = attrs.field(default=False, init=False, repr=False)
     _result: Any = attrs.field(init=False)
@@ -50,11 +52,11 @@ class Converter:
 
 
 @attrs.define
-class CommandValidator:
+class LegacyAnswerValidator:
     pattern: str = attrs.field()
-    _converters: Dict[str, Converter] = attrs.field(converter=dict, repr=False)
+    _converters: Dict[str, LegacyConverter] = attrs.field(converter=dict, repr=False)
     _after_converters: Dict[
-        str, Dict[Literal["worker", "keywords"], Union[Converter, str]]
+        str, Dict[Literal["worker", "keywords"], Union[LegacyConverter, str]]
     ] = attrs.field(repr=False)
     _result: Dict[str, Any] = attrs.field(init=False, factory=dict, repr=False)
     _compiled_pattern: re.Pattern[str] = attrs.field(init=False, repr=False)
@@ -99,10 +101,10 @@ class CommandValidator:
 
         for keyword, worker in kwargs.items():
             if isinstance(worker, dict):
-                worker["worker"] = Converter(worker["worker"])
+                worker["worker"] = LegacyConverter(worker["worker"])
                 after_workers[keyword] = worker
                 continue
-            workers[keyword] = Converter(worker)
+            workers[keyword] = LegacyConverter(worker)
 
         self.__attrs_init__(
             pattern=pattern,
@@ -208,7 +210,7 @@ class CommandValidator:
 
 
 @attrs.define
-class Answer:
+class LegacyAnswer:
     _string: str = attrs.field(default="", init=False, repr=False)
     _lines: list[str] = attrs.field(factory=list, init=False)
     unknown_answers: set[str] = attrs.field(factory=set)
@@ -315,13 +317,13 @@ class Answer:
 
 
 @attrs.define(hash=True, order=True, kw_only=True)
-class Command(Sendable):
+class LegacyCommand:
     argument: str = attrs.field(default="", converter=str)
     message: str = attrs.field(default="")
     estimated_response_time: float = attrs.field(default=5)
     expects_long_answer: bool = attrs.field(default=False, repr=False)
-    _validators: List[CommandValidator] = attrs.field(factory=list)
-    answer: Answer = attrs.field(init=False, factory=Answer)
+    _validators: List[LegacyAnswerValidator] = attrs.field(factory=list)
+    answer: LegacyAnswer = attrs.field(init=False, factory=LegacyAnswer)
     _byte_message: bytes = attrs.field(init=False)
     _status_result: Dict[str, Any] = attrs.field(init=False, factory=dict)
     serial_communication: Optional[Communicator] = attrs.field(default=None)
@@ -342,15 +344,15 @@ class Command(Sendable):
         return self._byte_message
 
     @property
-    def validators(self) -> List[CommandValidator]:
+    def validators(self) -> List[LegacyAnswerValidator]:
         return self._validators
 
     @validators.setter
     def validators(
-        self, validators: Union[CommandValidator, Iterable[CommandValidator]]
+        self, validators: Union[LegacyAnswerValidator, Iterable[LegacyAnswerValidator]]
     ) -> None:
-        if isinstance(validators, CommandValidator):
-            self._validators = [CommandValidator]
+        if isinstance(validators, LegacyAnswerValidator):
+            self._validators = [LegacyAnswerValidator]
         elif isinstance(self, (list, tuple, set, Generator)):
             self._validators = list(validators)
         else:
@@ -368,9 +370,9 @@ class Command(Sendable):
         return self._status_result
 
     def add_validators(
-        self, validators: Union[CommandValidator, Iterable[CommandValidator]]
+        self, validators: Union[LegacyAnswerValidator, Iterable[LegacyAnswerValidator]]
     ) -> None:
-        if isinstance(validators, CommandValidator):
+        if isinstance(validators, LegacyAnswerValidator):
             self._validators.append(validators)
         elif isinstance(validators, (list, tuple, set, Generator)):
             self._validators.extend(validators)
@@ -388,7 +390,7 @@ class Command(Sendable):
 
     async def execute(
         self, argument: Any = None, connection: Optional[Communicator] = None, should_log: bool = True
-    ) -> tuple[Answer, dict[str, Any]]:
+    ) -> tuple[LegacyAnswer, dict[str, Any]]:
         """
         Executes a command asynchronously.
 
@@ -422,8 +424,9 @@ class Command(Sendable):
         if should_log:
             parrot_feeder.debug("COMMAND_CALL(%s)", json.dumps(self.get_dict()))
         
-        await connection.send_and_wait_for_answer(self)
+        response = await connection.send_and_wait_for_response(self.full_message)
 
+        self.answer.receive_answer(response.splitlines())
         self.answer.valid = self.validate()
         self.status_result.update({"timestamp": self.answer.received_timestamp})
 

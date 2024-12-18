@@ -114,4 +114,3 @@ class Plot(EventManager):
             line.set_data(data[self._dataAttrNameXAxis], data[attrName])
         self.update_plot()
         self.emit(PropertyChangeEvent("plot", self._plot, self._plot))
-

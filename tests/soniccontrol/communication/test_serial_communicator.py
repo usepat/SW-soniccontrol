@@ -13,7 +13,7 @@ from unittest.mock import Mock
 @pytest_asyncio.fixture()
 async def communicator(connection):
     communicator = SerialCommunicator()
-    await communicator.open_communication(connection, loop=asyncio.get_running_loop())
+    await communicator.open_communication(connection)
     yield communicator
     if communicator.connection_opened.is_set():
         await communicator.close_communication()

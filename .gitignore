@@ -5,6 +5,7 @@
 
 *pycache*
 output/
+generated/
 tmp*
 logs/
 data/

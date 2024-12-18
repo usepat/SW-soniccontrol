@@ -1,4 +1,5 @@
 from typing import Dict, Optional
+from sonic_protocol.python_parser import commands
 from soniccontrol.procedures.procedure import Procedure, ProcedureType
 from soniccontrol.procedures.procs.auto import AutoProc
 from soniccontrol.procedures.procs.ramper import Ramper, RamperLocal, RamperRemote
@@ -10,9 +11,9 @@ from soniccontrol.sonic_device import SonicDevice
 
 class ProcedureInstantiator:
     def instantiate_ramp(self, device: SonicDevice) -> Optional[Ramper]:
-        if device.has_command("!swf="):
+        if device.command_executor.has_command(commands.GetSwf()):
             return None # Transducers that have switching frequencies cannot execute the ramp
-        elif device.has_command("!ramp"):
+        elif device.command_executor.has_command(commands.SetRamp()):
             return RamperRemote()
         else:
             return RamperLocal()
@@ -24,16 +25,16 @@ class ProcedureInstantiator:
         if ramp:
             procedures[ProcedureType.RAMP] = ramp
 
-        if device.has_command("!scan"):
+        if device.command_executor.has_command(commands.SetScan()):
             procedures[ProcedureType.SCAN] = ScanProc()
 
-        if device.has_command("!auto"):
+        if device.command_executor.has_command(commands.SetAuto()):
             procedures[ProcedureType.AUTO] = AutoProc()
 
-        if device.has_command("!tune"):
+        if device.command_executor.has_command(commands.SetTune()):
             procedures[ProcedureType.TUNE] = TuneProc()
 
-        if device.has_command("!wipe"):
+        if device.command_executor.has_command(commands.SetWipe()):
             procedures[ProcedureType.WIPE] = WipeProc()
 
         return procedures

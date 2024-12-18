@@ -120,19 +120,19 @@ Once the virtual environment is activated, you can install the SonicControl pack
 To install a specific release (e.g., `v2.3.0-beta`), use the following command:
 
 ```bash
-pip install git+https://github.com/usepat/soniccontrol@v2.3.0-beta
+pip install git+https://github.com/usepat/SW-soniccontrol@v2.3.0-beta
 ```
 Replace v2.3.0-beta with the tag of the release you want to install.
-Here you can find a list of all the [Releases](https://github.com/usepat/soniccontrol/releases)
+Here you can find a list of all the [Releases](https://github.com/usepat/SW-soniccontrol/releases)
 
 #### Option 2: Install the Latest Release on Windows
 
 To always install the latest release, use the following three commands inside the virtual environment:
 
 ```batch
-for /f "tokens=2 delims=:" %i in ('curl -s https://api.github.com/repos/usepat/soniccontrol/releases/latest ^| findstr /i "tag_name"') do @set TAG=%i
+for /f "tokens=2 delims=:" %i in ('curl -s https://api.github.com/repos/usepat/SW-soniccontrol/releases/latest ^| findstr /i "tag_name"') do @set TAG=%i
 set TAG=%TAG:~2,-1%
-pip install git+https://github.com/usepat/soniccontrol@%TAG%
+pip install git+https://github.com/usepat/SW-soniccontrol@%TAG%
 ````
 
 #### Option 3: Install the Latest Release on Linux/macOS (Using `jq`)
@@ -140,7 +140,7 @@ pip install git+https://github.com/usepat/soniccontrol@%TAG%
 To install the latest release on **Linux** or **macOS**, use the following one-liner:
 
 ```bash
-pip install git+https://github.com/usepat/soniccontrol@$(curl -s https://api.github.com/repos/usepat/soniccontrol/releases/latest | jq -r .tag_name)
+pip install git+https://github.com/usepat/SW-soniccontrol@$(curl -s https://api.github.com/repos/usepat/SW-soniccontrol/releases/latest | jq -r .tag_name)
 ```
 
 ### Running the Application

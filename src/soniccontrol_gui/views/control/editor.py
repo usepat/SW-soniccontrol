@@ -1,5 +1,3 @@
-import asyncio
-from enum import Enum
 import logging
 import pathlib
 from tkinter import filedialog
@@ -15,9 +13,7 @@ from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
 from soniccontrol.scripting.interpreter_engine import CurrentTarget, InterpreterEngine, InterpreterState
-from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
 from soniccontrol.scripting.scripting_facade import Script, ScriptingFacade
-from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.constants import (sizes, scripting_cards_data,
                                                      ui_labels)
 from soniccontrol.events import PropertyChangeEvent

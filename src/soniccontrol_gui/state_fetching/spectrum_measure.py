@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Type, Union
 from attrs import validators
 import attrs
 
+from sonic_protocol.python_parser import commands
 from soniccontrol_gui.state_fetching.updater import Updater
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
@@ -22,7 +23,6 @@ class SpectrumMeasureArgs(RamperArgs):
     )
 
 
-# TODO: This class can be easily merged with RamperLocal
 class SpectrumMeasure(Procedure):
     def __init__(self, updater: Updater) -> None:
         self._updater = updater        
@@ -30,6 +30,10 @@ class SpectrumMeasure(Procedure):
     @classmethod
     def get_args_class(cls) -> Type: 
         return SpectrumMeasureArgs
+
+    @property
+    def is_remote(self) -> bool:
+        return False
 
     async def execute(
         self,
@@ -41,12 +45,10 @@ class SpectrumMeasure(Procedure):
         values = [start + i * args.step for i in range(int((stop - start) / args.step)) ]
 
         try:
-            await self._updater.stop()
             await device.get_overview()
-            await self._ramp(device, list(values), args.hold_on, args.hold_off)
+            await self._ramp(device, list(values), args.hold_on, args.hold_off, args.time_offset_measure)
         finally:
             await device.set_signal_off()
-            self._updater.start()
 
     async def _ramp(
         self,
@@ -54,15 +56,17 @@ class SpectrumMeasure(Procedure):
         values: List[Union[int, float]],
         hold_on: HolderArgs,
         hold_off: HolderArgs,
+        time_offset_measure: HolderArgs
     ) -> None:
         for  i in range(len(values)):
-            value = values[i]
+            value = int(values[i])
 
-            await device.execute_command(f"!f={value}") # FIXME use internal freq command of device
+            await device.execute_command(commands.SetFrequency(value))
             if hold_off.duration:
                 await device.set_signal_on()
+            await Holder.execute(time_offset_measure)
             asyncio.get_running_loop().create_task(self._updater.update())
-            await Holder.execute(hold_on)
+            await Holder.execute(hold_on - time_offset_measure)
 
             if hold_off.duration:
                 await device.set_signal_off()

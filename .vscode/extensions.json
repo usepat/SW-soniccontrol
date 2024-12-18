@@ -29,6 +29,9 @@
         "myml.vscode-markdown-plantuml-preview",
         "yzhang.markdown-all-in-one",
 
+		// toml
+		"tamasfe.even-better-toml",
+
 		// spellchecking
 		"streetsidesoftware.code-spell-checker",
 		"streetsidesoftware.code-spell-checker-british-english",

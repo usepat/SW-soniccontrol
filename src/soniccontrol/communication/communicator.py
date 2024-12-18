@@ -1,12 +1,10 @@
 
 import abc
 import asyncio
-from typing import Any, Dict
 
 from soniccontrol.communication.connection_factory import ConnectionFactory
-from soniccontrol.communication.sonicprotocol import CommunicationProtocol
+from soniccontrol.communication.package_protocol import CommunicationProtocol
 from soniccontrol.events import EventManager
-from soniccontrol.interfaces import Sendable
 
 
 class Communicator(abc.ABC, EventManager):
@@ -41,13 +39,13 @@ class Communicator(abc.ABC, EventManager):
 
     @property
     @abc.abstractmethod
-    def handshake_result(self) -> Dict[str, Any]: ...
+    def handshake_result(self) -> str: ...
 
     @abc.abstractmethod
-    async def send_and_wait_for_answer(self, message: Sendable) -> None: ...
+    async def send_and_wait_for_response(self, request: str, **kwargs) -> str: ...
 
     @abc.abstractmethod
     async def read_message(self) -> str: ...
 
     @abc.abstractmethod
-    async def change_baudrate(self) -> None: ...
+    async def change_baudrate(self, baudrate: int) -> None: ...
