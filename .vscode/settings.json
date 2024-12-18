@@ -11,6 +11,7 @@
     "python.analysis.extraPaths": [
         "${workspaceFolder}/tests"
     ],
+    "python.pythonPath": "/usr/bin/python3",
     "robotcode.robot.outputDir": "${workspaceFolder}/tests_robot/results",
     "files.associations": {
         "optional": "cpp",
