@@ -145,7 +145,7 @@ procedure_field = AnswerFieldDef(
 )
 
 get_update = CommandContract(
-    code=CommandCode.DASH,
+    code=CommandCode.GET_UPDATE,
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["-", "get_update"]

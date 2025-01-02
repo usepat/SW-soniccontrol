@@ -35,7 +35,7 @@ class ListAvailableCommands(Command):
 @attrs.define()
 class GetUpdate(Command):
     def __attrs_post_init__(self):
-        super().__init__(code=CommandCode.DASH)
+        super().__init__(code=CommandCode.GET_UPDATE)
 
 @attrs.define()
 class GetGain(Command):

@@ -146,11 +146,13 @@ Test Stop turns off procedure
 Send Example Commands
     [Tags]    expensive_to_run
     ${command_examples_list}=    RemoteController.Deduce list of command examples
-    FOR  ${command_example}  IN  @{command_examples_list}
+    ${num_iterations} =    Get Length    ${command_examples_list}
+    FOR  ${i}    ${command_example}  IN ENUMERATE    @{command_examples_list}
         Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
         Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
         Run Keyword and Continue on Failure    RemoteController.Send Command    !input_source=external
         Reconnect if disconnected
+        Log To Console    Progress: Completed ${${i} + 1}/${num_iterations} iterations
     END
 
 

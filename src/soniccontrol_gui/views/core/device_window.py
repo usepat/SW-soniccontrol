@@ -168,7 +168,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._interpreter = InterpreterEngine(self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
-            update_answer_fields = self._device.lookup_table[CommandCode.DASH].answer_def.fields
+            update_answer_fields = self._device.lookup_table[CommandCode.GET_UPDATE].answer_def.fields
             update_answer_field_names = [ field.field_name for field in update_answer_fields ] 
             self._capture = Capture(update_answer_field_names, self._logger)
             self._capture_targets = {

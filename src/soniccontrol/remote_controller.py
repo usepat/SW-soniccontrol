@@ -29,11 +29,11 @@ class RemoteController:
             logger = create_logger_for_connection(connection_name, self._log_path)   
         else:
             logger = create_logger_for_connection(connection_name)
-        serial, commands = await CommunicatorBuilder.build(
+        serial = await CommunicatorBuilder.build(
             connection_factory,
             logger=logger
         )
-        self._device = await DeviceBuilder().build_amp(comm=serial, commands=commands, logger=logger)
+        self._device = await DeviceBuilder().build_amp(comm=serial, logger=logger)
         await self._device.communicator.connection_opened.wait()
         self._updater = Updater(self._device)
         self._updater.start()

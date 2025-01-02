@@ -3,30 +3,30 @@ import logging
 from typing import Dict
 from asyncio import StreamReader
 
-from soniccontrol.communication.package_protocol import PackageProtocol
+from soniccontrol.communication.message_protocol import SonicMessageProtocol
 from soniccontrol.system import PLATFORM
 
 
-class PackageFetcher:
-    def __init__(self, reader: StreamReader, protocol: PackageProtocol, logger: logging.Logger = logging.getLogger()) -> None:
+class MessageFetcher:
+    def __init__(self, reader: StreamReader, protocol: SonicMessageProtocol, logger: logging.Logger = logging.getLogger()) -> None:
         self._reader = reader
         self._answers: Dict[int, str] = {}
         self._answer_received: Dict[int, asyncio.Event] = {}
         self._messages = asyncio.Queue(maxsize=100)
         self._task = None
-        self._protocol: PackageProtocol = protocol
-        self._logger: logging.Logger = logging.getLogger(logger.name + "." + PackageFetcher.__name__)
+        self._protocol: SonicMessageProtocol = protocol
+        self._logger: logging.Logger = logging.getLogger(logger.name + "." + MessageFetcher.__name__)
 
-    async def get_answer_of_package(self, package_id: int) -> str:
-        if package_id not in self._answer_received:
-            self._answer_received[package_id] = asyncio.Event()
+    async def get_answer_of_request(self, request_id: int) -> str:
+        if request_id not in self._answer_received:
+            self._answer_received[request_id] = asyncio.Event()
 
-        flag = self._answer_received[package_id]
+        flag = self._answer_received[request_id]
         await flag.wait()
         flag.clear()
-        self._answer_received.pop(package_id)
+        self._answer_received.pop(request_id)
 
-        answer: str = self._answers.pop(package_id)
+        answer: str = self._answers.pop(request_id)
         return answer
 
     @property
@@ -54,9 +54,7 @@ class PackageFetcher:
             try:
                 response = await self._read_response()
                 self._queue_message(response)
-                package_id, answer = self._protocol.parse_response(response)
-                if not answer.startswith(COMMAND_CODE_DASH):
-                    self._logger.info("Read package: %s", response)
+                answer_id, answer = self._protocol.parse_response(response)
             except asyncio.CancelledError:
                 self._logger.info("Package fetcher was stopped")
                 return
@@ -64,31 +62,27 @@ class PackageFetcher:
                 self._logger.error("Exception occured while reading the package:\n%s", e)
                 return
 
-            if len(answer) > 0:
-                self._answers[package_id] = answer
+            if answer:
+                if answer.startswith(COMMAND_CODE_DASH):
+                    self._logger.info("Read package: %s", response)
+            
+                self._answers[answer_id] = answer
 
-                if package_id not in self._answer_received:
-                    self._answer_received[package_id] = asyncio.Event()
-                self._answer_received[package_id].set()
+                if answer_id not in self._answer_received:
+                    self._answer_received[answer_id] = asyncio.Event()
+                self._answer_received[answer_id].set()
+                
 
     async def _read_response(self) -> str:
         if self._reader is None:
             raise RuntimeError("reader was not initialized")
 
-        garbage_data = await self._reader.readuntil(
-            self._protocol.start_symbol.encode(PLATFORM.encoding)
-        )
-        garbage = garbage_data.decode(PLATFORM.encoding)
-        if garbage.strip() != self._protocol.start_symbol:
-            pass # FIXME: just quick fix, because of printf statements in the firmware
-            # raise RuntimeError(
-            #     f"Before the package start, there were unexpected characters: {garbage}"
-            # )
-
+        message_terminator = self._protocol.separator
         data = await self._reader.readuntil(
-            self._protocol.end_symbol.encode(PLATFORM.encoding)
-        )
-        message: str = self._protocol.start_symbol + data.decode(PLATFORM.encoding)
+            message_terminator.encode(PLATFORM.encoding)
+        ) 
+        message = data.decode(PLATFORM.encoding)
+        message = message[:-1] # remove separator at the end
         return message
     
     def _queue_message(self, message: str) -> None:

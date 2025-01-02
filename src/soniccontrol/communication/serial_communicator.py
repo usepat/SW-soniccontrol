@@ -5,10 +5,10 @@ from typing import Final, Optional, List
 
 import attrs
 from soniccontrol.communication.connection_factory import ConnectionFactory, SerialConnectionFactory
-from soniccontrol.communication.package_fetcher import PackageFetcher
+from soniccontrol.communication.message_fetcher import MessageFetcher
 from soniccontrol.command import LegacyCommand
 from soniccontrol.communication.communicator import Communicator
-from soniccontrol.communication.package_protocol import CommunicationProtocol, LegacyProtocol, PackageProtocol
+from soniccontrol.communication.message_protocol import CommunicationProtocol, LegacyProtocol, SonicMessageProtocol
 from soniccontrol.events import Event
 from soniccontrol.system import PLATFORM
 
@@ -36,7 +36,7 @@ class SerialCommunicator(Communicator):
     def __attrs_post_init__(self) -> None:
         self._logger = logging.getLogger(self._logger.name + "." + SerialCommunicator.__name__)
         #self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
-        self._protocol: CommunicationProtocol = PackageProtocol(self._logger)
+        self._protocol: CommunicationProtocol = SonicMessageProtocol(self._logger)
 
         super().__init__()
 
@@ -75,13 +75,11 @@ class SerialCommunicator(Communicator):
         self._restart = False 
         self._reader, self._writer = await connection_factory.open_connection()
         #self._writer.transport.set_write_buffer_limits(0) #Quick fix
-        self._protocol = PackageProtocol(self._logger)
-        self._package_fetcher = PackageFetcher(self._reader, self._protocol, self._logger)
+        self._protocol = SonicMessageProtocol(self._logger)
+        self._package_fetcher = MessageFetcher(self._reader, self._protocol, self._logger)
         self._connection_opened.set()
         self._writer.write(b'\n')
         await self._writer.drain()
-        # FIXME: why do we do this again?
-        # await self._package_fetcher._read_response()
         self._package_fetcher.run()
 
     async def _send_chunks(self, message: bytes) -> None:
@@ -137,7 +135,7 @@ class SerialCommunicator(Communicator):
         # FIXME: Quick fix. We have a weird error that the buffer does not get flushed somehow
         await self._send_chunks(encoded_message)
 
-        response =  await self._package_fetcher.get_answer_of_package(
+        response =  await self._package_fetcher.get_answer_of_request(
             message_counter
         )
         if request_str != "-":

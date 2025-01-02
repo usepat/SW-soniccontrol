@@ -3,7 +3,7 @@ import abc
 import asyncio
 
 from soniccontrol.communication.connection_factory import ConnectionFactory
-from soniccontrol.communication.package_protocol import CommunicationProtocol
+from soniccontrol.communication.message_protocol import CommunicationProtocol
 from soniccontrol.events import EventManager
 
 

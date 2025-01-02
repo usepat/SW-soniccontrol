@@ -1,10 +1,10 @@
 import logging
 from typing import Union
 
-from soniccontrol.commands import CommandSet, CommandSetLegacy
+from soniccontrol.commands import CommandSetLegacy
 from soniccontrol.communication.connection_factory import ConnectionFactory
 from soniccontrol.communication.communicator import Communicator
-from soniccontrol.communication.package_parser import PackageParser
+from soniccontrol.communication.message_protocol import SonicMessageProtocol
 from soniccontrol.communication.serial_communicator import (
     LegacySerialCommunicator,
     SerialCommunicator,
@@ -14,7 +14,7 @@ class CommunicatorBuilder:
     @staticmethod
     async def build(
         connection_factory: ConnectionFactory, logger: logging.Logger
-    ) -> tuple[Communicator, Union[CommandSet, CommandSetLegacy]]:
+    ) -> Communicator:
         """
         Builds a connection using the provided `reader` and `writer` objects.
 
@@ -36,44 +36,42 @@ class CommunicatorBuilder:
 
         com_logger.info("Trying to connect with legacy protocol")
         serial: Communicator = LegacySerialCommunicator(logger=logger)  #type: ignore
-        commands: Union[CommandSet, CommandSetLegacy] = CommandSetLegacy(serial)
+        commands_legacy: CommandSetLegacy = CommandSetLegacy(serial)
 
         try:
             await serial.open_communication(connection_factory)
-            await commands.get_info.execute(should_log=False)
+            await commands_legacy.get_info.execute(should_log=False)
         except Exception as e:
             com_logger.error(str(e))
         else:
             # For some reason the get_info command of the legacy protocol can also understand the new ones.
             # FIXME: Is there some better way to fix this?
-            response = commands.get_info.answer.string
+            response = commands_legacy.get_info.answer.string
             try:
-                PackageParser.parse_package(response)
+                SonicMessageProtocol(com_logger).parse_response(response)
             except SyntaxError:
                 pass
             else:
-                commands.get_info.answer.valid = False # response is package. Do not use legacy communicator
+                commands_legacy.get_info.answer.valid = False # response is message. Do not use legacy communicator
 
-            if commands.get_info.answer.valid:
+            if commands_legacy.get_info.answer.valid:
                 com_logger.info("Connected with legacy protocol")
-                return (serial, commands)
+                return serial
             
         await serial.close_communication()
         com_logger.warn("Connection could not be established with legacy protocol")
 
         com_logger.info("Trying to connect with new sonic protocol")
         serial = SerialCommunicator(logger=logger) #type: ignore
-        commands = CommandSet(serial)
 
         try:
             await serial.open_communication(connection_factory)
-            await commands.get_info.execute(should_log=False)
+            await serial.send_and_wait_for_response("?test") # just send some garbage and look, if it returns a valid response
         except Exception as e:
             com_logger.error(str(e))
         else:
-            if commands.get_info.answer.valid:
-                com_logger.info("Connected with sonic protocol")
-                return (serial, commands)
+            com_logger.info("Connected with sonic protocol")
+            return serial
             
         await serial.close_communication()
         com_logger.warning("Connection could not be established with sonic protocol")
