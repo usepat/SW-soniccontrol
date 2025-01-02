@@ -7,7 +7,7 @@
 namespace sonic_protocol_lib {
 
 struct CommandDef {
-    CommandCode code{CommandCode::E_INVALID_COMMAND};
+    CommandCode code{CommandCode::E_COMMAND_INVALID};
     std::span<const std::string_view> string_identifiers;
     std::span<const ParamDef> params;
 };

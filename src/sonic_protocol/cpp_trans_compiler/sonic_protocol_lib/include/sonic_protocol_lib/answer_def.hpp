@@ -7,7 +7,7 @@
 namespace sonic_protocol_lib {
 
 struct AnswerDef {
-    CommandCode code{CommandCode::E_INVALID_COMMAND};
+    CommandCode code{CommandCode::E_COMMAND_INVALID};
     std::span<const AnswerFieldDef> fields;
 };
 
