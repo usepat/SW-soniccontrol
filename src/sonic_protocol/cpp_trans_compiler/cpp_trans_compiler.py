@@ -108,6 +108,13 @@ def create_enum_to_string_conversions(enum: type[Enum]) -> str:
         assert(false);
     """
 
+def create_enum_cases(enum: type[Enum]) -> str:
+    cases = [
+        f'\tcase {enum.__name__}::{member.name}:'
+        for member in enum
+    ]
+    return "\n".join(cases)
+
 def py_type_to_cpp_type(data_type: type) -> str:
     if data_type is np.uint32:
         return "uint32_t"
@@ -165,7 +172,8 @@ class CppTransCompiler:
         command_code_members = convert_to_cpp_enum_members(CommandCode)
         self._inject_code_into_file(
             lib_dir / "command_code.hpp",
-            COMMAND_CODE_MEMBERS=command_code_members
+            COMMAND_CODE_MEMBERS=command_code_members,
+            COMMAND_CODE_SWITCH_CASE=create_enum_cases(CommandCode)
         )
 
         si_unit_members = convert_to_cpp_enum_members(SIUnit)

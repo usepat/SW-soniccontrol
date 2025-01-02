@@ -5,7 +5,7 @@ class CommandCode(IntEnum):
     Command codes are the bridge between the commands implemented in python and c++ and the 
     CommandDefs in the generated CommandLookups from the protocol_builder.
 
-    They are used as a unique identifier and to seperate the protocol and definition logic,
+    They are used as a unique identifier and to separate the protocol and definition logic,
     from the actual command and answer implementation.
     """
 
@@ -23,9 +23,20 @@ class CommandCode(IntEnum):
     GET_FREQ = 20
     GET_GAIN = 30
 
-    GET_ATF = 101 # 102, 103, 104
-    GET_ATK = 111 # 112, 113, 114
-    GET_ATT = 121 # 122, 123, 124
+    GET_ATF = 101
+    GET_ATK = 111
+    GET_ATT = 121
+
+    # Those codes are only needed for isValidCode implementation
+    GET_ATF2 = 102
+    GET_ATF3 = 103
+    GET_ATF4 = 104
+    GET_ATK2 = 102
+    GET_ATK3 = 103
+    GET_ATK4 = 104
+    GET_ATT2 = 102
+    GET_ATT3 = 103
+    GET_ATT4 = 104
 
     GET_DATETIME = 130
     GET_WAVEFORM = 140
@@ -60,9 +71,20 @@ class CommandCode(IntEnum):
     SET_FREQ = 1020
     SET_GAIN = 1030
 
-    SET_ATF = 1101 # 102, 103, 104
-    SET_ATK = 1111 # 112, 113, 114
-    SET_ATT = 1121 # 122, 123, 124
+    SET_ATF = 1101
+    SET_ATK = 1111
+    SET_ATT = 1121
+
+    # Those codes are only needed for isValidCode implementation
+    SET_ATF2 = 1102
+    SET_ATF3 = 1103
+    SET_ATF4 = 1104
+    SET_ATK2 = 1102
+    SET_ATK3 = 1103
+    SET_ATK4 = 1104
+    SET_ATT2 = 1102
+    SET_ATT3 = 1103
+    SET_ATT4 = 1104
 
     SET_DATETIME = 1130
     SET_WAVEFORM = 1140
