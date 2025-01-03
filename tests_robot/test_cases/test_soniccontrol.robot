@@ -203,6 +203,7 @@ Send command and check response
     ${answer_value_dict}=    Set Variable    ${answer}[1]
     ${is_answer_valid}=    Set Variable    ${answer}[2]
 
+    Log    Sended command: "${command_request}"
     Log    Answer received: "${answer_message}"
 
     Should Be Equal    ${is_answer_valid}    ${should_be_valid}

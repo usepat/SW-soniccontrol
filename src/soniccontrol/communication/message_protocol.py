@@ -72,15 +72,15 @@ class SonicMessageProtocol(CommunicationProtocol):
 
     @staticmethod
     def _extract_log_level(log: str) -> int:
-        log_level_str = log[log.index("="):log.index(":")]
+        log_level_str = log[log.index("=")+1:log.index(":")]
         match log_level_str:
-            case DeviceLogLevel.ERROR:
+            case DeviceLogLevel.ERROR.value:
                 return logging.ERROR
-            case DeviceLogLevel.WARN:
+            case DeviceLogLevel.WARN.value:
                 return logging.WARN
-            case DeviceLogLevel.INFO:
+            case DeviceLogLevel.INFO.value:
                 return logging.INFO
-            case DeviceLogLevel.DEBUG:
+            case DeviceLogLevel.DEBUG.value:
                 return logging.DEBUG
         raise SyntaxError("Could not parse log level")
 
