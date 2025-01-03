@@ -3,6 +3,23 @@ import soniccontrol.bin
 
 SIMULATION_MVP_EXE: str = str(files(soniccontrol.bin).joinpath("cli_simulation_mvp"))
 
+
+RIGHT_NOTEBOOK = "right_notebook"
+LEFT_NOTEBOOK = "left_notebook"
+LOGGING_NOTEBOOK = "logging_notebook"
+MEASURING_NOTEBOOK = "measuring_notebook"
+
+HOME_TAB = "left_notebook.Home_tab"
+SERIAL_MONITOR_TAB = "left_notebook.Serial Monitor_tab"
+PROCEDURES_TAB = "left_notebook.Procedures_tab"
+SCRIPTING_TAB = "left_notebook.Scripting_tab"
+SETTINGS_TAB = "left_notebook.Settings_tab"
+FLASHER_TAB = "left_notebook.Flasher_tab"
+INFO_TAB = "right_notebook.Info_tab"
+SONIC_MEASURE_TAB = "right_notebook.Sonic Measure_tab"
+LOGS_TAB = "right_notebook.Logs_tab"
+
+
 # Connection constants
 CONNECTION_PORTS_COMBOBOX = 'connection.ports_combobox'
 CONNECTION_CONNECT_VIA_URL_BUTTON = 'connection.connect_via_url_button'
@@ -108,3 +125,4 @@ SPECTRUM_MEASURE_HOLD_ON_TIME_ENTRY = 'Spectrum Measure.hold_on.time_entry'
 SPECTRUM_MEASURE_HOLD_ON_UNIT_BUTTON = 'Spectrum Measure.hold_on.unit_button'
 SPECTRUM_MEASURE_HOLD_OFF_TIME_ENTRY = 'Spectrum Measure.hold_off.time_entry'
 SPECTRUM_MEASURE_HOLD_OFF_UNIT_BUTTON = 'Spectrum Measure.hold_off.unit_button'
+

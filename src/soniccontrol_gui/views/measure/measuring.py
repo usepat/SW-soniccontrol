@@ -12,6 +12,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 import matplotlib
 
+from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.widgets.procedure_widget import ProcedureWidget
 from soniccontrol_gui.state_fetching.capture import Capture
 from soniccontrol_gui.views.measure.csv_table import CsvTable
@@ -119,7 +120,7 @@ class MeasuringView(TabView):
         )
         WidgetRegistry.register_widget(self._capture_btn, "capture_button", tab_name)
 
-        self._notebook: ttk.Notebook = ttk.Notebook(self._main_frame)
+        self._notebook: Notebook = Notebook(self._main_frame, "measuring")
 
         self._spectrum_measure_frame = ttk.Frame(self._main_frame)
 

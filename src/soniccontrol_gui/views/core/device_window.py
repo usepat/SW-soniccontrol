@@ -242,8 +242,8 @@ class DeviceWindowView(tk.Toplevel, View):
         self._frame: ttk.Frame = ttk.Frame(self)
         # We use the tk.PanedWindow, because ttk.PanedWindow do not support minsize and paneconfigure
         self._paned_window: tk.PanedWindow = tk.PanedWindow(self._frame, orient=ttk.HORIZONTAL)
-        self._notebook_right: Notebook = Notebook(self._paned_window)
-        self._notebook_left: Notebook = Notebook(self._paned_window)
+        self._notebook_right: Notebook = Notebook(self._paned_window, "right")
+        self._notebook_left: Notebook = Notebook(self._paned_window, "left")
         self._status_bar_slot: ttk.Frame = ttk.Frame(self._frame)
 
         self._frame.pack(fill=ttk.BOTH, expand=True)

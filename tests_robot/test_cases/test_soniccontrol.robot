@@ -20,6 +20,9 @@ ${URL}  ${None}
 ${MIN_FREQUENCY}    ${100000}
 ${MAX_FREQUENCY}    ${10000000}
 
+${MIN_SWF}    ${0}
+${MAX_SWF}    ${15}
+
 ${MIN_GAIN}    ${0}
 ${MAX_GAIN}    ${150}
 
@@ -92,11 +95,30 @@ Check basic setter commands are working
     !tune_f_step\=${1000}
 
 
-Test if value set by setter can be retrieved with getter
+Test if gain set by setter can be retrieved with getter
     Send Command And Check Response    !gain\=${MIN_GAIN}
     Send Command And Check Response    ?gain    ${FIELD_GAIN}=${MIN_GAIN}
     Send Command And Check Response    !gain\=${MAX_GAIN}
     Send Command And Check Response    ?gain    ${FIELD_GAIN}=${MAX_GAIN}
+
+Test if freq set by setter can be retrieved with getter
+    [Tags]    -descaler
+    Send Command And Check Response    !freq\=${MIN_FREQUENCY}
+    Send Command And Check Response    ?freq    ${FIELD_FREQUENCY}=${MIN_FREQUENCY}
+    Send Command And Check Response    !freq\=${MAX_FREQUENCY}
+    Send Command And Check Response    ?freq    ${FIELD_FREQUENCY}=${MAX_FREQUENCY}
+
+    Send Command And Check Response    !atf${MIN_INDEX}\=${MIN_FREQUENCY}
+    Send Command And Check Response    ?atf${MIN_INDEX}    ${FIELD_ATF}=${MIN_FREQUENCY}
+    Send Command And Check Response    !atf${MIN_INDEX}\=${MAX_FREQUENCY}
+    Send Command And Check Response    ?atf${MIN_INDEX}    ${FIELD_ATF}=${MAX_FREQUENCY}
+
+Test if swf set by setter can be retrieved with getter
+    [Tags]    +descaler    -worker
+    Send Command And Check Response    !swf\=${MIN_SWF}
+    Send Command And Check Response    ?swf    ${FIELD_SWF}=${MIN_SWF}
+    Send Command And Check Response    !swf\=${MAX_SWF}
+    Send Command And Check Response    ?swf    ${FIELD_SWF}=${MAX_SWF}
 
 Test if input source can be set, if analog is set
     [Tags]    -worker    +descaler

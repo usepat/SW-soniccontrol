@@ -7,9 +7,11 @@ import ttkbootstrap as ttk
 from robot.api.deco import keyword, library
 import robot.api.logger as logger
 from ttkbootstrap.utility import enable_high_dpi_awareness
+from soniccontrol_gui.view import TabView
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
 from soniccontrol.system import PLATFORM, System
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry, get_text_of_widget, set_text_of_widget
+from soniccontrol_gui.widgets.notebook import Notebook
 
 
 @library(auto_keywords=False, scope="SUITE")
@@ -90,4 +92,17 @@ class RobotSonicControlGui:
         else:
             raise TypeError(f"The registered object '{name_widget}' is not a button")
         
+    @keyword('Switch to tab "${tab_widget}"')
+    def switch_to_tab(self, tab_widget: str) -> None:
+        tab_view = WidgetRegistry.get_widget(tab_widget)
+        if not isinstance(tab_view, TabView):
+            raise TypeError(f"The registered object '{tab_widget}' is not a tab view")
+
+        parent_name = tab_widget.split(".")[0]
+        notebook = WidgetRegistry.get_widget(parent_name)
+        if not isinstance(notebook, (Notebook, ttk.Notebook)):
+            raise TypeError(f"The registered object '{parent_name}' is not a notebook")
+        notebook.select(tab_view)
+             
+
 

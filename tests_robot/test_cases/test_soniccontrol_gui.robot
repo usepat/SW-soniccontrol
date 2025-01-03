@@ -35,6 +35,7 @@ ${TEST_SCRIPT_HOLD}
 
 Set frequency over home tab updates status bar
     [Tags]    -descaler
+    Gui.Switch to tab "${HOME_TAB}"
     Gui.Set text of widget "${HOME_FREQUENCY_ENTRY}" to "200000"
     Gui.Press button "${HOME_SEND_BUTTON}"
     ${freq_label}=     Gui.Wait up to "${TIMEOUT_MS}" ms for the widget "${STATUS_BAR_FREQ_LABEL}" to change text
@@ -42,11 +43,13 @@ Set frequency over home tab updates status bar
 
 Set gain over serial updates status bar
     [Tags]    -descaler
+    Gui.Switch to tab "${SERIAL_MONITOR_TAB}"
     Send command "!gain=50" over serial monitor
-    ${gain_label}=    Gui.Get text of widget "${STATUS_BAR_GAIN_LABEL}"
+    ${gain_label}=     Gui.Wait up to "${TIMEOUT_MS}" ms for the widget "${STATUS_BAR_GAIN_LABEL}" to change text
     Should Contain    ${gain_label}    50    # TODO: use a better check
 
 Execute test script holds application
+    Gui.Switch to tab "${SCRIPTING_TAB}"
     Gui.Set text of widget "${EDITOR_TEXT_EDITOR}" to "${TEST_SCRIPT_HOLD}"
     Gui.Press button "${EDITOR_START_PAUSE_CONTINUE_BUTTON}"
     Gui.Let the app run free for "500" ms

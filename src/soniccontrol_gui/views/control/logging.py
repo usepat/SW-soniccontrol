@@ -12,6 +12,7 @@ from soniccontrol.events import Event
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.observable_list import ObservableList
+from soniccontrol_gui.widgets.notebook import Notebook
 
 
 class Logging(UIComponent):
@@ -54,7 +55,7 @@ class LoggingView(TabView):
         return ui_labels.LOGS_LABEL
     
     def _initialize_children(self) -> None:
-        self._notebook: ttk.Notebook = ttk.Notebook(self)
+        self._notebook: Notebook = Notebook(self, "logging")
 
     def _initialize_publish(self) -> None:
         self._notebook.pack(expand=True, fill=ttk.BOTH)

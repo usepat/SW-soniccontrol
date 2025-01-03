@@ -5,6 +5,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledText
 import datetime
 
+from soniccontrol_gui.view import TabView
+
 
 def get_text_of_widget(widget: tk.Widget) -> str:
     if isinstance(widget, (tk.Entry, ttk.Entry, ttk.Combobox)):
@@ -15,6 +17,12 @@ def get_text_of_widget(widget: tk.Widget) -> str:
         return str(widget.cget("text"))
     elif isinstance(widget, ttk.Meter):
         return str(widget.amountusedvar.get())
+    elif isinstance(widget, (ttk.Notebook)):
+        return "" # has no text
+    elif widget.__class__.__name__ == "Notebook":
+        return "" # has no text
+    elif isinstance(widget, TabView):
+        return widget.tab_title
     else:
         raise TypeError("The object has to be of type tk.Label, tk.Entry or tk.Button or inherit from them")
 
