@@ -254,7 +254,7 @@ field_wipe_f_range = AnswerFieldDef(
 
 field_wipe_t_on = AnswerFieldDef(
     field_name=EFieldName.WIPE_T_ON,
-    field_type=field_type_time_span_off,
+    field_type=field_type_time_span_on,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: ")
 )
 
