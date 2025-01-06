@@ -30,8 +30,8 @@ field_type_frequency_step = FieldType(
     field_type=np.uint32,
     si_unit=SIUnit.HERTZ,
     #si_prefix=SIPrefix.KILO,
-	max_value=DeviceParamConstantType.MAX_FREQUENCY_STEP,
-	min_value=DeviceParamConstantType.MIN_FREQUENCY_STEP,
+	max_value=DeviceParamConstantType.MAX_F_STEP,
+	min_value=DeviceParamConstantType.MIN_F_STEP,
 )
 
 field_frequency = AnswerFieldDef(
@@ -158,11 +158,50 @@ field_unknown_answer = AnswerFieldDef(
 	field_type=FieldType(str)
 )
 
-field_type_time_span = FieldType(
+field_type_time_span_off = FieldType(
     field_type=np.uint32,
-    min_value=np.uint32(0),
+    min_value=DeviceParamConstantType.MIN_T_OFF,
+    max_value=DeviceParamConstantType.MAX_T_OFF,
     si_unit=SIUnit.SECONDS,
     si_prefix=SIPrefix.MILLI
+)
+
+field_type_time_span_on = FieldType(
+    field_type=np.uint32,
+    min_value=DeviceParamConstantType.MIN_T_ON,
+    max_value=DeviceParamConstantType.MAX_T_ON,
+    si_unit=SIUnit.SECONDS,
+    si_prefix=SIPrefix.MILLI
+)
+
+field_ramp_f_start = AnswerFieldDef(
+    field_name=EFieldName.RAMP_F_START,
+    field_type=field_type_frequency,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Start: ")
+)
+
+field_ramp_f_stop = AnswerFieldDef(
+    field_name=EFieldName.RAMP_F_STOP,
+    field_type=field_type_frequency,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Stop: ")
+)
+
+field_ramp_f_step = AnswerFieldDef(
+    field_name=EFieldName.RAMP_F_STEP,
+    field_type=field_type_frequency_step,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Step: ")
+)
+
+field_ramp_t_off = AnswerFieldDef(
+    field_name=EFieldName.RAMP_T_OFF,
+    field_type=field_type_time_span_off,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Toff: ")
+)
+
+field_ramp_t_on = AnswerFieldDef(
+    field_name=EFieldName.RAMP_T_ON,
+    field_type=field_type_time_span_on,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: ")
 )
 
 field_scan_f_step = AnswerFieldDef(
@@ -179,7 +218,7 @@ field_scan_f_half_range = AnswerFieldDef(
 
 field_scan_t_step = AnswerFieldDef(
     field_name=EFieldName.SCAN_T_STEP,
-    field_type=field_type_time_span,
+    field_type=field_type_time_span_on,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: ")
 )
 
@@ -189,11 +228,15 @@ field_tune_f_step = AnswerFieldDef(
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
 )
 
-field_type_tune_t_time_dict = attrs.asdict(field_type_time_span)
-field_type_tune_t_time_dict.update({"min_value": np.uint32(1)})
+field_tune_t_step = AnswerFieldDef(
+    field_name=EFieldName.TUNE_T_STEP,
+    field_type=field_type_time_span_on,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tstep: ")
+)
+
 field_tune_t_time = AnswerFieldDef(
     field_name=EFieldName.TUNE_T_TIME,
-    field_type=FieldType(**field_type_tune_t_time_dict),
+    field_type=field_type_time_span_on,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
 )
 
@@ -211,30 +254,40 @@ field_wipe_f_range = AnswerFieldDef(
 
 field_wipe_t_on = AnswerFieldDef(
     field_name=EFieldName.WIPE_T_ON,
-    field_type=field_type_time_span,
+    field_type=field_type_time_span_off,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: ")
 )
 
 field_wipe_t_off = AnswerFieldDef(
     field_name=EFieldName.WIPE_T_OFF,
-    field_type=field_type_time_span,
+    field_type=field_type_time_span_off,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Toff: ")
 )
 
 field_wipe_t_pause = AnswerFieldDef(
     field_name=EFieldName.WIPE_T_PAUSE,
-    field_type=field_type_time_span,
+    field_type=field_type_time_span_off,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Pause: ")
 )
 
 field_duty_cycle_t_on = AnswerFieldDef(
     field_name=EFieldName.DUTY_CYCLE_T_ON,
-    field_type=field_type_time_span,
-    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: ")
+    field_type= FieldType(
+        field_type=np.uint32,
+        min_value=DeviceParamConstantType.MIN_T_ON,
+        max_value=DeviceParamConstantType.MAX_T_ON,
+        si_unit=SIUnit.SECONDS,
+    ),
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: "),
 )
 
 field_duty_cycle_t_off = AnswerFieldDef(
     field_name=EFieldName.DUTY_CYCLE_T_OFF,
-    field_type=field_type_time_span,
+    field_type=FieldType(
+        field_type=np.uint32,
+        min_value=DeviceParamConstantType.MIN_T_OFF,
+        max_value=DeviceParamConstantType.MAX_T_OFF,
+        si_unit=SIUnit.SECONDS,
+    ),
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Toff: ")
 )

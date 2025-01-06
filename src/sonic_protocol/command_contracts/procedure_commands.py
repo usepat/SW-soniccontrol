@@ -2,7 +2,7 @@
 
 from typing import List
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
+from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, DeviceParamConstantType, FieldType, SonicTextCommandAttrs, UserManualAttrs
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.command_contracts.fields as fields
 
@@ -29,14 +29,15 @@ def generate_start_procedure_contract(command_code: CommandCode, string_identifi
 
 def generate_procedure_arg_setter_contract(command_code: CommandCode, string_identifiers: List[str], 
                                            field_name: EFieldName | None = None, description: str | None = None, 
-                                           field_type = FieldType(field_type=int), response_field: AnswerFieldDef | None = None, release: bool = True) -> CommandContract:
+                                           field_type = FieldType(field_type=int),
+                                           response_field: AnswerFieldDef | None = None, release: bool = True) -> CommandContract:
     
     procedure_name = command_code.name.split("_")[1] # This is a hack. I am lazy
     if response_field is None:
         assert (field_name is not None)
         response_field = AnswerFieldDef(
             field_name=field_name,
-            field_type=field_type
+            field_type=field_type,
         )
     return CommandContract(
         code=command_code,
@@ -67,36 +68,28 @@ ramp_proc_commands: List[CommandContract] = [
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_F_START, 
-    ["!ramp_f_start"], 
-    EFieldName.RAMP_F_START, 
-    ""
+    ["!ramp_f_start"],
+    response_field=fields.field_ramp_f_start 
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_F_STOP, 
     ["!ramp_f_stop"],
-    EFieldName.RAMP_F_STOP, 
-    ""
+     response_field=fields.field_ramp_f_stop
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_F_STEP, 
     ["!ramp_f_step"], 
-    description="",
-    response_field=AnswerFieldDef(
-        EFieldName.RAMP_F_STEP,
-        fields.field_type_frequency_step
-    )
+    response_field=fields.field_ramp_f_step
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_T_ON, 
     ["!ramp_t_on"], 
-    EFieldName.RAMP_T_ON, 
-    ""
+     response_field=fields.field_ramp_t_on
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_T_OFF, 
     ["!ramp_t_off"], 
-    EFieldName.RAMP_T_OFF, 
-    ""
+     response_field=fields.field_ramp_t_off
     )
 ]
 
@@ -159,19 +152,16 @@ scan_proc_commands: List[CommandContract] = [
     CommandCode.SET_SCAN_F_STEP, 
     ["!scan_f_step"], 
     response_field=fields.field_scan_f_step, 
-    description=""
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_SCAN_F_RANGE, 
     ["!scan_f_range"], 
     response_field=fields.field_scan_f_half_range,
-    description=""
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_SCAN_T_STEP, 
     ["!scan_t_step"], 
     response_field=fields.field_scan_t_step,
-    description=""
     )
 ]
 
@@ -203,19 +193,16 @@ tune_proc_commands: List[CommandContract] = [
     CommandCode.SET_TUNE_F_STEP, 
     ["!tune_f_step"], 
     response_field=fields.field_tune_f_step,
-    description=""
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_TUNE_T_STEP, 
     ["!tune_t_step"], 
-    EFieldName.TUNE_T_STEP,
-    description=""
+    response_field=fields.field_tune_t_step
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_TUNE_T_TIME, 
     ["!tune_t_time"], 
     response_field=fields.field_tune_t_time,
-    description=""
     )
 ]
 
@@ -250,37 +237,31 @@ wipe_proc_commands: List[CommandContract] = [
     CommandCode.SET_WIPE_F_STEP, 
     ["!wipe_f_step"], 
     response_field=fields.field_wipe_f_step, 
-    description=""
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_WIPE_F_RANGE, 
     ["!wipe_f_range"], 
     response_field=fields.field_wipe_f_range,
-    description=""
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_WIPE_F_RANGE, 
     ["!wipe_f_range"], 
     response_field=fields.field_wipe_f_range,
-    description=""
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_WIPE_T_ON, 
     ["!wipe_t_on"], 
     response_field=fields.field_wipe_t_on,
-    description=""
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_WIPE_T_OFF, 
     ["!wipe_t_off"], 
     response_field=fields.field_wipe_t_off,
-    description=""
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_WIPE_T_PAUSE, 
     ["!wipe_t_pause"], 
     response_field=fields.field_wipe_t_pause,
-    description=""
     )
 ]
 
@@ -312,14 +293,12 @@ duty_cycle_proc_commands: List[CommandContract] = [
     generate_procedure_arg_setter_contract(
         CommandCode.SET_DUTY_CYCLE_T_OFF,
         ["!duty_cycle_t_off"],
-        EFieldName.TIMING,
-        ""
+        response_field=fields.field_duty_cycle_t_off
     ),
     generate_procedure_arg_setter_contract(
         CommandCode.SET_DUTY_CYCLE_T_ON,
         ["!duty_cycle_t_on"],
-        EFieldName.TIMING,
-        ""
+        response_field=fields.field_duty_cycle_t_on
     ),
 ]
 

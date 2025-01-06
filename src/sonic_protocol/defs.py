@@ -159,8 +159,17 @@ class DeviceParamConstants:
     min_swf: int = attrs.field(default=0)
     max_transducer_index: int = attrs.field(default=4)
     min_transducer_index: int = attrs.field(default=1)
-    max_frequency_step: int = attrs.field(default=5000000)
-    min_frequency_step: int = attrs.field(default=100)
+    max_duty_cycle_t_on: int = attrs.field(default=200 * 60) # in seconds
+    min_duty_cycle_t_on: int = attrs.field(default=1 * 60)
+    max_duty_cycle_t_off: int = attrs.field(default=200 * 60)
+    min_duty_cycle_t_off: int = attrs.field(default=0)
+    max_t_on: int = attrs.field(default=1000 * 60 * 60) # in milliseconds
+    min_t_on: int = attrs.field(default=10)
+    max_t_off: int = attrs.field(default=1000 * 60 * 60)
+    min_t_off: int = attrs.field(default=0)
+    max_f_step: int = attrs.field(default=5000000)
+    min_f_step: int = attrs.field(default=100)
+
 
 class DeviceParamConstantType(Enum):
     MAX_FREQUENCY = "max_frequency"
@@ -171,8 +180,17 @@ class DeviceParamConstantType(Enum):
     MIN_SWF = "min_swf"
     MAX_TRANSDUCER_INDEX = "max_transducer_index"
     MIN_TRANSDUCER_INDEX = "min_transducer_index"
-    MAX_FREQUENCY_STEP = "max_frequency_step"
-    MIN_FREQUENCY_STEP = "min_frequency_step"
+    MAX_DUTY_CYCLE_T_ON = "max_duty_cycle_t_on"
+    MIN_DUTY_CYCLE_T_ON = "min_duty_cycle_t_on"
+    MAX_DUTY_CYCLE_T_OFF = "max_duty_cycle_t_off"
+    MIN_DUTY_CYCLE_T_OFF = "min_duty_cycle_t_off"
+    MAX_F_STEP = "max_f_step"
+    MIN_F_STEP = "min_f_step"
+    MAX_T_ON = "max_t_on"
+    MIN_T_ON = "min_t_on"
+    MAX_T_OFF = "max_t_off"
+    MIN_T_OFF = "min_t_off"
+
 
 @attrs.define(auto_attribs=True)
 class MetaExportDescriptor:
