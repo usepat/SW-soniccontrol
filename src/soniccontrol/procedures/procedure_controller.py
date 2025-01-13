@@ -10,7 +10,7 @@ from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
 from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.procedures.remote_procedure_state import RemoteProcedureState
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol.logging import get_base_logger
+from soniccontrol.logging_utils import get_base_logger
 from soniccontrol.events import Event, EventManager
 
 class ProcedureController(EventManager):

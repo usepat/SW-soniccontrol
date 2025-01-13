@@ -7,7 +7,7 @@ from soniccontrol.procedures.holder import Holder, convert_to_holder_args
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.scripting.scripting_facade import BuiltInFunctions, Script, ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol.logging import get_base_logger
+from soniccontrol.logging_utils import get_base_logger
 
 
 

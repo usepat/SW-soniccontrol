@@ -1,0 +1,17 @@
+output-dir="./tests_robot/results"
+languages = ["en"]
+default-profiles = "worker"
+
+
+[profiles.worker]
+variables = { TARGET = "url", URL = "/dev/ttyUSB0" }
+excludes = [ "descaler" ]
+
+[profiles.descaler]
+variables = { TARGET = "url", URL = "/dev/ttyUSB0" }
+excludes = [ "worker" ]
+
+[profiles.simulation]
+variables = { TARGET = "simulation" }
+excludes = [ "descaler" ]
+

@@ -16,7 +16,7 @@ from soniccontrol.communication.connection_factory import CLIConnectionFactory, 
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.serial_communicator import LegacySerialCommunicator
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol.logging import create_logger_for_connection
+from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
 from soniccontrol_gui.constants import sizes, style, ui_labels, files
 from soniccontrol_gui.utils.image_loader import ImageLoader

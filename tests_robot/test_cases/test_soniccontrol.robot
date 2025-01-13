@@ -32,6 +32,14 @@ ${MAX_INDEX}    ${4}
 
 *** Test Cases ***
 
+Test if commands are not being cutted off
+    [Setup]    RemoteController.Send Command     !log[global]=DEBUG
+    [Teardown]    RemoteController.Send Command     !log[global]=ERROR
+    FOR    ${i}    IN RANGE    0    30
+        Send command and check response    !ramp_f_start\=100000    should_be_valid=${True}    ${FIELD_RAMP_F_START}=${100000}
+    END 
+
+
 Set frequency
     [Tags]    -descaler
     Send command and check response    !freq\=${MIN_FREQUENCY}    ${FIELD_FREQUENCY}=${MIN_FREQUENCY}
@@ -114,14 +122,14 @@ Test if freq set by setter can be retrieved with getter
     Send Command And Check Response    ?atf${MIN_INDEX}    ${FIELD_ATF}=${MAX_FREQUENCY}
 
 Test if swf set by setter can be retrieved with getter
-    [Tags]    +descaler    -worker
+    [Tags]    descaler    -worker
     Send Command And Check Response    !swf\=${MIN_SWF}
     Send Command And Check Response    ?swf    ${FIELD_SWF}=${MIN_SWF}
     Send Command And Check Response    !swf\=${MAX_SWF}
     Send Command And Check Response    ?swf    ${FIELD_SWF}=${MAX_SWF}
 
 Test if input source can be set, if analog is set
-    [Tags]    -worker    +descaler
+    [Tags]    -worker    descaler
     [Teardown]    Reconnect
     ${EXPECTED_INPUT_SOURCE}=    Convert to input source    ANALOG
     Send command and check response    !input_source\=analog    ${FIELD_INPUT_SOURCE}=${EXPECTED_INPUT_SOURCE}
@@ -155,6 +163,7 @@ Check getter commands are allowed during procedure run
     Sleep    300ms
     Send command and check response    ?freq    ${True}
 
+
 Test Stop turns off procedure
     [Tags]    -descaler
     [Setup]    Set Ramp Args
@@ -187,7 +196,7 @@ Connect to device
         END
         RemoteController.Connect via process to    ${SIMULATION_EXE_PATH}
     ELSE
-        IF    "${URL}" == 'url'
+        IF    $URL is None
             Fail    msg=No url to the serial port was provided
         END
         RemoteController.Connect via serial to    ${URL}

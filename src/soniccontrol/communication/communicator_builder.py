@@ -69,10 +69,11 @@ class CommunicatorBuilder:
             await serial.send_and_wait_for_response("?test") # just send some garbage and look, if it returns a valid response
         except Exception as e:
             com_logger.error(str(e))
+            if serial.connection_opened.is_set():
+                await serial.close_communication()
         else:
             com_logger.info("Connected with sonic protocol")
             return serial
             
-        await serial.close_communication()
         com_logger.warning("Connection could not be established with sonic protocol")
         raise ConnectionError("Failed to connect due to incompatibility")

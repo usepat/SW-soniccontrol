@@ -10,11 +10,10 @@ from soniccontrol.command import LegacyCommand
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, LegacyProtocol, SonicMessageProtocol
 from soniccontrol.events import Event
-from soniccontrol.system import PLATFORM
+from soniccontrol.system import PLATFORM, System
 
-@attrs.define
+@attrs.define()
 class SerialCommunicator(Communicator):
-    BAUDRATE: Final[int] = 9600
     MESSAGE_ID_MAX_CLIENT: Final[int] = 2 ** 16 - 1 # 65535 is the max for uint16. so we cannot go higher than that.
 
     _connection_opened: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
@@ -65,7 +64,7 @@ class SerialCommunicator(Communicator):
 
     async def open_communication(
         self, connection_factory: ConnectionFactory,
-        baudrate = BAUDRATE
+        baudrate = 9600
     ) -> None:
         self._connection_factory = connection_factory
         self._logger.debug("try open communication")
@@ -90,27 +89,27 @@ class SerialCommunicator(Communicator):
         chunk_size=30 # Messages longer than 30 characters could not be sent
         delay = 1
 
-        async with self._lock:
-            while offset < total_length:
-                # Extract a chunk of data
-                chunk = message[offset:offset + chunk_size]
-                
-                # Write the chunk to the writer
-                self._writer.write(chunk)
-                
-                # Drain the writer to ensure it's flushed to the transport
-                await self._writer.drain()
+        
+        while offset < total_length:
+            # Extract a chunk of data
+            chunk = message[offset:offset + chunk_size]
+            
+            # Write the chunk to the writer
+            self._writer.write(chunk)
+            
+            # Drain the writer to ensure it's flushed to the transport
+            await self._writer.drain()
 
-                # Move to the next chunk
-                offset += chunk_size
-                
-                # Sleep for the given delay between chunks skip the last pause
-                if offset < total_length:
-                    # Debugging output
-                    #self._logger.debug(f"Wrote chunk: {chunk}. Waiting for {delay} seconds before sending the next chunk.")
-                    await asyncio.sleep(delay)
-                else:
-                    pass
+            # Move to the next chunk
+            offset += chunk_size
+            
+            # Sleep for the given delay between chunks skip the last pause
+            if offset < total_length:
+                # Debugging output
+                #self._logger.debug(f"Wrote chunk: {chunk}. Waiting for {delay} seconds before sending the next chunk.")
+                await asyncio.sleep(delay)
+            else:
+                pass
                     #self._logger.debug(f"Wrote last chunk: {chunk}.")
         #self._logger.debug("Finished sending all chunks.")
 
@@ -118,22 +117,30 @@ class SerialCommunicator(Communicator):
         assert self._writer is not None
         assert self._package_fetcher.is_running
 
-        if request_str != "-":
-            self._logger.info("Send command: %s", request_str)
+        async with self._lock:
+            if request_str != "-":
+                self._logger.info("Send command: %s", request_str)
 
-        self._message_counter = (self._message_counter + 1) % self.MESSAGE_ID_MAX_CLIENT
-        message_counter = self._message_counter
+            self._message_counter = (self._message_counter + 1) % self.MESSAGE_ID_MAX_CLIENT
+            message_counter = self._message_counter
 
-        message = self._protocol.parse_request(
-            request_str, message_counter
-        )
+            message = self._protocol.parse_request(
+                request_str, message_counter
+            )
 
-        if request_str != "-":
-            self._logger.info("Write package: %s", message)
-        encoded_message = message.encode(PLATFORM.encoding)
+            if request_str != "-":
+                self._logger.info("Write package: %s", message)
+            encoded_message = message.encode(PLATFORM.encoding)
 
-        # FIXME: Quick fix. We have a weird error that the buffer does not get flushed somehow
-        await self._send_chunks(encoded_message)
+            
+            if PLATFORM == System.WINDOWS:
+                # FIXME: Quick fix. We have a weird error that the buffer does not get flushed somehow
+                await self._send_chunks(encoded_message)    
+            else:
+                self._writer.write(encoded_message)
+                await self._writer.drain()
+             
+            self._logger.info("Wrote: %s", message) 
 
         response =  await self._package_fetcher.get_answer_of_request(
             message_counter
@@ -182,10 +189,8 @@ class SerialCommunicator(Communicator):
         await self.open_communication(self._connection_factory, baudrate)
 
 
-@attrs.define
+@attrs.define()
 class LegacySerialCommunicator(Communicator):   
-    BAUDRATE = 115200
-
     _init_command: LegacyCommand = attrs.field(init=False)
     _connection_opened: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
     _connection_closed: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
@@ -233,7 +238,7 @@ class LegacySerialCommunicator(Communicator):
         return self._handshake
 
     async def open_communication(
-        self, connection_factory: ConnectionFactory, baudrate: int = BAUDRATE
+        self, connection_factory: ConnectionFactory, baudrate: int = 115200
     ) -> None:
         self._connection_factory = connection_factory
         

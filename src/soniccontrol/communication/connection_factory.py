@@ -38,6 +38,6 @@ class SerialConnectionFactory(ConnectionFactory):
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
         reader, writer = await open_serial_connection(
-            url=self.url, baudrate=self.baudrate
+            url=str(self.url), baudrate=self.baudrate
         )
         return reader, writer

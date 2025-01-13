@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -5,7 +6,7 @@ from sonic_protocol.python_parser.commands import Command
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.communicator_builder import CommunicatorBuilder
 from soniccontrol.communication.connection_factory import CLIConnectionFactory, ConnectionFactory, SerialConnectionFactory
-from soniccontrol.logging import create_logger_for_connection
+from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
@@ -113,3 +114,13 @@ class RemoteController:
 
         assert self._device is None
         assert self._updater is None
+
+async def main():
+    controller = RemoteController()
+    await controller.connect_via_serial(Path("/dev/ttyUSB0"))
+    answer_str, _, _ = await controller.send_command("?protocol")
+    print(answer_str)
+    await controller.disconnect()
+
+if __name__ == "__main__":
+    asyncio.run(main())
