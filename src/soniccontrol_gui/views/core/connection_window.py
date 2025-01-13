@@ -5,14 +5,12 @@ from async_tkinter_loop import async_handler
 import serial.tools.list_ports as list_ports
 import ttkbootstrap as ttk
 import tkinter as tk
-from ttkbootstrap.dialogs.dialogs import Messagebox
 
 from sonic_protocol.defs import Version
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.commands import CommandSetLegacy
 from soniccontrol.communication.communicator_builder import CommunicatorBuilder
 from soniccontrol.communication.connection_factory import CLIConnectionFactory, ConnectionFactory, SerialConnectionFactory
 from soniccontrol.communication.communicator import Communicator
@@ -24,6 +22,7 @@ from soniccontrol_gui.constants import sizes, style, ui_labels, files
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow, RescueWindow
 from soniccontrol_gui.resources import images
+from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 
 class DeviceConnectionClasses:
     def __init__(self, deviceWindow : DeviceWindow, connectionFactory : ConnectionFactory):
@@ -76,18 +75,18 @@ class DeviceWindowManager:
         except ConnectionError as e:
             logger.error(e)
             message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
-            user_answer: Optional[str] = cast(Optional[str], Messagebox.yesno(message))
-            if user_answer is None or user_answer == "No": 
+            message_box = MessageBox.show_yes_no(self._root, message)
+            user_answer: Optional[DialogOptions] = await message_box.wait_for_answer()
+            if user_answer is None or user_answer == DialogOptions.NO: 
                 return
             
             serial: Communicator = LegacySerialCommunicator(logger=logger) #type: ignore
-            commands = CommandSetLegacy(serial)
             await serial.open_communication(connection_factory)
-            sonicamp = await DeviceBuilder().build_amp(comm=serial, logger=logger, try_deduce_protocol=False)
+            sonicamp = await DeviceBuilder().build_amp(comm=serial, logger=logger, use_fallback_protocol=True)
             self.open_rescue_window(sonicamp, connection_factory)
         except Exception as e:
             logger.error(e)
-            Messagebox.show_error(str(e))
+            MessageBox.show_error(self._root, str(e))
         else:
             logger.info("Created device successfully, open device window")
             if sonicamp.info.protocol_version >= Version(1, 0, 0):

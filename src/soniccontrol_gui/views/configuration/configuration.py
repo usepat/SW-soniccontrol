@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 from typing import Callable, List, Iterable, Optional
 import ttkbootstrap as ttk
-from ttkbootstrap.dialogs.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 import json
 from sonic_protocol.python_parser import commands
@@ -26,6 +25,8 @@ from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.widgets.file_browse_button import FileBrowseButtonView
 from soniccontrol_gui.constants import files
 from async_tkinter_loop import async_handler
+
+from soniccontrol_gui.widgets.message_box import MessageBox
     
 
 class Configuration(UIComponent):
@@ -100,11 +101,11 @@ class Configuration(UIComponent):
     def _validate_transducer_config_data(self, transducer_config: TransducerConfig) -> bool:            
         if self.current_transducer_config is None and any(map(lambda tconfig: tconfig.name == transducer_config.name, self._config.transducers)):
             self.logger.warn("config with the same name already exists")
-            Messagebox.show_error("config with the same name already exists")
+            MessageBox.show_error(self._view.root, "config with the same name already exists")
             return False
         if transducer_config.init_script_path is not None and not transducer_config.init_script_path.exists():
             self.logger.warn("there exists no init script with the specified path")
-            Messagebox.show_error("there exists no init script with the specified path")
+            MessageBox.show_error(self._view.root, "there exists no init script with the specified path")
             return False
         return True
 
@@ -194,7 +195,7 @@ class Configuration(UIComponent):
             return
         except Exception as e:
             self._logger.error(e)
-            Messagebox.show_error(str(e))
+            MessageBox.show_error(self._view.root,str(e))
             return
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:

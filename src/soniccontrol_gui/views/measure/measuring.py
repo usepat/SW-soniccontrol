@@ -2,7 +2,6 @@ import logging
 from typing import Dict, Iterable, List
 from async_tkinter_loop import async_handler
 import matplotlib.figure
-from ttkbootstrap.dialogs import Messagebox
 from soniccontrol_gui.state_fetching.capture_target import CaptureTarget, CaptureTargets
 from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasure, SpectrumMeasureModel
 from soniccontrol_gui.ui_component import UIComponent
@@ -12,6 +11,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 import matplotlib
 
+from soniccontrol_gui.widgets.message_box import MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.widgets.procedure_widget import ProcedureWidget
 from soniccontrol_gui.state_fetching.capture import Capture
@@ -90,10 +90,8 @@ class Measuring(UIComponent):
                 target = self._capture_targets[CaptureTargets(target_str)]
                 await self._capture.start_capture(target)
             except Exception as e:
-                self._show_err_msg(e)
-
-    def _show_err_msg(self, e: Exception):
-        Messagebox.show_error(f"{e.__class__.__name__}: {str(e)}")
+                MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
+        
 
 class MeasuringView(TabView):
     def __init__(self, master: ttk.Window, *args, **kwargs) -> None:

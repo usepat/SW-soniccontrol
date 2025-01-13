@@ -3,7 +3,6 @@ from typing import Any, Callable, Dict, Iterable
 
 from async_tkinter_loop import async_handler
 import attrs
-from ttkbootstrap.dialogs.dialogs import Messagebox
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -15,6 +14,7 @@ from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol.events import Event, PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
+from soniccontrol_gui.widgets.message_box import MessageBox
 from soniccontrol_gui.widgets.procedure_widget import ProcedureWidget
 from soniccontrol_gui.resources import images
 
@@ -89,7 +89,7 @@ class ProcControlling(UIComponent):
                 self._proc_controller.execute_proc(self._model.selected_procedure, proc_args)
             except Exception as e:
                 self._logger.error(e)
-                Messagebox.show_error(str(e))
+                MessageBox.show_error(self._view.root, str(e))
 
     @async_handler
     async def _on_stop_pressed(self):

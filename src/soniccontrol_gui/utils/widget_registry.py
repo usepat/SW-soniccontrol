@@ -23,6 +23,8 @@ def get_text_of_widget(widget: tk.Widget) -> str:
         return "" # has no text
     elif isinstance(widget, TabView):
         return widget.tab_title
+    elif widget.__class__.__name__ == "MessageBoxView":
+        return widget.title()
     else:
         raise TypeError("The object has to be of type tk.Label, tk.Entry or tk.Button or inherit from them")
 
@@ -76,6 +78,15 @@ class WidgetRegistry:
             if key not in WidgetRegistry._widget_registration_events:
                 WidgetRegistry._widget_registration_events[key] = asyncio.Event()
             WidgetRegistry._widget_registration_events[key].set()
+
+    @staticmethod
+    def unregister_widget(widget_name: str, parent_widget_name: Optional[str] = None):
+        if WidgetRegistry._enabled:
+            key = (parent_widget_name + "." + widget_name) if parent_widget_name else widget_name
+            if key in WidgetRegistry._widget_registry:
+                del WidgetRegistry._widget_registry[key]
+            if key in WidgetRegistry._widget_registration_events:
+                WidgetRegistry._widget_registration_events[key].clear()
 
     @staticmethod
     def is_widget_registered(full_widget_name: str) -> bool:

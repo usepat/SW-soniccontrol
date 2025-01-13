@@ -6,7 +6,6 @@ from typing import Callable, Final, List, Optional, Tuple
 import attrs
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledText
-from ttkbootstrap.dialogs import Messagebox
 from async_tkinter_loop import async_handler
 
 from soniccontrol_gui.ui_component import UIComponent
@@ -19,6 +18,7 @@ from soniccontrol_gui.constants import (sizes, scripting_cards_data,
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
+from soniccontrol_gui.widgets.message_box import MessageBox
 from soniccontrol_gui.widgets.pushbutton import PushButtonView
 from soniccontrol_gui.views.control.scriptingguide import ScriptingGuide
 from soniccontrol_gui.resources import images
@@ -217,7 +217,7 @@ class Editor(UIComponent):
         await self._interpreter.pause()
 
     def _show_err_msg(self, e: Exception):
-        Messagebox.show_error(f"{e.__class__.__name__}: {str(e)}")
+        MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
 
 
 class EditorView(TabView):

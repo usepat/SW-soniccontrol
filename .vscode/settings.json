@@ -12,6 +12,9 @@
         "${workspaceFolder}/tests"
     ],
     "robotcode.robot.outputDir": "${workspaceFolder}/tests_robot/results",
+    "robotcode.robot.args": [
+        "--exclude descaler"
+    ],
     "files.associations": {
         "optional": "cpp",
         "cctype": "cpp",

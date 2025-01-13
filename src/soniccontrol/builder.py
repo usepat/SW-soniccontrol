@@ -21,7 +21,7 @@ class DeviceBuilder:
     def _parse_legacy_handshake(self, ser: LegacySerialCommunicator) -> Dict[str, Any]:
         init_command = LegacyCommand(
             estimated_response_time=0.5,
-            _validators=[
+            validators=[
                 LegacyAnswerValidator(pattern=r".*(khz|mhz).*", relay_mode=str),
                 LegacyAnswerValidator(
                     pattern=r".*freq[uency]*\s*=?\s*([\d]+).*", frequency=int
@@ -46,7 +46,7 @@ class DeviceBuilder:
         return init_command.status_result
 
 
-    async def build_amp(self, comm: Communicator, logger: logging.Logger = logging.getLogger(), try_deduce_protocol: bool = True) -> SonicDevice:
+    async def build_amp(self, comm: Communicator, logger: logging.Logger = logging.getLogger(), use_fallback_protocol: bool = False) -> SonicDevice:
         """!
         @param try_deduce_protocol This param can be set to False, so that it does not try to deduce which protocol to use. Used for the rescue window
         """
@@ -60,17 +60,22 @@ class DeviceBuilder:
         handshake: Dict[str, Any] = self._parse_legacy_handshake(comm) if isinstance(comm, LegacySerialCommunicator) else {}
         result_dict: Dict[EFieldName, Any] = { EFieldName(k): v for k, v in handshake.items() }
         
+        protocol_version: Version = Version(0, 0, 0)
         device_type: DeviceType = DeviceType.UNKNOWN
-        protocol_version: Version = Version(1, 0, 0)
         is_release: bool = True
-        protocol_builder = ProtocolBuilder(protocol.protocol)
-        base_command_lookups = protocol_builder.build(device_type, protocol_version, is_release)
 
-        executor: CommandExecutor = CommandExecutor(base_command_lookups, comm)
+        protocol_builder = ProtocolBuilder(protocol.protocol)
+
 
         # deduce the right protocol version, device_type and build_type
-        if try_deduce_protocol:
+        if not use_fallback_protocol:
             builder_logger.debug("Try to figure out which protocol to use with ?protocol")
+
+            protocol_version: Version = Version(1, 0, 0)
+            base_command_lookups = protocol_builder.build(device_type, protocol_version, is_release)
+
+            executor: CommandExecutor = CommandExecutor(base_command_lookups, comm)
+
             answer = await executor.send_command(cmds.GetProtocol())
             if answer.valid:
                 assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
@@ -81,11 +86,9 @@ class DeviceBuilder:
                 is_release = answer.field_value_dict[EFieldName.IS_RELEASE]
                 result_dict.update(answer.field_value_dict)
             else:
-                builder_logger.debug("Device does not understand ?protocol command. Try to figure out which device it is with ?info, ?type, ?")
-                device_type =  DeviceType.UNKNOWN
-                protocol_version = Version(0, 0, 0)
-                is_release = True 
-                # old devices are not anymore in development. There exists only release versions of them
+                builder_logger.debug("Device does not understand ?protocol command")
+        else:
+            builder_logger.warn("Device uses unknown protocol")
 
         # create device
         builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release" if is_release else "build", str(protocol_version))

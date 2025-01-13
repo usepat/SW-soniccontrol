@@ -4,8 +4,6 @@ from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
 import tkinter as tk
 
-from ttkbootstrap.dialogs.dialogs import Messagebox
-
 from sonic_protocol.command_codes import CommandCode
 from soniccontrol_gui.state_fetching.capture import Capture
 from soniccontrol_gui.state_fetching.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
@@ -35,6 +33,7 @@ from soniccontrol_gui.views.control.proc_controlling import ProcControlling, Pro
 from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 from soniccontrol_gui.views.measure.measuring import Measuring
 from soniccontrol_gui.views.core.status import StatusBar
+from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.resources import images
 
@@ -55,25 +54,29 @@ class DeviceWindow(UIComponent):
     
         self._app_state.execution_state = ExecutionState.IDLE
 
-    def on_disconnect(self) -> None:
+    @async_handler
+    async def on_disconnect(self) -> None:
         if not self._view.is_open:
             return # Window was closed already
         
         self._app_state.execution_state = ExecutionState.NOT_RESPONSIVE
         
         # Window is open, Ask User if he wants to close it
-        answer: Optional[str] = cast(Optional[str], Messagebox.okcancel(ui_labels.DEVICE_DISCONNECTED_MSG, ui_labels.DEVICE_DISCONNECTED_TITLE))
-        if answer is None or answer == "Cancel":
+        message_box = MessageBox.show_ok_cancel(self._view.root, ui_labels.DEVICE_DISCONNECTED_MSG, ui_labels.DEVICE_DISCONNECTED_TITLE)
+        answer: Optional[DialogOptions] = await message_box.wait_for_answer()
+        if answer is None or answer == DialogOptions.CANCEL:
             return
         else:
             self.close()
 
-    def on_reconnect(self, success : bool) -> None:
+    @async_handler
+    async def on_reconnect(self, success : bool) -> None:
         if success:
             message = ui_labels.DEVICE_FLASHED_SUCCESS_MSG
         else:
             message = ui_labels.DEVICE_FLASHED_FAILED_MSG
-        Messagebox.ok(message, ui_labels.DEVICE_FLASHED_TITLE)
+        message_box = MessageBox.show_ok(self._view.root, message, ui_labels.DEVICE_FLASHED_TITLE)
+        await message_box.wait_for_answer()
         self.reconnect()
 
     @async_handler
