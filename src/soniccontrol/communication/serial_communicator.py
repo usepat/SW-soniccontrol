@@ -142,19 +142,22 @@ class SerialCommunicator(Communicator):
              
             self._logger.info("Wrote: %s", message) 
 
-        response =  await self._package_fetcher.get_answer_of_request(
-            message_counter
-        )
-        if request_str != "-":
-            self._logger.info("Receive Answer: %s", response)
 
-        return response
+            # FIXME: to move the awaiting of the response inside the lock is only a quickfix, because the code on
+            # the device of the uart needs to be refactored, so that it can handle messaging bursts.
+            response =  await self._package_fetcher.get_answer_of_request(
+                message_counter
+            )
+            if request_str != "-":
+                self._logger.info("Receive Answer: %s", response)
+
+            return response
 
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str:
         if not self._connection_opened.is_set():
             raise ConnectionError("Communicator is not connected")
 
-        timeout = 3 # in seconds
+        timeout = 5 # in seconds
         MAX_RETRIES = 3 
         for i in range(MAX_RETRIES):
             try:
