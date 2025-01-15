@@ -80,13 +80,13 @@ class MessageBoxView(tk.Toplevel, View):
         WidgetRegistry.register_widget(self, self.WIDGET_NAME)
         WidgetRegistry.register_widget(self._msg_label, "message", self.WIDGET_NAME)
         for option in self._dialog_options:
-            WidgetRegistry.register_widget(self, "option_" + option.name, self.WIDGET_NAME)
+            WidgetRegistry.register_widget(self,option.name, self.WIDGET_NAME)
         
     def destroy(self):
         WidgetRegistry.unregister_widget(self.WIDGET_NAME)
         WidgetRegistry.unregister_widget("message", self.WIDGET_NAME)
         for option in self._dialog_options:
-            WidgetRegistry.unregister_widget("option_" + option.name, self.WIDGET_NAME)
+            WidgetRegistry.unregister_widget(option.name, self.WIDGET_NAME)
         super().destroy()
 
     def add_close_callback(self, callback: Callable[[], None]) -> None:

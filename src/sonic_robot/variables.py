@@ -1,5 +1,6 @@
 from importlib.resources import files
 import soniccontrol.bin
+from soniccontrol_gui.widgets.message_box import DialogOptions
 
 SIMULATION_MVP_EXE: str = str(files(soniccontrol.bin).joinpath("cli_simulation_mvp"))
 
@@ -125,4 +126,10 @@ SPECTRUM_MEASURE_HOLD_ON_TIME_ENTRY = 'Spectrum Measure.hold_on.time_entry'
 SPECTRUM_MEASURE_HOLD_ON_UNIT_BUTTON = 'Spectrum Measure.hold_on.unit_button'
 SPECTRUM_MEASURE_HOLD_OFF_TIME_ENTRY = 'Spectrum Measure.hold_off.time_entry'
 SPECTRUM_MEASURE_HOLD_OFF_UNIT_BUTTON = 'Spectrum Measure.hold_off.unit_button'
+
+# Message Box constants
+MESSAGE_BOX = "MessageBox"
+MESSAGE_BOX_MSG = "MessageBox.message"
+for option in DialogOptions:
+    globals()[f"MESSAGE_BOX_OPTION_{option.name}"] = f"MessageBox.{option.name}"
 
