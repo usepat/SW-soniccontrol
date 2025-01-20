@@ -139,9 +139,6 @@ class SerialCommunicator(Communicator):
             else:
                 self._writer.write(encoded_message)
                 await self._writer.drain()
-             
-            self._logger.info("Wrote: %s", message) 
-
 
             # FIXME: to move the awaiting of the response inside the lock is only a quickfix, because the code on
             # the device of the uart needs to be refactored, so that it can handle messaging bursts.

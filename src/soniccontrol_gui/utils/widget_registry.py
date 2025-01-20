@@ -29,14 +29,14 @@ def get_text_of_widget(widget: tk.Widget) -> str:
         raise TypeError("The object has to be of type tk.Label, tk.Entry or tk.Button or inherit from them")
 
 def set_text_of_widget(widget: tk.Widget, text: str) -> None:
-    if isinstance(widget, (tk.Entry, ttk.Entry)):
+    if isinstance(widget, (ttk.Combobox)): # specialization of Entry, so this condition has to be asked first
+        widget.set(text)
+    elif isinstance(widget, (tk.Entry, ttk.Entry)):
         widget.delete(0, ttk.END)
         widget.insert(0, text)
     elif isinstance(widget, ScrolledText):
         widget.text.delete(1.0, ttk.END)
         widget.text.insert(ttk.INSERT, text)
-    elif isinstance(widget, ttk.Combobox):
-        widget.set(text)
     elif isinstance(widget, ttk.Meter):
         widget.configure(amountused=int(text))
     elif isinstance(widget, (tk.Label, ttk.Label, tk.Button, ttk.Button, ttk.Checkbutton)):

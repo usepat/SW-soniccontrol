@@ -37,8 +37,8 @@ class RobotSonicControlGui:
         self._loop.run_until_complete(WidgetRegistry.clean_up()) # Maybe we can do this better. But Idk
         self._root.destroy()
 
-    @keyword('Let the app run free for "${time_ms}" ms')
-    def run_free(self, time_ms: int):
+    @keyword('Let the app update for "${time_ms}" ms')
+    def sleep_update(self, time_ms: int):
         """
         This shit is needed, because the sleep function of the robot framework pauses the whole application
         """
