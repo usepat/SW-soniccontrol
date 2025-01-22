@@ -29,7 +29,7 @@ class LogStorage:
                 self.handleError(record)
 
 
-    _MAX_SIZE_LOGS = 100
+    _MAX_SIZE_LOGS = 1000
 
     def __init__(self):
         self._logs: ObservableList = ObservableList()

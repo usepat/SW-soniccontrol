@@ -72,6 +72,7 @@ class LoggingTab(UIComponent):
         super().__init__(parent, self._view)
         self._init_logs()
         self._logs.subscribe(ObservableList.EVENT_ITEM_ADDED, self._add_log)
+        self._logs.subscribe(ObservableList.EVENT_ITEM_DELETED, self._remove_log)
 
     def _init_logs(self):
         for log in self._logs:
@@ -80,6 +81,8 @@ class LoggingTab(UIComponent):
     def _add_log(self, e: Event):
         self._view.append_text_line(e.data["item"])
 
+    def _remove_log(self, e: Event):
+        self._view.destroy_ith_text_line(0)
 
 class LoggingTabView(TabView):
     def __init__(self, master: ttk.Window, *args, **kwargs) -> None:
@@ -127,3 +130,7 @@ class LoggingTabView(TabView):
         )
         self._scrolled_frame.update()
         self._scrolled_frame.yview_moveto(1)
+
+    def destroy_ith_text_line(self, i: int):
+        child = self._scrolled_frame.winfo_children()[i]
+        child.destroy()
