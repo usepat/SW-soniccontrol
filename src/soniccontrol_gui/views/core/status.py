@@ -180,6 +180,7 @@ class StatusBarView(View):
         for status_field, text in field_texts.items():
             label = self._status_field_labels[status_field]
             label.configure(text=text)
+        self.update()
 
 
 class StatusPanelView(View):
@@ -342,3 +343,4 @@ class StatusPanelView(View):
         self._irms_label.configure(text=irms)
         self._phase_label.configure(text=phase)
         self._signal_label.configure(text=signal)
+        self.update()
