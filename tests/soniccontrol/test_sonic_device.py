@@ -5,7 +5,8 @@ from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandCode, CommandD
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.answer import AnswerValidator
 import sonic_protocol.python_parser.commands as cmds
-from soniccontrol.command_executor import CommandExecutor
+from soniccontrol.device_data import Info
+from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.communication.communicator import Communicator
 from sonic_protocol.protocol_builder import CommandLookUp, CommandLookUpTable
 
@@ -51,8 +52,8 @@ def communicator():
     return communicator
 
 @pytest.fixture
-def command_executor(communicator, lookup_table):
-    return CommandExecutor(lookup_table, communicator)
+def sonic_device(communicator, lookup_table):
+    return SonicDevice(communicator, lookup_table, Info())
 
 
 @pytest.mark.asyncio
@@ -64,8 +65,8 @@ def command_executor(communicator, lookup_table):
     (cmds.SetOn(), "!ON"),
     (cmds.SetAtf(4, 10000), "!atf4=10000"),
 ])
-async def test_send_command_creates_correct_request(command, request_str, communicator, command_executor):
-    _ = await command_executor.send_command(command)
+async def test_send_command_creates_correct_request(command, request_str, communicator, sonic_device):
+    _ = await sonic_device._send_command(command)
 
     communicator.send_and_wait_for_response.assert_called_once_with(request_str)    
 

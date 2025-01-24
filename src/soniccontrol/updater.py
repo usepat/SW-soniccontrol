@@ -41,6 +41,8 @@ class Updater(EventManager):
                 await self.update()
                 if self._time_waiting_between_updates_ms > 0:
                     await asyncio.sleep(self._time_waiting_between_updates_ms)
+        except asyncio.CancelledError as e:
+            pass
         except Exception as e:
             raise
         

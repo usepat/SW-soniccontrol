@@ -7,7 +7,6 @@ from sonic_protocol.defs import DeviceType, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import ProtocolBuilder
 from soniccontrol.command import LegacyAnswerValidator, LegacyCommand
-from soniccontrol.command_executor import CommandExecutor
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.serial_communicator import LegacySerialCommunicator
 from soniccontrol.sonic_device import (
@@ -64,6 +63,8 @@ class DeviceBuilder:
         device_type: DeviceType = DeviceType.UNKNOWN
         is_release: bool = True
 
+        info = Info()
+
         protocol_builder = ProtocolBuilder(protocol.protocol)
 
 
@@ -74,9 +75,8 @@ class DeviceBuilder:
             protocol_version: Version = Version(1, 0, 0)
             base_command_lookups = protocol_builder.build(device_type, protocol_version, is_release)
 
-            executor: CommandExecutor = CommandExecutor(base_command_lookups, comm)
-
-            answer = await executor.send_command(cmds.GetProtocol())
+            device = SonicDevice(comm, base_command_lookups, info, logger)
+            answer = await device.execute_command(cmds.GetProtocol())
             if answer.valid:
                 assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
                 assert(EFieldName.PROTOCOL_VERSION in answer.field_value_dict)
@@ -94,10 +94,9 @@ class DeviceBuilder:
         builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release" if is_release else "build", str(protocol_version))
         command_lookups = protocol_builder.build(device_type, protocol_version, is_release)
 
-        info = Info()
         device = SonicDevice(comm, command_lookups, info, logger)
     
-        if device.command_executor.has_command(cmds.GetUpdate()):
+        if device.has_command(cmds.GetUpdate()):
             await device.execute_command(cmds.GetUpdate())
 
         # update info
