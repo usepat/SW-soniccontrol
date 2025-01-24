@@ -41,6 +41,7 @@ HOME_SEND_BUTTON = 'home.send_button'
 SERIAL_MONITOR_READ_BUTTON = 'serial_monitor.read_button'
 SERIAL_MONITOR_COMMAND_LINE_INPUT_ENTRY = 'serial_monitor.command_line_input_entry'
 SERIAL_MONITOR_SEND_BUTTON = 'serial_monitor.send_button'
+SERIAL_MONITOR_SCROLL_FRAME = 'serial_monitor.scroll_frame'
 
 # Editor constants
 EDITOR_TEXT_EDITOR = 'editor.text_editor'

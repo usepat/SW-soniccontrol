@@ -17,9 +17,9 @@ def get_text_of_widget(widget: tk.Widget) -> str:
         return str(widget.cget("text"))
     elif isinstance(widget, ttk.Meter):
         return str(widget.amountusedvar.get())
-    elif isinstance(widget, (ttk.Notebook)):
+    elif isinstance(widget, (ttk.Notebook)) or widget.__class__.__name__ == "Notebook":
         return "" # has no text
-    elif widget.__class__.__name__ == "Notebook":
+    elif isinstance(widget, (tk.Frame, ttk.Frame)):
         return "" # has no text
     elif isinstance(widget, TabView):
         return widget.tab_title
@@ -41,6 +41,8 @@ def set_text_of_widget(widget: tk.Widget, text: str) -> None:
         widget.configure(amountused=int(text))
     elif isinstance(widget, (tk.Label, ttk.Label, tk.Button, ttk.Button, ttk.Checkbutton)):
         widget.config(text=text)
+    elif isinstance(widget, (tk.Frame, ttk.Frame)):
+        raise TypeError("You cannot set a text on a frame.")
     else:
         raise TypeError("The object has to be of type tk.Label, tk.Entry or tk.Button or inherit from them")
 

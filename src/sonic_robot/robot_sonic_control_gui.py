@@ -103,6 +103,11 @@ class RobotSonicControlGui:
         if not isinstance(notebook, (Notebook, ttk.Notebook)):
             raise TypeError(f"The registered object '{parent_name}' is not a notebook")
         notebook.select(tab_view)
-             
+
+    @keyword('Get text of "${index_child}"th child of widget "${name_widget}"')
+    def get_text_of_widget_child(self, index_child: int, name_widget: str) -> str:         
+        widget = WidgetRegistry.get_widget(name_widget)
+        child = widget.winfo_children()[index_child]
+        return get_text_of_widget(child)             
 
 

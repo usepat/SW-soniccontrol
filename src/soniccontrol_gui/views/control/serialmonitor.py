@@ -182,6 +182,7 @@ class SerialMonitorView(TabView):
         WidgetRegistry.register_widget(self._read_button, "read_button", tab_name)
         WidgetRegistry.register_widget(self.command_line_input_entry, "command_line_input_entry", tab_name)
         WidgetRegistry.register_widget(self._send_button, "send_button", tab_name)
+        WidgetRegistry.register_widget(self._scrolled_frame, "scroll_frame", tab_name)
 
     def _initialize_publish(self) -> None:
         self._main_frame.pack(expand=True, fill=ttk.BOTH)

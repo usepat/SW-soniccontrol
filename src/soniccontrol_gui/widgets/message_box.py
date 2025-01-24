@@ -69,7 +69,7 @@ class MessageBoxView(tk.Toplevel, View):
         self._msg_label = ttk.Label(self, text=self._message)
         self._options_frame = ttk.Frame(self)
         self._option_buttons =  {
-            opt.name: ttk.Button(self._options_frame, text=opt.value) for opt in self._dialog_options
+            opt: ttk.Button(self._options_frame, text=opt.value) for opt in self._dialog_options
         }
 
         self._msg_label.pack(side="top")
@@ -80,7 +80,7 @@ class MessageBoxView(tk.Toplevel, View):
         WidgetRegistry.register_widget(self, self.WIDGET_NAME)
         WidgetRegistry.register_widget(self._msg_label, "message", self.WIDGET_NAME)
         for option in self._dialog_options:
-            WidgetRegistry.register_widget(self,option.name, self.WIDGET_NAME)
+            WidgetRegistry.register_widget(self._option_buttons[option],option.name, self.WIDGET_NAME)
         
     def destroy(self):
         WidgetRegistry.unregister_widget(self.WIDGET_NAME)
@@ -93,6 +93,6 @@ class MessageBoxView(tk.Toplevel, View):
         self.protocol("WM_DELETE_WINDOW", callback)
 
     def set_option_buttons_command(self, option: DialogOptions, command: Callable[[], None]) -> None:
-        self._option_buttons[option.name].configure(command=command)
+        self._option_buttons[option].configure(command=command)
     
 

@@ -33,7 +33,7 @@ Open device window
         Set Suite Variable    ${SIMULATION_EXE_PATH}    %{SIMULATION_EXE_PATH}    # robotcode: ignore
     END
     Gui.Open app    ${SIMULATION_EXE_PATH}
-    Gui.Let the app update for "100" ms
+    Gui.Let the app update for "500" ms
 
     IF  "${TARGET}" == "simulation"
         Delete simulation memory file
