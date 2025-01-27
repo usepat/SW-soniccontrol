@@ -1,9 +1,10 @@
 import asyncio
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 from typing_extensions import List
 from robot.api.deco import keyword, library
 import robot.api.logger as logger
+from sonic_protocol.field_names import EFieldName
 from sonic_robot.deduce_command_examples import deduce_command_examples
 from soniccontrol.procedures.procedure_controller import ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
@@ -30,17 +31,24 @@ class RobotRemoteController:
     def is_connected(self) -> bool:
         return self._controller.is_connected()
 
+    def _convert_answer(self, answer: Tuple[str, Dict[EFieldName, Any], bool]) -> Tuple[str, dict, bool]:
+        return answer[0], { k.value: v for k, v in answer[1].items() }, answer[2]
+
+
     @keyword('Set "${attr}" to "${val}"')
     def set_attr(self, attr: str, val: str) -> Tuple[str, dict, bool]:
-        return self._loop.run_until_complete(self._controller.set_attr(attr, val))
+        answer = self._loop.run_until_complete(self._controller.set_attr(attr, val))
+        return self._convert_answer(answer)
 
     @keyword('Get "${attr}"')
     def get_attr(self, attr: str) -> Tuple[str, dict, bool]:
-        return self._loop.run_until_complete(self._controller.get_attr(attr))
+        answer = self._loop.run_until_complete(self._controller.get_attr(attr))
+        return self._convert_answer(answer)
 
     @keyword('Send Command ')
     def send_command(self, command_str: str) -> Tuple[str, dict, bool]:
-        return self._loop.run_until_complete(self._controller.send_command(command_str))
+        answer = self._loop.run_until_complete(self._controller.send_command(command_str))
+        return self._convert_answer(answer)
 
     @keyword('Deduce list of command examples')
     def deduce_command_examples(self) -> List[str]:

@@ -124,7 +124,7 @@ class MarkdownManualCompiler(ManualCompiler):
 
 if __name__ == "__main__":
     from sonic_protocol.protocol import protocol
-    device_type = DeviceType.DESCALE
+    device_type = DeviceType.MVP_WORKER
     protocol_version = Version(1, 0, 0)
     is_release = True
 

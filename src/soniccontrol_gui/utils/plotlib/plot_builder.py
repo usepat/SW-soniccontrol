@@ -1,3 +1,4 @@
+from sonic_protocol.field_names import EFieldName
 from soniccontrol_gui.utils.plotlib.plot import Plot
 
 import matplotlib
@@ -11,7 +12,7 @@ class PlotBuilder:
     # creates a timeplot for frequency, urms, irms and phase
     @staticmethod
     def create_timeplot_fuip(subplot: matplotlib.axes.Axes) -> Plot:
-        plot = Plot(subplot, "timestamp", "Time")
+        plot = Plot(subplot, EFieldName.TIMESTAMP.value, "Time")
         plot._plot.xaxis.set_major_locator(matplotlib.dates.AutoDateLocator())
         plot._plot.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M:%S"))
         
@@ -21,25 +22,25 @@ class PlotBuilder:
         plot.add_axis("irms_axis", "I$_{RMS}$ / mA")
         
         plot.add_line(
-            "frequency", 
+            EFieldName.FREQUENCY.value, 
             "frequency_axis",
             label="Frequency",
             color="black"
         )
         plot.add_line(
-            "phase", 
+            EFieldName.PHASE.value, 
             "phase_axis",
             label="Phase",
             color="green",
         )
         plot.add_line(
-            "urms", 
+            EFieldName.URMS.value, 
             "urms_axis",
             label="Urms",
             color="blue",
         )
         plot.add_line(
-            "irms", 
+            EFieldName.IRMS.value, 
             "irms_axis",
             label="Irms",
             color="red",
@@ -53,26 +54,26 @@ class PlotBuilder:
     # creates a spectralplot for urms, irms and phase
     @staticmethod
     def create_spectralplot_uip(subplot: matplotlib.axes.Axes) -> Plot:
-        plot = Plot(subplot, "frequency", "Frequency / Hz")
+        plot = Plot(subplot, EFieldName.FREQUENCY.value, "Frequency / Hz")
         
         plot.add_axis("phase_axis", "Phase / °")
         plot.add_axis("urms_axis", "U$_{RMS}$ / mV")
         plot.add_axis("irms_axis", "I$_{RMS}$ / mA")
         
         plot.add_line(
-            "phase", 
+            EFieldName.PHASE.value, 
             "phase_axis",
             label="Phase",
             color="green",
         )
         plot.add_line(
-            "urms", 
+            EFieldName.URMS.value, 
             "urms_axis",
             label="Urms",
             color="blue",
         )
         plot.add_line(
-            "irms", 
+            EFieldName.IRMS.value, 
             "irms_axis",
             label="Irms",
             color="red",

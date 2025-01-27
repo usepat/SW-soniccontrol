@@ -1,7 +1,6 @@
 
 import asyncio
 from typing import Any, Dict, List, Type, Union
-from attrs import validators
 import attrs
 
 from sonic_protocol.python_parser import commands
@@ -58,12 +57,11 @@ class SpectrumMeasure(Procedure):
         hold_off: HolderArgs,
         time_offset_measure: HolderArgs
     ) -> None:
-        for  i in range(len(values)):
-            value = int(values[i])
-
-            await device.execute_command(commands.SetFrequency(value))
-            if hold_off.duration:
+        for i, value in enumerate(values):
+            await device.execute_command(commands.SetFrequency(int(value)))
+            if hold_off.duration or i == 0:
                 await device.set_signal_on()
+
             await Holder.execute(time_offset_measure)
             asyncio.get_running_loop().create_task(self._updater.update())
             await Holder.execute(hold_on - time_offset_measure)
