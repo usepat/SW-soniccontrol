@@ -1,6 +1,9 @@
 
 import logging
-from typing import Dict
+import os
+from typing import Callable, Dict
+from soniccontrol.system import PLATFORM, System
+from soniccontrol_gui import constants
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView, View
 import ttkbootstrap as ttk
@@ -12,6 +15,7 @@ from soniccontrol.events import Event
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.observable_list import ObservableList
+from soniccontrol_gui.widgets.message_box import MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 
 
@@ -40,6 +44,18 @@ class Logging(UIComponent):
             ui_labels.DEVICE_LOGS_LABEL: self._device_log_tab.view,
             ui_labels.APP_LOGS_LABEL: self._application_log_tab.view
         })
+        self._view.set_open_logs_command(self._open_logs)
+
+    def _open_logs(self):
+        path = str(constants.files.LOG_DIR)
+        if PLATFORM == System.WINDOWS:
+            os.startfile(path) 
+        elif PLATFORM == System.MAC:
+            os.system(f"open {path!r}") # !r calls repr on string and ensures proper escaping of special characters
+        elif PLATFORM == System.LINUX:
+            os.system(f"xdg-open {path!r}")
+        else:
+            MessageBox.show_error(self._view.root, "Unknown platform. Cannot open file explorer")
 
 
 class LoggingView(TabView):
@@ -55,14 +71,20 @@ class LoggingView(TabView):
         return ui_labels.LOGS_LABEL
     
     def _initialize_children(self) -> None:
+        self._open_logs_button = ttk.Button(self, text=ui_labels.OPEN_LOGS)
         self._notebook: Notebook = Notebook(self, "logging")
 
     def _initialize_publish(self) -> None:
+        self._open_logs_button.pack(fill=ttk.NONE, side=ttk.TOP)
         self._notebook.pack(expand=True, fill=ttk.BOTH)
 
     def add_tabs(self, tabs: Dict[str, View]) -> None:
         for (title, tabview) in tabs.items():
             self._notebook.add(tabview, text=title)
+
+    def set_open_logs_command(self, command: Callable[[], None]) -> None:
+        self._open_logs_button.configure(command=command)
+
 
 
 class LoggingTab(UIComponent):
