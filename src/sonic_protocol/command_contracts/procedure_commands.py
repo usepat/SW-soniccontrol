@@ -93,6 +93,26 @@ ramp_proc_commands: List[CommandContract] = [
     )
 ]
 
+get_ramp = CommandContract(
+    code=CommandCode.GET_RAMP,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?ramp"]
+        )
+    ), 
+    is_release=True,
+    answer_defs=AnswerDef(
+        fields=[
+            fields.field_ramp_f_start,
+            fields.field_ramp_f_stop,
+            fields.field_ramp_f_step,
+            fields.field_ramp_t_on,
+            fields.field_ramp_t_off
+        ]
+    ),
+    tags=["Procedure", "RAMP"]
+)
+
 
 get_auto = CommandContract(
     code=CommandCode.GET_AUTO,

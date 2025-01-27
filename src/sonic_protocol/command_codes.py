@@ -55,10 +55,11 @@ class CommandCode(IntEnum):
     GET_ATT_LIST = 120
 
     GET_DUTY_CYCLE = 300
-    GET_AUTO = 310
+    GET_RAMP = 310
     GET_SCAN = 320
     GET_TUNE = 330
     GET_WIPE = 340
+    GET_AUTO = 350
 
 
     # WTF are those?
