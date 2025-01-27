@@ -102,6 +102,7 @@ class Procedure(Enum):
     SCAN = "scan"
     WIPE = "wipe"
     RAMP = "ramp"
+    DUTY_CYCLE = "duty_cycle"
 
 class Waveform(Enum):
     SINE = "sine"
