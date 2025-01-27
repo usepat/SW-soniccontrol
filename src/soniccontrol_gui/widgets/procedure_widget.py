@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 import attrs
@@ -10,18 +11,29 @@ from ttkbootstrap.scrolled import ScrolledFrame
 
 from soniccontrol.procedures.holder import HoldTuple, HolderArgs
 
+class EntryStyle(Enum):
+    PRIMARY = "primary.TEntry"
+    SUCCESS = "success.TEntry"
+    DANGER = "danger.TEntry"
+
 class IntFieldView(View):
     def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: int = 0, **kwargs):
         self._field_name = field_name
         self._default_value = default_value
-        self._value: ttk.StringVar = ttk.StringVar(value=str(default_value))
+        self._str_value: ttk.StringVar = ttk.StringVar(value=str(default_value))
+        self._value = default_value
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
+
         super().__init__(master, *args, **kwargs)
+
+        self._callback: Callable[[int], None] = lambda _: None
+        self._str_value.trace_add("write", self._parse_str_value)
+
 
     def _initialize_children(self) -> None:
         self.label = ttk.Label(self, text=self._field_name)
-        self.entry = ttk.Entry(self, textvariable=self._value)
+        self.entry = ttk.Entry(self, textvariable=self._str_value)
 
         WidgetRegistry.register_widget(self.entry, "entry", self._widget_name)
 
@@ -37,32 +49,43 @@ class IntFieldView(View):
 
     @property
     def value(self) -> int:
-        try:
-            return int(self._value.get())
-        except Exception as _:
-            # TODO: display error
-            return self._default_value 
+        return self._value
     
     @value.setter
     def value(self, v: int) -> None:
-        self._value.set(str(v))
+        self._value = v
+        self._str_value.set(str(v))
  
-    def bind_value_change(self, command: Callable[[int], None]):
-        self._value.trace_add("write", lambda *args: command(self.value))
+    def _parse_str_value(self, *_args):
+        try:
+            self.value = int(self._str_value.get())
+            self.entry.configure(style=EntryStyle.PRIMARY.value)
+        except Exception as _:
+            self.value = self._default_value 
+            self.entry.configure(style=EntryStyle.DANGER.value)
+        self._callback(self.value)
 
+
+    def bind_value_change(self, command: Callable[[int], None]):
+        self._callback = command
 
 class FloatFieldView(View):
     def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: float = 0., **kwargs):
         self._field_name = field_name
         self._default_value = default_value
-        self._value: ttk.StringVar = ttk.StringVar(value=str(default_value))
+        self.value = default_value
+        self._str_value: ttk.StringVar = ttk.StringVar(value=str(default_value))
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
+
         super().__init__(master, *args, **kwargs)
+
+        self._callback: Callable[[float], None] = lambda _: None
+        self._str_value.trace_add("write", self._parse_str_value)
 
     def _initialize_children(self) -> None:
         self.label = ttk.Label(self, text=self._field_name)
-        self.entry = ttk.Entry(self, textvariable=self._value)
+        self.entry = ttk.Entry(self, textvariable=self._str_value)
 
         WidgetRegistry.register_widget(self.entry, "entry", self._widget_name)
 
@@ -73,38 +96,47 @@ class FloatFieldView(View):
         self.entry.grid(row=0, column=1, padx=5, pady=5)
 
     @property
-    def field_name(self) -> str:
-        return self._field_name
-
-    @property
     def value(self) -> float:
-        try:
-            return float(self._value.get())
-        except Exception as _:
-            # TODO: display error
-            return self._default_value 
+        return self._value
     
     @value.setter
     def value(self, v: float) -> None:
-        self._value.set(str(v))
+        self._value = v
+        self._str_value.set(str(v))
+ 
+    def _parse_str_value(self, *_args):
+        try:
+            self.value = float(self._str_value.get())
+            self.entry.configure(style=EntryStyle.PRIMARY.value)
+        except Exception as _:
+            self.value = self._default_value 
+            self.entry.configure(style=EntryStyle.DANGER.value)
+        self._callback(self.value)
 
     def bind_value_change(self, command: Callable[[float], None]):
-        self._value.trace_add("write", lambda *args: command(self.value))
+        self._callback = command
+
 
 class TimeFieldView(View):
-    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_time: float | int = 0., unit = "ms", **kwargs):
+    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_time: int = 0, unit = "ms", **kwargs):
         self._field_name = field_name
         self._default_time = default_time
-        self._time_value: ttk.StringVar = ttk.StringVar(value=str(default_time))
-        self._unit_value: ttk.StringVar = ttk.StringVar(value=unit)
+        self._time_value = default_time
+        self._time_value_str: ttk.StringVar = ttk.StringVar(value=str(default_time))
+        self._unit_value_str: ttk.StringVar = ttk.StringVar(value=unit)
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
 
+        self._callback: Callable[[HoldTuple], None] = lambda _: None
+        self._time_value_str.trace_add("write", self._parse_str_value)
+        self._unit_value_str.trace_add("write", self._parse_str_value)
+
+
     def _initialize_children(self) -> None:
         self._label = ttk.Label(self, text=self._field_name)
-        self._entry_time = ttk.Entry(self, textvariable=self._time_value)
-        self._unit_button = ttk.Button(self, text=self._unit_value.get(), command=self._toggle_unit)
+        self._entry_time = ttk.Entry(self, textvariable=self._time_value_str)
+        self._unit_button = ttk.Button(self, text=self._unit_value_str.get(), command=self._toggle_unit)
 
         WidgetRegistry.register_widget(self._entry_time, "time_entry", self._widget_name)
         WidgetRegistry.register_widget(self._unit_button, "unit_button", self._widget_name)
@@ -117,9 +149,9 @@ class TimeFieldView(View):
         self._unit_button.grid(row=0, column=2, padx=5, pady=5)
 
     def _toggle_unit(self) -> None:
-        unit = self._unit_value.get()
+        unit = self._unit_value_str.get()
         unit = "ms" if unit == "s" else "s"
-        self._unit_value.set(unit)
+        self._unit_value_str.set(unit)
         self._unit_button.configure(text=unit)
 
     @property
@@ -128,22 +160,26 @@ class TimeFieldView(View):
 
     @property
     def value(self) -> HoldTuple:
-        try:
-            time_value = int(self._time_value.get())
-        except Exception as _:
-            # TODO: display error
-            time_value = int(self._default_time) 
-        return (time_value, self._unit_value.get())
+        return self._time_value, self._unit_value_str.get()
     
     @value.setter
     def value(self, v: HoldTuple) -> None:
-        self._time_value.set(str(v[0]))
-        self._unit_value.set(v[1])
+        self._time_value = v[0]
+        self._time_value_str.set(str(v[0]))
+        self._unit_value_str.set(v[1])
         self._unit_button.configure(text=v[1])
+ 
+    def _parse_str_value(self, *_args):
+        try:
+            self._time_value = float(self._time_value_str.get())
+            self._entry_time.configure(style=EntryStyle.PRIMARY.value)
+        except Exception as _:
+            self._time_value = self._default_time 
+            self._entry_time.configure(style=EntryStyle.DANGER.value)
+        self._callback((self._time_value, self._unit_value_str.get()))
 
     def bind_value_change(self, command: Callable[[HoldTuple], None]):
-        self._time_value.trace_add("write", lambda *args: command(self.value))
-        self._unit_value.trace_add("write", lambda *args: command(self.value))
+        self._callback = command
 
 """
 This class holds only information about the procedure args.
@@ -164,24 +200,23 @@ class ProcedureWidget(UIComponent):
         for field_name, field in attrs.fields_dict(self._proc_args_class).items():
             if field.type is int:
                 field_view = IntFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name)
-                self._proc_args_dict[field_name] = field_view.value
-                self._fields.append(field_view)
             elif field.type is float:
                 field_view = FloatFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name)
-                self._fields.append(field_view)
             elif field.type is HolderArgs:
                 field_view = TimeFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name)
-                self._proc_args_dict[field_name] = field_view.value
-                self._fields.append(field_view)
+                
             else:
                 raise TypeError(f"The field with name {field_name} has the type {field.type}, which is not supported")
-        
+            self._proc_args_dict[field_name] = field_view.value
+            self._fields.append(field_view)
+
             # I use here a decorator so that the field_name gets captured by the function and not gets overwritten in 
             # subsequent runs
             def set_dict_value(key):
                 def _set_dict_value(val):
                     self._proc_args_dict[key] = val
                 return _set_dict_value
+            
             field_view.bind_value_change(set_dict_value(field_name))
             self._proc_args_dict[field_name] = field_view.value
 

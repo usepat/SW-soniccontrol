@@ -36,6 +36,8 @@ class Updater(EventManager):
         try:
             while self._running.is_set():
                 await self.update()
+        except asyncio.CancelledError as e:
+            return
         except Exception as e:
             raise
         
