@@ -9,7 +9,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
 
-class HorizontalScrolledFrame(ttk.Frame):
+class XYScrolledFrame(ttk.Frame):
     def __init__(
         self,
         master=None,
@@ -19,8 +19,13 @@ class HorizontalScrolledFrame(ttk.Frame):
         width=20,
         height=20,
         scrollwidth=None,
+        scrollheight=None,
+        mousewheel_scroll_orientation: ttk.VERTICAL | ttk.HORIZONTAL =ttk.VERTICAL,
         **kwargs,
     ):
+        self._mousewheel_scroll_orientation = mousewheel_scroll_orientation
+        self.relx = 0.
+        self.rely = 0.
         # content frame container
         self.container = ttk.Frame(
             master=master,
@@ -30,7 +35,7 @@ class HorizontalScrolledFrame(ttk.Frame):
             height=height,
             bootstyle=bootstyle.replace("round", ""),
         )
-        self.container.bind("<Configure>", lambda _: self.xview())
+        self.container.bind("<Configure>", self._on_configure)
         self.container.propagate(1)
 
         # content frame
@@ -42,7 +47,7 @@ class HorizontalScrolledFrame(ttk.Frame):
             height=height,
             **kwargs,
         )
-        self.place(relx=0.0, relheight=1.0, width=scrollwidth)
+        self.place(relx=0.0, rely=0.0, width=scrollwidth, height=scrollheight)
 
         # vertical scrollbar
         self.hscroll = ttk.Scrollbar(
@@ -52,6 +57,15 @@ class HorizontalScrolledFrame(ttk.Frame):
             bootstyle=bootstyle,
         )
         self.hscroll.pack(side=BOTTOM, fill=X)
+
+        self.vscroll = ttk.Scrollbar(
+            master=self.container,
+            command=self.yview,
+            orient=VERTICAL,
+            bootstyle=bootstyle,
+        )
+        self.vscroll.pack(side=RIGHT, fill=Y)
+
         self.winsys = self.tk.call("tk", "windowingsystem")
 
         # setup autohide scrollbar
@@ -86,7 +100,7 @@ class HorizontalScrolledFrame(ttk.Frame):
             return
 
     def xview_moveto(self, fraction: float):
-        base, thumb = self._measures()
+        base, thumb = self._measures_x()
         if fraction < 0:
             first = 0.0
         elif (fraction + thumb) > 1:
@@ -94,12 +108,41 @@ class HorizontalScrolledFrame(ttk.Frame):
         else:
             first = fraction
         self.hscroll.set(first, first + thumb)
-        self.content_place(relx=-first * base)
+        self.relx = -first * base
+        self.content_place(relx=self.relx, rely=self.rely)
 
     def xview_scroll(self, number: int, what: str):
         first, _ = self.hscroll.get()
         fraction = (number / 100) + first
         self.xview_moveto(fraction)
+
+    def yview(self, *args):
+        if not args:
+            first, _ = self.vscroll.get()
+            self.yview_moveto(fraction=first)
+        elif args[0] == "moveto":
+            self.yview_moveto(fraction=float(args[1]))
+        elif args[0] == "scroll":
+            self.yview_scroll(number=int(args[1]), what=args[2])
+        else:
+            return
+
+    def yview_moveto(self, fraction: float):
+        base, thumb = self._measures_y()
+        if fraction < 0:
+            first = 0.0
+        elif (fraction + thumb) > 1:
+            first = 1 - thumb
+        else:
+            first = fraction
+        self.vscroll.set(first, first + thumb)
+        self.rely = -first * base
+        self.content_place(relx=self.relx, rely=self.rely)
+
+    def yview_scroll(self, number: int, what: str):
+        first, _ = self.vscroll.get()
+        fraction = (number / 100) + first
+        self.yview_moveto(fraction)
 
     def _add_scroll_binding(self, parent):
         """Recursive adding of scroll binding to all descendants."""
@@ -143,10 +186,12 @@ class HorizontalScrolledFrame(ttk.Frame):
     def hide_scrollbars(self):
         """Hide the scrollbars."""
         self.hscroll.pack_forget()
+        self.vscroll.pack_forget()
 
     def show_scrollbars(self):
         """Show the scrollbars."""
         self.hscroll.pack(side=BOTTOM, fill=X)
+        self.vscroll.pack(side=RIGHT, fill=Y)
 
     def autohide_scrollbar(self):
         """Toggle the autohide funtionality. Show the scrollbars when
@@ -154,11 +199,7 @@ class HorizontalScrolledFrame(ttk.Frame):
         frame."""
         self.autohide = not self.autohide
 
-    def _measures(self):
-        """Measure the base size of the container and the thumb size
-        for use in the xview methods"""
-        outer = self.container.winfo_width()
-        inner = max([self.winfo_width(), outer])
+    def _measure(self, outer, inner) -> tuple[float, float]:
         base = inner / outer
         if inner == outer:
             thumb = 1.0
@@ -166,10 +207,25 @@ class HorizontalScrolledFrame(ttk.Frame):
             thumb = outer / inner
         return base, thumb
 
+    def _measures_x(self):
+        """Measure the base size of the container and the thumb size
+        for use in the xview methods"""
+        outer = self.container.winfo_width()
+        inner = max([self.winfo_width(), outer])
+        return self._measure(outer, inner)
+    
+    def _measures_y(self):
+        """Measure the base size of the container and the thumb size
+        for use in the yview methods"""
+        outer = self.container.winfo_height()
+        inner = max([self.winfo_height(), outer])
+        return self._measure(outer, inner)
+
     def _on_map_child(self, event):
         """Callback for when a widget is mapped to the content frame."""
         if self.container.winfo_ismapped():
             self.xview()
+            self.yview()
 
     def _on_enter(self, event):
         """Callback for when the mouse enters the widget."""
@@ -186,9 +242,11 @@ class HorizontalScrolledFrame(ttk.Frame):
     def _on_configure(self, event):
         """Callback for when the widget is configured"""
         self.xview()
+        self.yview()
 
     def _on_map(self, event):
         self.xview()
+        self.yview()
 
     def _on_mousewheel(self, event):
         """Callback for when the mouse wheel is scrolled."""
@@ -200,4 +258,7 @@ class HorizontalScrolledFrame(ttk.Frame):
             delta = -10
         elif event.num == 5:
             delta = 10
-        self.xview_scroll(delta, UNITS)
+        if self._mousewheel_scroll_orientation == ttk.HORIZONTAL:
+            self.xview_scroll(delta, UNITS)
+        else:
+            self.yview_scroll(delta, UNITS)

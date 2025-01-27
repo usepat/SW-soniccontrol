@@ -10,7 +10,7 @@ from soniccontrol_gui.view import View
 from soniccontrol_gui.constants import (color, events, fonts, sizes,
                                                      style, ui_labels)
 from soniccontrol_gui.utils.image_loader import ImageLoader
-from soniccontrol_gui.widgets.horizontal_scrolled_frame import HorizontalScrolledFrame
+from soniccontrol_gui.widgets.xyscrolled_frame import XYScrolledFrame
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 
@@ -120,8 +120,8 @@ class StatusBarView(View):
         self._panel_frame: ttk.Frame = ttk.Frame(self)
         self._status_bar_frame: ttk.Frame = ttk.Frame(self)
 
-        self._scrolled_info: HorizontalScrolledFrame = HorizontalScrolledFrame(
-            self._status_bar_frame, bootstyle=ttk.SECONDARY, autohide=False
+        self._scrolled_info: XYScrolledFrame = XYScrolledFrame(
+            self._status_bar_frame, bootstyle=ttk.SECONDARY, autohide=False, mousewheel_scroll_orientation=ttk.HORIZONTAL
         )
         self._scrolled_info.hide_scrollbars()
 

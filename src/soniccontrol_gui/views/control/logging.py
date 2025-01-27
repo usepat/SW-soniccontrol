@@ -7,7 +7,6 @@ from soniccontrol_gui import constants
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView, View
 import ttkbootstrap as ttk
-from ttkbootstrap.scrolled import ScrolledFrame
 
 from soniccontrol_gui.state_fetching.logger import DeviceLogFilter, LogStorage, NotDeviceLogFilter
 from soniccontrol_gui.constants import sizes, ui_labels
@@ -15,6 +14,7 @@ from soniccontrol.events import Event
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.observable_list import ObservableList
+from soniccontrol_gui.widgets.xyscrolled_frame import XYScrolledFrame
 from soniccontrol_gui.widgets.message_box import MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 
@@ -123,9 +123,10 @@ class LoggingTabView(TabView):
         self._output_frame: ttk.Labelframe = ttk.Labelframe(
             self._main_frame, text=ui_labels.OUTPUT_LABEL
         )
-        self._scrolled_frame: ScrolledFrame = ScrolledFrame(
+        self._horizontal_scrolled_frame: XYScrolledFrame = XYScrolledFrame(
             self._output_frame, autohide=True
         )
+
 
     def _initialize_publish(self) -> None:
         self._main_frame.pack(expand=True, fill=ttk.BOTH)
@@ -139,7 +140,7 @@ class LoggingTabView(TabView):
             pady=sizes.MEDIUM_PADDING,
             padx=sizes.LARGE_PADDING,
         )
-        self._scrolled_frame.pack(
+        self._horizontal_scrolled_frame.pack(
             expand=True,
             fill=ttk.BOTH,
             pady=sizes.MEDIUM_PADDING,
@@ -147,12 +148,12 @@ class LoggingTabView(TabView):
         )
 
     def append_text_line(self, text: str):
-        ttk.Label(self._scrolled_frame, text=text, font=("Consolas", 10)).pack(
+        ttk.Label(self._horizontal_scrolled_frame, text=text, font=("Consolas", 10)).pack(
             fill=ttk.X, side=ttk.TOP, anchor=ttk.W
         )
-        self._scrolled_frame.update()
-        self._scrolled_frame.yview_moveto(1)
+        self._horizontal_scrolled_frame.update()
+        self._horizontal_scrolled_frame.yview_moveto(1)
 
     def destroy_ith_text_line(self, i: int):
-        child = self._scrolled_frame.winfo_children()[i]
+        child = self._horizontal_scrolled_frame.winfo_children()[i]
         child.destroy()
