@@ -93,6 +93,26 @@ ramp_proc_commands: List[CommandContract] = [
     )
 ]
 
+get_ramp = CommandContract(
+    code=CommandCode.GET_RAMP,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?ramp"]
+        )
+    ), 
+    is_release=True,
+    answer_defs=AnswerDef(
+        fields=[
+            fields.field_ramp_f_start,
+            fields.field_ramp_f_stop,
+            fields.field_ramp_f_step,
+            fields.field_ramp_t_on,
+            fields.field_ramp_t_off
+        ]
+    ),
+    tags=["Procedure", "RAMP"]
+)
+
 
 get_auto = CommandContract(
     code=CommandCode.GET_AUTO,
@@ -283,6 +303,17 @@ get_duty_cycle = CommandContract(
 )
 
 
+stop_command =  generate_start_procedure_contract(
+    CommandCode.SET_STOP,
+    ["!stop", "!stop_procedure"],
+    ""
+)
+continue_command =  generate_start_procedure_contract(
+    CommandCode.SET_CONTINUE,
+    ["!continue", "!continue_procedure"],
+    ""
+)
+
 duty_cycle_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_DUTY_CYCLE,
@@ -300,19 +331,12 @@ duty_cycle_proc_commands: List[CommandContract] = [
         ["!duty_cycle_t_on"],
         response_field=fields.field_duty_cycle_t_on
     ),
+    stop_command,
+    continue_command
 ]
 
 
-stop_command =  generate_start_procedure_contract(
-    CommandCode.SET_STOP,
-    ["!stop", "!stop_procedure"],
-    ""
-)
-continue_command =  generate_start_procedure_contract(
-    CommandCode.SET_CONTINUE,
-    ["!continue", "!continue_procedure"],
-    ""
-)
+
 
 
 all_proc_commands = [stop_command, continue_command]
