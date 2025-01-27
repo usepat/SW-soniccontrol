@@ -1,7 +1,8 @@
 import asyncio
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.commands import Command
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.communicator_builder import CommunicatorBuilder
@@ -58,17 +59,17 @@ class RemoteController:
     def is_connected(self) -> bool:
         return self._device is not None and self._device.communicator.connection_opened.is_set()
 
-    async def set_attr(self, attr: str, val: str) -> Tuple[str, dict, bool]:
+    async def set_attr(self, attr: str, val: str) -> Tuple[str, Dict[EFieldName, Any], bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command("!" + attr + "=" + val)
         return answer.message, answer.value_dict,  answer.valid
 
-    async def get_attr(self, attr: str) -> Tuple[str, dict, bool]:
+    async def get_attr(self, attr: str) -> Tuple[str, Dict[EFieldName, Any], bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command("?" + attr)
         return answer.message, answer.value_dict, answer.valid
     
-    async def send_command(self, command: str | Command) -> Tuple[str, dict, bool]:
+    async def send_command(self, command: str | Command) -> Tuple[str, Dict[EFieldName, Any], bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command(command)
         return answer.message, answer.value_dict, answer.valid
@@ -115,11 +116,22 @@ class RemoteController:
         assert self._device is None
         assert self._updater is None
 
+# from soniccontrol import RemoteController
+import sonic_protocol.python_parser.commands as cmds
+from sonic_protocol.field_names import EFieldName
+
 async def main():
     controller = RemoteController()
     await controller.connect_via_serial(Path("/dev/ttyUSB0"))
+
     answer_str, _, _ = await controller.send_command("?protocol")
+    answer_str, _, _ = await controller.send_command(cmds.GetProtocol())
+    answer_str, answer_dict, is_valid = await controller.send_command(cmds.SetAtf(1, 100000))
+    
     print(answer_str)
+    if is_valid:
+        print(answer_dict[EFieldName.ATF])
+
     await controller.disconnect()
 
 if __name__ == "__main__":

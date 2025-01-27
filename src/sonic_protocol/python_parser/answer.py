@@ -26,8 +26,8 @@ class Answer:
         return self.command_code is not None and self.command_code.value >= 20000
 
     @property
-    def value_dict(self) -> Dict[str, Any]:
-        return { k.value: v for k, v in self.field_value_dict.items() }
+    def value_dict(self) -> Dict[EFieldName, Any]:
+        return self.field_value_dict
 
 
 @attrs.define()
