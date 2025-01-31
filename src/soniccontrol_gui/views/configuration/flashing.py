@@ -70,7 +70,7 @@ class Flashing(UIComponent):
             flasher = NewFirmwareFlasher(self._logger, 9600, selected_file, 0.3)
             self._logger.info("Executed command FLASH_UART_SLOW")
         elif selected_flash_mode == ui_labels.FLASH_UART_FAST:
-            flasher = NewFirmwareFlasher(self._logger, 115200, selected_file, 0.3)
+            flasher = NewFirmwareFlasher(self._logger, 115200, selected_file, 0.5)
             self._logger.info("Executed command FLASH_UART_FAST")
         elif selected_flash_mode == ui_labels.FLASH_USB:
             flasher = NewFirmwareFlasher(self._logger, 115200, selected_file)
@@ -183,3 +183,13 @@ class FlashingView(TabView):
         """Retrieve the file path from the file browse button."""
         return self._browse_flash_file_button.path
 
+
+async def main():
+    logger = logging.getLogger("Flashing")
+    selected_file = Path(r"\\wsl.localhost\Ubuntu\home\usepat\GitHub\sonic-firmware\build\pico_with_bootloader_standalone\devices\mvp_worker\mvp_worker_v2_5_1.elf")
+    flasher = NewFirmwareFlasher(logger, 115200, selected_file, 0.3)
+    success = await flasher.flash_firmware()
+    print("Flashing successful" if success else "Flashing failed")
+
+if __name__ == "__main__":
+    asyncio.run(main())
