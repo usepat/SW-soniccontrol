@@ -27,6 +27,7 @@ dependencies = {file = ["requirements.txt"]}
 
 [project.gui-scripts]
 soniccontrol = "soniccontrol_gui:start_gui"
+sonic_protocol_manual_builder = "sonic_protocol:build_manual"
 
 [build-system]
 requires = [

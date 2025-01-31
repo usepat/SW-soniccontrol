@@ -59,6 +59,24 @@ class RemoteController:
     def is_connected(self) -> bool:
         return self._device is not None and self._device.communicator.connection_opened.is_set()
 
+    def start_updater(self):
+        assert self._updater is not None
+        if not self._updater.running:
+            self._updater.start()
+
+    """
+    Note:   
+        The updater is used by the procedure controller internally 
+        to get information about if a procedure is running on the device.
+        If you stop the updater, the procedure controller cannot detect anymore, when a procedure is finished and will run forever. 
+        However you can manually pull an update over the updater and send that to the procedure controller or just
+        call stop procedure.
+    """
+    async def stop_updater(self):
+        assert self._updater is not None
+        if self._updater.running:
+            await self._updater.stop()
+
     async def set_attr(self, attr: str, val: str) -> Tuple[str, Dict[EFieldName, Any], bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command("!" + attr + "=" + val)
@@ -116,7 +134,7 @@ class RemoteController:
         assert self._device is None
         assert self._updater is None
 
-# from soniccontrol import RemoteController
+# from soniccontrol.remote_controller import RemoteController
 import sonic_protocol.python_parser.commands as cmds
 from sonic_protocol.field_names import EFieldName
 

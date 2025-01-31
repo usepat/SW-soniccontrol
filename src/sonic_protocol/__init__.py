@@ -1,0 +1,1 @@
+from sonic_protocol.user_manual_compiler.manual_compiler import build_manual
