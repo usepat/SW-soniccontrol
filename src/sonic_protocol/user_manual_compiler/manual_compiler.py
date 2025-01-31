@@ -1,7 +1,11 @@
 import abc
+import argparse
 from enum import Enum
+from pathlib import Path
 from sonic_protocol.defs import AnswerFieldDef, CommandCode, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
 from sonic_protocol.protocol_builder import CommandLookUp, ProtocolBuilder
+from sonic_protocol.protocol import protocol as sonic_protocol
+
 
 
 class ManualCompiler(abc.ABC):
@@ -122,14 +126,29 @@ class MarkdownManualCompiler(ManualCompiler):
         return type_header
 
 
-if __name__ == "__main__":
-    from sonic_protocol.protocol import protocol
-    device_type = DeviceType.MVP_WORKER
-    protocol_version = Version(1, 0, 0)
-    is_release = True
+def build_manual():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output-dir", type=Path, default=Path("./"))
+    parser.add_argument("--protocol-version", type=str,required=True)
+    parser.add_argument("--device-type", type=DeviceType, required=True)
+    parser.add_argument("--release", action="store_true")
+    args = parser.parse_args()
 
-    manual_compiler = MarkdownManualCompiler(protocol)
+    device_type: DeviceType = args.device_type
+    protocol_version: Version = Version.to_version(args.protocol_version)
+    is_release: bool = args.release
+    output_dir: Path = args.output_dir
+
+    version_str = args.protocol_version.replace('.', '_')
+    build_str = "release" if is_release else "debug"
+    file_name = output_dir / f"manual_{device_type.value}_{version_str}_{build_str}.md"
+    
+    if not output_dir.is_dir(): 
+        raise Exception(f"The output-dir must be a directory, but is instead a file: {str(output_dir)}")
+
+
+    manual_compiler = MarkdownManualCompiler(sonic_protocol)
     manual = manual_compiler.compile_manual_for_specific_device(device_type, protocol_version, is_release)
 
-    with open("./output/manual.md", "w") as file:
+    with open(file_name, "w") as file:
         file.write(manual)
