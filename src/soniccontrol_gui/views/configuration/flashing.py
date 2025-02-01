@@ -187,7 +187,7 @@ class FlashingView(TabView):
 async def main():
     logger = logging.getLogger("Flashing")
     selected_file = Path(r"\\wsl.localhost\Ubuntu\home\usepat\GitHub\sonic-firmware\build\pico_with_bootloader_standalone\devices\mvp_worker\mvp_worker_v2_5_1.elf")
-    flasher = NewFirmwareFlasher(logger, 115200, selected_file, 0.3)
+    flasher = NewFirmwareFlasher(logger, 9600, selected_file, 0.3)
     success = await flasher.flash_firmware()
     print("Flashing successful" if success else "Flashing failed")
 
