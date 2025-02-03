@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 from sonic_protocol.command_contracts.contract_generators import create_version_field
 from sonic_protocol.defs import (
@@ -172,6 +173,74 @@ get_update = CommandContract(
     tags=["update", "status"]
 )
 
+flash_usb = CommandContract(
+    code=CommandCode.SET_FLASH_USB,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!FLASH_USB"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Used for flashing the device with a new firmware."
+    ),
+    is_release=True,
+    tags=["flashing"]
+)
+
+flash_uart9600 = CommandContract(
+    code=CommandCode.SET_FLASH_9600,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!FLASH_UART_SLOW"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Used for flashing the device with a new firmware."
+    ),
+    is_release=True,
+    tags=["flashing"]
+)
+
+flash_uart115200 = CommandContract(
+    code=CommandCode.SET_FLASH_115200,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!FLASH_UART_FAST"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Used for flashing the device with a new firmware."
+    ),
+    is_release=True,
+    tags=["flashing"]
+)
+
+flash_commands: List[CommandContract] = [flash_usb, flash_uart9600, flash_uart115200]
+
 
 protocol = Protocol(
     version=Version(1, 0, 0),
@@ -185,7 +254,7 @@ protocol = Protocol(
                 set_on,
                 set_off,
                 set_frequency,
-                get_frequency
+                get_frequency,
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=0, minor=0, patch=0),
@@ -208,8 +277,8 @@ protocol = Protocol(
                 set_datetime,
                 get_datetime,
                 get_datetime_pico,
-                set_log_level
-            ],
+                set_log_level,
+            ] + flash_commands,
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=1, minor=0, patch=0)
             )
