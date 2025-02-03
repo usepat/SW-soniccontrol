@@ -3,36 +3,45 @@
 set separator . 
 top to bottom direction
 
-class "Answer" as soniccontrol.command.Answer {
-  lines
-  measured_response
-  received
-  received_timestamp
-  string
-  valid
-  receive_answer(answer: Iterable[str] | str) -> None
-  reset() -> None
-}
-class "Command" as soniccontrol.command.Command {
-  byte_message
-  full_message
-  status_result
-  validators
-  add_validators(validators: Union[CommandValidator, Iterable[CommandValidator]]) -> None
-  execute(argument: Any, connection: Optional[Communicator]) -> tuple[Answer, dict[str, Any]]
-  get_dict() -> dict
-  set_argument(argument: Any) -> None
-  validate() -> bool
-}
-class "CommandValidator" as soniccontrol.command.CommandValidator {
-  result
-  accepts(data: str) -> bool
-  generate_named_pattern(pattern: str, keywords: List[str]) -> str
+class "Answer" as sonic_protocol.python_parser.answer.Answer {
+  value_dict
+  is_error_msg() -> bool
 }
 
-class "CommandSet" as soniccontrol.commands.CommandSet {
+class "AnswerValidator" as sonic_protocol.python_parser.answer.AnswerValidator {
+  generate_named_pattern(pattern: str, keywords: List[str]) -> str
+  validate(data: str) -> Answer
 }
-class "CommandSetLegacy" as soniccontrol.commands.CommandSetLegacy {
+
+
+class "CommandDeserializer" as sonic_protocol.python_parser.command_deserializer.CommandDeserializer {
+  get_deserialized_command_code(command_str: str) -> CommandCode | None
+}
+
+class "Command" as sonic_protocol.python_parser.commands.Command {
+  args
+  code
+}
+
+class "Protocol" as sonic_protocol.defs.Protocol {
+}
+
+class "ProtocolBuilder" as sonic_protocol.protocol_builder.ProtocolBuilder {
+  build(device_type: DeviceType, version: Version, release: bool) -> CommandLookUpTable
+}
+
+class "CommandLookUp" as sonic_protocol.protocol_builder.CommandLookUp {
+  + command_def: CommandDef
+  + answer_def: AnswerDef
+}
+
+class "SonicDevice" as soniccontrol.sonic_device.SonicDevice {
+  disconnect() -> None
+  execute_command(command: Command | str, should_log: bool, try_deduce_command_if_str: bool) -> Answer
+  get_overview() -> Answer
+  has_command(command: CommandCode | Command) -> bool
+  set_signal_off() -> Answer
+  set_signal_on() -> Answer
 }
 
 class "Communicator" as soniccontrol.communication.communicator.Communicator {
@@ -40,37 +49,25 @@ class "Communicator" as soniccontrol.communication.communicator.Communicator {
   connection_opened
   handshake_result
   protocol
-  {abstract}close_communication() -> None
-  {abstract}open_communication(connection_factory: ConnectionFactory)
+  reader
+  writer
+  {abstract}change_baudrate(baudrate: int) -> None
+  {abstract}close_communication(restart: bool) -> None
+  {abstract}open_communication(connection_factory: ConnectionFactory, baudrate: int)
   {abstract}read_message() -> str
-  {abstract}send_and_wait_for_answer(message: Sendable) -> None
+  {abstract}send_and_wait_for_response(request: str) -> str
 }
 
-class "SonicDevice" as soniccontrol.sonic_device.SonicDevice {
-  commands
-  info
-  serial
-  status
-  add_command(message: Union[str, Command], validators: Optional[CommandValitors]) -> None
-  add_commands(commands: Iterable[Command]) -> None
-  disconnect() -> None
-  execute_command(message: Union[str, Command], argument: Any) -> str
-  get_remote_proc_finished_event() -> asyncio.Event
-  has_command(command: Union[str, Command]) -> bool
-  send_message(message: str, argument: Any) -> str
-}
-
-soniccontrol.command.Command -u-* soniccontrol.commands.CommandSet
-soniccontrol.command.Command -u-* soniccontrol.commands.CommandSetLegacy 
-soniccontrol.command.Command o-d- soniccontrol.command.Answer
-soniccontrol.command.Command o-d- soniccontrol.command.CommandValidator
-
-soniccontrol.sonic_device.SonicDevice *-u- soniccontrol.command.Command : _commands
-soniccontrol.sonic_device.SonicDevice .u.> soniccontrol.command.Answer
-
-
-soniccontrol.command.Command -u- soniccontrol.communication.communicator.Communicator
-
-
+sonic_protocol.protocol_builder.ProtocolBuilder -u-> sonic_protocol.defs.Protocol : _protocol
+sonic_protocol.protocol_builder.ProtocolBuilder ..> sonic_protocol.protocol_builder.CommandLookUp
+soniccontrol.sonic_device.SonicDevice o-d- soniccontrol.communication.communicator.Communicator : _serial
+soniccontrol.sonic_device.SonicDevice o-u- sonic_protocol.python_parser.command_deserializer.CommandDeserializer : command_deserializer
+soniccontrol.sonic_device.SonicDevice .u.> sonic_protocol.python_parser.answer.AnswerValidator
+soniccontrol.sonic_device.SonicDevice -u-> sonic_protocol.protocol_builder.CommandLookUp : lookup_table
+sonic_protocol.protocol_builder.CommandLookUp o-- sonic_protocol.python_parser.answer.AnswerValidator : answer_validator
+sonic_protocol.python_parser.command_deserializer.CommandDeserializer ..> sonic_protocol.python_parser.commands.Command
+sonic_protocol.python_parser.answer.AnswerValidator ..> sonic_protocol.python_parser.answer.Answer
+soniccontrol.sonic_device.SonicDevice .u.> sonic_protocol.python_parser.answer.Answer
+soniccontrol.sonic_device.SonicDevice .u.> sonic_protocol.python_parser.commands.Command
 
 @enduml

@@ -3,18 +3,14 @@
 set separator . 
 top to bottom direction
 
+
 class "RemoteController" as soniccontrol.remote_controller.RemoteController {
-  NOT_CONNECTED : str
-  connect_via_process(process_file: Path) -> None
-  connect_via_serial(url: Path) -> None
-  disconnect() -> None
   execute_procedure(procedure: ProcedureType, args: dict) -> None
   execute_ramp(ramp_args: RamperArgs) -> None
-  execute_script(text: str) -> None
-  get_attr(attr: str) -> str
-  send_command(command_str: str) -> str
-  set_attr(attr: str, val: str) -> str
+  send_command(command: str | Command) -> Tuple[str, Dict[EFieldName, Any], bool]
+  start_updater()
   stop_procedure() -> None
+  stop_updater()
 }
 
 class "ProcedureType" as soniccontrol.procedures.procedure_controller.ProcedureType {
@@ -22,16 +18,26 @@ class "ProcedureType" as soniccontrol.procedures.procedure_controller.ProcedureT
 }
 
 class "Procedure" as soniccontrol.procedures.procedure.Procedure {
+  is_remote
   {abstract}execute(device: Scriptable, args: Any) -> None
   {abstract}get_args_class() -> Type
 }
 
+class "RemoteProcedureState" as soniccontrol.procedures.remote_procedure_state.RemoteProcedureState {
+  reset_completion_flag()
+  update(proc_type: ProcedureType | None)
+  wait_till_procedure_completed()
+}
+
 class "ProcedureController" as soniccontrol.procedures.procedure_controller.ProcedureController {
-  PROCEDURE_STOPPED : Literal['<<ProcedureStopped>>']
+  PROCEDURE_RUNNING : Literal['<<PROCEDURE_RUNNING>>']
+  PROCEDURE_STOPPED : Literal['<<PROCEDURE_STOPPED>>']
   is_proc_running
   proc_args_list
-  running_proc_type
   execute_proc(proc_type: ProcedureType, args: Any) -> None
+  execute_procedure(procedure: Procedure, proc_type: ProcedureType, args: Any)
+  ramp_freq(start: int, stop: int, step: int, hold_on_time: float, hold_on_unit: Literal['ms', 's'], hold_off_time: float, hold_off_unit: Literal['ms', 's']) -> None
+  ramp_freq_range(freq_center: int, half_range: int, step: int, hold_on_time: float, hold_on_unit: Literal['ms', 's'], hold_off_time: float, hold_off_unit: Literal['ms', 's']) -> None
   stop_proc() -> None
 }
 
@@ -50,32 +56,44 @@ class "RamperRemote" as soniccontrol.procedures.procs.ramper.RamperRemote {
   execute(device: Scriptable, args: RamperArgs) -> None
 }
 
-class "LegacyScripting" as soniccontrol.scripting.legacy_scripting.LegacyScriptingFacade {
-}
+
+
 
 class "SonicDevice" as soniccontrol.sonic_device.SonicDevice {
-  commands
-  info
-  serial
-  status
-  add_command(message: Union[str, Command], validators: Optional[CommandValitors]) -> None
-  add_commands(commands: Iterable[Command]) -> None
   disconnect() -> None
-  execute_command(message: Union[str, Command], argument: Any) -> str
-  get_remote_proc_finished_event() -> asyncio.Event
-  has_command(command: Union[str, Command]) -> bool
-  send_message(message: str, argument: Any) -> str
+  execute_command(command: Command | str, should_log: bool, try_deduce_command_if_str: bool) -> Answer
+  get_overview() -> Answer
+  has_command(command: CommandCode | Command) -> bool
+  set_signal_off() -> Answer
+  set_signal_on() -> Answer
 }
+
+class "Updater" as soniccontrol.updater.Updater {
+  running
+  start() -> None
+  stop() -> None
+  update() -> None
+}
+
+
+
+soniccontrol.updater.Updater --|> soniccontrol.events.EventManager
+soniccontrol.sonic_device.SonicDevice --o soniccontrol.updater.Updater : _device
 
 soniccontrol.procedures.procedure_controller.ProcedureController -d-|> soniccontrol.events.EventManager
 soniccontrol.procedures.procs.ramper.Ramper -d-|> soniccontrol.procedures.procedure.Procedure
 soniccontrol.procedures.procs.ramper.RamperLocal -d-|> soniccontrol.procedures.procs.ramper.Ramper
 soniccontrol.procedures.procs.ramper.RamperRemote -d-|> soniccontrol.procedures.procs.ramper.Ramper
 
-soniccontrol.procedures.procedure_controller.ProcedureController -r-* soniccontrol.remote_controller.RemoteController : _proc_controller
-soniccontrol.procedures.procedure_controller.ProcedureController -d-* soniccontrol.scripting.legacy_scripting.LegacyScriptingFacade : _proc_controller
 soniccontrol.procedures.procedure_controller.ProcedureController o-u- soniccontrol.procedures.procedure.Procedure : _procedures
-soniccontrol.sonic_device.SonicDevice -u-o soniccontrol.procedures.procedure_controller.ProcedureController : _device
+soniccontrol.sonic_device.SonicDevice -l-o soniccontrol.procedures.procedure_controller.ProcedureController : _device
 soniccontrol.sonic_device.SonicDevice <.u. soniccontrol.procedures.procedure.Procedure
+
+soniccontrol.procedures.remote_procedure_state.RemoteProcedureState -u-* soniccontrol.procedures.procedure_controller.ProcedureController : _remote_procedure_state
+soniccontrol.updater.Updater .l.> soniccontrol.procedures.remote_procedure_state.RemoteProcedureState : <<updates>>
+
+
+soniccontrol.remote_controller.RemoteController o-l- soniccontrol.procedures.procedure_controller.ProcedureController
+soniccontrol.remote_controller.RemoteController o-d- soniccontrol.sonic_device.SonicDevice
 
 @enduml

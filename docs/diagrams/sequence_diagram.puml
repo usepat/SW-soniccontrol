@@ -2,24 +2,25 @@
 
 actor User
 
-User -> ConnectionView: selects port
-ConnectionView -> SonicController: property binding
-SonicController -> ConnectionModel: set_port(port: str)
-ConnectionModel --> ConnectionView: updates view
-User -> ConnectionView: presses "Connect"
-ConnectionView -> SonicController: event_generate(CONNECTION_ATTEMPT): None
-SonicController -> ConnectionModel: get_port(): str
-ConnectionModel --> SonicController: port: str
-SonicController -> CommunicationBuilder: generate_connection(endpoint: str): Communicator
+User -> ConnectionWindow: selects port
+ConnectionWindow -> DeviceWindow: property binding
+DeviceWindow -> ConnectionModel: set_port(port: str)
+ConnectionModel --> ConnectionWindow: updates view
+User -> ConnectionWindow: presses "Connect"
+ConnectionWindow -> DeviceWindow: event_generate(CONNECTION_ATTEMPT): None
+DeviceWindow -> ConnectionModel: get_port(): str
+ConnectionModel --> DeviceWindow: port: str
+DeviceWindow -> CommunicationBuilder: generate_connection(endpoint: str): Communicator
 CommunicationBuilder -> Communicator: builds
 Communicator --> CommunicationBuilder
-CommunicationBuilder --> SonicController: communicator: Communicator
-SonicController -> SonicDeviceBuilder: build_amp(communicator: Communicator)
-SonicDeviceBuilder -> Communicator: get SonicDevice data
-Communicator --> SonicDeviceBuilder: SonicDevice data
-SonicDeviceBuilder --> SonicController: returns SonicDevice
-SonicController -> ConnectionModel: updates
-ConnectionModel --> MainView 
-
+CommunicationBuilder --> DeviceWindow: communicator: Communicator
+DeviceWindow -> SonicDeviceBuilder: build_amp(communicator: Communicator)
+SonicDeviceBuilder --> ProtocolBuilder: generate_default_protocol: CommandLookUpTable
+ProtocolBuilder --> SonicDeviceBuilder: commands: CommandLookUpTable
+SonicDeviceBuilder -> Communicator: send ?protocol
+Communicator --> SonicDeviceBuilder: get protocol_version, device_type, ...
+SonicDeviceBuilder --> ProtocolBuilder: generate_protocol(protocol_version, device_type, ...): CommandLookUpTable
+ProtocolBuilder --> SonicDeviceBuilder: commands: CommandLookUpTable
+SonicDeviceBuilder --> DeviceWindow: returns SonicDevice
 @enduml
 
