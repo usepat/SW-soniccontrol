@@ -77,16 +77,6 @@ class RemoteController:
         if self._updater.running:
             await self._updater.stop()
 
-    async def set_attr(self, attr: str, val: str) -> Tuple[str, Dict[EFieldName, Any], bool]:
-        assert self._device is not None,    RemoteController.NOT_CONNECTED
-        answer = await self._device.execute_command("!" + attr + "=" + val)
-        return answer.message, answer.value_dict,  answer.valid
-
-    async def get_attr(self, attr: str) -> Tuple[str, Dict[EFieldName, Any], bool]:
-        assert self._device is not None,    RemoteController.NOT_CONNECTED
-        answer = await self._device.execute_command("?" + attr)
-        return answer.message, answer.value_dict, answer.valid
-    
     async def send_command(self, command: str | Command) -> Tuple[str, Dict[EFieldName, Any], bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command(command)
@@ -134,7 +124,9 @@ class RemoteController:
         assert self._device is None
         assert self._updater is None
 
-# from soniccontrol.remote_controller import RemoteController
+
+
+from soniccontrol.remote_controller import RemoteController
 import sonic_protocol.python_parser.commands as cmds
 from sonic_protocol.field_names import EFieldName
 

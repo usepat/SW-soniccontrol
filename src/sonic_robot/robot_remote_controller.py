@@ -34,17 +34,6 @@ class RobotRemoteController:
     def _convert_answer(self, answer: Tuple[str, Dict[EFieldName, Any], bool]) -> Tuple[str, dict, bool]:
         return answer[0], { k.value: v for k, v in answer[1].items() }, answer[2]
 
-
-    @keyword('Set "${attr}" to "${val}"')
-    def set_attr(self, attr: str, val: str) -> Tuple[str, dict, bool]:
-        answer = self._loop.run_until_complete(self._controller.set_attr(attr, val))
-        return self._convert_answer(answer)
-
-    @keyword('Get "${attr}"')
-    def get_attr(self, attr: str) -> Tuple[str, dict, bool]:
-        answer = self._loop.run_until_complete(self._controller.get_attr(attr))
-        return self._convert_answer(answer)
-
     @keyword('Send Command ')
     def send_command(self, command_str: str) -> Tuple[str, dict, bool]:
         answer = self._loop.run_until_complete(self._controller.send_command(command_str))

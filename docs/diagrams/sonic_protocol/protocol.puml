@@ -1,0 +1,29 @@
+@startuml Protocol
+
+class Command {
+    + code: CommandCode
+    + args: dict
+}
+
+class SetAtf {
+    + index: int
+    + frequency: int
+}
+
+class Answer {
+    + is_valid: bool
+    + message: str
+    + values: Dict[EFieldName, Any]
+}
+
+class SonicDevice {
+    + execute_command(Command): Answer
+    + execute_command(str): Answer
+}
+
+Command <|-u- SetAtf
+
+SonicDevice .u.> Answer
+SonicDevice .u.> Command
+
+@enduml
