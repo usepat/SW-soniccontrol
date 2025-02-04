@@ -5,6 +5,7 @@ from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.defs import CommandDef
 from sonic_protocol.python_parser.answer import Answer, AnswerValidator
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
+from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.protocol_builder import CommandLookUpTable
 from soniccontrol.device_data import Info
@@ -26,6 +27,7 @@ class SonicDevice(Scriptable):
         self.communicator = communicator
         self.lookup_table = lookup_table
         self._command_deserializer = CommandDeserializer(self.lookup_table)
+        self._command_serializer = CommandSerializer(self.lookup_table)
 
     def has_command(self, command: CommandCode | Command) -> bool:
         if isinstance(command, Command):
@@ -37,7 +39,7 @@ class SonicDevice(Scriptable):
         assert lookup_command is not None, f"The command {command} is not known for the protocol" # throw error?
         assert not isinstance(lookup_command.command_def.sonic_text_attrs, list)
 
-        request_str = self._create_request_string(command, lookup_command.command_def)
+        request_str = self._command_serializer.serialize_command(command)
         
         answer = await self._send_message(
             request_str, 
@@ -67,20 +69,6 @@ class SonicDevice(Scriptable):
         
         answer.command_code = code
         return answer
-
-    def _create_request_string(self, command: Command, command_def: CommandDef) -> str:
-        assert not isinstance(command_def.sonic_text_attrs, list)
-        
-        identifier = command_def.sonic_text_attrs.string_identifier
-        request_msg: str = identifier[0] if isinstance(identifier, list) else identifier
-        if command_def.index_param:
-            assert "index"in command.args
-            request_msg += str(command.args["index"])
-        if command_def.setter_param:
-            assert "value"in command.args 
-            request_msg += "=" + str(command.args["value"])
-
-        return request_msg
 
 
     async def disconnect(self) -> None:

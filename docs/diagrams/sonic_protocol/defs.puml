@@ -1,0 +1,75 @@
+@startuml classes_defs
+set separator . 
+top to bottom direction
+
+class "CommandCode" as sonic_protocol.command_codes.CommandCode {
+  name
+}
+package sonic_protocol.defs {
+    class AnswerDef {
+    }
+    class AnswerFieldDef {
+    }
+    class "CommandContract" {
+    }
+    class "CommandDef" {
+    }
+    class "CommandParamDef"{
+    to_cpp_var_name()
+    }
+    class "DeviceParamConstantType" {
+    name
+    }
+    class "DeviceParamConstants" {
+    }
+    class "EFieldName" {
+    name
+    }
+    class "FieldType" {
+        field_type: type[T]
+        allowed_values: List[T]
+    }
+    class "MetaExport" {
+    }
+    class "MetaExportDescriptor" {
+        min_protocol_version: Version 
+        deprecated_protocol_version: Version
+        included_device_types: List[DeviceType]
+        excluded_device_types: List[DeviceType]
+    is_valid(version: Version, device_type: DeviceType) -> bool
+    }
+    class "Protocol" {
+    }
+
+    class "SIPrefix"{
+    name
+    }
+    class "SIUnit" {
+    name
+    }
+
+    Protocol *-- CommandContract : command_contracts
+    Protocol *-- DeviceParamConstants : constants
+    CommandContract o-- CommandDef : command_defs
+    CommandContract o-- AnswerDef : answer_defs
+    CommandContract o-- CommandCode : code
+    AnswerDef o-- AnswerFieldDef : fields
+    AnswerFieldDef o-- EFieldName: field_name 
+    AnswerFieldDef o-- FieldType: field_type 
+    CommandDef o-- CommandParamDef: index_param
+    CommandDef o-- CommandParamDef: setter_param
+    CommandParamDef o-- EFieldName: name
+    CommandParamDef o-- FieldType: param_type
+    FieldType o-- SIUnit: si_unit
+    FieldType o-- SIPrefix: si_prefix
+    FieldType o-- ConverterType: converter_ref
+    FieldType o-- DeviceParamConstantType: max_value
+    FieldType o-- DeviceParamConstantType: min_value
+    MetaExport o-- MetaExportDescriptor: descriptor
+
+    CommandContract <.. MetaExport : <<wraps>>
+    AnswerDef <.. MetaExport : <<wraps>>
+    CommandDef <.. MetaExport : <<wraps>>
+}
+
+@enduml

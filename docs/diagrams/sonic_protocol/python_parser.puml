@@ -1,0 +1,102 @@
+@startuml classes_sonic_protocol
+set separator . 
+top to bottom direction
+
+
+package sonic_protocol.defs {
+  class "CommandContract"  {
+  }
+  class "CommandDef" {
+  }
+  class "ConverterType"  {
+    name
+  }
+  class "FieldType" {
+  }
+  class "Protocol" {
+  }
+  class "SonicTextAnswerAttrs" {
+  }
+  class "SonicTextAnswerFieldAttrs" {
+  }
+  class "SonicTextCommandAttrs" {
+  }
+
+  Protocol *-- CommandContract : command_contracts
+  CommandContract o-- CommandDef : command_defs
+  CommandContract o-- AnswerDef : answer_defs
+  CommandContract o-- sonic_protocol.command_codes.CommandCode : code
+}
+
+class "AfterConverter" as sonic_protocol.python_parser.answer.AfterConverter {
+}
+class "Answer" as sonic_protocol.python_parser.answer.Answer {
+  value_dict
+  is_error_msg() -> bool
+}
+class "AnswerFieldToStringConverter" as sonic_protocol.python_parser.answer_field_converter.AnswerFieldToStringConverter {
+  converter_ref
+  convert(value: Any) -> str
+}
+class "AnswerValidator" as sonic_protocol.python_parser.answer.AnswerValidator {
+  generate_named_pattern(pattern: str, keywords: List[str]) -> str
+  validate(data: str) -> Answer
+}
+class "AnswerValidatorBuilder" as sonic_protocol.python_parser.answer_validator_builder.AnswerValidatorBuilder {
+  create_answer_validator(answer_def: AnswerDef) -> AnswerValidator
+}
+class "Command" as sonic_protocol.python_parser.commands.Command {
+  args
+  code
+}
+class "CommandCode" as sonic_protocol.command_codes.CommandCode {
+  name
+}
+
+class "CommandDeserializer" as sonic_protocol.python_parser.command_deserializer.CommandDeserializer {
+  - lookup_table: Dict[CommandCode, CommandLookUp]
+  get_deserialized_command_code(command_str: str) -> CommandCode | None
+}
+
+class "CommandSerializer" as sonic_protocol.python_parser.command_serializer.CommandSerializer {
+  - lookup_table: Dict[CommandCode, CommandLookUp]
+  serialize_command(command: Command) -> str
+}
+
+class "CommandLookUp" as sonic_protocol.protocol_builder.CommandLookUp {
+}
+
+class "Converter" as sonic_protocol.python_parser.converters.Converter {
+  {abstract}convert_str_to_val(text: str) -> Any
+  {abstract}convert_val_to_str(value: Any) -> str
+  {abstract}validate_str(text: str) -> bool
+  {abstract}validate_val(value: Any) -> bool
+}
+
+class "SonicDevice" as soniccontrol.sonic_device.SonicDevice {
+  disconnect() -> None
+  execute_command(command: Command | str, should_log: bool, try_deduce_command_if_str: bool) -> Answer
+  has_command(command: CommandCode | Command) -> bool
+}
+
+
+sonic_protocol.python_parser.answer.AnswerValidator ..> sonic_protocol.python_parser.answer.Answer : <<parses>>
+
+sonic_protocol.command_codes.CommandCode --o sonic_protocol.python_parser.commands.Command : _code
+
+sonic_protocol.protocol_builder.CommandLookUp ..> CommandCode: <<Key>>
+sonic_protocol.protocol_builder.CommandLookUp o-u- CommandDef: command_def
+sonic_protocol.protocol_builder.CommandLookUp o-u- AnswerDef: answer_def
+sonic_protocol.protocol_builder.CommandLookUp o-- sonic_protocol.python_parser.answer.AnswerValidator: answer_validator
+
+sonic_protocol.python_parser.answer_field_converter.AnswerFieldToStringConverter ..> sonic_protocol.python_parser.converters.Converter : <<delegates>>
+sonic_protocol.python_parser.answer.AnswerValidator ..> sonic_protocol.python_parser.answer_field_converter.AnswerFieldToStringConverter
+
+sonic_protocol.python_parser.answer_validator_builder.AnswerValidatorBuilder ..> sonic_protocol.python_parser.answer.AnswerValidator : <<builds>>
+
+soniccontrol.sonic_device.SonicDevice o-- sonic_protocol.python_parser.command_serializer.CommandSerializer : _command_serializer
+soniccontrol.sonic_device.SonicDevice o-- sonic_protocol.python_parser.command_deserializer.CommandDeserializer : _command_deserializer
+soniccontrol.sonic_device.SonicDevice o-r- sonic_protocol.protocol_builder.CommandLookUp : lookup_table
+soniccontrol.sonic_device.SonicDevice ..> sonic_protocol.python_parser.answer.AnswerValidator 
+
+@enduml
