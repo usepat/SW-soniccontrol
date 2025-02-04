@@ -9,3 +9,4 @@
 - @subpage SonicControlGui
 - @subpage SonicControlCli
 - @subpage SonicProtocol
+- @subpage Tutorial

@@ -73,12 +73,6 @@ class "Converter" as sonic_protocol.python_parser.converters.Converter {
   {abstract}validate_val(value: Any) -> bool
 }
 
-class "SonicDevice" as soniccontrol.sonic_device.SonicDevice {
-  disconnect() -> None
-  execute_command(command: Command | str, should_log: bool, try_deduce_command_if_str: bool) -> Answer
-  has_command(command: CommandCode | Command) -> bool
-}
-
 
 sonic_protocol.python_parser.answer.AnswerValidator ..> sonic_protocol.python_parser.answer.Answer : <<parses>>
 
@@ -93,10 +87,5 @@ sonic_protocol.python_parser.answer_field_converter.AnswerFieldToStringConverter
 sonic_protocol.python_parser.answer.AnswerValidator ..> sonic_protocol.python_parser.answer_field_converter.AnswerFieldToStringConverter
 
 sonic_protocol.python_parser.answer_validator_builder.AnswerValidatorBuilder ..> sonic_protocol.python_parser.answer.AnswerValidator : <<builds>>
-
-soniccontrol.sonic_device.SonicDevice o-- sonic_protocol.python_parser.command_serializer.CommandSerializer : _command_serializer
-soniccontrol.sonic_device.SonicDevice o-- sonic_protocol.python_parser.command_deserializer.CommandDeserializer : _command_deserializer
-soniccontrol.sonic_device.SonicDevice o-r- sonic_protocol.protocol_builder.CommandLookUp : lookup_table
-soniccontrol.sonic_device.SonicDevice ..> sonic_protocol.python_parser.answer.AnswerValidator 
 
 @enduml

@@ -18,6 +18,11 @@ class "CommandDeserializer" as sonic_protocol.python_parser.command_deserializer
   get_deserialized_command_code(command_str: str) -> CommandCode | None
 }
 
+class "CommandSerializer" as sonic_protocol.python_parser.command_serializer.CommandSerializer {
+  - lookup_table: Dict[CommandCode, CommandLookUp]
+  serialize_command(command: Command) -> str
+}
+
 class "Command" as sonic_protocol.python_parser.commands.Command {
   args
   code
@@ -62,10 +67,12 @@ sonic_protocol.protocol_builder.ProtocolBuilder -u-> sonic_protocol.defs.Protoco
 sonic_protocol.protocol_builder.ProtocolBuilder ..> sonic_protocol.protocol_builder.CommandLookUp
 soniccontrol.sonic_device.SonicDevice o-d- soniccontrol.communication.communicator.Communicator : _serial
 soniccontrol.sonic_device.SonicDevice o-u- sonic_protocol.python_parser.command_deserializer.CommandDeserializer : command_deserializer
+soniccontrol.sonic_device.SonicDevice o-u- sonic_protocol.python_parser.command_serializer.CommandSerializer : command_serializer
 soniccontrol.sonic_device.SonicDevice .u.> sonic_protocol.python_parser.answer.AnswerValidator
 soniccontrol.sonic_device.SonicDevice -u-> sonic_protocol.protocol_builder.CommandLookUp : lookup_table
 sonic_protocol.protocol_builder.CommandLookUp o-- sonic_protocol.python_parser.answer.AnswerValidator : answer_validator
 sonic_protocol.python_parser.command_deserializer.CommandDeserializer ..> sonic_protocol.python_parser.commands.Command
+sonic_protocol.python_parser.command_serializer.CommandSerializer ..> sonic_protocol.python_parser.commands.Command
 sonic_protocol.python_parser.answer.AnswerValidator ..> sonic_protocol.python_parser.answer.Answer
 soniccontrol.sonic_device.SonicDevice .u.> sonic_protocol.python_parser.answer.Answer
 soniccontrol.sonic_device.SonicDevice .u.> sonic_protocol.python_parser.commands.Command

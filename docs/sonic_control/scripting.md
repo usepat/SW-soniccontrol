@@ -35,7 +35,8 @@ Those results are then taken by the [LegacySequencer](@ref soniccontrol.scriptin
 
 ### New
 
-The new parser defines a clear syntax with a lexer for parsing. It creates an Abstract Syntax Tree that then can be iterated by an Interpreter.
+The new parser defines a clear syntax with a lexer for parsing. It creates an Abstract Syntax Tree that then can be iterated by an Interpreter.  
+This was implemented by Ilja and resides in some old branch. Sadly, it was until now not merged into the new code. Probably it also never will, because if the user really wants to create more complex scripts, then he can also just use python with the soniccontrol package. So there is not really such a big need for this feature.
 
 @}
 
