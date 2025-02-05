@@ -1,5 +1,5 @@
 @defgroup UnitTests
-@ingroup ProjectSetup
+@ingroup Testing
 @addtogroup UnitTests
 @{
 
@@ -30,7 +30,7 @@ Unit tests want to test single functions and for that the dependencies get mocke
 Also for mocking API and library functions `monkey_patch` can be used. 
 
 Here is an example pytest test code:
-```python
+```py
 def add(a, b):
     """Add two numbers and return the result."""
     return a + b
@@ -47,7 +47,7 @@ def test_add_string_raises_typeerror():
 ```
 
 Because we use a lot of async functionality in our code, we must use `pytest-async`:
-```python
+```py
 @pytest.mark.asyncio
 async def test_communicator_close_communication_closes_streamwriter(communicator, connection):
     await communicator.close_communication()

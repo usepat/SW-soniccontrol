@@ -14,10 +14,14 @@ from soniccontrol_gui.utils.widget_registry import WidgetRegistry, get_text_of_w
 from soniccontrol_gui.widgets.notebook import Notebook
 
 
+# We want Suite as scope, so that the gui can be used across tests
+# Because opening the app is time consuming
 @library(auto_keywords=False, scope="SUITE")
 class RobotSonicControlGui:
     def __init__(self):
         self._root: Optional[tk.Tk | tk.Toplevel] = None
+        # Because robot is sync and the gui async, 
+        # we have to embed the gui calls in the asyncio event loop
         self._loop = asyncio.get_event_loop()
 
     @keyword('Open app')
@@ -40,7 +44,8 @@ class RobotSonicControlGui:
     @keyword('Let the app update for "${time_ms}" ms')
     def sleep_update(self, time_ms: int):
         """
-        This shit is needed, because the sleep function of the robot framework pauses the whole application
+        This shit is needed, because the sleep function of the robot framework pauses the whole application,
+        also the execution of the asyncio event loop
         """
         self._loop.run_until_complete(asyncio.sleep(time_ms / 1000))
 
@@ -105,7 +110,11 @@ class RobotSonicControlGui:
         notebook.select(tab_view)
 
     @keyword('Get text of "${index_child}"th child of widget "${name_widget}"')
-    def get_text_of_widget_child(self, index_child: int, name_widget: str) -> str:         
+    def get_text_of_widget_child(self, index_child: int, name_widget: str) -> str:   
+        """
+            @brief gets the text of the ith child of the widget.
+            @usage Useful for inspecting the monitor tab.
+        """      
         widget = WidgetRegistry.get_widget(name_widget)
         child = widget.winfo_children()[index_child]
         return get_text_of_widget(child)             

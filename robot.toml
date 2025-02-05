@@ -1,6 +1,6 @@
 output-dir="./tests_robot/results"
 languages = ["en"]
-default-profiles = "worker"
+default-profiles = "simulation"
 
 
 [profiles.worker]

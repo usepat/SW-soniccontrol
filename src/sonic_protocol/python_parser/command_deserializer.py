@@ -32,7 +32,8 @@ class CommandDeserializer:
 
     def _compile_command_regex(self):
         command_identifier_regex = r"(?P<command_identifier>([\!\?\-\=][_a-zA-Z]*)|([_a-zA-Z]+))"
-        command_regex = rf"{command_identifier_regex}(\d+)?(\=.+)?"
+        index_regex = r"((\d+)|(\[.+\]))"
+        command_regex = rf"{command_identifier_regex}{index_regex}?(\=.+)?"
         compiled_pattern = re.compile(command_regex)
         return compiled_pattern
 

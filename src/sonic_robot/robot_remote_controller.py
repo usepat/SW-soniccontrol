@@ -11,10 +11,14 @@ from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.remote_controller import RemoteController
 
 
+# Scope is set to suite, so that the same remote controller can be used across tests.
+# This is done to reduce time needed for tests, because to build up a connection takes quite long.
 @library(auto_keywords=False, scope="SUITE")
 class RobotRemoteController:
     def __init__(self, log_path: Optional[str] = None):
         self._controller = RemoteController(log_path=Path(log_path) if log_path else None)
+        # Because our RemoteController is async, but robot is sync, 
+        # we have to embed all the calls to the RemoteController functions into an asyncio event loop.
         self._loop = asyncio.get_event_loop()
 
     @keyword('Connect via serial to')

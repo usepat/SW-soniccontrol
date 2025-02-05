@@ -1,8 +1,5 @@
-from importlib.resources import files
-import soniccontrol.bin
 from soniccontrol_gui.widgets.message_box import DialogOptions
 
-SIMULATION_MVP_EXE: str = str(files(soniccontrol.bin).joinpath("cli_simulation_mvp"))
 
 
 RIGHT_NOTEBOOK = "right_notebook"

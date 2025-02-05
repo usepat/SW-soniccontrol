@@ -25,10 +25,6 @@ class Answer:
     def is_error_msg(self) -> bool:
         return self.command_code is not None and self.command_code.value >= 20000
 
-    @property
-    def value_dict(self) -> Dict[EFieldName, Any]:
-        return self.field_value_dict
-
 
 @attrs.define()
 class AfterConverter:
