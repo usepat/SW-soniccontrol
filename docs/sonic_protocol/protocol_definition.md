@@ -1,5 +1,5 @@
 @defgroup ProtocolDefinition
-@defgroup SonicProtocol
+@ingroup SonicProtocol
 @addtogroup ProtocolDefinition
 @{
 

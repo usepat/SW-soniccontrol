@@ -1,5 +1,5 @@
 @defgroup UnitTests
-@ingroup ProjectSetup
+@ingroup Testing
 @addtogroup UnitTests
 @{
 
