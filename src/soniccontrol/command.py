@@ -1,6 +1,4 @@
 import asyncio
-import json
-import logging
 import re
 import sys
 import time
@@ -20,8 +18,6 @@ import attrs
 from icecream import ic
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.system import PLATFORM
-
-parrot_feeder = logging.getLogger("parrot_feeder")
 
 
 # TODO: delete this whole file
@@ -420,18 +416,12 @@ class LegacyCommand:
         self.answer.reset()
         if argument is not None:
             self.set_argument(argument)
-
-        if should_log:
-            parrot_feeder.debug("COMMAND_CALL(%s)", json.dumps(self.get_dict()))
         
         response = await connection.send_and_wait_for_response(self.full_message)
 
         self.answer.receive_answer(response.splitlines())
         self.answer.valid = self.validate()
         self.status_result.update({"timestamp": self.answer.received_timestamp})
-
-        if should_log:
-            parrot_feeder.debug("ANSWER(%s)", json.dumps({"message": self.answer.string}))
 
         return (self.answer, self.status_result)
 
