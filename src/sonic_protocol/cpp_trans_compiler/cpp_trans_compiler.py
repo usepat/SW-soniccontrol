@@ -155,7 +155,7 @@ class CppTransCompiler:
         self._field_definitions: dict[AnswerFieldDef, str] = {}
         self._allowed_values: dict[List[Any], str] = {}
 
-    def generate_sonic_protocol_lib(self, output_dir: Path):
+    def generate_sonic_protocol_lib(self, protocol: Protocol, protocol_version: ProtocolVersion, output_dir: Path):
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
@@ -233,23 +233,19 @@ class CppTransCompiler:
 
         )
 
-    def generate_transpiled_protocol(self, protocol: Protocol, protocol_versions: List[ProtocolVersion], output_dir: Path): 
-        self._field_limits_id_counter = 0
+        protocol_builder = ProtocolBuilder(protocol)
         
-        protocol_template_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib").joinpath("generated_protocol.hpp")
-        generated_protocol_path = output_dir / "generated_protocol.hpp"
-        shutil.copyfile(str(protocol_template_path), generated_protocol_path)
+        protocol_cpp_name = f"protocol_{protocol_version.to_cpp_var_name()}"
+        command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
+        protocol_instance, command_defs, answer_defs,  = self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_cpp_name)
 
-        protocol_count = len(protocol_versions)
-        protocol_instances, command_defs, answer_defs = self._transpile_protocols(protocol, protocol_versions)
         param_defs = self._transpile_param_defs_from_cache()
         field_defs = self._transpile_field_defs_from_cache()
         field_limits = self._transpile_field_limits_from_cache()
         allowed_values = self._transpile_allowed_values_from_cache()
         self._inject_code_into_file(
-            generated_protocol_path, 
-            PROTOCOL_INSTANCES=protocol_instances,
-            PROTOCOL_COUNT=protocol_count, 
+            lib_dir / "protocol_instance.hpp", 
+            PROTOCOL_INSTANCE=protocol_instance,
             FIELD_LIMITS=field_limits,
             FIELD_DEFS = field_defs,
             PARAM_DEFS = param_defs,
@@ -257,6 +253,7 @@ class CppTransCompiler:
             COMMAND_DEFS = command_defs,
             ANSWER_DEFS = answer_defs
         )
+        
         
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
         with open(file_path, "r") as source_file:
@@ -266,36 +263,6 @@ class CppTransCompiler:
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
-    def _transpile_protocols(self, protocol: Protocol, protocol_versions: List[ProtocolVersion]) -> Tuple[str, str, str]:
-        """
-        Transpile the given protocol and its versions into C++ code.
-        Args:
-            protocol (Protocol): The protocol to be transpiled.
-            protocol_versions (List[ProtocolVersion]): A list of protocol versions to transpile.
-        Returns:
-            Tuple[str, str, str]: A tuple containing:
-                - protocol_instances (str): The transpiled protocol instances.
-                - command_defs (str): The transpiled command definitions.
-                - answer_defs (str): The transpiled answer definitions.
-        """
-
-        protocol_builder = ProtocolBuilder(protocol)
-        transpiled_protocols = []
-        max_command_count = 0
-        for protocol_version in protocol_versions:
-            protocol_cpp_name = f"protocol_{protocol_version.to_cpp_var_name()}"
-            command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
-            max_command_count = max(max_command_count, len(command_lookup_table))
-            transpiled_protocols.append(self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_cpp_name))
-        protocol_instances = ""
-        command_defs = ""
-        answer_defs = ""
-
-        for protocol_def, command_defs_array, answer_defs_array in transpiled_protocols:
-            protocol_instances += protocol_def + ",\n"
-            command_defs += command_defs_array + "\n"
-            answer_defs += answer_defs_array + "\n"
-        return protocol_instances, command_defs, answer_defs
 
     def _transpile_command_contracts(
             self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name: str) -> Tuple[str, str, str]:
@@ -507,13 +474,7 @@ if __name__ == "__main__":
     compiler = CppTransCompiler()
     output_dir=Path("./output/generated")
     compiler.generate_sonic_protocol_lib(
-        output_dir=output_dir
-    )
-    compiler.generate_transpiled_protocol(
         protocol=prot.protocol,
-        protocol_versions=[
-            ProtocolVersion(Version(1, 0, 0), DeviceType.MVP_WORKER),
-            ProtocolVersion(Version(1, 0, 0), DeviceType.DESCALE),
-        ],
+        protocol_version=ProtocolVersion(Version(1, 0, 0), DeviceType.MVP_WORKER),
         output_dir=output_dir
     )
