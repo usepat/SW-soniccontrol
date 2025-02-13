@@ -42,10 +42,10 @@ class RemoteController:
         self._proc_controller = ProcedureController(self._device, updater=self._updater)
         self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)
 
-    async def connect_via_serial(self, url: Path) -> None:
+    async def connect_via_serial(self, url: Path, baudrate: int = 9600) -> None:
         assert self._device is None
         connection_name = url.name
-        connection_factory = SerialConnectionFactory(connection_name=connection_name, url=url)
+        connection_factory = SerialConnectionFactory(connection_name=connection_name, url=url, baudrate=baudrate)
         await self._connect(connection_factory, connection_name)
         assert self._device is not None
 

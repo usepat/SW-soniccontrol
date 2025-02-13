@@ -1,0 +1,1 @@
+from soniccontrol_cli.soniccontrol_cli import cli

@@ -36,7 +36,7 @@ def check_high_dpi_windows() -> None:
 
 
 def setup_fonts() -> None:
-    print("Installing fonts...")
+    soniccontrol_logger.info("Installing fonts...")
     font_files = []
     for font_resource in resources.FONTS.iterdir():
         if fnmatch.fnmatch(font_resource.name, "*.ttf"):
@@ -46,7 +46,7 @@ def setup_fonts() -> None:
             [
                 str(rs.files(f"soniccontrol_gui.bin.font-install.{sys.platform}").joinpath("font-install")),
                 *list(font for font in font_files),
-            ],
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL # Devnull, so that they do not print to the command line
         )
         if process.returncode != 0:
             raise RuntimeError("Failed to install fonts")

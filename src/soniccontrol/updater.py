@@ -23,9 +23,9 @@ class Updater(EventManager):
         self._task = asyncio.create_task(self._loop())
 
     async def stop(self) -> None:
-        assert self._task is not None
         self._running.clear()
-        await self._task
+        if self._task is not None:
+            await self._task
 
     async def update(self) -> None:
         # HINT: If ever needed to update different device attributes, we can do that, by checking what components the device has

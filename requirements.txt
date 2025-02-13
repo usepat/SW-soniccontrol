@@ -13,6 +13,7 @@ callee==0.3.1
 certifi==2024.7.4
 cffi==1.17.0
 charset-normalizer==3.3.2
+click==8.1.8
 colorama==0.4.6
 contourpy==1.2.1
 coverage==7.6.1
