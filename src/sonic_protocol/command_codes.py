@@ -121,6 +121,7 @@ class CommandCode(IntEnum):
     SET_COM_PROT = 2010
     SET_PHYS_COM_CHANNEL = 2020 
     SET_TERMINATION = 2030
+    CLEAR_ERRORS = 2040  # clears all errors currently only used by the device internal but later we will make this a legit command
 
 
     # commands that execute something
