@@ -47,7 +47,6 @@ class Monitor(Cmd):
         click.echo_via_pager(manual)
 
     def do_exit(self, arg: str) -> bool | None:
-        click.echo("Exiting the monitor")
         return True
 
     def _lint_output(self, output: str) -> str:

@@ -1,1 +1,1 @@
-from soniccontrol_cli.soniccontrol_cli import cli
+from soniccontrol_cli.cli import cli

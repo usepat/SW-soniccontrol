@@ -96,13 +96,13 @@ class RemoteController:
 
         self._proc_controller.execute_proc(ProcedureType.RAMP, ramp_args)
 
-    def execute_procedure(self, procedure: ProcedureType, args: dict) -> None:
+    def execute_procedure(self, procedure: ProcedureType, args: dict, event_loop=asyncio.get_event_loop()) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         assert self._proc_controller is not None
 
         arg_class = self._proc_controller.proc_args_list[procedure]
-        procedure_args = arg_class(args)
-        self._proc_controller.execute_proc(procedure, procedure_args)
+        procedure_args = arg_class(**args)
+        self._proc_controller.execute_proc(procedure, procedure_args, event_loop)
 
     async def stop_procedure(self) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED

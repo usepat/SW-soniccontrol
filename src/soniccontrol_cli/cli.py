@@ -1,8 +1,9 @@
 import click
 
 from soniccontrol.remote_controller import RemoteController
-from soniccontrol_gui.constants import files
 from soniccontrol_cli.monitor import Monitor
+from soniccontrol_cli.procedures import add_procedure_commands
+from soniccontrol_gui.constants import files
 import pathlib
 import asyncio
 from enum import Enum
@@ -13,9 +14,8 @@ class ConnectionType(Enum):
     PROCESS = "process"
     SERIAL = "serial"
 
-async_loop = asyncio.get_event_loop()
-
-
+REMOTE_CONTROLLER = "REMOTE_CONTROLLER"
+ASYNC_LOOP = "ASYNC_LOOP"
 
 @click.group()
 @click.option("--log-dir", type=click.Path(path_type=pathlib.Path, file_okay=False), default=files.LOG_DIR)
@@ -23,12 +23,14 @@ async_loop = asyncio.get_event_loop()
 @click.option("--connection", type=click.Choice([ConnectionType.PROCESS.value, ConnectionType.SERIAL.value]), default=ConnectionType.SERIAL.value)
 @click.option("--baudrate", type=click.Choice(["9600", "112500"]), default="112500")
 @click.pass_context
-def cli(ctx: click.Context, log_dir: pathlib.Path, port: pathlib.Path, connection: str, baudrate: str):    
+def cli(ctx: click.Context, log_dir: pathlib.Path, port: pathlib.Path, connection: str, baudrate: str):        
     logging.getLogger().handlers.clear()
 
     click.echo("Connecting to the device...")
 
     remote_controller = RemoteController(log_path=log_dir)
+    async_loop = asyncio.get_event_loop()
+
 
     match ConnectionType(connection):
         case ConnectionType.PROCESS:
@@ -38,13 +40,15 @@ def cli(ctx: click.Context, log_dir: pathlib.Path, port: pathlib.Path, connectio
 
     click.echo("Connected to device")
 
-    ctx.ensure_object(RemoteController)
-    ctx.obj = remote_controller
+    ctx.ensure_object(dict)
+    ctx.obj[REMOTE_CONTROLLER] = remote_controller
+    ctx.obj[ASYNC_LOOP] = async_loop
     
 @cli.result_callback()
 @click.pass_context
 def disconnect(ctx: click.Context, *args, **kwargs):
-    remote_controller: RemoteController = ctx.obj
+    remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]
+    async_loop: asyncio.AbstractEventLoop = ctx.obj[ASYNC_LOOP]
     if remote_controller.is_connected():
         click.echo("Disconnecting from the device...")
         async_loop.run_until_complete(remote_controller.disconnect())
@@ -53,20 +57,51 @@ def disconnect(ctx: click.Context, *args, **kwargs):
 @cli.command()
 @click.pass_context
 def monitor(ctx: click.Context):
-    remote_controller: RemoteController = ctx.obj
+    remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]
+    async_loop: asyncio.AbstractEventLoop = ctx.obj[ASYNC_LOOP]
     monitor = Monitor(remote_controller, async_loop)
     monitor.cmdloop()
 
-
-@cli.command()
+@cli.group()
 @click.pass_context
 def procedure(ctx: click.Context):
-    remote_controller: RemoteController = ctx.obj
+    pass
+
+@procedure.result_callback()
+@click.pass_context
+def procedure_result_callback(ctx: click.Context, *args, **kwargs):
+    remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]
+    async_loop: asyncio.AbstractEventLoop = ctx.obj[ASYNC_LOOP]
+    
+    # TODO: print updates until proc finished
+    click.echo("Procedure is being executed")
+
+    assert (remote_controller._proc_controller)
+    async_loop.run_until_complete(remote_controller._proc_controller.wait_for_proc_to_finish())
+    click.echo("Procedure finished")
+
+add_procedure_commands(procedure)
+
+@cli.group()
+def group1(ctx: click.Context):
+    pass
+
+@group1.command()
+def cmd1():
+    pass
 
 @cli.command()
 @click.pass_context
 def script(ctx: click.Context):
-    remote_controller: RemoteController = ctx.obj
+    remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]
+    async_loop: asyncio.AbstractEventLoop = ctx.obj[ASYNC_LOOP]
+
+@cli.command()
+@click.pass_context
+def spectrum(ctx: click.Context):
+    remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]
+    async_loop: asyncio.AbstractEventLoop = ctx.obj[ASYNC_LOOP]
+
 
 if __name__ == "__main__":
     cli()

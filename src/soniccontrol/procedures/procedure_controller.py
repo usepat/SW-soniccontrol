@@ -43,15 +43,15 @@ class ProcedureController(EventManager):
     def is_proc_running(self) -> bool:
         return not (self._running_proc_task is None or self._running_proc_task.done() or self._running_proc_task.cancelled())
 
-    def execute_proc(self, proc_type: ProcedureType, args: Any) -> None:
+    def execute_proc(self, proc_type: ProcedureType, args: Any, event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()) -> None:
         assert(proc_type in self._procedures)
         procedure = self._procedures.get(proc_type, None)
         if procedure is None:
             raise Exception(f"The procedure {repr(proc_type)} is not available for the current device")
        
-        self.execute_procedure(procedure, proc_type, args)
+        self.execute_procedure(procedure, proc_type, args, event_loop)
 
-    def execute_procedure(self, procedure: Procedure, proc_type: ProcedureType, args: Any):
+    def execute_procedure(self, procedure: Procedure, proc_type: ProcedureType, args: Any, event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()):
         if self.is_proc_running:
             raise Exception("There is already a procedure running")
         
@@ -66,7 +66,7 @@ class ProcedureController(EventManager):
             except asyncio.CancelledError:
                 await self._device.set_signal_off()
 
-        self._running_proc_task = asyncio.create_task(proc_task())
+        self._running_proc_task = event_loop.create_task(proc_task())
         self._running_proc_task.add_done_callback(lambda _e: self._on_proc_finished()) # Not sure, if I should call this directly in proc_task
         self.emit(Event(ProcedureController.PROCEDURE_RUNNING, proc_type=proc_type))
 
@@ -76,6 +76,9 @@ class ProcedureController(EventManager):
             self._running_proc_task.cancel()
             await self._running_proc_task
             self._on_proc_finished()
+
+    async def wait_for_proc_to_finish(self) -> None:
+        await self._remote_procedure_state.wait_till_procedure_completed()
 
     def _on_proc_finished(self) -> None:
         self._logger.info("Procedure stopped")

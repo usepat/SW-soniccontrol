@@ -4,6 +4,7 @@ from typing import Any, Literal, Tuple, Union, cast
 
 import attrs
 from attrs import validators
+import re
 
 TimeUnit = Literal["ms", "s"]
 
@@ -49,10 +50,18 @@ HoldTuple = Tuple[Union[int, float], TimeUnit]
 def convert_to_holder_args(obj: Any) -> HolderArgs:
     if isinstance(obj, tuple) and len(obj) == 2:
         return HolderArgs(*obj)
+    elif isinstance(obj, str):
+        regex = r"(?P<duration>\d+(\.\d+)?) *(?P<unit>(ms)|s)"
+        match_result = re.match(regex, obj)
+        if match_result is None:
+            raise ValueError("The string needs to contain the length of duration followed by an unit [s/ms]")
+        duration = float(match_result.group("duration"))
+        unit: Literal["s", "ms"] = match_result.group("unit") # type: ignore
+        return HolderArgs(duration, unit)
     elif isinstance(obj, HolderArgs):
         return obj
     elif isinstance(obj, int):
-        return HolderArgs(obj, "s")
+        return HolderArgs(obj, "ms")
     else:
         raise TypeError(f"No known conversion from {type(obj)} to {HolderArgs}")
 
