@@ -2,6 +2,7 @@ import click
 
 from soniccontrol.remote_controller import RemoteController
 from soniccontrol_gui.constants import files
+from soniccontrol_cli.monitor import Monitor
 import pathlib
 import asyncio
 from enum import Enum
@@ -25,6 +26,8 @@ async_loop = asyncio.get_event_loop()
 def cli(ctx: click.Context, log_dir: pathlib.Path, port: pathlib.Path, connection: str, baudrate: str):    
     logging.getLogger().handlers.clear()
 
+    click.echo("Connecting to the device...")
+
     remote_controller = RemoteController(log_path=log_dir)
 
     match ConnectionType(connection):
@@ -32,6 +35,8 @@ def cli(ctx: click.Context, log_dir: pathlib.Path, port: pathlib.Path, connectio
             async_loop.run_until_complete(remote_controller.connect_via_process(port))
         case ConnectionType.SERIAL:
             async_loop.run_until_complete(remote_controller.connect_via_serial(port, int(baudrate)))
+
+    click.echo("Connected to device")
 
     ctx.ensure_object(RemoteController)
     ctx.obj = remote_controller
@@ -41,12 +46,17 @@ def cli(ctx: click.Context, log_dir: pathlib.Path, port: pathlib.Path, connectio
 def disconnect(ctx: click.Context, *args, **kwargs):
     remote_controller: RemoteController = ctx.obj
     if remote_controller.is_connected():
+        click.echo("Disconnecting from the device...")
         async_loop.run_until_complete(remote_controller.disconnect())
+        click.echo("Disconnected from device")
 
 @cli.command()
 @click.pass_context
 def monitor(ctx: click.Context):
     remote_controller: RemoteController = ctx.obj
+    monitor = Monitor(remote_controller, async_loop)
+    monitor.cmdloop()
+
 
 @cli.command()
 @click.pass_context

@@ -84,7 +84,6 @@ class DeviceBuilder:
                 device_type = answer.field_value_dict[EFieldName.DEVICE_TYPE]
                 protocol_version = answer.field_value_dict[EFieldName.PROTOCOL_VERSION]
                 is_release = answer.field_value_dict[EFieldName.IS_RELEASE]
-                result_dict.update(answer.field_value_dict)
             else:
                 builder_logger.debug("Device does not understand ?protocol command")
         else:
@@ -104,10 +103,12 @@ class DeviceBuilder:
             answer = await device.execute_command(cmds.GetInfo(), should_log=False)
             result_dict.update(answer.field_value_dict)
         
-        info.device_type = result_dict.get(EFieldName.DEVICE_TYPE, DeviceType.UNKNOWN)
+        info.device_type = device_type
+        info.protocol_version = protocol_version
+        info.is_release = is_release
         info.firmware_version = result_dict.get(EFieldName.FIRMWARE_VERSION, Version(0, 0, 0))
+        info.hardware_version = result_dict.get(EFieldName.HARDWARE_VERSION, Version(0, 0, 0))
         # TODO: firmware info
-        info.protocol_version = result_dict.get(EFieldName.PROTOCOL_VERSION, Version(0, 0, 0))
 
         builder_logger.info("Device type: %s", info.device_type)
         builder_logger.info("Firmware version: %s", info.firmware_version)

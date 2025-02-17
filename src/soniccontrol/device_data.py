@@ -36,6 +36,8 @@ class Modules:
 class Info:
     # TODO refactor this
     device_type: DeviceType = attrs.field(default=DeviceType.UNKNOWN)
+    hardware_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version)
     firmware_info: str = attrs.field(default="") # TODO does not match with validators of info command
     firmware_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version) 
     protocol_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version)
+    is_release: bool = attrs.field(default=True)
