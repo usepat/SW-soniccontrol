@@ -8,6 +8,7 @@ import pathlib
 import asyncio
 from enum import Enum
 import logging
+import io
 
 
 class ConnectionType(Enum):
@@ -83,10 +84,17 @@ def procedure_result_callback(ctx: click.Context, *args, **kwargs):
 add_procedure_commands(procedure)
 
 @cli.command()
+@click.argument("script-file", type=click.File("r"))
 @click.pass_context
-def script(ctx: click.Context):
+def script(ctx: click.Context, script_file: io.IOBase):
     remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]
     async_loop: asyncio.AbstractEventLoop = ctx.obj[ASYNC_LOOP]
+    
+    script_text = script_file.read()
+    async_loop.run_until_complete(remote_controller.execute_script(script_text, 
+        callback=lambda task_desc: click.echo(task_desc)
+    ))
+
 
 @cli.command()
 @click.pass_context

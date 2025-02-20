@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.commands import Command
@@ -82,13 +82,13 @@ class RemoteController:
         answer = await self._device.execute_command(command)
         return answer.message, answer.field_value_dict, answer.valid
 
-    async def execute_script(self, text: str) -> None:
+    async def execute_script(self, text: str, callback: Callable[[str], None] = lambda task: None) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         assert self._scripting is not None
 
         interpreter = self._scripting.parse_script(text)
         async for line_index, task in interpreter:
-            pass
+            callback(task)
 
     def execute_ramp(self, ramp_args: RamperArgs) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
