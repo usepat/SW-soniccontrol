@@ -25,6 +25,7 @@ class Capture(EventManager):
         self._capture_file_format = "sonicmeasure-{}.csv"
         self._data_provider = DataProvider()
         self._csv_data_collector = CsvWriter()
+        self._target: CaptureTarget | None = None
 
     @property 
     def is_capturing(self) -> bool:
@@ -38,6 +39,7 @@ class Capture(EventManager):
         assert not self._is_capturing
 
         self._target = capture_target
+        self._target.subscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
         await self._target.before_start_capture()
         self._data_provider.clear_data()
 
@@ -54,7 +56,7 @@ class Capture(EventManager):
         self._target.run_to_capturing_task()
 
     @async_handler
-    async def capture_target_completed_callback(self):
+    async def capture_target_completed_callback(self, _e):
         """!
             @brief Helper Method so end_capture can be called over a callback
 
@@ -64,6 +66,7 @@ class Capture(EventManager):
 
     async def end_capture(self):
         assert self._is_capturing
+        assert self._target
 
         self._csv_data_collector.close_file()
         self._is_capturing = False
@@ -71,6 +74,7 @@ class Capture(EventManager):
         self._logger.info("End Capture")
 
         await self._target.after_end_capture()
+        self._target.unsubscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
 
 
     def on_update(self, status: Dict[EFieldName, Any]):

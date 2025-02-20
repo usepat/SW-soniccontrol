@@ -8,6 +8,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledText
 from async_tkinter_loop import async_handler
 
+from soniccontrol_gui.state_fetching.capture_target import CaptureScriptArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
@@ -25,7 +26,7 @@ from soniccontrol_gui.resources import images
 
 
 @attrs.define
-class ScriptFile:
+class ScriptFile(CaptureScriptArgs):
     filepath: str = attrs.field(default="./script.sonic")
     text: str = attrs.field(default="")
     filetypes: List[Tuple[str, str]] = attrs.field(default=[("Text Files", "*.txt"), ("Sonic Script", "*.sonic")])
@@ -45,6 +46,10 @@ class ScriptFile:
         with pathlib.Path(self.filepath).open("w") as f:
             self.logger.info("Save script to %s", self.filepath)
             f.write(self.text)
+
+    @property
+    def script_text(self) -> str:
+        return self.text
 
 
 class Editor(UIComponent):

@@ -2,10 +2,8 @@
 import abc
 from enum import Enum
 from typing import Any
-from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasure, SpectrumMeasureArgs, SpectrumMeasureModel
-from soniccontrol_gui.state_fetching.updater import Updater
-from soniccontrol_gui.views.control.editor import ScriptFile
-from soniccontrol_gui.views.control.proc_controlling import ProcControllingModel
+from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasure, SpectrumMeasureArgs
+from soniccontrol.updater import Updater
 from soniccontrol.events import Event, EventManager, PropertyChangeEvent
 from soniccontrol.procedures.procedure import ProcedureType
 from soniccontrol.procedures.procedure_controller import ProcedureController
@@ -53,10 +51,16 @@ class CaptureFree(CaptureTarget):
         pass
 
 
+class CaptureScriptArgs:
+    @property
+    @abc.abstractmethod
+    def script_text(self) -> str:
+        ...
+
 class CaptureScript(CaptureTarget):
-    def __init__(self, script_file: ScriptFile, scripting_facade: ScriptingFacade, interpreter_engine: InterpreterEngine):
+    def __init__(self, script_args: CaptureScriptArgs, scripting_facade: ScriptingFacade, interpreter_engine: InterpreterEngine):
         super().__init__()
-        self._script_file = script_file
+        self._script_args = script_args
         self._interpreter_engine = interpreter_engine
         self._scripting_facade = scripting_facade
         self._is_capturing = False
@@ -73,8 +77,8 @@ class CaptureScript(CaptureTarget):
             self.emit(Event(CaptureTarget.COMPLETED_EVENT))
 
     async def before_start_capture(self) -> None:
-        text = self._script_file.text
-        script = self._scripting_facade.parse_script(text)
+        script_text = self._script_args.script_text
+        script = self._scripting_facade.parse_script(script_text)
         self._interpreter_engine.script = script
         self._is_capturing = True
 
@@ -87,13 +91,25 @@ class CaptureScript(CaptureTarget):
             await self._interpreter_engine.stop()
 
 
+class CaptureProcedureArgs:
+    @property
+    @abc.abstractmethod
+    def procedure_type(self) -> ProcedureType:
+        ...
+
+    @property
+    @abc.abstractmethod
+    def procedure_args(self) -> dict:
+        ...
+
 class CaptureProcedure(CaptureTarget):
-    def __init__(self, procedure_controller: ProcedureController, proc_model: ProcControllingModel):
+    def __init__(self, procedure_controller: ProcedureController, proc_args: CaptureProcedureArgs):
         super().__init__()
         self._procedure_controller = procedure_controller
-        self._proc_model = proc_model
+        self._selected_proc: ProcedureType | None = None
         self._args: Any | None = None
         self._is_capturing = False
+        self._proc_args = proc_args
         self._procedure_controller.subscribe(
             ProcedureController.PROCEDURE_STOPPED, 
             self._notify_on_procedure_finished
@@ -106,15 +122,15 @@ class CaptureProcedure(CaptureTarget):
         self.emit(Event(CaptureTarget.COMPLETED_EVENT))
 
     async def before_start_capture(self) -> None:
-        selected_proc = self._proc_model.selected_procedure
-        proc_class = self._procedure_controller.proc_args_list[selected_proc]
-        proc_args = self._proc_model.selected_procedure_args
-        self._args = proc_class(**proc_args)
+        self._selected_proc = self._proc_args.procedure_type
+        proc_class = self._procedure_controller.proc_args_list[self._selected_proc]
+        self._args = proc_class(**self._proc_args.procedure_args)
         self._is_capturing = True
 
     def run_to_capturing_task(self) -> None:
         assert self._args is not None
-        self._procedure_controller.execute_proc(self._proc_model.selected_procedure, self._args)
+        assert self._selected_proc
+        self._procedure_controller.execute_proc(self._selected_proc, self._args)
 
     async def after_end_capture(self) -> None:
         self._is_capturing = False
@@ -122,12 +138,18 @@ class CaptureProcedure(CaptureTarget):
             await self._procedure_controller.stop_proc()
 
 
+class CaptureSpectrumArgs:
+    @property
+    @abc.abstractmethod
+    def procedure_args(self) -> dict:
+        ...
+
 class CaptureSpectrumMeasure(CaptureTarget):
-    def __init__(self, updater: Updater, procedure_controller: ProcedureController, spectrum_measure_model: SpectrumMeasureModel):
+    def __init__(self, updater: Updater, procedure_controller: ProcedureController, spectrum_args: CaptureSpectrumArgs):
         super().__init__()
         self._updater = updater
         self._procedure_controller = procedure_controller
-        self._spectrum_measure_model = spectrum_measure_model
+        self._spectrum_args = spectrum_args
         self._spectrum_measure = SpectrumMeasure(self._updater)
         self._args: SpectrumMeasureArgs | None = None
         self._is_capturing = False
@@ -143,9 +165,9 @@ class CaptureSpectrumMeasure(CaptureTarget):
         self.emit(Event(CaptureTarget.COMPLETED_EVENT))
 
     async def before_start_capture(self) -> None:
-        await self._updater.stop()
-        proc_args = self._spectrum_measure_model.form_fields
+        proc_args = self._spectrum_args.procedure_args
         self._args = SpectrumMeasureArgs(**proc_args)
+        await self._updater.stop()
         self._is_capturing = True
 
     def run_to_capturing_task(self) -> None:

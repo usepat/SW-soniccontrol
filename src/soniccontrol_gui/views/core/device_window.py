@@ -7,7 +7,7 @@ import tkinter as tk
 from sonic_protocol.command_codes import CommandCode
 from soniccontrol_gui.state_fetching.capture import Capture
 from soniccontrol_gui.state_fetching.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
-from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasureModel
+from soniccontrol_gui.views.measure.measuring import SpectrumMeasureModel
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -19,7 +19,7 @@ from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
 from soniccontrol.scripting.scripting_facade import BuiltInFunctions
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.state_fetching.logger import LogStorage, NotDeviceLogFilter
-from soniccontrol_gui.state_fetching.updater import Updater
+from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol.events import Event, EventManager
 from soniccontrol_gui.views.configuration.configuration import Configuration

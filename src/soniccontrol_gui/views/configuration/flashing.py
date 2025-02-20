@@ -4,7 +4,7 @@ from enum import Enum
 import logging
 from pathlib import Path
 from typing import Final, Callable
-from soniccontrol_gui.state_fetching.updater import Updater
+from soniccontrol.updater import Updater
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView
 from soniccontrol.communication.communicator import Communicator

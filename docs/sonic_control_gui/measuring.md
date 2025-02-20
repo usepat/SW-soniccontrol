@@ -21,7 +21,7 @@ There should be generated a csv table for each measurement.
 
 ## Implementation
 
-An [Updater](@ref soniccontrol_gui.state_fetching.updater.Updater) runs in the backgrounds and fetches the whole time the device status over the dash command. 
+An [Updater](@ref soniccontrol.updater.Updater) runs in the backgrounds and fetches the whole time the device status over the dash command. 
 
 ### Starting and Stopping Captures
 

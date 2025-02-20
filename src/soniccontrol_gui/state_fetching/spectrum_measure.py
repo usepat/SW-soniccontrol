@@ -1,18 +1,14 @@
 
 import asyncio
-from typing import Any, Dict, List, Type, Union
+from typing import List, Type, Union
 import attrs
 
 from sonic_protocol.python_parser import commands
-from soniccontrol_gui.state_fetching.updater import Updater
+from soniccontrol.updater import Updater
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure
 from soniccontrol.procedures.procs.ramper import RamperArgs
-
-@attrs.define()
-class SpectrumMeasureModel:
-    form_fields: Dict[str, Any] = attrs.field(default={})
 
 @attrs.define()
 class SpectrumMeasureArgs(RamperArgs):

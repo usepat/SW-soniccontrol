@@ -8,7 +8,6 @@ from ttkbootstrap.scrolled import ScrolledFrame
 import json
 from sonic_protocol.python_parser import commands
 from soniccontrol.procedures.procedure_controller import ProcedureController
-from soniccontrol_gui.state_fetching.updater import Updater
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView

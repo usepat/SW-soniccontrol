@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, Iterable
 
 from async_tkinter_loop import async_handler
 import attrs
+from soniccontrol_gui.state_fetching.capture_target import CaptureProcedureArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -21,13 +22,17 @@ from soniccontrol_gui.resources import images
 
 
 @attrs.define()
-class ProcControllingModel:
+class ProcControllingModel(CaptureProcedureArgs):
     selected_procedure: ProcedureType = attrs.field(default=ProcedureType.RAMP)
-    procedure_args: Dict[ProcedureType, dict] = attrs.field(default={})
+    procedure_arg_dict: Dict[ProcedureType, dict] = attrs.field(default={})
 
     @property
-    def selected_procedure_args(self) -> dict:
-        return self.procedure_args[self.selected_procedure]
+    def procedure_type(self) -> ProcedureType:
+        return self.selected_procedure
+
+    @property
+    def procedure_args(self) -> dict:
+        return self.procedure_arg_dict[self.selected_procedure]
 
 
 class ProcControlling(UIComponent):
@@ -71,7 +76,7 @@ class ProcControlling(UIComponent):
                 proc_type.value, args_class, proc_dict,
             )
             proc_widget.view.hide()
-            self._model.procedure_args[proc_type] = proc_dict
+            self._model.procedure_arg_dict[proc_type] = proc_dict
             self._proc_widgets[proc_type] = proc_widget
         proc_names = map(lambda proc_type: proc_type.value, self._proc_controller.proc_args_list.keys())
         self._view.set_procedure_combobox_items(proc_names)

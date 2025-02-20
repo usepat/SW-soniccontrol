@@ -1,9 +1,10 @@
 import logging
-from typing import Dict, Iterable, List
+from typing import Any, Dict, Iterable, List
 from async_tkinter_loop import async_handler
+import attrs
 import matplotlib.figure
 from soniccontrol_gui.state_fetching.capture_target import CaptureTarget, CaptureTargets
-from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasure, SpectrumMeasureModel
+from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasure
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -23,6 +24,16 @@ from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.measure.plotting import Plotting
 from soniccontrol_gui.utils.plotlib.plot_builder import PlotBuilder
+from soniccontrol_gui.state_fetching.capture_target import CaptureSpectrumArgs
+
+
+@attrs.define()
+class SpectrumMeasureModel(CaptureSpectrumArgs):
+    form_fields: Dict[str, Any] = attrs.field(default={})
+
+    @property
+    def procedure_args(self) -> dict:
+        return self.form_fields
 
 
 class Measuring(UIComponent):
@@ -33,10 +44,6 @@ class Measuring(UIComponent):
         self._capture = capture # TODO: move this to device window
         self._capture_targets = capture_targets
         
-        # ensures that capture ends if a target completes
-        for target in self._capture_targets.values():
-            target.subscribe(CaptureTarget.COMPLETED_EVENT, lambda _e: self._capture.capture_target_completed_callback())
- 
         self._view = MeasuringView(parent.view)
         super().__init__(parent, self._view, self._logger)
 
