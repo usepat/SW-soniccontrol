@@ -31,7 +31,7 @@ def create_click_option(arg_name: str, arg_type: attrs.Attribute):
         type_ = HolderParam()
 
     cmd_opt_name = "--" + arg_name.replace("_", "-")  
-    return click.Option([cmd_opt_name], type=type_)
+    return click.Option([cmd_opt_name], type=type_, prompt=arg_name)
 
 def create_procedure_command(command_str: str, procedure_type: ProcedureType, 
                             proc_arg_class: Type) -> click.Command:

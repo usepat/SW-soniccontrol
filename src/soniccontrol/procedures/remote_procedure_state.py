@@ -9,9 +9,9 @@ class RemoteProcedureState:
 
     def update(self, proc_type: ProcedureType | None):
         if proc_type != self._current_proc:
-            self._current_proc = proc_type
-            if not (proc_type is not None or self._current_proc is None): # if change from None to Proc, it started the procedure, instead of completing it
+            if self._current_proc is not None: # if change from None to Proc, it started the procedure, instead of completing it
                 self._completed.set()
+            self._current_proc = proc_type
 
     def reset_completion_flag(self):
         self._completed.clear()

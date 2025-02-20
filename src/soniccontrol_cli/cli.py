@@ -31,7 +31,6 @@ def cli(ctx: click.Context, log_dir: pathlib.Path, port: pathlib.Path, connectio
     remote_controller = RemoteController(log_path=log_dir)
     async_loop = asyncio.get_event_loop()
 
-
     match ConnectionType(connection):
         case ConnectionType.PROCESS:
             async_loop.run_until_complete(remote_controller.connect_via_process(port))
@@ -59,6 +58,7 @@ def disconnect(ctx: click.Context, *args, **kwargs):
 def monitor(ctx: click.Context):
     remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]
     async_loop: asyncio.AbstractEventLoop = ctx.obj[ASYNC_LOOP]
+    async_loop.run_until_complete(remote_controller.stop_updater())
     monitor = Monitor(remote_controller, async_loop)
     monitor.cmdloop()
 
@@ -81,14 +81,6 @@ def procedure_result_callback(ctx: click.Context, *args, **kwargs):
     click.echo("Procedure finished")
 
 add_procedure_commands(procedure)
-
-@cli.group()
-def group1(ctx: click.Context):
-    pass
-
-@group1.command()
-def cmd1():
-    pass
 
 @cli.command()
 @click.pass_context
