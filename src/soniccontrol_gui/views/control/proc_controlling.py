@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Iterable
 
 from async_tkinter_loop import async_handler
 import attrs
-from soniccontrol_gui.state_fetching.capture_target import CaptureProcedureArgs
+from soniccontrol.data_capturing.capture_target import CaptureProcedureArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View

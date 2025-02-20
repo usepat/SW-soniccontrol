@@ -25,8 +25,8 @@ An [Updater](@ref soniccontrol.updater.Updater) runs in the backgrounds and fetc
 
 ### Starting and Stopping Captures
 
-There exists a [Capture](@ref soniccontrol_gui.state_fetching.capture.Capture) class that is responsible for turning on and off the capturing  and sets up and tears down the [Capture Target](@ref soniccontrol_gui.state_fetching.capture_target.CaptureTarget). It gets the updates form the Updater over events.
-The captured data points are then propagated through events to the [CsvWriter](@ref soniccontrol_gui.state_fetching.csv_writer.CsvWriter) and the [DataProvider](@ref soniccontrol_gui.state_fetching.data_provider.DataProvider).  
+There exists a [Capture](@ref soniccontrol.state_fetching.capture.Capture) class that is responsible for turning on and off the capturing  and sets up and tears down the [Capture Target](@ref soniccontrol.state_fetching.capture_target.CaptureTarget). It gets the updates form the Updater over events.
+The captured data points are then propagated through events to the [CsvWriter](@ref soniccontrol.state_fetching.csv_writer.CsvWriter) and the [DataProvider](@ref soniccontrol.state_fetching.data_provider.DataProvider).  
 - CsvWriter is responsible for writing the csv file
 - The data provider saves only the last 100 data points and provides them to the plots.
 

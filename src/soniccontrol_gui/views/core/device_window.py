@@ -5,8 +5,8 @@ import ttkbootstrap as ttk
 import tkinter as tk
 
 from sonic_protocol.command_codes import CommandCode
-from soniccontrol_gui.state_fetching.capture import Capture
-from soniccontrol_gui.state_fetching.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
+from soniccontrol.data_capturing.capture import Capture
+from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol_gui.views.measure.measuring import SpectrumMeasureModel
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -18,7 +18,7 @@ from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
 from soniccontrol.scripting.scripting_facade import BuiltInFunctions
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol_gui.state_fetching.logger import LogStorage, NotDeviceLogFilter
+from soniccontrol_gui.views.control.log_storage import LogStorage, NotDeviceLogFilter
 from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol.events import Event, EventManager
@@ -36,6 +36,7 @@ from soniccontrol_gui.views.core.status import StatusBar
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.resources import images
+from soniccontrol_gui.constants import files
 
 
 class DeviceWindow(UIComponent):
@@ -173,7 +174,7 @@ class KnownDeviceWindow(DeviceWindow):
 
             update_answer_fields = self._device.lookup_table[CommandCode.GET_UPDATE].answer_def.fields
             update_answer_field_names = [ field.field_name for field in update_answer_fields ] 
-            self._capture = Capture(update_answer_field_names, self._logger)
+            self._capture = Capture(update_answer_field_names, files.LOG_DIR, self._logger)
             self._capture_targets = {
                 CaptureTargets.FREE: CaptureFree(),
                 CaptureTargets.SCRIPT: CaptureScript(self._script_file, self._scripting, self._interpreter),

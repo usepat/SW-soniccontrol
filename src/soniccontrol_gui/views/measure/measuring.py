@@ -3,8 +3,8 @@ from typing import Any, Dict, Iterable, List
 from async_tkinter_loop import async_handler
 import attrs
 import matplotlib.figure
-from soniccontrol_gui.state_fetching.capture_target import CaptureTarget, CaptureTargets
-from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasure
+from soniccontrol.data_capturing.capture_target import CaptureTarget, CaptureTargets
+from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasure
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -15,7 +15,7 @@ import matplotlib
 from soniccontrol_gui.widgets.message_box import MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.widgets.procedure_widget import ProcedureWidget
-from soniccontrol_gui.state_fetching.capture import Capture
+from soniccontrol.data_capturing.capture import Capture
 from soniccontrol_gui.views.measure.csv_table import CsvTable
 matplotlib.use("TkAgg")
 
@@ -24,7 +24,7 @@ from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.measure.plotting import Plotting
 from soniccontrol_gui.utils.plotlib.plot_builder import PlotBuilder
-from soniccontrol_gui.state_fetching.capture_target import CaptureSpectrumArgs
+from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs
 
 
 @attrs.define()

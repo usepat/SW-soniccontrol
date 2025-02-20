@@ -2,7 +2,7 @@
 import abc
 from enum import Enum
 from typing import Any
-from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasure, SpectrumMeasureArgs
+from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasure, SpectrumMeasureArgs
 from soniccontrol.updater import Updater
 from soniccontrol.events import Event, EventManager, PropertyChangeEvent
 from soniccontrol.procedures.procedure import ProcedureType

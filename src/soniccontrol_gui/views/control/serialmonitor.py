@@ -9,7 +9,7 @@ from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.command import LegacyCommand
 from soniccontrol.communication.communicator import Communicator
-from soniccontrol_gui.state_fetching.message_fetcher import MessageFetcher
+from soniccontrol_gui.views.control.message_fetcher import MessageFetcher
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
 from soniccontrol_gui.constants import sizes, style, ui_labels
 from soniccontrol.events import PropertyChangeEvent

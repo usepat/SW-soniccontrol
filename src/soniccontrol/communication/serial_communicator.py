@@ -75,11 +75,11 @@ class SerialCommunicator(Communicator):
         self._reader, self._writer = await connection_factory.open_connection()
         #self._writer.transport.set_write_buffer_limits(0) #Quick fix
         self._protocol = SonicMessageProtocol(self._logger)
-        self._package_fetcher = MessageFetcher(self._reader, self._protocol, self._logger)
+        self._message_fetcher = MessageFetcher(self._reader, self._protocol, self._logger)
         self._connection_opened.set()
         self._writer.write(b'\n')
         await self._writer.drain()
-        self._package_fetcher.run()
+        self._message_fetcher.run()
 
     async def _send_chunks(self, message: bytes) -> None:
         assert self._writer
@@ -115,7 +115,7 @@ class SerialCommunicator(Communicator):
 
     async def _send_and_get(self, request_str: str) -> str:
         assert self._writer is not None
-        assert self._package_fetcher.is_running
+        assert self._message_fetcher.is_running
 
         async with self._lock:
             if request_str != "-":
@@ -142,7 +142,7 @@ class SerialCommunicator(Communicator):
 
             # FIXME: to move the awaiting of the response inside the lock is only a quickfix, because the code on
             # the device of the uart needs to be refactored, so that it can handle messaging bursts.
-            response =  await self._package_fetcher.get_answer_of_request(
+            response =  await self._message_fetcher.get_answer_of_request(
                 message_counter
             )
             if request_str != "-":
@@ -169,11 +169,11 @@ class SerialCommunicator(Communicator):
             raise ConnectionError("The connection was closed")
     
     async def read_message(self) -> str:
-        return await self._package_fetcher.pop_message()
+        return await self._message_fetcher.pop_message()
 
     async def close_communication(self, restart : bool = False) -> None:
         self._restart = restart
-        await self._package_fetcher.stop()
+        await self._message_fetcher.stop()
         self._connection_opened.clear()
         if self._writer is not None:
             self._writer.close()
