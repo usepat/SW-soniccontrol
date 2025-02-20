@@ -4,7 +4,7 @@ from async_tkinter_loop import async_handler
 import attrs
 import matplotlib.figure
 from soniccontrol.data_capturing.capture_target import CaptureTarget, CaptureTargets
-from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasure
+from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasure, SpectrumMeasureArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -32,8 +32,8 @@ class SpectrumMeasureModel(CaptureSpectrumArgs):
     form_fields: Dict[str, Any] = attrs.field(default={})
 
     @property
-    def procedure_args(self) -> dict:
-        return self.form_fields
+    def spectrum_args(self) -> SpectrumMeasureArgs:
+        return SpectrumMeasureArgs(**self.form_fields)
 
 
 class Measuring(UIComponent):

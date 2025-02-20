@@ -1,8 +1,11 @@
+import attrs
 import click
 
+from sonic_protocol.field_names import EFieldName
+from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs
 from soniccontrol.remote_controller import RemoteController
 from soniccontrol_cli.monitor import Monitor
-from soniccontrol_cli.procedures import add_procedure_commands
+from soniccontrol_cli.procedures import add_procedure_commands, create_click_option
 from soniccontrol_gui.constants import files
 import pathlib
 import asyncio
@@ -96,11 +99,32 @@ def script(ctx: click.Context, script_file: io.IOBase):
     ))
 
 
-@cli.command()
+@cli.command(
+    params=[
+        create_click_option(arg_name, arg_type)
+        for arg_name, arg_type in attrs.fields_dict(SpectrumMeasureArgs).items()
+    ]
+)
+@click.option("--out-dir", type=click.Path(path_type=pathlib.Path, file_okay=False), default=files.LOG_DIR)
+@click.option("--fields", type=str, default="", help="Comma separated list of fields to include")
 @click.pass_context
-def spectrum(ctx: click.Context):
+def spectrum(ctx: click.Context, *args, **kwargs):
     remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]
     async_loop: asyncio.AbstractEventLoop = ctx.obj[ASYNC_LOOP]
+
+    out_dir: pathlib.Path = kwargs.pop("out_dir") # type: ignore
+    fields: str = kwargs.pop("fields") # type: ignore
+    spectrum_args = SpectrumMeasureArgs(**kwargs)
+
+    if len(fields) > 0:
+        data_fields = [ EFieldName(field) for field in fields.split(",") ]
+    else:
+        data_fields = []
+
+    click.echo("Measuring spectrum")
+    async_loop.run_until_complete(
+        remote_controller.measure_spectrum(out_dir, spectrum_args, data_fields=data_fields)
+    )
 
 
 if __name__ == "__main__":

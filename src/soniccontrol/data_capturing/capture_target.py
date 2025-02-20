@@ -141,7 +141,7 @@ class CaptureProcedure(CaptureTarget):
 class CaptureSpectrumArgs:
     @property
     @abc.abstractmethod
-    def procedure_args(self) -> dict:
+    def spectrum_args(self) -> SpectrumMeasureArgs:
         ...
 
 class CaptureSpectrumMeasure(CaptureTarget):
@@ -165,8 +165,7 @@ class CaptureSpectrumMeasure(CaptureTarget):
         self.emit(Event(CaptureTarget.COMPLETED_EVENT))
 
     async def before_start_capture(self) -> None:
-        proc_args = self._spectrum_args.procedure_args
-        self._args = SpectrumMeasureArgs(**proc_args)
+        self._args = self._spectrum_args.spectrum_args
         await self._updater.stop()
         self._is_capturing = True
 

@@ -1,7 +1,8 @@
+import asyncio
 import datetime
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 from async_tkinter_loop import async_handler
 
@@ -16,10 +17,10 @@ class Capture(EventManager):
     START_CAPTURE_EVENT = "START_CAPTURE_EVENT"
     END_CAPTURE_EVENT = "END_CAPTURE_EVENT"
 
-    def __init__(self, data_fields: List[EFieldName], output_dir: Path, logger: logging.Logger = logging.getLogger()):
+    def __init__(self, data_fields: Sequence[EFieldName], output_dir: Path, logger: logging.Logger = logging.getLogger()):
         super().__init__()
         self._logger = logging.getLogger(logger.name + "." + Capture.__name__)
-        self._is_capturing = False
+        self._completed_capturing: asyncio.Event = asyncio.Event()
         self._data_attrs = data_fields
         self._has_no_timestamp = EFieldName.TIMESTAMP not in self._data_attrs
         self._output_dir = output_dir
@@ -27,17 +28,21 @@ class Capture(EventManager):
         self._data_provider = DataProvider()
         self._csv_data_collector = CsvWriter()
         self._target: CaptureTarget | None = None
+        self._completed_capturing.set()
 
     @property 
     def is_capturing(self) -> bool:
-        return self._is_capturing
+        return not self._completed_capturing.is_set()
+    
+    async def wait_for_capture_to_complete(self):
+        await self._completed_capturing.wait()
     
     @property
     def data_provider(self) -> DataProvider:
         return self._data_provider
     
     async def start_capture(self, capture_target: CaptureTarget = CaptureFree()):
-        assert not self._is_capturing
+        assert self._completed_capturing.is_set()
 
         self._target = capture_target
         self._target.subscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
@@ -50,7 +55,7 @@ class Capture(EventManager):
         if self._has_no_timestamp:
             header.insert(0, EFieldName.TIMESTAMP.value)
         self._csv_data_collector.open_file(capture_filename, header)
-        self._is_capturing = True
+        self._completed_capturing.clear()
         self.emit(Event(Capture.START_CAPTURE_EVENT))
         self._logger.info("Start Capture")
 
@@ -66,11 +71,12 @@ class Capture(EventManager):
         await self.end_capture()
 
     async def end_capture(self):
-        assert self._is_capturing
+        assert not self._completed_capturing.is_set()
         assert self._target
 
         self._csv_data_collector.close_file()
-        self._is_capturing = False
+        self._completed_capturing.set()
+        
         self.emit(Event(Capture.END_CAPTURE_EVENT))
         self._logger.info("End Capture")
 
@@ -79,7 +85,7 @@ class Capture(EventManager):
 
 
     def on_update(self, status: Dict[EFieldName, Any]):
-        if self._is_capturing:
+        if not self._completed_capturing.is_set():
             attrs: Dict[str, Any] = {}
             if self._has_no_timestamp:
                 attrs[EFieldName.TIMESTAMP.value] = datetime.datetime.now()
