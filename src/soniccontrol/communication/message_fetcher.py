@@ -34,11 +34,11 @@ class MessageFetcher:
         return self._task is not None and not self._task.done()
 
     def run(self) -> None:
-        self._logger.debug("Start package fetcher")
+        self._logger.debug("Start message fetcher")
         self._task = asyncio.create_task(self._worker())
 
     async def stop(self) -> None:
-        self._logger.debug("Stop package fetcher")
+        self._logger.debug("Stop message fetcher")
         if self._task is not None:
             self._task.cancel()
             try:
@@ -50,21 +50,22 @@ class MessageFetcher:
     async def _worker(self) -> None:
         COMMAND_CODE_DASH = "20"
 
+        response = ""
         while True:
             try:
                 response = await self._read_response()
                 self._queue_message(response)
                 answer_id, answer = self._protocol.parse_response(response)
             except asyncio.CancelledError:
-                self._logger.info("Package fetcher was stopped")
+                self._logger.info("Message fetcher was stopped")
                 return
             except Exception as e:
                 self._logger.error("Exception occured while reading the package:\n%s", e)
-                return
+                continue
 
             if answer:
                 if answer.startswith(COMMAND_CODE_DASH):
-                    self._logger.info("Read package: %s", response)
+                    self._logger.info("Read message: %s", response)
             
                 self._answers[answer_id] = answer
 

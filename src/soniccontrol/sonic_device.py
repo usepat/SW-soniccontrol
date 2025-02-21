@@ -2,7 +2,6 @@ import logging
 
 import attrs
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import CommandDef
 from sonic_protocol.python_parser.answer import Answer, AnswerValidator
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
