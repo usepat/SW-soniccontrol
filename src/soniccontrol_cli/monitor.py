@@ -27,7 +27,7 @@ class Monitor(Cmd):
         loading_message = "Waiting for answer"
         num_dots = 5
         animation = Animator(
-            sequence=DotAnimationSequence("\r{loading_message}", num_dots=num_dots), 
+            sequence=DotAnimationSequence(f"\r{loading_message}", num_dots=num_dots), 
             apply_on_target=lambda animation_frame_str: click.echo(animation_frame_str, nl=False), 
             frame_rate=5,
             done_callback=lambda: click.echo(f"\r{' ' * (len(loading_message) + num_dots)}\r", nl=False) # for deleting the loading string
