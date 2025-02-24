@@ -82,7 +82,7 @@ class DeviceWindowManager:
             
             serial: Communicator = SerialCommunicator(logger=logger) #type: ignore
             await serial.open_communication(connection_factory)
-            sonicamp = await DeviceBuilder().build_amp(comm=serial, logger=logger, use_fallback_protocol=True)
+            sonicamp = await DeviceBuilder().build_amp(comm=serial, logger=logger, open_in_rescue_mode=True)
             self.open_rescue_window(sonicamp, connection_factory)
         except Exception as e:
             logger.error(e)
