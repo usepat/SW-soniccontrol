@@ -12,7 +12,7 @@ from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.communicator_builder import CommunicatorBuilder
-from soniccontrol.communication.connection_factory import CLIConnectionFactory, ConnectionFactory, SerialConnectionFactory
+from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.sonic_device import SonicDevice
@@ -25,9 +25,9 @@ from soniccontrol_gui.resources import images
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 
 class DeviceConnectionClasses:
-    def __init__(self, deviceWindow : DeviceWindow, connectionFactory : ConnectionFactory):
+    def __init__(self, deviceWindow : DeviceWindow, connection : Connection):
         self._deviceWindow = deviceWindow
-        self._connectionFactory = connectionFactory
+        self._connection = connection
 
 
 class DeviceWindowManager:
@@ -35,38 +35,38 @@ class DeviceWindowManager:
         self._root = root
         self._id_device_window_counter = 0
         self._opened_device_windows: Dict[int, DeviceConnectionClasses] = {}
-        self._attempt_connection_callback: Optional[Callable[[ConnectionFactory], Awaitable[None]]] = None
+        self._attempt_connection_callback: Optional[Callable[[Connection], Awaitable[None]]] = None
 
-    def open_rescue_window(self, sonicamp: SonicDevice, connection_factory : ConnectionFactory) -> DeviceWindow:
-        device_window = RescueWindow(sonicamp, self._root, connection_factory.connection_name)
-        self._open_device_window(device_window, connection_factory)
+    def open_rescue_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
+        device_window = RescueWindow(sonicamp, self._root, connection.connection_name)
+        self._open_device_window(device_window, connection)
         
         return device_window
 
-    def open_known_device_window(self, sonicamp: SonicDevice, connection_factory : ConnectionFactory) -> DeviceWindow:
-        device_window = KnownDeviceWindow(sonicamp, self._root, connection_factory.connection_name)
-        self._open_device_window(device_window, connection_factory)
+    def open_known_device_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
+        device_window = KnownDeviceWindow(sonicamp, self._root, connection.connection_name)
+        self._open_device_window(device_window, connection)
         return device_window
     
-    def _open_device_window(self, device_window: DeviceWindow, connection_factory : ConnectionFactory):
+    def _open_device_window(self, device_window: DeviceWindow, connection : Connection):
         device_window._view.focus_set()  # grab focus and bring window to front
         self._id_device_window_counter += 1
         device_window_id = self._id_device_window_counter
-        self._opened_device_windows[device_window_id] = DeviceConnectionClasses(device_window, connection_factory)
+        self._opened_device_windows[device_window_id] = DeviceConnectionClasses(device_window, connection)
         device_window.subscribe(
             DeviceWindow.CLOSE_EVENT, lambda _: self._opened_device_windows.pop(device_window_id) #type: ignore
         )
         device_window.subscribe(
-            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_connection_callback(connection_factory)) #type: ignore
+            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_connection_callback(connection)) #type: ignore
         )    
         
-    async def attempt_connection(self, connection_factory: ConnectionFactory):
-        logger = create_logger_for_connection(connection_factory.connection_name, files.LOG_DIR)
+    async def attempt_connection(self, connection: Connection):
+        logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
         logger.debug("Established serial connection")
 
         try:
             serial = await CommunicatorBuilder.build(
-                connection_factory,
+                connection,
                 logger=logger
             )
             logger.debug("Build SonicDevice for device")
@@ -81,20 +81,20 @@ class DeviceWindowManager:
                 return
             
             serial: Communicator = SerialCommunicator(logger=logger) #type: ignore
-            await serial.open_communication(connection_factory)
+            await serial.open_communication(connection)
             sonicamp = await DeviceBuilder().build_amp(comm=serial, logger=logger, open_in_rescue_mode=True)
-            self.open_rescue_window(sonicamp, connection_factory)
+            self.open_rescue_window(sonicamp, connection)
         except Exception as e:
             logger.error(e)
             MessageBox.show_error(self._root, str(e))
         else:
             logger.info("Created device successfully, open device window")
             if sonicamp.info.protocol_version >= Version(1, 0, 0):
-                self.open_known_device_window(sonicamp, connection_factory)
+                self.open_known_device_window(sonicamp, connection)
             else:
-                self.open_rescue_window(sonicamp, connection_factory)
+                self.open_rescue_window(sonicamp, connection)
 
-    def set_attempt_connection_callback(self, callback: Callable[[ConnectionFactory], Awaitable[None]]):
+    def set_attempt_connection_callback(self, callback: Callable[[Connection], Awaitable[None]]):
         self._attempt_connection_callback = callback
 
 
@@ -114,8 +114,8 @@ class ConnectionWindow(UIComponent):
         decorator = load_animation(animation)
         self._device_window_manager = DeviceWindowManager(self._view)
         
-        async def _attempt_connection(connection_factory: ConnectionFactory):
-            await self._device_window_manager.attempt_connection(connection_factory)
+        async def _attempt_connection(_connection: Connection):
+            await self._device_window_manager.attempt_connection(_connection)
 
         self._is_connecting = False # Make this to asyncio Event if needed
         self._attempt_connection = decorator(_attempt_connection)
@@ -148,8 +148,8 @@ class ConnectionWindow(UIComponent):
         url = self._view.get_url()
         baudrate = 9600
 
-        connection_factory = SerialConnectionFactory(url=url, baudrate=baudrate, connection_name=Path(url).name)
-        await self._attempt_connection(connection_factory)
+        connection = SerialConnection(url=url, baudrate=baudrate, connection_name=Path(url).name)
+        await self._attempt_connection(connection)
         self._is_connecting = False
 
     @async_handler 
@@ -161,9 +161,9 @@ class ConnectionWindow(UIComponent):
 
         bin_file = self._simulation_exe_path 
 
-        connection_factory = CLIConnectionFactory(bin_file=bin_file, connection_name = "simulation")
+        connection = CLIConnection(bin_file=bin_file, connection_name = "simulation")
 
-        await self._attempt_connection(connection_factory)
+        await self._attempt_connection(connection)
         self._is_connecting = False
 
 

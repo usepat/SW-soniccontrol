@@ -8,7 +8,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.commands import Command
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.communicator_builder import CommunicatorBuilder
-from soniccontrol.communication.connection_factory import CLIConnectionFactory, ConnectionFactory, SerialConnectionFactory
+from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure
 from soniccontrol.logging_utils import create_logger_for_connection
@@ -35,13 +35,13 @@ class RemoteController:
         self._log_path: Optional[Path] = log_path
         self._updater: Optional[Updater] = None
 
-    async def _connect(self, connection_factory: ConnectionFactory, connection_name: str):
+    async def _connect(self, connection: Connection, connection_name: str):
         if self._log_path:
             logger = create_logger_for_connection(connection_name, self._log_path)   
         else:
             logger = create_logger_for_connection(connection_name)
         serial = await CommunicatorBuilder.build(
-            connection_factory,
+            connection,
             logger=logger
         )
         self._device = await DeviceBuilder().build_amp(comm=serial, logger=logger)
@@ -54,15 +54,15 @@ class RemoteController:
     async def connect_via_serial(self, url: Path, baudrate: int = 9600) -> None:
         assert self._device is None
         connection_name = url.name
-        connection_factory = SerialConnectionFactory(connection_name=connection_name, url=url, baudrate=baudrate)
-        await self._connect(connection_factory, connection_name)
+        connection = SerialConnection(connection_name=connection_name, url=url, baudrate=baudrate)
+        await self._connect(connection, connection_name)
         assert self._device is not None
 
     async def connect_via_process(self, process_file: Path) -> None:
         assert self._device is None
         connection_name = process_file.name
-        connection_factory = CLIConnectionFactory(connection_name=connection_name, bin_file=process_file)
-        await self._connect(connection_factory, connection_name)
+        connection = CLIConnection(connection_name=connection_name, bin_file=process_file)
+        await self._connect(connection, connection_name)
         assert self._device is not None
 
     def is_connected(self) -> bool:
