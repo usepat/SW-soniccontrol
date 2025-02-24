@@ -34,33 +34,6 @@ class CommunicatorBuilder:
 
         com_logger = logging.getLogger(logger.name + "." + CommunicatorBuilder.__name__)
 
-        com_logger.info("Trying to connect with legacy protocol")
-        serial: Communicator = LegacySerialCommunicator(logger=logger)  #type: ignore
-        commands_legacy: CommandSetLegacy = CommandSetLegacy(serial)
-
-        try:
-            await serial.open_communication(connection_factory)
-            await commands_legacy.get_info.execute(should_log=False)
-        except Exception as e:
-            com_logger.error(str(e))
-        else:
-            # For some reason the get_info command of the legacy protocol can also understand the new ones.
-            # FIXME: Is there some better way to fix this?
-            response = commands_legacy.get_info.answer.string
-            try:
-                SonicMessageProtocol(com_logger).parse_response(response)
-            except SyntaxError:
-                pass
-            else:
-                commands_legacy.get_info.answer.valid = False # response is message. Do not use legacy communicator
-
-            if commands_legacy.get_info.answer.valid:
-                com_logger.info("Connected with legacy protocol")
-                return serial
-            
-        await serial.close_communication()
-        com_logger.warn("Connection could not be established with legacy protocol")
-
         com_logger.info("Trying to connect with new sonic protocol")
         serial = SerialCommunicator(logger=logger) #type: ignore
 

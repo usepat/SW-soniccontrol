@@ -76,8 +76,6 @@ class SerialCommunicator(Communicator):
         #self._writer.transport.set_write_buffer_limits(0) #Quick fix
         self._protocol = SonicMessageProtocol(self._logger)
         self._message_fetcher = MessageFetcher(self._reader, self._protocol, self._logger)
-        self._connection_opened.set()
-        self._writer.write(b'\n')
         await self._writer.drain()
         self._message_fetcher.run()
 
