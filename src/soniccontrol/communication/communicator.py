@@ -37,10 +37,6 @@ class Communicator(abc.ABC, EventManager):
     @abc.abstractmethod
     async def close_communication(self, restart: bool = False) -> None: ...
 
-    @property
-    @abc.abstractmethod
-    def handshake_result(self) -> str: ...
-
     @abc.abstractmethod
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str: ...
 

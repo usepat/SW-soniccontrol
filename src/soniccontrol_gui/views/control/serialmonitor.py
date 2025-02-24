@@ -7,7 +7,6 @@ from async_tkinter_loop import async_handler
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
-from soniccontrol.command import LegacyCommand
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol_gui.views.control.message_fetcher import MessageFetcher
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
@@ -68,8 +67,8 @@ class SerialMonitor(UIComponent):
 
     async def _send_and_receive(self, command_str: str) -> str:
         try:
-            answer, _ = await LegacyCommand(message=command_str).execute(connection=self._communicator)
-            return answer.string
+            answer_str = await self._communicator.send_and_wait_for_response(command_str)
+            return answer_str
         except Exception as e:
             self._logger.error(str(e))
             return str(e)        

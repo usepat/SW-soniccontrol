@@ -114,9 +114,7 @@ class SonicDevice(Scriptable):
             if isinstance(command, str):
                 answer = await self._send_message(
                     command, 
-                    try_deduce_answer_validator=try_deduce_command_if_str,
-                    estimated_response_time=0.4,
-                    expects_long_answer=True # kwargs needed for the old legacy communicator
+                    try_deduce_answer_validator=try_deduce_command_if_str
                 )
             else:
                 answer = await self._send_command(command)

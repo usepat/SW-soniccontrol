@@ -6,9 +6,7 @@ from sonic_protocol import protocol
 from sonic_protocol.defs import DeviceType, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import ProtocolBuilder
-from soniccontrol.command import LegacyAnswerValidator, LegacyCommand
 from soniccontrol.communication.communicator import Communicator
-from soniccontrol.communication.serial_communicator import LegacySerialCommunicator
 from soniccontrol.sonic_device import (
     Info,
     SonicDevice,
@@ -17,33 +15,6 @@ import sonic_protocol.python_parser.commands as cmds
 
 
 class DeviceBuilder:
-    def _parse_legacy_handshake(self, ser: LegacySerialCommunicator) -> Dict[str, Any]:
-        init_command = LegacyCommand(
-            estimated_response_time=0.5,
-            validators=[
-                LegacyAnswerValidator(pattern=r".*(khz|mhz).*", relay_mode=str),
-                LegacyAnswerValidator(
-                    pattern=r".*freq[uency]*\s*=?\s*([\d]+).*", frequency=int
-                ),
-                LegacyAnswerValidator(pattern=r".*gain\s*=?\s*([\d]+).*", gain=int),
-                LegacyAnswerValidator(
-                    pattern=r".*signal.*(on|off).*",
-                    signal=lambda b: b.lower() == "on",
-                ),
-                LegacyAnswerValidator(
-                    pattern=r".*(serial|manual).*",
-                    communication_mode=str,
-                ),
-            ],
-            serial_communication=ser,
-        )
-        init_command.answer.receive_answer(
-            ser.handshake_result
-        )
-        init_command.validate()
-        
-        return init_command.status_result
-
 
     async def build_amp(self, comm: Communicator, logger: logging.Logger = logging.getLogger(), use_fallback_protocol: bool = False) -> SonicDevice:
         """!
@@ -56,8 +27,7 @@ class DeviceBuilder:
         await comm.connection_opened.wait()
         builder_logger.debug("Serial connection is open, start building device")
 
-        handshake: Dict[str, Any] = self._parse_legacy_handshake(comm) if isinstance(comm, LegacySerialCommunicator) else {}
-        result_dict: Dict[EFieldName, Any] = { EFieldName(k): v for k, v in handshake.items() }
+        result_dict: Dict[EFieldName, Any] = {}
         
         protocol_version: Version = Version(0, 0, 0)
         device_type: DeviceType = DeviceType.UNKNOWN
