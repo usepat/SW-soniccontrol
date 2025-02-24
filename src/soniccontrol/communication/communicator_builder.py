@@ -1,7 +1,7 @@
 import logging
 from typing import Union
 
-from soniccontrol.communication.connection_factory import ConnectionFactory
+from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import SonicMessageProtocol
 from soniccontrol.communication.serial_communicator import (
@@ -11,7 +11,7 @@ from soniccontrol.communication.serial_communicator import (
 class CommunicatorBuilder:
     @staticmethod
     async def build(
-        connection_factory: ConnectionFactory, logger: logging.Logger
+        connection: Connection, logger: logging.Logger
     ) -> Communicator:
         """
         Builds a connection using the provided `reader` and `writer` objects.
@@ -36,7 +36,7 @@ class CommunicatorBuilder:
         serial = SerialCommunicator(logger=logger) #type: ignore
 
         try:
-            await serial.open_communication(connection_factory)
+            await serial.open_communication(connection)
             await serial.send_and_wait_for_response("?test") # just send some garbage and look, if it returns a valid response
         except Exception as e:
             com_logger.error(str(e))

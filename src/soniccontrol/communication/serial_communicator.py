@@ -3,7 +3,7 @@ import logging
 from typing import Final, Optional
 
 import attrs
-from soniccontrol.communication.connection_factory import ConnectionFactory, SerialConnectionFactory
+from soniccontrol.communication.connection import Connection, SerialConnection
 from soniccontrol.communication.message_fetcher import MessageFetcher
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol
@@ -53,16 +53,16 @@ class SerialCommunicator(Communicator):
         return self._connection_opened
     
     async def open_communication(
-        self, connection_factory: ConnectionFactory,
+        self, connection: Connection,
         baudrate = 9600
     ) -> None:
-        self._connection_factory = connection_factory
+        self._connection = connection
         self._logger.debug("try open communication")
-        if isinstance(connection_factory, SerialConnectionFactory):
-            connection_factory.baudrate = baudrate
+        if isinstance(connection, SerialConnection):
+            connection.baudrate = baudrate
 
         self._restart = False 
-        self._reader, self._writer = await connection_factory.open_connection()
+        self._reader, self._writer = await self._connection.open_connection()
         #self._writer.transport.set_write_buffer_limits(0) #Quick fix
         self._protocol = SonicMessageProtocol(self._logger)
         self._message_fetcher = MessageFetcher(self._reader, self._protocol, self._logger)
@@ -165,9 +165,7 @@ class SerialCommunicator(Communicator):
         self._restart = restart
         await self._message_fetcher.stop()
         self._connection_opened.clear()
-        if self._writer is not None:
-            self._writer.close()
-            await self._writer.wait_closed()
+        await self._connection.close_connection()
         self._reader = None
         self._writer = None
         self._logger.info("Disconnected from device")
@@ -176,4 +174,4 @@ class SerialCommunicator(Communicator):
 
     async def change_baudrate(self, baudrate: int) -> None:
         await self.close_communication(restart=True)
-        await self.open_communication(self._connection_factory, baudrate)
+        await self.open_communication(self._connection, baudrate)

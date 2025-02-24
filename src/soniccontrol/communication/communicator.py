@@ -2,7 +2,7 @@
 import abc
 import asyncio
 
-from soniccontrol.communication.connection_factory import ConnectionFactory
+from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.message_protocol import CommunicationProtocol
 from soniccontrol.events import EventManager
 
@@ -31,7 +31,7 @@ class Communicator(abc.ABC, EventManager):
 
     @abc.abstractmethod
     async def open_communication(
-        self, connection_factory: ConnectionFactory, baudrate: int
+        self, connection: Connection, baudrate: int
     ): ...
 
     @abc.abstractmethod
