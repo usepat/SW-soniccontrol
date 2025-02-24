@@ -38,7 +38,9 @@ Reconnect
 Send command and check if the device crashes
     [Documentation]    Sends a command and then checks if the remote controller is still connected to the device
     [Arguments]    ${command_request}
+    [Timeout]    1 minute 00 seconds
     ${answer}=    RemoteController.Send Command     ${command_request}
+    
     ${answer_message}=    Set Variable    ${answer}[0]
     ${is_answer_valid}=    Set Variable    ${answer}[2]
 
@@ -53,6 +55,7 @@ Send command and check response
     [Documentation]    Sends a command and checks if it is valid. 
     ...    Then it checks if the field values of the answer are equal to the expected values given in the arguments.
     [Arguments]    ${command_request}    ${should_be_valid}=${True}    &{expected_answer_values}
+    [Timeout]    0 minute 30 seconds
     ${answer}=    RemoteController.Send Command     ${command_request}
     ${answer_message}=    Set Variable    ${answer}[0]
     ${answer_value_dict}=    Set Variable    ${answer}[1]

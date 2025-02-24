@@ -1,6 +1,7 @@
 output-dir="./tests_robot/results"
 languages = ["en"]
 default-profiles = "simulation"
+skip-teardown-on-exit = true
 
 
 [profiles.worker]
@@ -14,4 +15,5 @@ excludes = [ "worker" ]
 [profiles.simulation]
 variables = { TARGET = "simulation" }
 excludes = [ "descaler" ]
+
 
