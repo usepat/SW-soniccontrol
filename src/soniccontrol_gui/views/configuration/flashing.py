@@ -7,8 +7,6 @@ from typing import Final, Callable
 from soniccontrol.updater import Updater
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView
-from soniccontrol.communication.communicator import Communicator
-from soniccontrol.communication.serial_communicator import LegacySerialCommunicator, SerialCommunicator
 from soniccontrol.flashing.firmware_flasher import NewFirmwareFlasher
 from soniccontrol.sonic_device import SonicDevice
 
@@ -22,7 +20,6 @@ from soniccontrol_gui.views.core.app_state import AppState
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.widgets.file_browse_button import FileBrowseButtonView
-from soniccontrol.system import PLATFORM
 
 
 # List of all flash mode options

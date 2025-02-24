@@ -213,8 +213,6 @@ class KnownDeviceWindow(DeviceWindow):
                 self._logging.view, 
             ], right_one=True)
 
-            self._logger.debug(list(WidgetRegistry._widget_registry.keys()))
-
             self._logger.debug("add callbacks and listeners to event emitters")
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))

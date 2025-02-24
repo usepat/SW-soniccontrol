@@ -26,30 +26,6 @@ class CommunicationProtocol:
     def major_version(self) -> int: ...
 
 
-class LegacyProtocol(CommunicationProtocol):
-    def __init__(self):
-        super().__init__()
-
-    @property
-    def separator(self) -> str:
-        return "\n"
-
-    def parse_response(self, response: str) -> str:
-        return response
-
-    def parse_request(self, request: str, request_id: int) -> Any:
-        return request
-    
-    @abc.abstractmethod
-    def prot_type(self) -> ProtocolType:
-        return ProtocolType.SONIC_MESSAGE_PROTOCOL
-
-    @property
-    @abc.abstractmethod
-    def major_version(self) -> int:
-        return 1
-
-
 class DeviceLogLevel(Enum):
     ERROR = "ERROR"
     WARN = "WARN"

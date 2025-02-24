@@ -16,17 +16,18 @@ from soniccontrol.communication.serial_communicator import Communicator
 class SonicDevice(Scriptable):
     communicator: Communicator = attrs.field(on_setattr=attrs.setters.NO_OP)
     _logger: logging.Logger = attrs.field()
-    _command_deserializer: CommandDeserializer = attrs.field()
     info: Info = attrs.field(on_setattr=attrs.setters.NO_OP)
     lookup_table: CommandLookUpTable = attrs.field(on_setattr=attrs.setters.NO_OP)
 
-    def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, info: Info, logger: logging.Logger=logging.getLogger()) -> None:
+    def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, info: Info, 
+                 is_in_rescue_mode: bool = False, logger: logging.Logger=logging.getLogger()) -> None:
         self.info = info
         self._logger = logging.getLogger(logger.name + "." + SonicDevice.__name__)
         self.communicator = communicator
         self.lookup_table = lookup_table
         self._command_deserializer = CommandDeserializer(self.lookup_table)
         self._command_serializer = CommandSerializer(self.lookup_table)
+        self._is_in_rescue_mode = is_in_rescue_mode
 
     def has_command(self, command: CommandCode | Command) -> bool:
         if isinstance(command, Command):
@@ -61,7 +62,9 @@ class SonicDevice(Scriptable):
             if command_code:
                 answer_validator = self.lookup_table[command_code].answer_validator
         
-        if answer_validator is None:
+        if answer_validator is None or self._is_in_rescue_mode:
+            # In open rescue mode, if we cannot understand the answers of the device.
+            # So in rescue mode, we skip the validation of the answers
             answer = Answer(response_str, False, was_validated=False)
         else:
             answer = answer_validator.validate(response_str)
@@ -114,9 +117,7 @@ class SonicDevice(Scriptable):
             if isinstance(command, str):
                 answer = await self._send_message(
                     command, 
-                    try_deduce_answer_validator=try_deduce_command_if_str,
-                    estimated_response_time=0.4,
-                    expects_long_answer=True # kwargs needed for the old legacy communicator
+                    try_deduce_answer_validator=try_deduce_command_if_str
                 )
             else:
                 answer = await self._send_command(command)

@@ -14,7 +14,7 @@ from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.communicator_builder import CommunicatorBuilder
 from soniccontrol.communication.connection_factory import CLIConnectionFactory, ConnectionFactory, SerialConnectionFactory
 from soniccontrol.communication.communicator import Communicator
-from soniccontrol.communication.serial_communicator import LegacySerialCommunicator
+from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
@@ -80,9 +80,9 @@ class DeviceWindowManager:
             if user_answer is None or user_answer == DialogOptions.NO: 
                 return
             
-            serial: Communicator = LegacySerialCommunicator(logger=logger) #type: ignore
+            serial: Communicator = SerialCommunicator(logger=logger) #type: ignore
             await serial.open_communication(connection_factory)
-            sonicamp = await DeviceBuilder().build_amp(comm=serial, logger=logger, use_fallback_protocol=True)
+            sonicamp = await DeviceBuilder().build_amp(comm=serial, logger=logger, open_in_rescue_mode=True)
             self.open_rescue_window(sonicamp, connection_factory)
         except Exception as e:
             logger.error(e)

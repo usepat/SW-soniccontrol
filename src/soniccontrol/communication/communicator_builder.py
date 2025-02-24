@@ -1,12 +1,10 @@
 import logging
 from typing import Union
 
-from soniccontrol.commands import CommandSetLegacy
 from soniccontrol.communication.connection_factory import ConnectionFactory
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import SonicMessageProtocol
 from soniccontrol.communication.serial_communicator import (
-    LegacySerialCommunicator,
     SerialCommunicator,
 )
 
