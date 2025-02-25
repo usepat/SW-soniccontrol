@@ -274,8 +274,8 @@ field_duty_cycle_t_on = AnswerFieldDef(
     field_name=EFieldName.DUTY_CYCLE_T_ON,
     field_type= FieldType(
         field_type=np.uint32,
-        min_value=DeviceParamConstantType.MIN_T_ON,
-        max_value=DeviceParamConstantType.MAX_T_ON,
+        min_value=DeviceParamConstantType.MIN_DUTY_CYCLE_T_ON,
+        max_value=DeviceParamConstantType.MAX_DUTY_CYCLE_T_ON,
         si_unit=SIUnit.SECONDS,
     ),
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: "),
@@ -285,8 +285,8 @@ field_duty_cycle_t_off = AnswerFieldDef(
     field_name=EFieldName.DUTY_CYCLE_T_OFF,
     field_type=FieldType(
         field_type=np.uint32,
-        min_value=DeviceParamConstantType.MIN_T_OFF,
-        max_value=DeviceParamConstantType.MAX_T_OFF,
+        min_value=DeviceParamConstantType.MIN_DUTY_CYCLE_T_OFF,
+        max_value=DeviceParamConstantType.MAX_DUTY_CYCLE_T_OFF,
         si_unit=SIUnit.SECONDS,
     ),
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Toff: ")

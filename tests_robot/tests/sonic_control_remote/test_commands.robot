@@ -93,6 +93,7 @@ Test if freq set by setter can be retrieved with getter
 
 Send Example Commands
     [Tags]    expensive_to_run
+    [Timeout]   1 minutes
     ${command_examples_list}=    RemoteController.Deduce list of command examples
     ${num_iterations} =    Get Length    ${command_examples_list}
     FOR  ${i}    ${command_example}  IN ENUMERATE    @{command_examples_list}
