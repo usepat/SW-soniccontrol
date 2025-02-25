@@ -89,6 +89,7 @@ class RemoteController:
     async def send_command(self, command: str | Command) -> Tuple[str, Dict[EFieldName, Any], bool]:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         answer = await self._device.execute_command(command)
+        answer.field_value_dict[EFieldName.COMMAND_CODE] = answer.command_code # TODO you gotta do better senator
         return answer.message, answer.field_value_dict, answer.valid
 
     async def execute_script(self, text: str, callback: Callable[[str], None] = lambda task: None) -> None:

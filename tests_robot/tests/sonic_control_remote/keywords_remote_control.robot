@@ -4,8 +4,11 @@ Resource    ../variables.robot
 
 Library    sonic_robot.RobotRemoteController    log_path=${OUTPUT_DIR}    AS    RemoteController
 Library    sonic_robot.conversion_utils
+Library    Collections
 
 Variables    sonic_robot.field_names
+Variables    sonic_robot.command_codes
+
 
 *** Keywords ***
 
@@ -34,20 +37,29 @@ Reconnect
     RemoteController.Disconnect
     Connect to device
 
+Check command code for errors
+    [Arguments]    ${command_code}
+    @{my_list} =    Create List    ${CODE_E_INTERNAL_DEVICE_ERROR}    ${CODE_E_COMMAND_NOT_KNOWN}    
+    Collections.List Should Not Contain Value    ${my_list}    ${command_code}
+
     
 Send command and check if the device crashes
     [Documentation]    Sends a command and then checks if the remote controller is still connected to the device
     [Arguments]    ${command_request}
     [Timeout]    1 minute 00 seconds
     ${answer}=    RemoteController.Send Command     ${command_request}
+    ${code}=   Set Variable    ${answer}[1][${FIELD_COMMAND_CODE}]
     
     ${answer_message}=    Set Variable    ${answer}[0]
     ${is_answer_valid}=    Set Variable    ${answer}[2]
 
     Log    Answer received: "${answer_message}"
     Log    Is Answer Valid: "${is_answer_valid}"
+    
+    Check command code for errors    ${code}
 
     ${is_connected}=    RemoteController.Is connected to device
+    
     Should Be True    ${is_connected}
 
 
