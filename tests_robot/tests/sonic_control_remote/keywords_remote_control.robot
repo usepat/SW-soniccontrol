@@ -39,7 +39,7 @@ Reconnect
 
 Check command code for errors
     [Arguments]    ${command_code}
-    @{my_list} =    Create List    ${CODE_E_INTERNAL_DEVICE_ERROR}    ${CODE_E_COMMAND_NOT_KNOWN}    
+    @{my_list} =    Create List    ${CODE_E_INTERNAL_DEVICE_ERROR}    ${CODE_E_COMMAND_NOT_KNOWN}    ${CODE_E_COMMAND_NOT_PERMITTED}    ${CODE_E_PARSING_ERROR} 
     Collections.List Should Not Contain Value    ${my_list}    ${command_code}
 
     
@@ -55,7 +55,7 @@ Send command and check if the device crashes
 
     Log    Answer received: "${answer_message}"
     Log    Is Answer Valid: "${is_answer_valid}"
-    
+
     Check command code for errors    ${code}
 
     ${is_connected}=    RemoteController.Is connected to device
