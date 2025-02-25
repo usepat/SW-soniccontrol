@@ -55,6 +55,7 @@ class Capture(EventManager):
         if self._has_no_timestamp:
             header.insert(0, EFieldName.TIMESTAMP.value)
         self._csv_data_collector.open_file(capture_filename, header)
+        
         self._completed_capturing.clear()
         self.emit(Event(Capture.START_CAPTURE_EVENT))
         self._logger.info("Start Capture")
@@ -86,11 +87,10 @@ class Capture(EventManager):
 
     def on_update(self, status: Dict[EFieldName, Any]):
         if not self._completed_capturing.is_set():
-            attrs: Dict[str, Any] = {}
-            if self._has_no_timestamp:
+            attrs: Dict[str, Any] = { k.value: v for k, v in status.items() }
+            
+            if EFieldName.TIMESTAMP not in status.keys():
                 attrs[EFieldName.TIMESTAMP.value] = datetime.datetime.now()
-            for attr_name in self._data_attrs:
-                attrs[attr_name.value] = status[attr_name]
 
             self._data_provider.add_row(attrs)
             self._csv_data_collector.write_entry(attrs)
