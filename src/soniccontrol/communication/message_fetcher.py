@@ -4,7 +4,7 @@ from typing import Dict
 from asyncio import StreamReader
 
 from soniccontrol.communication.message_protocol import SonicMessageProtocol
-from soniccontrol.consts import ENCODING
+from soniccontrol.app_config import ENCODING
 
 
 class MessageFetcher:

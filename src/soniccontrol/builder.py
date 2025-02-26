@@ -8,7 +8,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import ProtocolBuilder
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.sonic_device import (
-    Info,
+    FirmwareInfo,
     SonicDevice,
 )
 import sonic_protocol.python_parser.commands as cmds
@@ -33,7 +33,7 @@ class DeviceBuilder:
         device_type: DeviceType = DeviceType.UNKNOWN
         is_release: bool = True
 
-        info = Info()
+        info = FirmwareInfo()
 
         protocol_builder = ProtocolBuilder(protocol.protocol)
 

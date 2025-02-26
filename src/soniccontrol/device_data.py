@@ -32,9 +32,10 @@ class Modules:
 
 
 
-@attrs.define
-class Info:
+@attrs.define(auto_attribs=True)
+class FirmwareInfo:
     # TODO refactor this
+    serial_number: str = attrs.field(default="unknown")
     device_type: DeviceType = attrs.field(default=DeviceType.UNKNOWN)
     hardware_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version)
     firmware_info: str = attrs.field(default="") # TODO does not match with validators of info command

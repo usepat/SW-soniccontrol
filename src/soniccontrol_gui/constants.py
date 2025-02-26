@@ -2,7 +2,7 @@ from typing import Final, List, Literal
 
 import attrs
 
-from soniccontrol.system import PLATFORM, create_appdata_directory
+from soniccontrol.app_config import APP_DATA_DIR
 from soniccontrol_gui.utils.types import ScriptingGuideCardDataDict
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol.procedures.procedure_controller import ProcedureController
@@ -22,7 +22,7 @@ tk_const: Final[_TkinterConstants] = _TkinterConstants()
 
 @attrs.frozen
 class _Files:
-    DATA_DIR =  create_appdata_directory(PLATFORM, "SonicControl")
+    DATA_DIR =  APP_DATA_DIR
     LOG_DIR = DATA_DIR / "logs"
     TRANSDUCDER_CONFIG_JSON = DATA_DIR / "transducer_configs.json"
     SONICCONTROL_LOG = LOG_DIR / "soniccontrol.log"

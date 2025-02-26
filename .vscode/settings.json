@@ -11,9 +11,6 @@
         "${workspaceFolder}/tests"
     ],
     "editor.detectIndentation": true,
-    "python.analysis.extraPaths": [
-        "${workspaceFolder}/tests"
-    ],
     "files.associations": {
         "optional": "cpp",
         "cctype": "cpp",

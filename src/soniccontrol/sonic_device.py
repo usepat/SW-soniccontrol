@@ -7,7 +7,7 @@ from sonic_protocol.python_parser.command_deserializer import CommandDeserialize
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.protocol_builder import CommandLookUpTable
-from soniccontrol.device_data import Info
+from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.communication.serial_communicator import Communicator
 
@@ -16,10 +16,10 @@ from soniccontrol.communication.serial_communicator import Communicator
 class SonicDevice(Scriptable):
     communicator: Communicator = attrs.field(on_setattr=attrs.setters.NO_OP)
     _logger: logging.Logger = attrs.field()
-    info: Info = attrs.field(on_setattr=attrs.setters.NO_OP)
+    info: FirmwareInfo = attrs.field(on_setattr=attrs.setters.NO_OP)
     lookup_table: CommandLookUpTable = attrs.field(on_setattr=attrs.setters.NO_OP)
 
-    def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, info: Info, 
+    def __init__(self, communicator: Communicator, lookup_table: CommandLookUpTable, info: FirmwareInfo, 
                  is_in_rescue_mode: bool = False, logger: logging.Logger=logging.getLogger()) -> None:
         self.info = info
         self._logger = logging.getLogger(logger.name + "." + SonicDevice.__name__)

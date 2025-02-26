@@ -12,7 +12,7 @@ from typing import Optional
 from ttkbootstrap.utility import enable_high_dpi_awareness
 from async_tkinter_loop import async_mainloop
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
-from soniccontrol.system import System, PLATFORM
+from soniccontrol.app_config import System, PLATFORM
 from soniccontrol_gui.constants import files
 from soniccontrol_gui.resources import resources
 from importlib import resources as rs

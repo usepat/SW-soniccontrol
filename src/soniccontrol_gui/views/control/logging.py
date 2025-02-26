@@ -2,7 +2,7 @@
 import logging
 import os
 from typing import Callable, Dict
-from soniccontrol.system import PLATFORM, System
+from soniccontrol.app_config import PLATFORM, System
 from soniccontrol_gui import constants
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView, View
