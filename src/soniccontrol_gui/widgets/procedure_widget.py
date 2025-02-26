@@ -1,6 +1,6 @@
 import abc
 from enum import Enum
-from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar, Union, get_type_hints
 
 import attrs
 from soniccontrol_gui.ui_component import UIComponent
@@ -39,63 +39,25 @@ class FieldViewBase(abc.ABC, Generic[T], View):
     def bind_value_change(self, command: Callable[[T], None]) -> None: ...
 
 
-# This class is more or less just a wrapper for ttk.Entry and StringVar to make it compliant with the other FieldViews
-class StringFieldView(FieldViewBase[str]):
-    def __init__(self, master: ttk.Frame | View, field_name: str, *args, **kwargs):
+PrimitiveT = TypeVar("PrimitiveT", str, float, int, bool)
+class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
+    def __init__(self, master: ttk.Frame | View, factory: Callable[..., PrimitiveT], field_name: str, *args, default_value: PrimitiveT | None = None, **kwargs):
+        if default_value is None:
+            _default_value: PrimitiveT = factory() # create default value. Only works for primitives
+        else:
+            _default_value = default_value
+
+        self._factory = factory
         self._field_name = field_name
-        self._value: ttk.StringVar = ttk.StringVar(value="")
+        self._default_value: PrimitiveT = _default_value 
+        self._str_value: ttk.StringVar = ttk.StringVar(value=str(_default_value))
+        self._value: PrimitiveT = _default_value
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
 
         super().__init__(master, *args, **kwargs)
 
-        self._callback: Callable[[str], None] = lambda _: None
-        self._value.trace_add("write", self._parse_str_value)
-
-
-    def _initialize_children(self) -> None:
-        self.label = ttk.Label(self, text=self._field_name)
-        self.entry = ttk.Entry(self, textvariable=self._value)
-
-        WidgetRegistry.register_widget(self.entry, "entry", self._widget_name)
-
-    def _initialize_publish(self) -> None:
-        self.grid_columnconfigure(1, weight=1)
-
-        self.label.grid(row=0, column=0, padx=5, pady=5)
-        self.entry.grid(row=0, column=1, padx=5, pady=5)
-
-    @property
-    def field_name(self) -> str:
-        return self._field_name
-
-    @property
-    def value(self) -> str:
-        return self._value.get()
-    
-    @value.setter
-    def value(self, v: str) -> None:
-        self._value.set(str(v))
- 
-    def _parse_str_value(self, *_args):
-        self._callback(self._value.get())
-
-    def bind_value_change(self, command: Callable[[str], None]):
-        self._callback = command
-
-
-class IntFieldView(FieldViewBase[int]):
-    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: int = 0, **kwargs):
-        self._field_name = field_name
-        self._default_value = default_value
-        self._str_value: ttk.StringVar = ttk.StringVar(value=str(default_value))
-        self._value = default_value
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
-
-        super().__init__(master, *args, **kwargs)
-
-        self._callback: Callable[[int], None] = lambda _: None
+        self._callback: Callable[[PrimitiveT], None] = lambda _: None
         self._str_value.trace_add("write", self._parse_str_value)
 
 
@@ -116,17 +78,17 @@ class IntFieldView(FieldViewBase[int]):
         return self._field_name
 
     @property
-    def value(self) -> int:
+    def value(self) -> PrimitiveT:
         return self._value
     
     @value.setter
-    def value(self, v: int) -> None:
+    def value(self, v: PrimitiveT) -> None:
         self._value = v
         self._str_value.set(str(v))
  
     def _parse_str_value(self, *_args):
         try:
-            self.value = int(self._str_value.get())
+            self.value = self._factory(self._str_value.get()) 
             self.entry.configure(style=EntryStyle.PRIMARY.value)
         except Exception as _:
             self.value = self._default_value 
@@ -134,58 +96,7 @@ class IntFieldView(FieldViewBase[int]):
         self._callback(self.value)
 
 
-    def bind_value_change(self, command: Callable[[int], None]):
-        self._callback = command
-
-class FloatFieldView(FieldViewBase[float]):
-    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: float = 0., **kwargs):
-        self._field_name = field_name
-        self._default_value = default_value
-        self.value = default_value
-        self._str_value: ttk.StringVar = ttk.StringVar(value=str(default_value))
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
-
-        super().__init__(master, *args, **kwargs)
-
-        self._callback: Callable[[float], None] = lambda _: None
-        self._str_value.trace_add("write", self._parse_str_value)
-
-    def _initialize_children(self) -> None:
-        self.label = ttk.Label(self, text=self._field_name)
-        self.entry = ttk.Entry(self, textvariable=self._str_value)
-
-        WidgetRegistry.register_widget(self.entry, "entry", self._widget_name)
-
-    def _initialize_publish(self) -> None:
-        self.grid_columnconfigure(1, weight=1)
-
-        self.label.grid(row=0, column=0, padx=5, pady=5)
-        self.entry.grid(row=0, column=1, padx=5, pady=5)
-
-    @property
-    def field_name(self) -> str:
-        return self._field_name
-
-    @property
-    def value(self) -> float:
-        return self._value
-    
-    @value.setter
-    def value(self, v: float) -> None:
-        self._value = v
-        self._str_value.set(str(v))
- 
-    def _parse_str_value(self, *_args):
-        try:
-            self.value = float(self._str_value.get())
-            self.entry.configure(style=EntryStyle.PRIMARY.value)
-        except Exception as _:
-            self.value = self._default_value 
-            self.entry.configure(style=EntryStyle.DANGER.value)
-        self._callback(self.value)
-
-    def bind_value_change(self, command: Callable[[float], None]):
+    def bind_value_change(self, command: Callable[[PrimitiveT], None]):
         self._callback = command
 
 
@@ -260,7 +171,7 @@ It cannot start or stop procedures. This is done by the ProcedureController clas
 class ProcedureWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View, procedure_name: str, proc_args_class: Type, proc_args_dict: dict):
         self._proc_args_class = proc_args_class
-        self._fields: List[Union[TimeFieldView, FloatFieldView, IntFieldView]] = []
+        self._fields: List[FieldViewBase] = []
         self._procedure_name = procedure_name
         self._view = ProcedureWidgetView(parent_view)
         self._view.set_procedure_name(self._procedure_name)
@@ -271,12 +182,13 @@ class ProcedureWidget(UIComponent):
     def _add_fields_to_widget(self):
         for field_name, field in attrs.fields_dict(self._proc_args_class).items():
             if field.type is int:
-                field_view = IntFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name)
+                field_view = BasicTypeFieldView[int](self._view.field_slot, int, field_name, parent_widget_name=self._procedure_name)
             elif field.type is float:
-                field_view = FloatFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name)
+                field_view = BasicTypeFieldView[float](self._view.field_slot, float, field_name, parent_widget_name=self._procedure_name)
+            elif field.type is str:
+                field_view = BasicTypeFieldView[str](self._view.field_slot, str, field_name, parent_widget_name=self._procedure_name)
             elif field.type is HolderArgs:
                 field_view = TimeFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name)
-                
             else:
                 raise TypeError(f"The field with name {field_name} has the type {field.type}, which is not supported")
             self._fields.append(field_view)
