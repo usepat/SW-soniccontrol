@@ -1,9 +1,7 @@
 import logging
-from typing import Union
 
 from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.communicator import Communicator
-from soniccontrol.communication.message_protocol import SonicMessageProtocol
 from soniccontrol.communication.serial_communicator import (
     SerialCommunicator,
 )

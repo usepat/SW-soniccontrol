@@ -2,7 +2,7 @@ import pytest
 import asyncio
 
 from soniccontrol.communication.package_protocol import PackageProtocol
-from soniccontrol.system import PLATFORM
+from soniccontrol.consts import ENCODING
 from soniccontrol.communication.package_fetcher import PackageFetcher
 
 
@@ -19,9 +19,9 @@ async def test_get_answer_of_package_ensures_that_order_does_not_matter():
     try:
         pkg_fetcher.run()
 
-        reader.feed_data(protocol.parse_request("asdfd", 10).encode(PLATFORM.encoding))
-        reader.feed_data(msg_str.encode(PLATFORM.encoding))
-        reader.feed_data(protocol.parse_request("hsghfare", 23).encode(PLATFORM.encoding))
+        reader.feed_data(protocol.parse_request("asdfd", 10).encode(ENCODING))
+        reader.feed_data(msg_str.encode(ENCODING))
+        reader.feed_data(protocol.parse_request("hsghfare", 23).encode(ENCODING))
 
         answer = await pkg_fetcher.get_answer_of_package(15)
         await pkg_fetcher.stop()

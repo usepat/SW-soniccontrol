@@ -4,6 +4,7 @@ import asyncio
 import subprocess
 from typing import Optional, Tuple
 from soniccontrol import logger
+from soniccontrol.consts import ENCODING
 from soniccontrol.interfaces import FirmwareFlasher
 from soniccontrol.system import PLATFORM
 import soniccontrol.bin.avrdude
@@ -102,8 +103,8 @@ class LegacyFirmwareFlasher(FirmwareFlasher):
 
         out, err = await process.communicate()
 
-        return_out: str = out.decode(PLATFORM.encoding)
-        return_err: str = err.decode(PLATFORM.encoding)
+        return_out: str = out.decode(ENCODING)
+        return_err: str = err.decode(ENCODING)
         return_code: int | None = process.returncode
 
         logger.info(return_out)

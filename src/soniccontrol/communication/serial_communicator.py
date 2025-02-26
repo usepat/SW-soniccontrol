@@ -7,6 +7,7 @@ from soniccontrol.communication.connection import Connection, SerialConnection
 from soniccontrol.communication.message_fetcher import MessageFetcher
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol
+from soniccontrol.consts import ENCODING
 from soniccontrol.events import Event
 from soniccontrol.system import PLATFORM, System
 
@@ -118,7 +119,7 @@ class SerialCommunicator(Communicator):
 
             if request_str != "-":
                 self._logger.info("Write package: %s", message)
-            encoded_message = message.encode(PLATFORM.encoding)
+            encoded_message = message.encode(ENCODING)
 
             
             if PLATFORM == System.WINDOWS:

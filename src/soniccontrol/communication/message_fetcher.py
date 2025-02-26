@@ -4,7 +4,7 @@ from typing import Dict
 from asyncio import StreamReader
 
 from soniccontrol.communication.message_protocol import SonicMessageProtocol
-from soniccontrol.system import PLATFORM
+from soniccontrol.consts import ENCODING
 
 
 class MessageFetcher:
@@ -80,9 +80,9 @@ class MessageFetcher:
 
         message_terminator = self._protocol.separator
         data = await self._reader.readuntil(
-            message_terminator.encode(PLATFORM.encoding)
+            message_terminator.encode(ENCODING)
         ) 
-        message = data.decode(PLATFORM.encoding)
+        message = data.decode(ENCODING)
         message = message[:-1] # remove separator at the end
         return message
     
