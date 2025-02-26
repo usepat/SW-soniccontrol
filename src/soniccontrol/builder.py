@@ -6,7 +6,8 @@ from sonic_protocol import protocol
 from sonic_protocol.defs import DeviceType, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import ProtocolBuilder
-from soniccontrol.communication.communicator import Communicator
+from soniccontrol.communication.connection import Connection
+from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.sonic_device import (
     FirmwareInfo,
     SonicDevice,
@@ -16,15 +17,16 @@ import sonic_protocol.python_parser.commands as cmds
 
 class DeviceBuilder:
 
-    async def build_amp(self, comm: Communicator, logger: logging.Logger = logging.getLogger(), open_in_rescue_mode: bool = False) -> SonicDevice:
+    async def build_amp(self, connection: Connection, logger: logging.Logger = logging.getLogger(), open_in_rescue_mode: bool = False) -> SonicDevice:
         """!
         @param open_in_rescue_mode This param can be set to False, so that it does not try to deduce which protocol to use. Used for the rescue window
         """
         
         builder_logger = logging.getLogger(logger.name + "." + DeviceBuilder.__name__)
         
-        # connect
-        await comm.connection_opened.wait()
+        comm = SerialCommunicator(logger=logger) #type: ignore
+        await comm.open_communication(connection)
+
         builder_logger.debug("Serial connection is open, start building device")
 
         result_dict: Dict[EFieldName, Any] = {}

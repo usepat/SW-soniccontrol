@@ -11,10 +11,7 @@ from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.communication.communicator_builder import CommunicatorBuilder
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
-from soniccontrol.communication.communicator import Communicator
-from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
@@ -65,13 +62,8 @@ class DeviceWindowManager:
         logger.debug("Established serial connection")
 
         try:
-            serial = await CommunicatorBuilder.build(
-                connection,
-                logger=logger
-            )
             logger.debug("Build SonicDevice for device")
-            sonicamp = await DeviceBuilder().build_amp(comm=serial, logger=logger)
-            await sonicamp.communicator.connection_opened.wait()
+            sonicamp = await DeviceBuilder().build_amp(connection, logger=logger)
         except ConnectionError as e:
             logger.error(e)
             message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
@@ -80,9 +72,7 @@ class DeviceWindowManager:
             if user_answer is None or user_answer == DialogOptions.NO: 
                 return
             
-            serial: Communicator = SerialCommunicator(logger=logger) #type: ignore
-            await serial.open_communication(connection)
-            sonicamp = await DeviceBuilder().build_amp(comm=serial, logger=logger, open_in_rescue_mode=True)
+            sonicamp = await DeviceBuilder().build_amp(connection, logger=logger, open_in_rescue_mode=True)
             self.open_rescue_window(sonicamp, connection)
         except Exception as e:
             logger.error(e)

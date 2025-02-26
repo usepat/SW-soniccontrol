@@ -7,7 +7,6 @@ from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.commands import Command
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.communication.communicator_builder import CommunicatorBuilder
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure
@@ -40,12 +39,8 @@ class RemoteController:
             logger = create_logger_for_connection(connection_name, self._log_path)   
         else:
             logger = create_logger_for_connection(connection_name)
-        serial = await CommunicatorBuilder.build(
-            connection,
-            logger=logger
-        )
-        self._device = await DeviceBuilder().build_amp(comm=serial, logger=logger)
-        await self._device.communicator.connection_opened.wait()
+
+        self._device = await DeviceBuilder().build_amp(connection, logger=logger)
         self._updater = Updater(self._device)
         self._updater.start()
         self._proc_controller = ProcedureController(self._device, updater=self._updater)

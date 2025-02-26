@@ -1,5 +1,6 @@
+import abc
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
 
 import attrs
 from soniccontrol_gui.ui_component import UIComponent
@@ -16,7 +17,74 @@ class EntryStyle(Enum):
     SUCCESS = "success.TEntry"
     DANGER = "danger.TEntry"
 
-class IntFieldView(View):
+
+T = TypeVar("T")
+class FieldViewBase(abc.ABC, Generic[T], View):
+    def __init__(self, master: ttk.Frame | View, *args, **kwargs):
+        View.__init__(self, master, *args, **kwargs)
+
+    @property
+    @abc.abstractmethod
+    def field_name(self) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def value(self) -> T: ...
+
+    @value.setter
+    @abc.abstractmethod
+    def value(self, v: T) -> None: ...
+
+    @abc.abstractmethod
+    def bind_value_change(self, command: Callable[[T], None]) -> None: ...
+
+
+# This class is more or less just a wrapper for ttk.Entry and StringVar to make it compliant with the other FieldViews
+class StringFieldView(FieldViewBase[str]):
+    def __init__(self, master: ttk.Frame | View, field_name: str, *args, **kwargs):
+        self._field_name = field_name
+        self._value: ttk.StringVar = ttk.StringVar(value="")
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._widget_name = parent_widget_name + "." + self._field_name
+
+        super().__init__(master, *args, **kwargs)
+
+        self._callback: Callable[[str], None] = lambda _: None
+        self._value.trace_add("write", self._parse_str_value)
+
+
+    def _initialize_children(self) -> None:
+        self.label = ttk.Label(self, text=self._field_name)
+        self.entry = ttk.Entry(self, textvariable=self._value)
+
+        WidgetRegistry.register_widget(self.entry, "entry", self._widget_name)
+
+    def _initialize_publish(self) -> None:
+        self.grid_columnconfigure(1, weight=1)
+
+        self.label.grid(row=0, column=0, padx=5, pady=5)
+        self.entry.grid(row=0, column=1, padx=5, pady=5)
+
+    @property
+    def field_name(self) -> str:
+        return self._field_name
+
+    @property
+    def value(self) -> str:
+        return self._value.get()
+    
+    @value.setter
+    def value(self, v: str) -> None:
+        self._value.set(str(v))
+ 
+    def _parse_str_value(self, *_args):
+        self._callback(self._value.get())
+
+    def bind_value_change(self, command: Callable[[str], None]):
+        self._callback = command
+
+
+class IntFieldView(FieldViewBase[int]):
     def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: int = 0, **kwargs):
         self._field_name = field_name
         self._default_value = default_value
@@ -69,7 +137,7 @@ class IntFieldView(View):
     def bind_value_change(self, command: Callable[[int], None]):
         self._callback = command
 
-class FloatFieldView(View):
+class FloatFieldView(FieldViewBase[float]):
     def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: float = 0., **kwargs):
         self._field_name = field_name
         self._default_value = default_value
@@ -96,6 +164,10 @@ class FloatFieldView(View):
         self.entry.grid(row=0, column=1, padx=5, pady=5)
 
     @property
+    def field_name(self) -> str:
+        return self._field_name
+
+    @property
     def value(self) -> float:
         return self._value
     
@@ -117,7 +189,7 @@ class FloatFieldView(View):
         self._callback = command
 
 
-class TimeFieldView(View):
+class TimeFieldView(FieldViewBase[HoldTuple]):
     def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_time: int = 0, unit = "ms", **kwargs):
         self._field_name = field_name
         self._default_time = default_time
@@ -160,7 +232,7 @@ class TimeFieldView(View):
 
     @property
     def value(self) -> HoldTuple:
-        return self._time_value, self._unit_value_str.get()
+        return self._time_value, self._unit_value_str.get() # type: ignore
     
     @value.setter
     def value(self, v: HoldTuple) -> None:
@@ -176,7 +248,7 @@ class TimeFieldView(View):
         except Exception as _:
             self._time_value = self._default_time 
             self._entry_time.configure(style=EntryStyle.DANGER.value)
-        self._callback((self._time_value, self._unit_value_str.get()))
+        self._callback((self._time_value, self._unit_value_str.get())) # type: ignore
 
     def bind_value_change(self, command: Callable[[HoldTuple], None]):
         self._callback = command
@@ -207,8 +279,9 @@ class ProcedureWidget(UIComponent):
                 
             else:
                 raise TypeError(f"The field with name {field_name} has the type {field.type}, which is not supported")
-            self._proc_args_dict[field_name] = field_view.value
             self._fields.append(field_view)
+
+            self._proc_args_dict[field_name] = field_view.value
 
             # I use here a decorator so that the field_name gets captured by the function and not gets overwritten in 
             # subsequent runs
@@ -218,7 +291,6 @@ class ProcedureWidget(UIComponent):
                 return _set_dict_value
             
             field_view.bind_value_change(set_dict_value(field_name))
-            self._proc_args_dict[field_name] = field_view.value
 
         self._view._initialize_publish()
 
