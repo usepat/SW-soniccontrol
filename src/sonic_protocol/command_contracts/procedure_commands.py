@@ -207,7 +207,7 @@ get_tune = CommandContract(
 
 tune_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
-        CommandCode.GET_TUNE,
+        CommandCode.SET_TUNE,
         ["!tune"],
         ""
     ),
