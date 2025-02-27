@@ -183,7 +183,7 @@ flash_usb = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
+                field_name=EFieldName.MESSAGE,
                 field_type=FieldType(str)
             )
         ]
@@ -205,7 +205,7 @@ flash_uart9600 = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
+                field_name=EFieldName.MESSAGE,
                 field_type=FieldType(str)
             )
         ]
@@ -227,7 +227,7 @@ flash_uart115200 = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
+                field_name=EFieldName.MESSAGE,
                 field_type=FieldType(str)
             )
         ]
