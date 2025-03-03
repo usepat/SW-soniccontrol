@@ -1,6 +1,6 @@
 import abc
 from enum import Enum
-from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar, Union, get_type_hints
+from typing import Any, Callable, Dict, Generic, List, Type, TypeVar
 
 import attrs
 from soniccontrol_gui.ui_component import UIComponent
@@ -168,19 +168,23 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
 This class holds only information about the procedure args.
 It cannot start or stop procedures. This is done by the ProcedureController class
 """
-class ProcedureWidget(UIComponent):
-    def __init__(self, parent: UIComponent, parent_view: View, procedure_name: str, proc_args_class: Type, proc_args_dict: dict):
-        self._proc_args_class = proc_args_class
+class FormWidget(UIComponent):
+    def __init__(self, parent: UIComponent, parent_view: View, title: str, attrs_class: Type, model_dict: dict = {}):
+        """
+            args:
+                model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
+        """
+        self._attrs_class = attrs_class
         self._fields: List[FieldViewBase] = []
-        self._procedure_name = procedure_name
-        self._view = ProcedureWidgetView(parent_view)
-        self._view.set_procedure_name(self._procedure_name)
-        self._proc_args_dict = proc_args_dict
+        self._procedure_name = title
+        self._view = FormWidgetView(parent_view)
+        self._view.set_title(self._procedure_name)
+        self._model_dict = model_dict
         super().__init__(self, self._view)
         self._add_fields_to_widget()
 
     def _add_fields_to_widget(self):
-        for field_name, field in attrs.fields_dict(self._proc_args_class).items():
+        for field_name, field in attrs.fields_dict(self._attrs_class).items():
             if field.type is int:
                 field_view = BasicTypeFieldView[int](self._view.field_slot, int, field_name, parent_widget_name=self._procedure_name)
             elif field.type is float:
@@ -193,52 +197,38 @@ class ProcedureWidget(UIComponent):
                 raise TypeError(f"The field with name {field_name} has the type {field.type}, which is not supported")
             self._fields.append(field_view)
 
-            self._proc_args_dict[field_name] = field_view.value
+            self._model_dict[field_name] = field_view.value
 
             # I use here a decorator so that the field_name gets captured by the function and not gets overwritten in 
             # subsequent runs
             def set_dict_value(key):
                 def _set_dict_value(val):
-                    self._proc_args_dict[key] = val
+                    self._model_dict[key] = val
                 return _set_dict_value
             
             field_view.bind_value_change(set_dict_value(field_name))
 
         self._view._initialize_publish()
 
-    # TODO: refactor this method. Validation should occur in the fields and each one should display
-    # its own error message
-    # Also constructing the final class should be done by ProcControlling directly
-    def get_args(self) -> Optional[Any]:
-        dict_args: Dict[str, Any] = {}
-        for field in self._fields:
-            dict_args[field.field_name] = field.value
-        try:
-            args = self._proc_args_class(**dict_args)
-        except ValueError as e:
-            self._view.set_error_message(str(e))
-            return None
-        else:
-            self._view.set_error_message(None)
-            return args
+    @property
+    def form_data(self) -> Dict[str, Any]:
+        return self._model_dict.copy() 
         
         
-        
-class ProcedureWidgetView(View):
+class FormWidgetView(View):
     def __init__(self, master: ttk.Frame | View, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
         self._title_frame = ttk.Frame(self)
-        self._procedure_title = ttk.StringVar()
-        self._procedure_label = ttk.Label(self._title_frame, textvariable=self._procedure_title, font=("Arial", 16))
+        self._title = ttk.StringVar()
+        self._title_label = ttk.Label(self._title_frame, textvariable=self._title, font=("Arial", 16))
         self._scrolled_frame = ScrolledFrame(self)
-        self._error_label = ttk.Label(self)
 
     def _initialize_publish(self) -> None:
         self.pack(fill=ttk.BOTH)
         self._title_frame.pack(fill=ttk.X, pady=10)
-        self._procedure_label.pack()
+        self._title_label.pack()
         self._scrolled_frame.pack(fill=ttk.BOTH, pady=10, expand=True)
 
         for i, child in enumerate(self._scrolled_frame.children.values()):
@@ -248,15 +238,8 @@ class ProcedureWidgetView(View):
     def field_slot(self) -> ttk.Frame:
         return self._scrolled_frame
 
-    def set_procedure_name(self, procedure_name: str) -> None:
-        self._procedure_title.set(procedure_name)
-
-    def set_error_message(self, error_msg: Optional[str] = None) -> None:
-        if error_msg:
-            self._error_label.pack(fill=ttk.X, pady=10)
-            self._error_label.configure(text=error_msg)
-        else:
-            self._error_label.pack_forget()
+    def set_title(self, title: str) -> None:
+        self._title.set(title)
 
     def show(self) -> None:
         self.pack(expand=True, fill=ttk.BOTH)
