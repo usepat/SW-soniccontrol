@@ -24,7 +24,8 @@ tk_const: Final[_TkinterConstants] = _TkinterConstants()
 class _Files:
     DATA_DIR =  APP_DATA_DIR
     LOG_DIR = DATA_DIR / "logs"
-    TRANSDUCDER_CONFIG_JSON = DATA_DIR / "transducer_configs.json"
+    TRANSDUCER_CONFIG_JSON = DATA_DIR / "transducer_configs.json"
+    EXPERIMENT_TEMPLATES_JSON = DATA_DIR / "experiment_templates.json"
     SONICCONTROL_LOG = LOG_DIR / "soniccontrol.log"
 
 files: _Files = _Files()
@@ -141,6 +142,7 @@ class _UIStringsEN:
     LOAD_LABEL: Final[str] = "Load File"
     SEND_LABEL: Final[str] = "Send"
     DELETE_LABEL: Final[str] = "Delete"
+    FINISH_LABEL: Final[str] = "Finish"
     THEME: Final[str] = "sandstone"
     IDLE_TITLE: Final[str] = "Sonic Control"
     AUTO_READ_LABEL: Final[str] = "Auto Read"

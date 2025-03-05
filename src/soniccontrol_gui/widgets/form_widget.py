@@ -28,6 +28,11 @@ class FieldViewBase(abc.ABC, Generic[T], View):
     @abc.abstractmethod
     def field_name(self) -> str: ...
 
+
+    @property
+    @abc.abstractmethod
+    def default(self) -> T: ...
+
     @property
     @abc.abstractmethod
     def value(self) -> T: ...
@@ -77,6 +82,10 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
     @property
     def field_name(self) -> str:
         return self._field_name
+
+    @property
+    def default(self) -> PrimitiveT: 
+        return self._default_value
 
     @property
     def value(self) -> PrimitiveT:
@@ -143,6 +152,10 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         return self._field_name
 
     @property
+    def default(self) -> HoldTuple: 
+        return self._default_time, "ms"
+
+    @property
     def value(self) -> HoldTuple:
         return self._time_value, self._unit_value_str.get() # type: ignore
     
@@ -173,6 +186,7 @@ class DictFieldView(FieldViewBase):
         self._entries: Dict[int, Tuple[ttk.StringVar, ttk.StringVar]] = {}
         self._field_name = field_name
         self._callback: Callable[[Dict[str, str]], None] = lambda _: None
+        self._default_value = default_value.copy()
         self.value = default_value
 
     def _initialize_children(self) -> None:
@@ -224,6 +238,10 @@ class DictFieldView(FieldViewBase):
         return self._field_name
 
     @property
+    def default(self) -> Dict[str, str]:
+        return self._default_value
+
+    @property
     def value(self) -> Dict[str, str]: 
         return { key_var.get(): value_var.get() for key_var, value_var in self._entries.values() }
 
@@ -258,7 +276,7 @@ class FormWidget(UIComponent):
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
         """
         self._form_attrs: FormFieldAttributes = form_attrs if isinstance(form_attrs, dict) else attrs.fields_dict(form_attrs) #type: ignore
-        self._fields: List[FieldViewBase] = []
+        self._fields: Dict[str, FieldViewBase] = {}
         self._procedure_name = title
         self._view = FormWidgetView(parent_view)
         self._view.set_title(self._procedure_name)
@@ -289,7 +307,7 @@ class FormWidget(UIComponent):
                 # field is FieldViewFactory
                 field_view = field(self._view.field_slot, field_name, parent_widget_name=self._procedure_name)
 
-            self._fields.append(field_view)
+            self._fields[field_name] = field_view
             self._model_dict[field_name] = field_view.value
 
             # I use here a decorator so that the field_name gets captured by the function and not gets overwritten in 
@@ -306,6 +324,15 @@ class FormWidget(UIComponent):
     @property
     def form_data(self) -> Dict[str, Any]:
         return self._model_dict.copy() 
+
+    @form_data.setter
+    def form_data(self, value: Dict[str, Any]):
+        for field_name, field_value in value.items():
+            self._fields[field_name].value = field_value
+
+    def set_to_default(self) -> None:
+        for field in self._fields.values():
+            field.value = field.default
 
         
 class FormWidgetView(View):
