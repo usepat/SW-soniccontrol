@@ -12,7 +12,8 @@ from sonic_protocol.command_contracts.fields import (
 )
 from sonic_protocol.command_contracts.transducer_commands import (
     set_frequency, get_frequency, set_swf, get_swf, get_atf, set_atf, get_att, set_att, get_atk, set_atk,
-    set_gain, get_gain, set_on, set_off, get_temp, get_uipt, get_atf_list, get_att_list, get_atk_list, set_waveform
+    set_gain, get_gain, set_on, set_off, get_temp, get_uipt, get_atf_list, get_att_list, get_atk_list, set_waveform, 
+    get_transducer, set_transducer
 )
 from sonic_protocol.command_contracts.communication_commands import (
      set_termination, set_physical_comm_channel, set_comm_protocol, set_input_source, set_datetime, get_datetime, get_datetime_pico,
@@ -255,6 +256,8 @@ protocol = Protocol(
                 set_off,
                 set_frequency,
                 get_frequency,
+                get_transducer,
+                set_transducer,
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=0, minor=0, patch=0),
