@@ -234,6 +234,7 @@ class _UIStringsEN:
     FLASH_UART_FAST: Final[str] = "FLASH_UART_FAST"
     FLASH_USB: Final[str] = "FLASH_USB"
     OPEN_LOGS: Final[str] = "Open Logs"
+    FORM_ADD_ENTRY: Final[str] = "Add Entry"
 
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()

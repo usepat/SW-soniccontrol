@@ -1,11 +1,12 @@
 import abc
 from enum import Enum
-from typing import Any, Callable, Dict, Generic, List, Type, TypeVar
+from typing import Any, Callable, Dict, Generic, List, Protocol, Tuple, Type, TypeVar
 
 import attrs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
+from soniccontrol_gui.constants import ui_labels
 
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
@@ -101,11 +102,11 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
 
 
 class TimeFieldView(FieldViewBase[HoldTuple]):
-    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_time: int = 0, unit = "ms", **kwargs):
+    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: int = 0, unit = "ms", **kwargs):
         self._field_name = field_name
-        self._default_time = default_time
-        self._time_value = default_time
-        self._time_value_str: ttk.StringVar = ttk.StringVar(value=str(default_time))
+        self._default_time = default_value
+        self._time_value = default_value
+        self._time_value_str: ttk.StringVar = ttk.StringVar(value=str(default_value))
         self._unit_value_str: ttk.StringVar = ttk.StringVar(value=unit)
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
@@ -164,39 +165,131 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
     def bind_value_change(self, command: Callable[[HoldTuple], None]):
         self._callback = command
 
-"""
-This class holds only information about the procedure args.
-It cannot start or stop procedures. This is done by the ProcedureController class
-"""
+
+class DictFieldView(FieldViewBase):
+    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: Dict[str, str]  = {}, **kwargs):
+        super().__init__(self, master, *args, **kwargs)
+    
+        self._entries: Dict[int, Tuple[ttk.StringVar, ttk.StringVar]] = {}
+        self._field_name = field_name
+        self._callback: Callable[[Dict[str, str]], None] = lambda _: None
+        self.value = default_value
+
+    def _initialize_children(self) -> None:
+        self._label = ttk.Label(self, text=self._field_name)
+        self._add_entry_button = ttk.Button(self, text=ui_labels.FORM_ADD_ENTRY, command=self._add_entry)
+        self._entries_frame = ttk.Frame(self)
+
+    def _initialize_publish(self) -> None:
+        self._label.pack(fill=ttk.X, side=ttk.TOP)
+        self._add_entry_button.pack(fill=ttk.X)
+        self._entries_frame.pack(fill=ttk.BOTH, side=ttk.BOTTOM)
+
+    def _generate_entry_id(self) -> int:
+        self._id = 0 if not hasattr(self, "_id") else (self._id + 1)
+        return self._id
+    
+    def _add_entry(self, key: str = "", value: str = "") -> None:
+        entry_id = self._generate_entry_id()
+    
+        row_frame = ttk.Frame(self._entries_frame)
+    
+        entry_key_var = ttk.StringVar(row_frame, key)
+        entry_value_var = ttk.StringVar(row_frame, value)
+        self._entries[entry_id] = (entry_key_var, entry_value_var)
+
+        entry_key = ttk.Entry(row_frame, textvariable=entry_key_var)
+        entry_value = ttk.Entry(row_frame, textvariable=entry_value_var)
+        delete_button = ttk.Button(row_frame, text="-")
+
+        row_frame.pack(fill=ttk.X, side=ttk.BOTTOM)
+        row_frame.columnconfigure(0, weight=2)
+        row_frame.columnconfigure(1, weight=2)
+        row_frame.columnconfigure(2, weight=1)
+        entry_key.grid(column=0, row=0)
+        entry_value.grid(column=1, row=0)
+        delete_button.grid(column=2, row=0)
+
+        def delete_entry():
+            del self._entries[entry_id]
+            row_frame.destroy()
+
+        delete_button.configure(command=delete_entry)
+        entry_key_var.trace_add("write", self._on_value_change)
+        entry_value_var.trace_add("write", self._on_value_change)
+
+
+    @property
+    def field_name(self) -> str: 
+        return self._field_name
+
+    @property
+    def value(self) -> Dict[str, str]: 
+        return { key_var.get(): value_var.get() for key_var, value_var in self._entries.values() }
+
+    @value.setter
+    def value(self, v: Dict[str, str]) -> None: 
+        for child in self._entries_frame.children.values():
+            child.destroy()
+        self._entries.clear()
+
+        for key, value in v.items():
+            self._add_entry(key, value)
+
+    def _on_value_change(self, *_args):
+        self._callback(self.value)
+
+    def bind_value_change(self, command: Callable[[Dict[str, str]], None]) -> None: 
+        self._callback = command
+
+
+class FieldViewFactoryType(Protocol):
+    def __call__(self, view: ttk.Frame | View, title: str, *args, **kwargs) -> FieldViewBase:
+        ...
+
+FormFieldAttributes = Dict[str, attrs.Attribute[Any] | FieldViewFactoryType]
+
+
 class FormWidget(UIComponent):
-    def __init__(self, parent: UIComponent, parent_view: View, title: str, attrs_class: Type, model_dict: dict = {}):
+    def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
+                 title: str, form_attrs: Type | FormFieldAttributes, model_dict: dict = {}):
         """
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
         """
-        self._attrs_class = attrs_class
+        self._form_attrs: FormFieldAttributes = form_attrs if isinstance(form_attrs, dict) else attrs.fields_dict(form_attrs) #type: ignore
         self._fields: List[FieldViewBase] = []
         self._procedure_name = title
         self._view = FormWidgetView(parent_view)
         self._view.set_title(self._procedure_name)
         self._model_dict = model_dict
-        super().__init__(self, self._view)
+        super().__init__(parent, self._view)
         self._add_fields_to_widget()
 
     def _add_fields_to_widget(self):
-        for field_name, field in attrs.fields_dict(self._attrs_class).items():
-            if field.type is int:
-                field_view = BasicTypeFieldView[int](self._view.field_slot, int, field_name, parent_widget_name=self._procedure_name)
-            elif field.type is float:
-                field_view = BasicTypeFieldView[float](self._view.field_slot, float, field_name, parent_widget_name=self._procedure_name)
-            elif field.type is str:
-                field_view = BasicTypeFieldView[str](self._view.field_slot, str, field_name, parent_widget_name=self._procedure_name)
-            elif field.type is HolderArgs:
-                field_view = TimeFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name)
-            else:
-                raise TypeError(f"The field with name {field_name} has the type {field.type}, which is not supported")
-            self._fields.append(field_view)
+        for field_name, field in self._form_attrs.items():
+            if isinstance(field, attrs.Attribute):
+                kwargs = {}
+                if field.default is not None:
+                    kwargs["default_value"] = field.default
 
+                if field.type is int:
+                    field_view = BasicTypeFieldView[int](self._view.field_slot, int, field_name, parent_widget_name=self._procedure_name, **kwargs)
+                elif field.type is float:
+                    field_view = BasicTypeFieldView[float](self._view.field_slot, float, field_name, parent_widget_name=self._procedure_name, **kwargs)
+                elif field.type is str:
+                    field_view = BasicTypeFieldView[str](self._view.field_slot, str, field_name, parent_widget_name=self._procedure_name, **kwargs)
+                elif field.type is dict:
+                    field_view = DictFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name, **kwargs)
+                elif field.type is HolderArgs:
+                    field_view = TimeFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name, **kwargs)
+                else:
+                    raise TypeError(f"The field with name {field_name} has the type {field.type}, which is not supported")
+            else: 
+                # field is FieldViewFactory
+                field_view = field(self._view.field_slot, field_name, parent_widget_name=self._procedure_name)
+
+            self._fields.append(field_view)
             self._model_dict[field_name] = field_view.value
 
             # I use here a decorator so that the field_name gets captured by the function and not gets overwritten in 
@@ -213,7 +306,7 @@ class FormWidget(UIComponent):
     @property
     def form_data(self) -> Dict[str, Any]:
         return self._model_dict.copy() 
-        
+
         
 class FormWidgetView(View):
     def __init__(self, master: ttk.Frame | View, *args, **kwargs):
