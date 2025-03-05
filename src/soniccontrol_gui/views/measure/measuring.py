@@ -12,6 +12,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 import matplotlib
 
+from soniccontrol_gui.views.measure.experiment_form import ExperimentForm
 from soniccontrol_gui.widgets.message_box import MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.widgets.form_widget import FormWidget
@@ -60,12 +61,16 @@ class Measuring(UIComponent):
         self._csv_table = CsvTable(self)
 
         
-        self._spectrum_measure_widget = FormWidget(
-            self, 
-            self._view.spectrum_measure_frame, 
-            "Spectrum Measure", 
-            SpectrumMeasure.get_args_class(),
-            spectrum_measure_model.form_fields
+        # self._spectrum_measure_widget = FormWidget(
+        #     self, 
+        #     self._view.spectrum_measure_frame, 
+        #     "Spectrum Measure", 
+        #     SpectrumMeasure.get_args_class(),
+        #     spectrum_measure_model.form_fields
+        # )
+        self._experiment_form = ExperimentForm(
+            self,
+            self._view._spectrum_measure_frame
         )
 
         self._view.set_capture_button_command(lambda: self._on_toggle_capture())

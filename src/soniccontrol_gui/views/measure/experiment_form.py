@@ -2,8 +2,8 @@ import json
 from typing import Callable, Dict, Iterable, List, Optional, cast
 
 import attrs
-from ttkbootstrap.scrolled import ScrolledFrame
 from soniccontrol.data_capturing.experiment import Experiment
+from soniccontrol.data_capturing.experiment_schema import ExperimentSchema # ATTENTION: needed so we can resolve Experiment with marshmallow-attrs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import View
 from soniccontrol_gui.constants import files, sizes, ui_labels
@@ -29,9 +29,9 @@ class ExperimentForm(UIComponent):
     FINISHED_EDITING_EVENT: str = "<<FINISHED_EDITING>>"
     EXPERIMENT_EVENT_ARG: str = "experiment"
 
-    def __init__(self, parent: UIComponent):
+    def __init__(self, parent: UIComponent, view_slot: View | ttk.Frame | None = None):
         self._logger = logging.getLogger(parent.logger.name + "." + ExperimentForm.__name__)
-        self._view = ExperimentFormView(parent.view)
+        self._view = ExperimentFormView(parent.view if view_slot is None else view_slot)
         super().__init__(parent, self._view )
 
         self._template_schema = TemplateSchema(many=True)
@@ -61,7 +61,8 @@ class ExperimentForm(UIComponent):
     def _create_metadata_form(self):
         form_attrs = cast(FormFieldAttributes, attrs.fields_dict(Experiment))
 
-        exclude_field_names = ["data", "sonic_control_version", "operating_system", "capture_target", "target_parameters"]
+        exclude_field_names = ["date_time", "data", "firmware_info", "sonic_control_version", 
+                               "operating_system", "capture_target", "target_parameters"]
         for exclude_field_name in exclude_field_names:
             del form_attrs[exclude_field_name]
 
@@ -144,46 +145,44 @@ class ExperimentFormView(View):
     def __init__(self, master: ttk.Frame | View, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
 
-    def _initialize_children(self) -> None:
-        self._experiment_form_frame: ttk.Frame = ttk.Frame(self)
-        
+    def _initialize_children(self) -> None:        
         self._new_template_button: ttk.Button = ttk.Button(
-            self._experiment_form_frame, text=ui_labels.NEW_LABEL, style=ttk.DARK,
+            self, text=ui_labels.NEW_LABEL, style=ttk.DARK,
         )
 
         self._selected_template: ttk.StringVar = ttk.StringVar()
         self._template_entry: ttk.Combobox = ttk.Combobox(
-            self._experiment_form_frame, textvariable=self._selected_template, style=ttk.DARK
+            self, textvariable=self._selected_template, style=ttk.DARK
         )
         self._template_entry["state"] = "readonly" # prevent typing a value
         self._save_template_button: ttk.Button = ttk.Button(
-            self._experiment_form_frame, text=ui_labels.SAVE_LABEL, style=ttk.DARK
+            self, text=ui_labels.SAVE_LABEL, style=ttk.DARK
         )
         self._delete_template_button: ttk.Button = ttk.Button(
-            self._experiment_form_frame, text=ui_labels.DELETE_LABEL, style=ttk.SUCCESS
+            self, text=ui_labels.DELETE_LABEL, style=ttk.SUCCESS
         )
         self._finish_button: ttk.Button = ttk.Button(
-            self._experiment_form_frame, text=ui_labels.FINISH_LABEL, style=ttk.SUCCESS
+            self, text=ui_labels.FINISH_LABEL, style=ttk.SUCCESS
         )
 
         self._template_frame: ttk.Frame = ttk.Frame(
-            self._experiment_form_frame
+            self
         )
         self._template_name: ttk.StringVar = ttk.StringVar()
         self._template_name_textbox: ttk.Entry = ttk.Entry(
             self._template_frame, textvariable=self._template_name
         )
-        self._metadata_form_frame: ScrolledFrame = ScrolledFrame(self._template_frame)
+        self._metadata_form_frame: ttk.Frame = ttk.Frame(self._template_frame)
 
     def _initialize_publish(self) -> None:
-        self._experiment_form_frame.pack(expand=True, fill=ttk.BOTH)
-        self._experiment_form_frame.columnconfigure(0, weight=sizes.DONT_EXPAND)
-        self._experiment_form_frame.columnconfigure(1, weight=sizes.EXPAND)
-        self._experiment_form_frame.columnconfigure(2, weight=sizes.DONT_EXPAND)
-        self._experiment_form_frame.columnconfigure(3, weight=sizes.DONT_EXPAND)
-        self._experiment_form_frame.columnconfigure(4, weight=sizes.DONT_EXPAND)
-        self._experiment_form_frame.rowconfigure(0, weight=sizes.DONT_EXPAND)
-        self._experiment_form_frame.rowconfigure(1, weight=sizes.EXPAND)
+        self.pack(expand=True, fill=ttk.BOTH)
+        self.columnconfigure(0, weight=sizes.DONT_EXPAND)
+        self.columnconfigure(1, weight=sizes.EXPAND)
+        self.columnconfigure(2, weight=sizes.DONT_EXPAND)
+        self.columnconfigure(3, weight=sizes.DONT_EXPAND)
+        self.columnconfigure(4, weight=sizes.DONT_EXPAND)
+        self.rowconfigure(0, weight=sizes.DONT_EXPAND)
+        self.rowconfigure(1, weight=sizes.EXPAND)
         self._new_template_button.grid(
             row=0,
             column=0,

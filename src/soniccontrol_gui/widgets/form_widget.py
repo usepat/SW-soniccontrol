@@ -1,6 +1,6 @@
 import abc
 from enum import Enum
-from typing import Any, Callable, Dict, Generic, List, Protocol, Tuple, Type, TypeVar
+from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, Tuple, Type, TypeVar
 
 import attrs
 from soniccontrol_gui.ui_component import UIComponent
@@ -47,7 +47,8 @@ class FieldViewBase(abc.ABC, Generic[T], View):
 
 PrimitiveT = TypeVar("PrimitiveT", str, float, int, bool)
 class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
-    def __init__(self, master: ttk.Frame | View, factory: Callable[..., PrimitiveT], field_name: str, *args, default_value: PrimitiveT | None = None, **kwargs):
+    def __init__(self, master: ttk.Frame | View, factory: Callable[..., PrimitiveT], 
+                field_name: str, *args, default_value: PrimitiveT | None = None, **kwargs):
         if default_value is None:
             _default_value: PrimitiveT = factory() # create default value. Only works for primitives
         else:
@@ -107,6 +108,67 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
 
 
     def bind_value_change(self, command: Callable[[PrimitiveT], None]):
+        self._callback = command
+
+
+class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
+    def __init__(self, master: ttk.Frame | View, factory: Callable[..., Optional[PrimitiveT]], 
+                field_name: str, *args, default_value: Optional[PrimitiveT] = None, **kwargs):
+
+        self._factory = factory
+        self._field_name = field_name
+        self._default_value: Optional[PrimitiveT] = default_value 
+        self._str_value: ttk.StringVar = ttk.StringVar(value=str("" if default_value is None else default_value))
+        self._value: Optional[PrimitiveT] = default_value
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._widget_name = parent_widget_name + "." + self._field_name
+
+        super().__init__(master, *args, **kwargs)
+
+        self._callback: Callable[[Optional[PrimitiveT]], None] = lambda _: None
+        self._str_value.trace_add("write", self._parse_str_value)
+
+
+    def _initialize_children(self) -> None:
+        self.label = ttk.Label(self, text=self._field_name)
+        self.entry = ttk.Entry(self, textvariable=self._str_value)
+
+        WidgetRegistry.register_widget(self.entry, "entry", self._widget_name)
+
+    def _initialize_publish(self) -> None:
+        self.grid_columnconfigure(1, weight=1)
+
+        self.label.grid(row=0, column=0, padx=5, pady=5)
+        self.entry.grid(row=0, column=1, padx=5, pady=5)
+
+    @property
+    def field_name(self) -> str:
+        return self._field_name
+
+    @property
+    def default(self) -> Optional[PrimitiveT]: 
+        return self._default_value
+
+    @property
+    def value(self) -> Optional[PrimitiveT]:
+        return self._value
+    
+    @value.setter
+    def value(self, v: Optional[PrimitiveT]) -> None:
+        self._value = v
+        self._str_value.set("" if v is None else str(v))
+ 
+    def _parse_str_value(self, *_args):
+        try:
+            text = self._str_value.get()
+            self.value = None if text == "" else self._factory(text) 
+            self.entry.configure(style=EntryStyle.PRIMARY.value)
+        except Exception as _:
+            self.value = self._default_value 
+            self.entry.configure(style=EntryStyle.DANGER.value)
+        self._callback(self.value)
+
+    def bind_value_change(self, command: Callable[[Optional[PrimitiveT]], None]):
         self._callback = command
 
 
@@ -180,14 +242,18 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
 
 
 class DictFieldView(FieldViewBase):
-    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: Dict[str, str]  = {}, **kwargs):
-        super().__init__(self, master, *args, **kwargs)
-    
+    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: Dict[str, str] | None = None, **kwargs):
         self._entries: Dict[int, Tuple[ttk.StringVar, ttk.StringVar]] = {}
         self._field_name = field_name
         self._callback: Callable[[Dict[str, str]], None] = lambda _: None
-        self._default_value = default_value.copy()
-        self.value = default_value
+        self._default_value = {} if default_value is None else default_value.copy()
+
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._widget_name = parent_widget_name + "." + self._field_name
+        super().__init__(master, *args, **kwargs)
+
+        self.value = self._default_value
+
 
     def _initialize_children(self) -> None:
         self._label = ttk.Label(self, text=self._field_name)
@@ -265,12 +331,12 @@ class FieldViewFactoryType(Protocol):
     def __call__(self, view: ttk.Frame | View, title: str, *args, **kwargs) -> FieldViewBase:
         ...
 
-FormFieldAttributes = Dict[str, attrs.Attribute[Any] | FieldViewFactoryType]
+FormFieldAttributes = Dict[str, "attrs.Attribute[Any] | FieldViewFactoryType"]
 
 
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
-                 title: str, form_attrs: Type | FormFieldAttributes, model_dict: dict = {}):
+                 title: str, form_attrs: Type | FormFieldAttributes, model_dict: dict | None = None):
         """
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
@@ -280,7 +346,7 @@ class FormWidget(UIComponent):
         self._procedure_name = title
         self._view = FormWidgetView(parent_view)
         self._view.set_title(self._procedure_name)
-        self._model_dict = model_dict
+        self._model_dict = {} if model_dict is None else model_dict.copy()
         super().__init__(parent, self._view)
         self._add_fields_to_widget()
 
@@ -289,7 +355,7 @@ class FormWidget(UIComponent):
             if isinstance(field, attrs.Attribute):
                 kwargs = {}
                 if field.default is not None:
-                    kwargs["default_value"] = field.default
+                    kwargs["default_value"] = field.default.factory() if hasattr(field.default, "factory") else field.default
 
                 if field.type is int:
                     field_view = BasicTypeFieldView[int](self._view.field_slot, int, field_name, parent_widget_name=self._procedure_name, **kwargs)
@@ -297,7 +363,13 @@ class FormWidget(UIComponent):
                     field_view = BasicTypeFieldView[float](self._view.field_slot, float, field_name, parent_widget_name=self._procedure_name, **kwargs)
                 elif field.type is str:
                     field_view = BasicTypeFieldView[str](self._view.field_slot, str, field_name, parent_widget_name=self._procedure_name, **kwargs)
-                elif field.type is dict:
+                elif field.type is Optional[int]:
+                    field_view = NullableTypeFieldView[int](self._view.field_slot, int, field_name, parent_widget_name=self._procedure_name, **kwargs)
+                elif field.type is Optional[float]:
+                    field_view = NullableTypeFieldView[float](self._view.field_slot, float, field_name, parent_widget_name=self._procedure_name, **kwargs)
+                elif field.type is Optional[str]:
+                    field_view = NullableTypeFieldView[str](self._view.field_slot, str, field_name, parent_widget_name=self._procedure_name, **kwargs)
+                elif field.type is Dict or field.type is dict:
                     field_view = DictFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name, **kwargs)
                 elif field.type is HolderArgs:
                     field_view = TimeFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name, **kwargs)
@@ -323,7 +395,7 @@ class FormWidget(UIComponent):
 
     @property
     def form_data(self) -> Dict[str, Any]:
-        return self._model_dict.copy() 
+        return self._model_dict 
 
     @form_data.setter
     def form_data(self, value: Dict[str, Any]):
