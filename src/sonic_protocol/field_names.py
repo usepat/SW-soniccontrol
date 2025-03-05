@@ -9,6 +9,7 @@ class EFieldName(Enum):
     
     HELP = "help"
 
+    TRANSDUCER = "transducer"
     FREQUENCY = "freq"
     SWF = "swf"
     GAIN = "gain"

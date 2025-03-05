@@ -9,7 +9,7 @@ from sonic_protocol.command_contracts.fields import (
     field_unknown_answer, field_type_frequency, field_type_temperature_celsius,
     field_frequency, field_gain, field_signal, field_swf,
     field_type_gain, swf_field_type, field_temperature_kelvin,
-    field_urms, field_irms, field_phase, field_ts_flag, field_waveform, waveform_field_type
+    field_urms, field_irms, field_phase, field_ts_flag, field_waveform, waveform_field_type, field_transducer
 )
 
 
@@ -55,6 +55,40 @@ get_frequency = CommandContract(
     ),
     is_release=True,
     tags=["frequency", "transducer"]
+)
+
+get_transducer = CommandContract(
+    code=CommandCode.GET_TRANSDUCER,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?transducer", "?tdr"]
+        )
+    ),
+    answer_defs=create_list_with_unknown_answer_alternative(
+        AnswerDef(fields=[field_transducer])
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get ID of the transducer connected to the device"
+    ),
+    is_release=True,
+    tags=["transducer"]
+)
+
+set_transducer = CommandContract(
+    code=CommandCode.SET_TRANSDUCER,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!transducer", "!tdr"]
+        )
+    ),
+    answer_defs=create_list_with_unknown_answer_alternative(
+        AnswerDef(fields=[field_transducer])
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set ID of the transducer connected to the device"
+    ),
+    is_release=True,
+    tags=["transducer"]
 )
 
 param_gain = CommandParamDef(
