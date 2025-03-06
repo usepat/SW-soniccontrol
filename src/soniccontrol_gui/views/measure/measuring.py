@@ -81,8 +81,8 @@ class Measuring(UIComponent):
 
         self._capture.data_provider.subscribe_property_listener(
             "data", lambda e: self._timeplot.update_data(e.new_value))
-        # self._capture.data_provider.subscribe_property_listener(
-        #     "data", lambda e: self._spectralplot.update_data(e.new_value))
+        self._capture.data_provider.subscribe_property_listener(
+            "data", lambda e: self._spectralplot.update_data(e.new_value))
         self._capture.data_provider.subscribe_property_listener(
             "data", lambda e: self._csv_table.on_update_data(e.new_value))
 
