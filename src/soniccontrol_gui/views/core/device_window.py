@@ -7,10 +7,8 @@ import tkinter as tk
 from sonic_protocol.command_codes import CommandCode
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
-from soniccontrol_gui.views.measure.measuring import SpectrumMeasureModel
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
-from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.procedures.procedure_controller import ProcedureController
@@ -33,6 +31,7 @@ from soniccontrol_gui.views.control.proc_controlling import ProcControlling, Pro
 from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 from soniccontrol_gui.views.measure.measuring import Measuring
 from soniccontrol_gui.views.core.status import StatusBar
+from soniccontrol_gui.views.measure.spectrum_measure import SpectrumMeasureTab, SpectrumMeasureModel
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.resources import images
@@ -108,7 +107,6 @@ class RescueWindow(DeviceWindow):
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
 
 
-            self
             self._logger.debug("Create logStorage for storing logs")
             self._logStorage = LogStorage()
             log_storage_handler = self._logStorage.create_log_handler()
@@ -185,6 +183,7 @@ class KnownDeviceWindow(DeviceWindow):
             # Components
             self._logger.debug("Create views")
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
+            self._spectrum_measure = SpectrumMeasureTab(self, self._spectrum_measure_model)
             self._logging = Logging(self, connection_name)
             self._editor = Editor(self, self._scripting, self._script_file, self._interpreter, self._app_state)
             self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
@@ -194,14 +193,15 @@ class KnownDeviceWindow(DeviceWindow):
             self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
             self._proc_controlling = ProcControlling(self, self._proc_controller, self._proc_controlling_model, self._app_state)
-            self._sonicmeasure = Measuring(self, self._capture , self._capture_targets, self._spectrum_measure_model)
+            self._sonicmeasure = Measuring(self, self._capture , self._capture_targets)
             self._home = Home(self, self._device)
 
             # Views
             self._logger.debug("Created all views, add them as tabs")
             self._view.add_tab_views([
                 self._home.view,
-                self._serialmonitor.view, 
+                self._serialmonitor.view,
+                self._spectrum_measure.view, 
                 self._proc_controlling.view,
                 self._editor.view, 
                 self._configuration.view, 

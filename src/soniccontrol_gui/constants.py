@@ -122,6 +122,7 @@ class _UIStringsEN:
     FLASHER_LABEL: Final[str] = "Flasher"
     PROCEDURES_LABEL: Final[str] = "Procedures"
     SONIC_LABEL: Final[str] = "sonic"
+    SPECTRUM_MEASURE_TITLE: Final[str] = "Spectrum Measure"
     SONIC_MEASURE_LABEL: Final[str] = "Sonic Measure"
     SPECIFY_PATH_LABEL: Final[str] = "Specify Path"
     SEARCH: Final[str] = "Search:"

@@ -173,12 +173,12 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
 
 
 class TimeFieldView(FieldViewBase[HoldTuple]):
-    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: int = 0, unit = "ms", **kwargs):
+    def __init__(self, master: ttk.Frame | View, field_name: str, *args, default_value: HoldTuple | HolderArgs = (100, "ms"), **kwargs):
         self._field_name = field_name
-        self._default_time = default_value
-        self._time_value = default_value
-        self._time_value_str: ttk.StringVar = ttk.StringVar(value=str(default_value))
-        self._unit_value_str: ttk.StringVar = ttk.StringVar(value=unit)
+        self._default_value = default_value if isinstance(default_value, tuple) else (default_value.duration, default_value.unit)
+        self._time_value = self._default_value[0] 
+        self._time_value_str: ttk.StringVar = ttk.StringVar(value=str(self._time_value))
+        self._unit_value_str: ttk.StringVar = ttk.StringVar(value=self._default_value[1])
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
@@ -215,7 +215,7 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
 
     @property
     def default(self) -> HoldTuple: 
-        return self._default_time, "ms"
+        return self._default_value
 
     @property
     def value(self) -> HoldTuple:
@@ -233,7 +233,7 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
             self._time_value = float(self._time_value_str.get())
             self._entry_time.configure(style=EntryStyle.PRIMARY.value)
         except Exception as _:
-            self._time_value = self._default_time 
+            self._time_value = self._default_value[0] 
             self._entry_time.configure(style=EntryStyle.DANGER.value)
         self._callback((self._time_value, self._unit_value_str.get())) # type: ignore
 

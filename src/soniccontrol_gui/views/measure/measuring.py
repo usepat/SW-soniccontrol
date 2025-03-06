@@ -4,7 +4,6 @@ from async_tkinter_loop import async_handler
 import attrs
 import matplotlib.figure
 from soniccontrol.data_capturing.capture_target import CaptureTarget, CaptureTargets
-from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasure, SpectrumMeasureArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -25,20 +24,10 @@ from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.measure.plotting import Plotting
 from soniccontrol_gui.utils.plotlib.plot_builder import PlotBuilder
-from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs
-
-
-@attrs.define()
-class SpectrumMeasureModel(CaptureSpectrumArgs):
-    form_fields: Dict[str, Any] = attrs.field(default={})
-
-    @property
-    def spectrum_args(self) -> SpectrumMeasureArgs:
-        return SpectrumMeasureArgs(**self.form_fields)
 
 
 class Measuring(UIComponent):
-    def __init__(self, parent: UIComponent, capture: Capture, capture_targets: Dict[CaptureTargets, CaptureTarget], spectrum_measure_model: SpectrumMeasureModel):
+    def __init__(self, parent: UIComponent, capture: Capture, capture_targets: Dict[CaptureTargets, CaptureTarget]):
         self._logger = logging.getLogger(parent.logger.name + "." + Measuring.__name__)
 
         self._logger.debug("Create SonicMeasure")
