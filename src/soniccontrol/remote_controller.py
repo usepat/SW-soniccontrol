@@ -6,10 +6,12 @@ import attrs
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.commands import Command
+from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.data_capturing.capture import Capture
-from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure
+from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
+from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
@@ -114,21 +116,22 @@ class RemoteController:
 
         await self._proc_controller.stop_proc()
 
-    async def measure_spectrum(self, output_dir: Path, spectrum_args: SpectrumMeasureArgs, data_fields: Sequence[EFieldName] = [], blocking: bool=True) -> None:
+    async def measure_spectrum(self, output_dir: Path, spectrum_args: SpectrumMeasureArgs, 
+                               experiment_metadata: ExperimentMetaData, blocking: bool=True) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         assert self._updater
         assert self._proc_controller
 
-        if len(data_fields) == 0:
-            update_answer_fields = self._device.lookup_table[CommandCode.GET_UPDATE].answer_def.fields
-            update_answer_field_names = [ field.field_name for field in update_answer_fields ] 
-            data_fields = update_answer_field_names
 
-        capture = Capture(data_fields, output_dir)
+        capture = Capture(output_dir)
         capture_target = CaptureSpectrumMeasure(self._updater, self._proc_controller, SpectrumArgsAdapter(spectrum_args))
         self._updater.subscribe("update", lambda e: capture.on_update(e.data["status"]))
 
-        await capture.start_capture(capture_target)
+        experiment = Experiment(experiment_metadata, self._device.info,
+                                 SOFTWARE_VERSION, PLATFORM.value, 
+                                 CaptureTargets.SPECTRUM_MEASURE)
+
+        await capture.start_capture(experiment, capture_target)
         if blocking:
             await capture.wait_for_capture_to_complete()
 

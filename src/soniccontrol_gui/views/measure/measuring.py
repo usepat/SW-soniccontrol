@@ -56,7 +56,7 @@ class Measuring(UIComponent):
             self._view._metadata_form_frame
         )
         self._experiment_form.subscribe(ExperimentForm.FINISHED_EDITING_EVENT, 
-                                        lambda e: self._on_metadata_filled_in(e.data))
+                                        lambda e: self._on_metadata_filled_in(e.data["experiment_metadata"]))
 
         self._time_figure = matplotlib.figure.Figure(dpi=100)
         self._time_subplot = self._time_figure.add_subplot(1, 1, 1)
@@ -121,27 +121,12 @@ class Measuring(UIComponent):
                 self._view.set_capture_frame_visibility(True)
                 self._view.set_capture_button_label(ui_labels.NEW_EXPERIMENT)
                 self._view.set_capture_button_command(self._on_new_experiment)
-                
-    @async_handler
-    async def _on_toggle_capture(self):
-        if self._capture.is_capturing:
-            await self._capture.end_capture()
-        else:
-            try:
-                target_str = self._view.selected_target
-                if target_str == "": # return if empty
-                    return
-                target = self._capture_targets[CaptureTargets(target_str)]
-                await self._capture.start_capture(target)
-            except Exception as e:
-                MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
-
 
     def _on_new_experiment(self):
         self.experiment_execution_state = ExperimentExecutionState.FILL_IN_METADATA
 
-    def _on_metadata_filled_in(self, metadata: Dict[str, Any]):
-        self._experiment_metadata = ExperimentMetaData(**metadata)
+    def _on_metadata_filled_in(self, metadata: ExperimentMetaData):
+        self._experiment_metadata = metadata
         self.experiment_execution_state = ExperimentExecutionState.CHOOSE_CAPTURE_TARGET
 
     def _on_continue_select_target(self):
@@ -161,7 +146,7 @@ class Measuring(UIComponent):
         )
         try:
             target = self._capture_targets[self._selected_target]
-            await self._capture.start_capture(target)
+            await self._capture.start_capture(experiment, target)
         except Exception as e:
             MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
 
@@ -174,7 +159,6 @@ class Measuring(UIComponent):
         # The execution state gets set as callback for capture. This is needed, because a capture can end automatically (Procedure finished for example)
 
         
-
 class MeasuringView(TabView):
     def __init__(self, master: ttk.Window, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)

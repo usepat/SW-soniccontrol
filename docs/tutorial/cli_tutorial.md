@@ -66,13 +66,12 @@ Type `exit` to exit the monitor and `help` to get the manual for the protocol th
 
 ## Spectrum
 
-The spectrum is basically a ramp that measures each frequency set, exactly once.
-It creates a csv file of the measured data. The output location of that file can be set with `--out-dir`. 
-You can also specify which fields it should include (only fields from the update command are possible) with --fields. You need to pass the name of the fields as a comma separated list.
+The spectrum is basically a ramp that measures each frequency set, exactly once.  
+It needs as argument a json file that contains metadata information about the experiment.  
+It creates a json file of the measured data. The output location of that file can be set with `--out-dir`. 
 ```bash
-soniccontrol /dev/USB0 spectrum --out-dir=path/to/dir --fields=freq,gain
+soniccontrol /dev/USB0 spectrum <metadata-file> --out-dir=path/to/dir
 ```
-> Note: it will always include a timestamp field in the output
 
 After starting the spectrum it will first ask you in the prompt, what values it should use for the parameters.  
 But you can also specify those parameters directly in the cli command. If you specify them there, it will not ask you again for them later.

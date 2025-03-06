@@ -170,15 +170,15 @@ class KnownDeviceWindow(DeviceWindow):
             self._interpreter = InterpreterEngine(self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
-            update_answer_fields = self._device.lookup_table[CommandCode.GET_UPDATE].answer_def.fields
-            update_answer_field_names = [ field.field_name for field in update_answer_fields ] 
-            self._capture = Capture(update_answer_field_names, files.LOG_DIR, self._logger)
+            self._capture = Capture(files.LOG_DIR, self._logger)
             self._capture_targets = {
                 CaptureTargets.FREE: CaptureFree(),
                 CaptureTargets.SCRIPT: CaptureScript(self._script_file, self._scripting, self._interpreter),
                 CaptureTargets.PROCEDURE: CaptureProcedure(self._proc_controller, self._proc_controlling_model),
                 CaptureTargets.SPECTRUM_MEASURE: CaptureSpectrumMeasure(self._updater, self._proc_controller, self._spectrum_measure_model)
             }
+
+            update_answer_fields = self._device.lookup_table[CommandCode.GET_UPDATE].answer_def.fields
 
             # Components
             self._logger.debug("Create views")
