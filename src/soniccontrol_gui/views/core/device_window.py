@@ -193,7 +193,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
             self._proc_controlling = ProcControlling(self, self._proc_controller, self._proc_controlling_model, self._app_state)
-            self._sonicmeasure = Measuring(self, self._capture , self._capture_targets)
+            self._sonicmeasure = Measuring(self, self._capture , self._capture_targets, self._device.info)
             self._home = Home(self, self._device)
 
             # Views

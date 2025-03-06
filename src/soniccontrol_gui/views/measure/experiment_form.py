@@ -105,7 +105,7 @@ class ExperimentForm(UIComponent):
             json.dump(data_dict, file)
 
     def _validate_template_data(self, template: Template) -> bool:
-        if template.name in map(lambda template: template.name, self._templates):
+        if self.selected_template_index is None and template.name in map(lambda template: template.name, self._templates):
             MessageBox.show_error(self.view.root, "A template with this name already exists")
             return False
         
