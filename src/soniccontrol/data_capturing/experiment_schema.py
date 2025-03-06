@@ -7,7 +7,7 @@ import datetime
 
 from sonic_protocol.defs import DeviceType, Version
 from soniccontrol.data_capturing.capture_target import CaptureTargets
-from soniccontrol.data_capturing.experiment import Experiment
+from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.device_data import FirmwareInfo
 
 
@@ -81,6 +81,11 @@ registry.register(CaptureTargets, lambda converter, hints, opts: EnumField(Captu
 registry.register(DeviceType, lambda converter, hints, opts: EnumField(DeviceType, **opts))
 
 
+class ExperimentMetaDataSchema(AttrsSchema):
+    class Meta: # type: ignore
+        target = ExperimentMetaData
+        register_as_scheme = True
+
 class FirmwareInfoSchema(AttrsSchema):
     class Meta: # type: ignore
         target = FirmwareInfo
@@ -94,27 +99,4 @@ class ExperimentSchema(AttrsSchema):
 
     data = DataFrameField(ExperimentDataRowSchema)
 
-
-def main():
-    experiment = Experiment("experiment", "DW, SS", "0001", "0001-ADD-ON-001", "some connector", "water", FirmwareInfo())
-    experiment.data.loc[0] = [
-        datetime.datetime.now(),
-        100000,
-        100,
-        0.,
-        0.,
-        0.,
-        float("nan")
-    ]
-    experiment.additional_metadata = {
-        "info": "this is a test"
-    }
-
-    scheme = ExperimentSchema()
-    marshal_result = scheme.dump(experiment)
-    print(marshal_result.data)
-    
-
-if __name__ == "__main__":
-    main()
 

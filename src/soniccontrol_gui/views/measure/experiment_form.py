@@ -1,33 +1,35 @@
 import json
-from typing import Callable, Dict, Iterable, List, Optional, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, cast
 
 import attrs
-from soniccontrol.data_capturing.experiment import Experiment
-from soniccontrol.data_capturing.experiment_schema import ExperimentSchema # ATTENTION: needed so we can resolve Experiment with marshmallow-attrs
+from marshmallow import Schema, ValidationError, fields
+from marshmallow_annotations.ext.attrs import AttrsSchema
+from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
+from soniccontrol.data_capturing.experiment_schema import ExperimentMetaDataSchema
+from soniccontrol.events import Event
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import View
 from soniccontrol_gui.constants import files, sizes, ui_labels
 
 import ttkbootstrap as ttk
 import logging
-from marshmallow_annotations.ext.attrs import AttrsSchema
 
 from soniccontrol_gui.widgets.form_widget import BasicTypeFieldView, FieldViewFactoryType, FormWidget, FormFieldAttributes
-
+from soniccontrol_gui.widgets.message_box import MessageBox
+        
 
 @attrs.define(auto_attribs=True)
 class Template:
     name: str
-    form_data: Experiment
+    form_data: ExperimentMetaData
 
-class TemplateSchema(AttrsSchema):
+class TemplateSchema(AttrsSchema):    
     class Meta: # type: ignore
         target = Template
 
 
 class ExperimentForm(UIComponent):
     FINISHED_EDITING_EVENT: str = "<<FINISHED_EDITING>>"
-    EXPERIMENT_EVENT_ARG: str = "experiment"
 
     def __init__(self, parent: UIComponent, view_slot: View | ttk.Frame | None = None):
         self._logger = logging.getLogger(parent.logger.name + "." + ExperimentForm.__name__)
@@ -57,14 +59,10 @@ class ExperimentForm(UIComponent):
     def selected_template_index(self, value: Optional[int]) -> None: 
         if value != self._selected_template_index:
             self._selected_template_index = value
+            self._change_template()
 
     def _create_metadata_form(self):
-        form_attrs = cast(FormFieldAttributes, attrs.fields_dict(Experiment))
-
-        exclude_field_names = ["date_time", "data", "firmware_info", "sonic_control_version", 
-                               "operating_system", "capture_target", "target_parameters"]
-        for exclude_field_name in exclude_field_names:
-            del form_attrs[exclude_field_name]
+        form_attrs = cast(FormFieldAttributes, attrs.fields_dict(ExperimentMetaData))
 
         replace_fields: Dict[str, FieldViewFactoryType] = {
             "authors": lambda view, title, **kwargs: BasicTypeFieldView[str](view, str, title, **kwargs),
@@ -88,22 +86,18 @@ class ExperimentForm(UIComponent):
         self.selected_template_index = 0 if len(self._templates) > 0 else None
 
     def _on_save_template(self):
-        try:
-            experiment = Experiment(**self._form_dict)
-        except Exception as e:
-            ...
-            return
-        
-        template = Template(self._view.template_name, experiment)
+        template = Template(self._view.template_name, ExperimentMetaData(**self._form_dict))
         if not self._validate_template_data(template):
             return
         
         if self.selected_template_index is None:
             self._templates.append(template)
-            self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
             self.selected_template_index = len(self._templates) - 1
         else:
             self._templates[self.selected_template_index] = template
+
+        self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
+        self._view.selected_template = template.name
 
         self._logger.info("Save templates to %s", files.EXPERIMENT_TEMPLATES_JSON)
         with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
@@ -111,7 +105,18 @@ class ExperimentForm(UIComponent):
             json.dump(data_dict, file)
 
     def _validate_template_data(self, template: Template) -> bool:
-        return True  # TODO
+        if template.name in map(lambda template: template.name, self._templates):
+            MessageBox.show_error(self.view.root, "A template with this name already exists")
+            return False
+        
+        try:
+            schema = TemplateSchema()
+            schema.dump(template)
+        except ValidationError as err:
+            MessageBox.show_error(self.view.root, err.messages[0])
+            return False
+
+        return True
 
     def _on_new_template(self):
         self._view.template_name = "no name"
@@ -119,7 +124,17 @@ class ExperimentForm(UIComponent):
         self.selected_template_index = None
 
     def _on_delete_template(self):
-        ... # TODO
+        if self.selected_template_index is None:
+            return
+
+        template = self._templates.pop(self.selected_template_index)
+        self._logger.info("Delete template %s", template.name)
+        with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
+            data_dict = self._template_schema.dump(self._templates).data
+            json.dump(data_dict, file)
+
+        self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
+        self.selected_template_index = None if len(self._templates) == 0 else 0
 
     def _on_select_template(self):
         for i, template in enumerate(self._templates):
@@ -130,15 +145,24 @@ class ExperimentForm(UIComponent):
     def _change_template(self):
         if self.selected_template_index is None:
             self._on_new_template()
+            self._view.selected_template = ""
         else:
             selected_template = self._templates[self.selected_template_index]
             form_data = attrs.asdict(selected_template.form_data)
             form_data["authors"] = ", ".join(form_data["authors"]) # for authors a StrFieldView is used in the form.
             self._metadata_form.form_data = form_data
             self._view.template_name = selected_template.name
+            self._view.selected_template = selected_template.name
 
     def _on_finished_editing(self):
-        ...  # TODO
+        if self.selected_template_index is None:
+            return
+        
+        template = Template(self._view.template_name, ExperimentMetaData(**self._form_dict))
+        if not self._validate_template_data(template):
+            return
+        
+        self.emit(Event(self.FINISHED_EDITING_EVENT, experiment_metadata=template.form_data))
 
 
 class ExperimentFormView(View):

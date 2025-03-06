@@ -346,7 +346,7 @@ class FormWidget(UIComponent):
         self._procedure_name = title
         self._view = FormWidgetView(parent_view)
         self._view.set_title(self._procedure_name)
-        self._model_dict = {} if model_dict is None else model_dict.copy()
+        self._model_dict = {} if model_dict is None else model_dict
         super().__init__(parent, self._view)
         self._add_fields_to_widget()
 
@@ -354,7 +354,7 @@ class FormWidget(UIComponent):
         for field_name, field in self._form_attrs.items():
             if isinstance(field, attrs.Attribute):
                 kwargs = {}
-                if field.default is not None:
+                if field.default is not None and field.default != attrs.NOTHING:
                     kwargs["default_value"] = field.default.factory() if hasattr(field.default, "factory") else field.default
 
                 if field.type is int:
