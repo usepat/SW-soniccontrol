@@ -86,7 +86,7 @@ class Capture(EventManager):
         timestamp = self._experiment.date_time.strftime('%Y%m%d_%H%M%S')
         capture_filename = self._output_dir / "sonic_measure_{}.json".format(timestamp)
         schema = ExperimentSchema()
-        data = schema.dump(self._experiment)
+        data = schema.dump(self._experiment).data
         with open(capture_filename, "w") as file:
             json.dump(data, file)
 
@@ -101,7 +101,11 @@ class Capture(EventManager):
                 attrs[EFieldName.TIMESTAMP.value] = datetime.datetime.now()
 
             self._data_provider.add_row(attrs)
-            self._experiment.data.iloc[-1] = pd.DataFrame(attrs)
+
+            attrs_dataframe = pd.DataFrame([attrs])
+            # ensure attrs has all the columns of experiment.data
+            attrs_dataframe = attrs_dataframe.reindex(columns=self._experiment.data.columns, fill_value=None)
+            self._experiment.data = pd.concat([self._experiment.data, attrs_dataframe], ignore_index=True)            
 
 
 
