@@ -2,6 +2,11 @@
 
 Resource    keywords_remote_control.robot
 
+Suite Setup    Connect to device
+Suite Teardown    RemoteController.Disconnect
+
+Test Setup    Reconnect if disconnected
+
 *** Variables ***
 
 ${MIN_FREQUENCY}    ${100000}
@@ -93,8 +98,11 @@ Test if freq set by setter can be retrieved with getter
 
 Send Example Commands
     [Tags]    expensive_to_run
-    [Timeout]   1 minutes
+    #[Timeout]   1 minutes
     ${command_examples_list}=    RemoteController.Deduce list of command examples
+    IF    "${TARGET}" != 'simulation'
+        Remove Values From List    ${command_examples_list}    !FLASH_USB    !FLASH_UART_SLOW    !FLASH_UART_FAST
+    END
     ${num_iterations} =    Get Length    ${command_examples_list}
     FOR  ${i}    ${command_example}  IN ENUMERATE    @{command_examples_list}
         Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 

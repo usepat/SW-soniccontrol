@@ -5,11 +5,11 @@ skip-teardown-on-exit = true
 
 
 [profiles.worker]
-variables = { TARGET = "url", URL = "COM23" }
+variables = { TARGET = "url", URL = "COM22" }
 excludes = [ "descaler" ]
 
 [profiles.descaler]
-variables = { TARGET = "url", URL = "/dev/ttyUSB0" }
+variables = { TARGET = "url", URL = "COM22" }
 excludes = [ "worker" ]
 
 [profiles.simulation]

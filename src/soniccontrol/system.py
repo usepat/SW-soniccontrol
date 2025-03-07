@@ -6,7 +6,7 @@ from typing import Final
 
 
 class System(Enum):
-    WINDOWS = "win32", "windows-1252"
+    WINDOWS = "win32", "utf-8"
     LINUX = "linux", "utf-8"
     MAC = "darwin", "utf-8"
     UNKNOWN = "unknown", "utf-8"
