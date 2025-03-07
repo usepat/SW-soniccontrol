@@ -60,12 +60,33 @@ def generate_procedure_arg_setter_contract(command_code: CommandCode, string_ide
         tags=["Procedure", procedure_name]
     )
 
+get_ramp = CommandContract(
+    code=CommandCode.GET_RAMP,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?ramp"]
+        )
+    ), 
+    is_release=True,
+    answer_defs=AnswerDef(
+        fields=[
+            fields.field_ramp_f_start,
+            fields.field_ramp_f_stop,
+            fields.field_ramp_f_step,
+            fields.field_ramp_t_on,
+            fields.field_ramp_t_off
+        ]
+    ),
+    tags=["Procedure", "RAMP"]
+)
+
 ramp_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_RAMP,
         ["!ramp", "start_ramp"],
         ""
     ),
+    get_ramp,
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_F_START, 
     ["!ramp_f_start"],
@@ -93,25 +114,7 @@ ramp_proc_commands: List[CommandContract] = [
     )
 ]
 
-get_ramp = CommandContract(
-    code=CommandCode.GET_RAMP,
-    command_defs=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["?ramp"]
-        )
-    ), 
-    is_release=True,
-    answer_defs=AnswerDef(
-        fields=[
-            fields.field_ramp_f_start,
-            fields.field_ramp_f_stop,
-            fields.field_ramp_f_step,
-            fields.field_ramp_t_on,
-            fields.field_ramp_t_off
-        ]
-    ),
-    tags=["Procedure", "RAMP"]
-)
+
 
 
 get_auto = CommandContract(
@@ -204,7 +207,7 @@ get_tune = CommandContract(
 
 tune_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
-        CommandCode.GET_TUNE,
+        CommandCode.SET_TUNE,
         ["!tune"],
         ""
     ),

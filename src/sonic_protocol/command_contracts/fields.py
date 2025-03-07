@@ -158,6 +158,11 @@ field_unknown_answer = AnswerFieldDef(
 	field_type=FieldType(str)
 )
 
+field_transducer = AnswerFieldDef(
+    field_name=EFieldName.TRANSDUCER,
+    field_type=FieldType(str)
+)
+
 field_type_time_span_off = FieldType(
     field_type=np.uint32,
     min_value=DeviceParamConstantType.MIN_T_OFF,
