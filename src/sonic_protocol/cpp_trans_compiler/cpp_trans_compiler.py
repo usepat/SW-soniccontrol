@@ -166,7 +166,8 @@ class CppTransCompiler:
         field_name_members = convert_to_cpp_enum_members(EFieldName)
         self._inject_code_into_file(
             lib_dir / "field_names.hpp",
-            FIELD_NAME_MEMBERS=field_name_members
+            FIELD_NAME_MEMBERS=field_name_members,
+            FIELD_NAME_TO_STR_CONVERSIONS=create_enum_to_string_conversions(EFieldName)
         )
 
         command_code_members = convert_to_cpp_enum_members(CommandCode)
