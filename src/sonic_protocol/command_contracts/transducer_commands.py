@@ -80,7 +80,7 @@ set_transducer = CommandContract(
         index_param=None,
         setter_param=CommandParamDef(
             name=EFieldName.TRANSDUCER,
-            param_type=field_transducer
+            param_type=FieldType(str)
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!transducer", "!tdr"]
