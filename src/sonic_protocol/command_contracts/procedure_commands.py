@@ -2,7 +2,7 @@
 
 from typing import List
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, DeviceParamConstantType, FieldType, SonicTextCommandAttrs, UserManualAttrs
+from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.command_contracts.fields as fields
 
@@ -177,6 +177,11 @@ scan_proc_commands: List[CommandContract] = [
     response_field=fields.field_scan_f_step, 
     ),
     generate_procedure_arg_setter_contract(
+    CommandCode.SET_SCAN_F_SHIFT, 
+    ["!scan_f_shift"], 
+    response_field=fields.field_scan_f_shift,
+    ),
+    generate_procedure_arg_setter_contract(
     CommandCode.SET_SCAN_F_RANGE, 
     ["!scan_f_range"], 
     response_field=fields.field_scan_f_half_range,
@@ -218,6 +223,11 @@ tune_proc_commands: List[CommandContract] = [
     response_field=fields.field_tune_f_step,
     ),
     generate_procedure_arg_setter_contract(
+    CommandCode.SET_TUNE_F_SHIFT, 
+    ["!tune_f_shift"], 
+    response_field=fields.field_tune_f_shift,
+    ),
+    generate_procedure_arg_setter_contract(
     CommandCode.SET_TUNE_T_STEP, 
     ["!tune_t_step"], 
     response_field=fields.field_tune_t_step
@@ -226,8 +236,15 @@ tune_proc_commands: List[CommandContract] = [
     CommandCode.SET_TUNE_T_TIME, 
     ["!tune_t_time"], 
     response_field=fields.field_tune_t_time,
+    ),
+    generate_procedure_arg_setter_contract(
+    CommandCode.SET_TUNE_N_STEPS, 
+    ["!tune_n_steps"], 
+    response_field=fields.field_tune_n_steps,
+    release=False    
     )
 ]
+
 
 get_wipe = CommandContract(
     code=CommandCode.GET_WIPE,
@@ -337,7 +354,7 @@ duty_cycle_proc_commands: List[CommandContract] = [
 
 
 
-all_proc_commands = [stop_command, continue_command]
+all_proc_commands: List[CommandContract] = [stop_command, continue_command]
 all_proc_commands.extend(ramp_proc_commands)
 all_proc_commands.extend(wipe_proc_commands)
 all_proc_commands.extend(scan_proc_commands)

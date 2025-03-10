@@ -159,22 +159,13 @@ class DeviceParamConstants:
 
     max_frequency: int = attrs.field(default=10000000)
     min_frequency: int = attrs.field(default=100000)
-    default_frequency: int = attrs.field(default=2250000)
     max_gain: int = attrs.field(default=150)
     min_gain: int = attrs.field(default=0)
-    default_gain: int = attrs.field(default=50)
     max_swf: int = attrs.field(default=15)
     min_swf: int = attrs.field(default=0)
-    default_swf: int = attrs.field(default=5)
 
-    # max_f_start: int = attrs.field(default=10000000)
-    # min_f_start: int = attrs.field(default=100000)
-    # max_f_stop: int = attrs.field(default=10000000)
-    # min_f_stop: int = attrs.field(default=100000)
     max_f_step: int = attrs.field(default=5000000)
     min_f_step: int = attrs.field(default=1)
-    max_f_half_range: int = attrs.field(default=5000000)
-    min_f_half_range: int = attrs.field(default=100)
     max_f_shift: int = attrs.field(default=10000)
     min_f_shift: int = attrs.field(default=0)
 
@@ -182,12 +173,6 @@ class DeviceParamConstants:
     min_t_on: int = attrs.field(default=10)
     max_t_off: int = attrs.field(default=1000 * 60 * 60)
     min_t_off: int = attrs.field(default=0)
-    max_t_step: int = attrs.field(default=1000 * 60 * 60)
-    min_t_step: int = attrs.field(default=1)
-    # max_t_pause: int = attrs.field(default=1000 * 60 * 60)
-    # min_t_pause: int = attrs.field(default=0)
-    # max_t_tune: int = attrs.field(default=1000 * 60 * 60)
-    # min_t_tune: int = attrs.field(default=1)
 
     max_duty_cycle_t_on: int = attrs.field(default=300 * 60) # in seconds
     min_duty_cycle_t_on: int = attrs.field(default=1 * 60)
@@ -198,24 +183,27 @@ class DeviceParamConstants:
 
 
 class DeviceParamConstantType(Enum):
+    MAX_TRANSDUCER_INDEX = "max_transducer_index"
+    MIN_TRANSDUCER_INDEX = "min_transducer_index"
     MAX_FREQUENCY = "max_frequency"
     MIN_FREQUENCY = "min_frequency"
     MAX_GAIN = "max_gain"
     MIN_GAIN = "min_gain"
     MAX_SWF = "max_swf"
     MIN_SWF = "min_swf"
-    MAX_TRANSDUCER_INDEX = "max_transducer_index"
-    MIN_TRANSDUCER_INDEX = "min_transducer_index"
-    MAX_DUTY_CYCLE_T_ON = "max_duty_cycle_t_on"
-    MIN_DUTY_CYCLE_T_ON = "min_duty_cycle_t_on"
-    MAX_DUTY_CYCLE_T_OFF = "max_duty_cycle_t_off"
-    MIN_DUTY_CYCLE_T_OFF = "min_duty_cycle_t_off"
     MAX_F_STEP = "max_f_step"
     MIN_F_STEP = "min_f_step"
+    MAX_F_SHIFT = "max_f_shift"
+    MIN_F_SHIFT = "min_f_shift"
     MAX_T_ON = "max_t_on"
     MIN_T_ON = "min_t_on"
     MAX_T_OFF = "max_t_off"
     MIN_T_OFF = "min_t_off"
+    MAX_DUTY_CYCLE_T_ON = "max_duty_cycle_t_on"
+    MIN_DUTY_CYCLE_T_ON = "min_duty_cycle_t_on"
+    MAX_DUTY_CYCLE_T_OFF = "max_duty_cycle_t_off"
+    MIN_DUTY_CYCLE_T_OFF = "min_duty_cycle_t_off"
+    MIN_N_STEPS = "min_n_steps"
 
 
 @attrs.define(auto_attribs=True)

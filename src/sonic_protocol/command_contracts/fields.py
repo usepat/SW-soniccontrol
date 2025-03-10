@@ -179,6 +179,18 @@ field_type_time_span_on = FieldType(
     si_prefix=SIPrefix.MILLI
 )
 
+field_type_f_shift = FieldType(
+    field_type=np.uint32,
+    min_value=DeviceParamConstantType.MIN_F_SHIFT,
+    max_value=DeviceParamConstantType.MAX_F_SHIFT,
+    si_unit=SIUnit.HERTZ
+)
+
+field_type_n_steps = FieldType(
+    field_type=np.uint8,
+    min_value=DeviceParamConstantType.MIN_N_STEPS
+)
+
 field_ramp_f_start = AnswerFieldDef(
     field_name=EFieldName.RAMP_F_START,
     field_type=field_type_frequency,
@@ -221,6 +233,12 @@ field_scan_f_half_range = AnswerFieldDef(
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Range: ")
 )
 
+field_scan_f_shift = AnswerFieldDef(
+    field_name=EFieldName.SCAN_F_SHIFT,
+    field_type=field_type_f_shift,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Fshift: ")
+)
+
 field_scan_t_step = AnswerFieldDef(
     field_name=EFieldName.SCAN_T_STEP,
     field_type=field_type_time_span_on,
@@ -233,6 +251,12 @@ field_tune_f_step = AnswerFieldDef(
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
 )
 
+field_tune_f_shift = AnswerFieldDef(
+    field_name=EFieldName.TUNE_F_SHIFT,
+    field_type=field_type_f_shift,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Fshift: ")
+)
+
 field_tune_t_step = AnswerFieldDef(
     field_name=EFieldName.TUNE_T_STEP,
     field_type=field_type_time_span_on,
@@ -243,6 +267,12 @@ field_tune_t_time = AnswerFieldDef(
     field_name=EFieldName.TUNE_T_TIME,
     field_type=field_type_time_span_on,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
+)
+
+field_tune_n_steps = AnswerFieldDef(
+    field_name=EFieldName.TUNE_N_STEPS,
+    field_type=field_type_n_steps,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Nsteps: ")
 )
 
 field_wipe_f_step = AnswerFieldDef(
