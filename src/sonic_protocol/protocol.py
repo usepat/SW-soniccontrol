@@ -2,13 +2,13 @@ from typing import List
 import numpy as np
 from sonic_protocol.command_contracts.contract_generators import create_version_field
 from sonic_protocol.defs import (
-    CommandCode, CommandListExport, ConverterType, DeviceParamConstants, FieldType, MetaExportDescriptor, Procedure, 
+    CommandCode, CommandExport, CommandListExport, ConverterType, DeviceParamConstants, FieldType, MetaExportDescriptor, Procedure, 
     Protocol, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType,
 )
 from sonic_protocol.command_contracts.fields import (
     field_frequency, field_gain, field_temperature_kelvin, field_urms, field_irms, 
-    field_phase, field_signal, field_ts_flag,
+    field_phase, field_signal, field_ts_flag, field_swf
 )
 from sonic_protocol.command_contracts.transducer_commands import (
     set_frequency, get_frequency, set_swf, get_swf, get_atf, set_atf, get_att, set_att, get_atk, set_atk,
@@ -146,32 +146,68 @@ procedure_field = AnswerFieldDef(
     field_type=FieldType(field_type=Procedure, converter_ref=ConverterType.ENUM),
 )
 
-get_update = CommandContract(
-    code=CommandCode.GET_UPDATE,
-    command_defs=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["-", "get_update"]
-        )
-    ),
-    answer_defs=AnswerDef(
-        fields=[
-            error_code_field,
-            field_frequency,
-            field_gain,
-            procedure_field,
-            field_temperature_kelvin,
-            field_urms,
-            field_irms,
-            field_phase,
-            field_signal,
-            field_ts_flag
-        ]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Mainly used by sonic control to get a short and computer friendly parsable status update."
-    ),
-    is_release=True,
-    tags=["update", "status"]
+get_update_worker = CommandExport(
+    exports=CommandContract(
+            code=CommandCode.GET_UPDATE,
+            command_defs=CommandDef(
+                sonic_text_attrs=SonicTextCommandAttrs(
+                    string_identifier=["-", "get_update"]
+                )
+            ),
+            answer_defs=AnswerDef(
+                fields=[
+                    error_code_field,
+                    field_frequency,
+                    field_gain,
+                    procedure_field,
+                    field_temperature_kelvin,
+                    field_urms,
+                    field_irms,
+                    field_phase,
+                    field_signal,
+                    field_ts_flag
+                ]
+            ),
+            user_manual_attrs=UserManualAttrs(
+                description="Mainly used by sonic control to get a short and computer friendly parsable status update."
+            ),
+            is_release=True,
+            tags=["update", "status"]
+        ),
+    descriptor=MetaExportDescriptor(
+        min_protocol_version=Version(major=1, minor=0, patch=0),
+        included_device_types=[DeviceType.DESCALE]
+    )
+)
+
+get_update_descale = CommandExport(
+    exports=CommandContract(
+            code=CommandCode.GET_UPDATE,
+            command_defs=CommandDef(
+                sonic_text_attrs=SonicTextCommandAttrs(
+                    string_identifier=["-", "get_update"]
+                )
+            ),
+            answer_defs=AnswerDef(
+                fields=[
+                    error_code_field,
+                    field_swf,
+                    field_gain,
+                    field_temperature_kelvin,
+                    field_irms,
+                    field_signal,
+                ]
+            ),
+            user_manual_attrs=UserManualAttrs(
+                description="Mainly used by sonic control to get a short and computer friendly parsable status update."
+            ),
+            is_release=True,
+            tags=["update", "status"]
+        ),
+    descriptor=MetaExportDescriptor(
+        min_protocol_version=Version(major=1, minor=0, patch=0),
+        included_device_types=[DeviceType.MVP_WORKER]
+    )
 )
 
 flash_usb = CommandContract(
@@ -184,7 +220,7 @@ flash_usb = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
+                field_name=EFieldName.MESSAGE,
                 field_type=FieldType(str)
             )
         ]
@@ -206,7 +242,7 @@ flash_uart9600 = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
+                field_name=EFieldName.MESSAGE,
                 field_type=FieldType(str)
             )
         ]
@@ -228,7 +264,7 @@ flash_uart115200 = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
+                field_name=EFieldName.MESSAGE,
                 field_type=FieldType(str)
             )
         ]
@@ -267,7 +303,8 @@ protocol = Protocol(
             exports=[
                 get_protocol,
                 get_info,
-                get_update,
+                get_update_worker,
+                get_update_descale,
                 list_available_commands,
                 get_help,
                 get_temp,
