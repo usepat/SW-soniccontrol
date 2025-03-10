@@ -7,8 +7,9 @@ from soniccontrol.communication.connection import Connection, SerialConnection
 from soniccontrol.communication.message_fetcher import MessageFetcher
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol
+from soniccontrol.app_config import ENCODING
 from soniccontrol.events import Event
-from soniccontrol.system import PLATFORM, System
+from soniccontrol.app_config import PLATFORM, System
 
 @attrs.define()
 class SerialCommunicator(Communicator):
@@ -69,6 +70,7 @@ class SerialCommunicator(Communicator):
         await self._writer.drain()
         self._connection_opened.set()
         self._message_fetcher.run()
+        self._connection_opened.set()
 
     async def _send_chunks(self, message: bytes) -> None:
         assert self._writer
@@ -119,7 +121,7 @@ class SerialCommunicator(Communicator):
 
             if request_str != "-":
                 self._logger.info("Write package: %s", message)
-            encoded_message = message.encode(PLATFORM.encoding)
+            encoded_message = message.encode(ENCODING)
 
             
             if PLATFORM == System.WINDOWS:

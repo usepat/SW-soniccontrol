@@ -16,7 +16,7 @@ from soniccontrol.events import Event, PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
 from soniccontrol_gui.widgets.message_box import MessageBox
-from soniccontrol_gui.widgets.procedure_widget import ProcedureWidget
+from soniccontrol_gui.widgets.form_widget import FormWidget
 from soniccontrol_gui.resources import images
 
 
@@ -44,7 +44,7 @@ class ProcControlling(UIComponent):
         self._proc_controller = proc_controller
         self._app_state = app_state
         self._view = ProcControllingView(parent.view)
-        self._proc_widgets: Dict[ProcedureType, ProcedureWidget] = {}
+        self._proc_widgets: Dict[ProcedureType, FormWidget] = {}
         super().__init__(parent, self._view, self._logger)
         self._add_proc_widgets()
         
@@ -71,7 +71,7 @@ class ProcControlling(UIComponent):
     def _add_proc_widgets(self):
         for proc_type, args_class in self._proc_controller.proc_args_list.items():
             proc_dict = {}
-            proc_widget = ProcedureWidget(
+            proc_widget = FormWidget(
                 self, self._view.procedure_frame, 
                 proc_type.value, args_class, proc_dict,
             )
@@ -88,13 +88,14 @@ class ProcControlling(UIComponent):
         self._proc_widgets[self._model.selected_procedure].view.show()
 
     def _on_run_pressed(self):
-        proc_args = self._proc_widgets[self._model.selected_procedure].get_args()
-        if proc_args is not None:
-            try:
-                self._proc_controller.execute_proc(self._model.selected_procedure, proc_args)
-            except Exception as e:
-                self._logger.error(e)
-                MessageBox.show_error(self._view.root, str(e))
+        try:
+            proc_args_dict = self._model.procedure_args
+            proc_class = self._proc_controller.proc_args_list[self._model.procedure_type]
+            proc_args = proc_class(**proc_args_dict)
+            self._proc_controller.execute_proc(self._model.selected_procedure, proc_args)
+        except Exception as e:
+            self._logger.error(e)
+            MessageBox.show_error(self._view.root, str(e))
 
     @async_handler
     async def _on_stop_pressed(self):

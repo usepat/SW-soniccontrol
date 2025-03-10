@@ -1,7 +1,7 @@
 
 import abc
 from enum import Enum
-from typing import Any
+from typing import Any, Dict
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasure, SpectrumMeasureArgs
 from soniccontrol.updater import Updater
 from soniccontrol.events import Event, EventManager, PropertyChangeEvent
@@ -24,6 +24,10 @@ class CaptureTarget(abc.ABC, EventManager):
     def __init__(self):
         super().__init__()
 
+    @property
+    @abc.abstractmethod
+    def args(self) -> Dict[str, Any]: ...
+
     @abc.abstractmethod
     async def before_start_capture(self) -> None: ...
 
@@ -37,6 +41,10 @@ class CaptureTarget(abc.ABC, EventManager):
 class CaptureFree(CaptureTarget):
     def __init__(self):
         super().__init__()
+
+    @property
+    def args(self) -> Dict[str, Any]: 
+        return {}
 
     async def before_start_capture(self) -> None:
         # nothing needed
@@ -68,6 +76,10 @@ class CaptureScript(CaptureTarget):
             InterpreterEngine.PROPERTY_INTERPRETER_STATE, 
             self._complete_on_script_finish
         )
+
+    @property
+    def args(self) -> Dict[str, Any]: 
+        return { "script_text": self._script_args.script_text }
 
     def _complete_on_script_finish(self, _event: PropertyChangeEvent) -> None:
         if self._interpreter_engine.script is None:
@@ -115,6 +127,13 @@ class CaptureProcedure(CaptureTarget):
             self._notify_on_procedure_finished
         )
 
+    @property
+    def args(self) -> Dict[str, Any]: 
+        return { 
+            "procedure_type": self._proc_args.procedure_type,
+            "procedure_args": self._proc_args.procedure_args
+        }
+
     def _notify_on_procedure_finished(self, _e: Event):
         if not self._is_capturing:
             return
@@ -157,6 +176,12 @@ class CaptureSpectrumMeasure(CaptureTarget):
             ProcedureController.PROCEDURE_STOPPED, 
             self._notify_on_procedure_finished
         )
+
+    @property
+    def args(self) -> Dict[str, Any]: 
+        return { 
+            "spectrum_args": self._spectrum_args.spectrum_args
+        }
 
     def _notify_on_procedure_finished(self, _e: Event):
         if not self._is_capturing:

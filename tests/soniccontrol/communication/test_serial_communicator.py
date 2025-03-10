@@ -2,7 +2,7 @@ import asyncio
 import logging
 import pytest
 import pytest_asyncio
-from soniccontrol.system import PLATFORM
+from soniccontrol.consts import ENCODING
 from soniccontrol.communication.package_parser import Package, PackageParser
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from tests.soniccontrol.communication.mock_connection_factory import connection # Needed. Do not delete. Intellisense is shit
@@ -38,7 +38,7 @@ async def test_communicator_send_and_wait_returns_answer(communicator, connectio
     msg = "hello communicator!"
     msg_id = 1
     msg_str = PackageParser.write_package(Package("0", "0", msg_id, msg))
-    connection.reader.feed_data(data=msg_str.encode(PLATFORM.encoding))
+    connection.reader.feed_data(data=msg_str.encode(ENCODING))
 
     answer_str = await communicator.send_and_wait_for_response("?greet")
     assert answer_str == msg
@@ -46,7 +46,7 @@ async def test_communicator_send_and_wait_returns_answer(communicator, connectio
 @pytest.mark.asyncio
 async def test_communicator_send_and_wait_throws_connection_error_if_parsing_error(communicator, connection):
     msg_str = "<0#Hello Parsing Error>"
-    connection.reader.feed_data(data=msg_str.encode(PLATFORM.encoding))
+    connection.reader.feed_data(data=msg_str.encode(ENCODING))
     
     with pytest.raises((ConnectionError, AssertionError)):
         await communicator.send_and_wait_for_response("-")

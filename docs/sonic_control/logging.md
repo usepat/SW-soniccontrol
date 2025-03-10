@@ -20,7 +20,7 @@ Also the directory for the logs is dependent on the operating system:
  - Linux: "~/.SonicControl"
  - Mac: "/Library/Application Support/SonicControl"
  - Windows: "%APPDATA\SonicControl"
-Implementation for this is in the function [create_appdata_directory](@ref soniccontrol.system.create_appdata_directory)
+Implementation for this is in the function [create_appdata_directory](@ref soniccontrol.app_config.create_appdata_directory)
 
 The device can also send logs. Those are parsed and then forwarded to an own Device Logger.
 @see soniccontrol.communication.message_protocol.SonicMessageProtocol

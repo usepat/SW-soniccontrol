@@ -11,8 +11,7 @@ class CsvTable(UIComponent):
     def __init__(self, parent: UIComponent):
         super().__init__(parent, CsvTableView(parent.view))
 
-    def on_update_data(self, e: PropertyChangeEvent):
-        dataFrame: pd.DataFrame = e.new_value
+    def on_update_data(self, dataFrame: pd.DataFrame):
         dataFrame["timestamp"] = dataFrame["timestamp"].apply(lambda x: x.strftime('%Y/%m/%d-%H:%M:%S'))
         columns = [{"text": column, "stretch": True} for column in dataFrame.columns]
         row_data = dataFrame.to_records(index=False).tolist()

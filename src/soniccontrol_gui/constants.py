@@ -2,7 +2,7 @@ from typing import Final, List, Literal
 
 import attrs
 
-from soniccontrol.system import PLATFORM, create_appdata_directory
+from soniccontrol.app_config import APP_DATA_DIR
 from soniccontrol_gui.utils.types import ScriptingGuideCardDataDict
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol.procedures.procedure_controller import ProcedureController
@@ -22,9 +22,10 @@ tk_const: Final[_TkinterConstants] = _TkinterConstants()
 
 @attrs.frozen
 class _Files:
-    DATA_DIR =  create_appdata_directory(PLATFORM, "SonicControl")
+    DATA_DIR =  APP_DATA_DIR
     LOG_DIR = DATA_DIR / "logs"
-    TRANSDUCDER_CONFIG_JSON = DATA_DIR / "transducer_configs.json"
+    TRANSDUCER_CONFIG_JSON = DATA_DIR / "transducer_configs.json"
+    EXPERIMENT_TEMPLATES_JSON = DATA_DIR / "experiment_templates.json"
     SONICCONTROL_LOG = LOG_DIR / "soniccontrol.log"
 
 files: _Files = _Files()
@@ -121,7 +122,9 @@ class _UIStringsEN:
     FLASHER_LABEL: Final[str] = "Flasher"
     PROCEDURES_LABEL: Final[str] = "Procedures"
     SONIC_LABEL: Final[str] = "sonic"
+    SPECTRUM_MEASURE_TITLE: Final[str] = "Spectrum Measure"
     SONIC_MEASURE_LABEL: Final[str] = "Sonic Measure"
+    NEW_EXPERIMENT: Final[str] = "New Experiment"
     SPECIFY_PATH_LABEL: Final[str] = "Specify Path"
     SEARCH: Final[str] = "Search:"
     SET_FREQUENCY_LABEL: Final[str] = "Set Frequency"
@@ -141,6 +144,7 @@ class _UIStringsEN:
     LOAD_LABEL: Final[str] = "Load File"
     SEND_LABEL: Final[str] = "Send"
     DELETE_LABEL: Final[str] = "Delete"
+    FINISH_LABEL: Final[str] = "Finish"
     THEME: Final[str] = "sandstone"
     IDLE_TITLE: Final[str] = "Sonic Control"
     AUTO_READ_LABEL: Final[str] = "Auto Read"
@@ -149,6 +153,7 @@ class _UIStringsEN:
     SONICAMP_SETTINGS_LABEL: Final[str] = "SonicDevice Settings"
     SONICCONTROL_SETTINGS_LABEL: Final[str] = "SonicControl Settings"
     SUBMIT_LABEL: Final[str] = "Submit"
+    SELECTED: Final[str] = "Selected"
     CONTROL_LABEL: Final[str] = "control"
     COMPANY_NAME: Final[str] = "usePAT G.m.b.H"
     VERSION_LABEL: Final[str] = "Version"
@@ -216,6 +221,7 @@ class _UIStringsEN:
     HOME_HELP_ON: Final[str] = "Here should be a description of the on entry."
     HOME_HELP_AUTO: Final[str] = "Here should be a description of the auto entry."
     HOME_HELP_OFF: Final[str] = "Here should be a description of the off entry."
+    CHOOSE_A_CAPTURE_TARGET: Final[str] = "Choose a capture target"
     START_CAPTURE: Final[str] = "Start Capture"
     END_CAPTURE: Final[str] = "End Capture"
     PROC_RUNNING: Final[str] = "Procedure [{}] is running..."
@@ -234,6 +240,7 @@ class _UIStringsEN:
     FLASH_UART_FAST: Final[str] = "FLASH_UART_FAST"
     FLASH_USB: Final[str] = "FLASH_USB"
     OPEN_LOGS: Final[str] = "Open Logs"
+    FORM_ADD_ENTRY: Final[str] = "Add Entry"
 
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()

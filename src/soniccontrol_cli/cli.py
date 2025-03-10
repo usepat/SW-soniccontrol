@@ -1,7 +1,10 @@
+import json
 import attrs
 import click
 
 from sonic_protocol.field_names import EFieldName
+from soniccontrol.data_capturing.experiment import ExperimentMetaData
+from soniccontrol.data_capturing.experiment_schema import ExperimentMetaDataSchema
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs
 from soniccontrol.remote_controller import RemoteController
 from soniccontrol_cli.monitor import Monitor
@@ -12,6 +15,7 @@ import asyncio
 from enum import Enum
 import logging
 import io
+from itertools import chain
 
 
 class ConnectionType(Enum):
@@ -102,28 +106,31 @@ def script(ctx: click.Context, script_file: io.IOBase):
 @cli.command(
     params=[
         create_click_option(arg_name, arg_type)
-        for arg_name, arg_type in attrs.fields_dict(SpectrumMeasureArgs).items()
+        for arg_name, arg_type in chain(
+            attrs.fields_dict(SpectrumMeasureArgs).items()
+        )
     ]
 )
+@click.argument("metadata-file", type=click.Path(path_type=pathlib.Path, dir_okay=False))
 @click.option("--out-dir", type=click.Path(path_type=pathlib.Path, file_okay=False), default=files.LOG_DIR)
-@click.option("--fields", type=str, default="", help="Comma separated list of fields to include")
 @click.pass_context
-def spectrum(ctx: click.Context, *args, **kwargs):
+def spectrum(ctx: click.Context, metadata_file: pathlib.Path, *args, **kwargs):
     remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]
     async_loop: asyncio.AbstractEventLoop = ctx.obj[ASYNC_LOOP]
 
     out_dir: pathlib.Path = kwargs.pop("out_dir") # type: ignore
-    fields: str = kwargs.pop("fields") # type: ignore
+
     spectrum_args = SpectrumMeasureArgs(**kwargs)
 
-    if len(fields) > 0:
-        data_fields = [ EFieldName(field) for field in fields.split(",") ]
-    else:
-        data_fields = []
+    with open(metadata_file, "r") as file:
+        json_data = json.load(file)
+    
+    schema = ExperimentMetaDataSchema()
+    experiment_metadata = schema.load(json_data).data
 
     click.echo("Measuring spectrum")
     async_loop.run_until_complete(
-        remote_controller.measure_spectrum(out_dir, spectrum_args, data_fields=data_fields)
+        remote_controller.measure_spectrum(out_dir, spectrum_args, experiment_metadata)
     )
 
 

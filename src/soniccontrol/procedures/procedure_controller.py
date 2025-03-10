@@ -56,7 +56,8 @@ class ProcedureController(EventManager):
             raise Exception("There is already a procedure running")
         
         self._logger.info("Run procedure %s with args %s", proc_type.name, str(args))
-        
+    
+
         async def proc_task():
             self._remote_procedure_state.reset_completion_flag()
             try:

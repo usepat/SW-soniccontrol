@@ -17,11 +17,7 @@ class DataProvider(EventManager):
         return self._data
     
 
-    def add_row(self, row: dict):
-        time_stamp_key = EFieldName.TIMESTAMP.value
-        if time_stamp_key in row.keys():
-            row[time_stamp_key] = pd.to_datetime(row[time_stamp_key], errors='raise', format="%Y-%m-%d %H:%M:%S.%f")
-            
+    def add_row(self, row: dict):            
         self._dataqueue.append(row)
         self._data = pd.DataFrame(list(self._dataqueue), columns=row.keys())
 
