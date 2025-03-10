@@ -46,7 +46,7 @@ def deduce_command_examples(protocol_version: Version, device_type: DeviceType, 
     """
     command_examples: List[str] = []
 
-    command_table = ProtocolBuilder(protocol.protocol).build(device_type, protocol_version, is_release)
+    command_table, _ = ProtocolBuilder(protocol.protocol).build(device_type, protocol_version, is_release)
 
     for command_lookup in command_table.values():
         command_def = command_lookup.command_def

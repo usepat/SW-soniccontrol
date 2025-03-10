@@ -267,11 +267,6 @@ wipe_proc_commands: List[CommandContract] = [
     response_field=fields.field_wipe_f_range,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_WIPE_F_RANGE, 
-    ["!wipe_f_range"], 
-    response_field=fields.field_wipe_f_range,
-    ),
-    generate_procedure_arg_setter_contract(
     CommandCode.SET_WIPE_T_ON, 
     ["!wipe_t_on"], 
     response_field=fields.field_wipe_t_on,

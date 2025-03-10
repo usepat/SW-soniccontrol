@@ -6,7 +6,7 @@ import attrs
 import numpy as np
 from sonic_protocol import protocol as prot
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import LoggerName, Loglevel, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import DeviceParamConstants, LoggerName, Loglevel, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
 import importlib.resources as rs
@@ -237,7 +237,7 @@ class CppTransCompiler:
         protocol_builder = ProtocolBuilder(protocol)
         
         protocol_cpp_name = f"protocol_{protocol_version.to_cpp_var_name()}"
-        command_lookup_table = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
+        command_lookup_table, consts = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
         protocol_instance, command_defs, answer_defs,  = self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_cpp_name)
 
         param_defs = self._transpile_param_defs_from_cache()
@@ -254,8 +254,13 @@ class CppTransCompiler:
             COMMAND_DEFS = command_defs,
             ANSWER_DEFS = answer_defs
         )
-        
-        
+
+        consts_defs = self._transpile_consts(consts)
+        self._inject_code_into_file(
+            lib_dir / "consts.hpp",
+            CONSTS=consts_defs
+        )
+         
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
         with open(file_path, "r") as source_file:
             content = source_file.read()
@@ -264,6 +269,12 @@ class CppTransCompiler:
         with open(file_path, "w") as source_file:
             source_file.write(content)
 
+    def _transpile_consts(self, consts: DeviceParamConstants) -> str:
+        const_defs: List[str] = []
+        for const_name, const_attr in attrs.fields_dict(DeviceParamConstants).items():
+            assert const_attr.type
+            const_defs.append(f"constexpr {py_type_to_cpp_type(const_attr.type)} {const_name.upper()} {{ {getattr(consts, const_name)} }};")
+        return "\n".join(const_defs)
 
     def _transpile_command_contracts(
             self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name: str) -> Tuple[str, str, str]:

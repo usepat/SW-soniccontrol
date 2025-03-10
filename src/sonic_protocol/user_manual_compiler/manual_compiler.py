@@ -19,7 +19,7 @@ class MarkdownManualCompiler(ManualCompiler):
         
 
     def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True) -> str:
-        command_list = self._protocol_builder.build(device_type, protocol_version, is_release)
+        command_list, _ = self._protocol_builder.build(device_type, protocol_version, is_release)
         
         manual = ""
         manual += self.create_title(device_type, protocol_version, is_release)

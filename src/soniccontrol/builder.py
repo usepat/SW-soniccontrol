@@ -44,7 +44,7 @@ class DeviceBuilder:
             builder_logger.debug("Try to figure out which protocol to use with ?protocol")
 
             protocol_version: Version = Version(1, 0, 0)
-            base_command_lookups = protocol_builder.build(device_type, protocol_version, is_release)
+            base_command_lookups, _ = protocol_builder.build(device_type, protocol_version, is_release)
 
             device = SonicDevice(comm, base_command_lookups, info, logger=logger)
             answer = await device.execute_command(cmds.GetProtocol())
@@ -62,7 +62,7 @@ class DeviceBuilder:
 
         # create device
         builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release" if is_release else "build", str(protocol_version))
-        command_lookups = protocol_builder.build(device_type, protocol_version, is_release)
+        command_lookups, _ = protocol_builder.build(device_type, protocol_version, is_release)
 
         device = SonicDevice(comm, command_lookups, info, 
                              is_in_rescue_mode=open_in_rescue_mode, logger=logger)

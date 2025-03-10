@@ -1,7 +1,7 @@
 
 from copy import copy
 import attrs
-from typing import Dict, List, TypeVar
+from typing import Dict, List, Tuple, TypeVar
 from sonic_protocol.python_parser.answer import AnswerValidator
 from sonic_protocol.python_parser.answer_validator_builder import AnswerValidatorBuilder
 from sonic_protocol.defs import AnswerDef, CommandCode, CommandContract, CommandDef, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, MetaExport, Protocol, UserManualAttrs, Version
@@ -21,7 +21,7 @@ class ProtocolBuilder:
     def __init__(self, protocol: Protocol):
         self._protocol = protocol
 
-    def build(self, device_type: DeviceType, version: Version, release: bool) -> CommandLookUpTable:
+    def build(self, device_type: DeviceType, version: Version, release: bool) -> Tuple[CommandLookUpTable, DeviceParamConstants]:
         lookups: Dict[CommandCode, CommandLookUp] = {}
 
         if version > self._protocol.version:
@@ -41,7 +41,7 @@ class ProtocolBuilder:
                     continue
                 lookups[command.code] = self._extract_command_lookup(command, consts, version, device_type)
 
-        return lookups
+        return lookups, consts
 
 
     def _extract_command_lookup(self, command: CommandContract, consts: DeviceParamConstants, version: Version, device_type: DeviceType) -> CommandLookUp:

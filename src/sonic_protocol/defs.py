@@ -154,24 +154,47 @@ class Timestamp():
 
 @attrs.define(auto_attribs=True)
 class DeviceParamConstants:
-    max_frequency: int = attrs.field(default=10000000)
-    min_frequency: int = attrs.field(default=100000)
-    max_gain: int = attrs.field(default=150)
-    min_gain: int = attrs.field(default=0)
-    max_swf: int = attrs.field(default=15)
-    min_swf: int = attrs.field(default=0)
     max_transducer_index: int = attrs.field(default=4)
     min_transducer_index: int = attrs.field(default=1)
-    max_duty_cycle_t_on: int = attrs.field(default=300 * 60) # in seconds
-    min_duty_cycle_t_on: int = attrs.field(default=1 * 60)
-    max_duty_cycle_t_off: int = attrs.field(default=300 * 60)
-    min_duty_cycle_t_off: int = attrs.field(default=0)
+
+    max_frequency: int = attrs.field(default=10000000)
+    min_frequency: int = attrs.field(default=100000)
+    default_frequency: int = attrs.field(default=2250000)
+    max_gain: int = attrs.field(default=150)
+    min_gain: int = attrs.field(default=0)
+    default_gain: int = attrs.field(default=50)
+    max_swf: int = attrs.field(default=15)
+    min_swf: int = attrs.field(default=0)
+    default_swf: int = attrs.field(default=5)
+
+    # max_f_start: int = attrs.field(default=10000000)
+    # min_f_start: int = attrs.field(default=100000)
+    # max_f_stop: int = attrs.field(default=10000000)
+    # min_f_stop: int = attrs.field(default=100000)
+    max_f_step: int = attrs.field(default=5000000)
+    min_f_step: int = attrs.field(default=1)
+    max_f_half_range: int = attrs.field(default=5000000)
+    min_f_half_range: int = attrs.field(default=100)
+    max_f_shift: int = attrs.field(default=10000)
+    min_f_shift: int = attrs.field(default=0)
+
     max_t_on: int = attrs.field(default=1000 * 60 * 60) # in milliseconds
     min_t_on: int = attrs.field(default=10)
     max_t_off: int = attrs.field(default=1000 * 60 * 60)
     min_t_off: int = attrs.field(default=0)
-    max_f_step: int = attrs.field(default=5000000)
-    min_f_step: int = attrs.field(default=100)
+    max_t_step: int = attrs.field(default=1000 * 60 * 60)
+    min_t_step: int = attrs.field(default=1)
+    # max_t_pause: int = attrs.field(default=1000 * 60 * 60)
+    # min_t_pause: int = attrs.field(default=0)
+    # max_t_tune: int = attrs.field(default=1000 * 60 * 60)
+    # min_t_tune: int = attrs.field(default=1)
+
+    max_duty_cycle_t_on: int = attrs.field(default=300 * 60) # in seconds
+    min_duty_cycle_t_on: int = attrs.field(default=1 * 60)
+    max_duty_cycle_t_off: int = attrs.field(default=300 * 60)
+    min_duty_cycle_t_off: int = attrs.field(default=0)
+
+    min_n_steps: int = attrs.field(default=1)
 
 
 class DeviceParamConstantType(Enum):
