@@ -69,3 +69,12 @@ class RobotRemoteController:
     def disconnect(self) -> None:
         self._loop.run_until_complete(self._controller.disconnect())
 
+
+def main():
+    robotController = RobotRemoteController()
+    robotController.connect_via_serial("COM22")
+    print(f"Connected: {robotController.is_connected()}")
+    print(robotController.send_command("-"))
+
+if __name__ == "__main__":
+    main()

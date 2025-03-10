@@ -2,6 +2,11 @@
 
 Resource    keywords_remote_control.robot
 
+Suite Setup    Connect to device
+Suite Teardown    RemoteController.Disconnect
+
+Test Setup    Reconnect if disconnected
+
 *** Test Cases ***
 
 Test if device can handle high throughput and bursts

@@ -52,6 +52,7 @@ class Protocol_RP2040:
 
     async def write(self, data: bytes) -> bool:
         try:
+            await asyncio.sleep(0.2)
             self._writer.write(data)
             await self._writer.drain()
         except asyncio.TimeoutError:

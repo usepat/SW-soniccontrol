@@ -162,9 +162,9 @@ class DeviceParamConstants:
     min_swf: int = attrs.field(default=0)
     max_transducer_index: int = attrs.field(default=4)
     min_transducer_index: int = attrs.field(default=1)
-    max_duty_cycle_t_on: int = attrs.field(default=200 * 60) # in seconds
+    max_duty_cycle_t_on: int = attrs.field(default=300 * 60) # in seconds
     min_duty_cycle_t_on: int = attrs.field(default=1 * 60)
-    max_duty_cycle_t_off: int = attrs.field(default=200 * 60)
+    max_duty_cycle_t_off: int = attrs.field(default=300 * 60)
     min_duty_cycle_t_off: int = attrs.field(default=0)
     max_t_on: int = attrs.field(default=1000 * 60 * 60) # in milliseconds
     min_t_on: int = attrs.field(default=10)

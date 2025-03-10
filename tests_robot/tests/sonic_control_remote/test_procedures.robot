@@ -2,6 +2,9 @@
 
 Resource    keywords_remote_control.robot
 
+Suite Setup    Connect to device
+Suite Teardown    RemoteController.Disconnect
+
 Test Setup    Setup Procedure Test
 Test Teardown    RemoteController.Send Command    !stop
 
