@@ -283,6 +283,8 @@ protocol = Protocol(
     version=Version(1, 0, 0),
     consts=DeviceParamConstants(),
     commands=[
+        get_update_worker,
+        get_update_descale,
         # Basic Commands needed, because they are directly used in the GUI
         CommandListExport(
             exports=[
@@ -303,8 +305,6 @@ protocol = Protocol(
             exports=[
                 get_protocol,
                 get_info,
-                get_update_worker,
-                get_update_descale,
                 list_available_commands,
                 get_help,
                 get_temp,
