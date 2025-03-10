@@ -187,7 +187,7 @@ field_type_f_shift = FieldType(
 )
 
 field_type_n_steps = FieldType(
-    field_type=np.uint8,
+    field_type=np.uint32,
     min_value=DeviceParamConstantType.MIN_N_STEPS
 )
 
