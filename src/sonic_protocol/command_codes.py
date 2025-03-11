@@ -49,8 +49,7 @@ class CommandCode(IntEnum):
     GET_TEMP = 50
     GET_TMCU = 60
     GET_UIPT = 70
-    GET_ADC = 80
-    GET_IRMS = 160
+    GET_IRMS = 80
     
     GET_ATF_LIST = 100
     GET_ATK_LIST = 110
