@@ -22,7 +22,7 @@ class CommandCode(IntEnum):
     GET_SWF = 10
     GET_FREQ = 20
     GET_GAIN = 30
-    GET_TRANSDUCER = 90
+    GET_TRANSDUCER_ID = 90
 
     GET_ATF = 101
     GET_ATK = 111
@@ -50,6 +50,7 @@ class CommandCode(IntEnum):
     GET_TMCU = 60
     GET_UIPT = 70
     GET_ADC = 80
+    GET_IRMS = 160
     
     GET_ATF_LIST = 100
     GET_ATK_LIST = 110
@@ -72,7 +73,7 @@ class CommandCode(IntEnum):
     SET_SWF = 1010
     SET_FREQ = 1020
     SET_GAIN = 1030
-    SET_TRANSDUCER = 1090
+    SET_TRANSDUCER_ID = 1090
 
     SET_ATF = 1101
     SET_ATK = 1111
