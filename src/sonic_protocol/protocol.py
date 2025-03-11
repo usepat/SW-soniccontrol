@@ -176,7 +176,7 @@ get_update_worker = CommandExport(
         ),
     descriptor=MetaExportDescriptor(
         min_protocol_version=Version(major=1, minor=0, patch=0),
-        included_device_types=[DeviceType.DESCALE]
+        included_device_types=[DeviceType.MVP_WORKER]
     )
 )
 
@@ -206,7 +206,7 @@ get_update_descale = CommandExport(
         ),
     descriptor=MetaExportDescriptor(
         min_protocol_version=Version(major=1, minor=0, patch=0),
-        included_device_types=[DeviceType.MVP_WORKER]
+        included_device_types=[DeviceType.DESCALE]
     )
 )
 
