@@ -163,6 +163,8 @@ class CommandCode(IntEnum):
     SHUT_DOWN = 19020 # needed for simulation. Because we need to leave the simulation trough a command
 
     INTERNAL_COMMAND = 19030
+    SONIC_FORCE = 19040
+
     # internal command of the device, that is not part of the protocol
     # the firmware uses this for internal commands, that should not be exposed to the user
     # this enum member just functions as a placeholder for the command code

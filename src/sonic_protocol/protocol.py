@@ -277,6 +277,25 @@ flash_uart115200 = CommandContract(
     tags=["flashing"]
 )
 
+sonic_force = CommandContract(  # Used overruling the service mode
+    code=CommandCode.SONIC_FORCE,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!SONIC_FORCE"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    is_release=False,
+    tags=["debugging"]
+)
+
 flash_commands: List[CommandContract] = [flash_usb, flash_uart9600, flash_uart115200]
 
 
