@@ -305,7 +305,6 @@ protocol = Protocol(
     commands=[
         get_update_worker,
         get_update_descale,
-        sonic_force,
         # Basic Commands needed, because they are directly used in the GUI
         CommandListExport(
             exports=[
@@ -317,6 +316,7 @@ protocol = Protocol(
                 get_frequency,
                 get_transducer,
                 set_transducer,
+                sonic_force,
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=0, minor=0, patch=0),
