@@ -281,7 +281,7 @@ sonic_force = CommandContract(  # Used overruling the service mode
     code=CommandCode.SONIC_FORCE,
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!SONIC_FORCE"]
+            string_identifier=["!SONIC_FORCE", "!sonic_force"]
         )
     ),
     answer_defs=AnswerDef(
