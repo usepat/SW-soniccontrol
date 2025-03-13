@@ -6,7 +6,7 @@ skip-teardown-on-exit = true
 
 [profiles.worker]
 variables = { TARGET = "url", URL = "COM22" }
-excludes = [ "descaler" ]
+excludes = [ "descale" ]
 
 [profiles.descaler]
 variables = { TARGET = "url", URL = "COM22" }
@@ -14,8 +14,9 @@ excludes = [ "worker" ]
 
 [profiles.simulation_mvp]
 variables = { TARGET = "simulation" }
-excludes = [ "descaler" ]
+excludes = [ "descale" ]
 
 [profiles.simulation_descale]
 variables = { TARGET = "simulation", SIMULATION_EXE_PATH = "/home/usepat/GitHub/FW-sonic-firmware/build/linux/mvp_simulation_descale/test/cli/cli_simulation_descale/cli_simulation_descale" }
 excludes = [ "worker" ]
+set-tag = ["descale"]
