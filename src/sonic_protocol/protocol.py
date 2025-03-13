@@ -306,7 +306,7 @@ protocol = Protocol(
             exports=DeviceParamConstants(),
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=1, minor=0, patch=0),
-                included_device_types=[DeviceType.MVP_WORKER]
+                excluded_device_types=[DeviceType.DESCALE]
             )
         ),
         MetaExport(
@@ -336,6 +336,7 @@ protocol = Protocol(
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=0, minor=0, patch=0),
+                excluded_device_types=[DeviceType.DESCALE]
             )
         ),
         CommandListExport(
@@ -381,6 +382,12 @@ protocol = Protocol(
         ),
         CommandListExport(
             exports=[
+                set_gain,
+                get_gain,
+                set_on,
+                set_off,
+                get_transducer,
+                set_transducer,
                 set_swf,
                 get_swf,
                 get_irms
