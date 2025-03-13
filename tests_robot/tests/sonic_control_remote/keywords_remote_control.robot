@@ -21,6 +21,7 @@ Connect to device
             Set Suite Variable    ${SIMULATION_EXE_PATH}    %{SIMULATION_EXE_PATH}    # robotcode: ignore
         END
         RemoteController.Connect via process to    ${SIMULATION_EXE_PATH}
+        RemoteController.Send Command    !sonic_force
     ELSE
         IF    $URL is None
             Fail    msg=No url to the serial port was provided
