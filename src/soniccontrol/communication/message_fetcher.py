@@ -59,6 +59,9 @@ class MessageFetcher:
             except asyncio.CancelledError:
                 self._logger.info("Message fetcher was stopped")
                 return
+            except asyncio.IncompleteReadError as e:
+                self._logger.error("Encountered EOF or reached max length before reading separator:\n%s", e.partial)
+                continue
             except Exception as e:
                 self._logger.error("Exception occured while reading the package:\n%s", e)
                 continue

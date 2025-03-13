@@ -58,10 +58,10 @@ get_frequency = CommandContract(
 )
 
 get_transducer = CommandContract(
-    code=CommandCode.GET_TRANSDUCER,
+    code=CommandCode.GET_TRANSDUCER_ID,
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["?transducer", "?tdr"]
+            string_identifier=["?transducer", "?tdr", "?transducer_id", "?tdr_id"] 
         )
     ),
     answer_defs=create_list_with_unknown_answer_alternative(
@@ -75,15 +75,15 @@ get_transducer = CommandContract(
 )
 
 set_transducer = CommandContract(
-    code=CommandCode.SET_TRANSDUCER,
+    code=CommandCode.SET_TRANSDUCER_ID,
     command_defs=CommandDef(
         index_param=None,
         setter_param=CommandParamDef(
-            name=EFieldName.TRANSDUCER,
+            name=EFieldName.TRANSDUCER_ID,
             param_type=FieldType(str)
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!transducer", "!tdr"]
+            string_identifier=["!transducer", "!tdr", "!transducer_id", "!tdr_id"]
         )
     ),
     answer_defs=create_list_with_unknown_answer_alternative(
@@ -264,6 +264,25 @@ get_uipt = CommandContract(
     ),
     is_release=False,
     tags=["transducer"]
+)
+
+get_irms = CommandContract(
+    code=CommandCode.GET_IRMS,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?curr", "?irms"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            field_irms,
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get irms of the device"
+    ),
+    is_release=False,
+    tags=["transducer", "descale"]
 )
 
 param_index = CommandParamDef(

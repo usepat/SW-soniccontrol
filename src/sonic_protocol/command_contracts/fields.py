@@ -159,7 +159,7 @@ field_unknown_answer = AnswerFieldDef(
 )
 
 field_transducer = AnswerFieldDef(
-    field_name=EFieldName.TRANSDUCER,
+    field_name=EFieldName.TRANSDUCER_ID,
     field_type=FieldType(str)
 )
 
