@@ -316,7 +316,6 @@ protocol = Protocol(
                 get_frequency,
                 get_transducer,
                 set_transducer,
-                sonic_force,
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=0, minor=0, patch=0),
@@ -339,6 +338,7 @@ protocol = Protocol(
                 get_datetime,
                 get_datetime_pico,
                 set_log_level,
+                sonic_force,
             ] + flash_commands,
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=1, minor=0, patch=0)
