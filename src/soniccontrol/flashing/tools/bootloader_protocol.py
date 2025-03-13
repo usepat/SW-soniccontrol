@@ -41,6 +41,7 @@ class Protocol_RP2040:
 
     _writer: StreamWriter = field(init=False)  # Instance-level fields, initialized later
     _reader: StreamReader = field(init=False)
+    wait_time_before_read: float = field(init=False)
 
     def __init__(self, logger: logging.Logger, writer: StreamWriter, reader: StreamReader, wait_time_before_read):
         super().__init__()

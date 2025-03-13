@@ -13,7 +13,7 @@ from sonic_protocol.command_contracts.fields import (
 from sonic_protocol.command_contracts.transducer_commands import (
     set_frequency, get_frequency, set_swf, get_swf, get_atf, set_atf, get_att, set_att, get_atk, set_atk,
     set_gain, get_gain, set_on, set_off, get_temp, get_uipt, get_atf_list, get_att_list, get_atk_list, set_waveform, 
-    get_transducer, set_transducer
+    get_transducer, set_transducer, get_irms
 )
 from sonic_protocol.command_contracts.communication_commands import (
      set_termination, set_physical_comm_channel, set_comm_protocol, set_input_source, set_datetime, get_datetime, get_datetime_pico,
@@ -193,6 +193,7 @@ get_update_descale = CommandExport(
                     error_code_field,
                     field_swf,
                     field_gain,
+                    procedure_field,
                     field_temperature_kelvin,
                     field_irms,
                     field_signal,
@@ -220,7 +221,7 @@ flash_usb = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.MESSAGE,
+                field_name=EFieldName.SUCCESS,
                 field_type=FieldType(str)
             )
         ]
@@ -242,7 +243,7 @@ flash_uart9600 = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.MESSAGE,
+                field_name=EFieldName.SUCCESS,
                 field_type=FieldType(str)
             )
         ]
@@ -264,7 +265,7 @@ flash_uart115200 = CommandContract(
     answer_defs=AnswerDef(
         fields=[
             AnswerFieldDef(
-                field_name=EFieldName.MESSAGE,
+                field_name=EFieldName.SUCCESS,
                 field_type=FieldType(str)
             )
         ]
@@ -274,6 +275,25 @@ flash_uart115200 = CommandContract(
     ),
     is_release=True,
     tags=["flashing"]
+)
+
+sonic_force = CommandContract(  # Used overruling the service mode
+    code=CommandCode.SONIC_FORCE,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!SONIC_FORCE", "!sonic_force"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    is_release=False,
+    tags=["debugging"]
 )
 
 flash_commands: List[CommandContract] = [flash_usb, flash_uart9600, flash_uart115200]
@@ -296,6 +316,7 @@ protocol = Protocol(
                 get_frequency,
                 get_transducer,
                 set_transducer,
+                sonic_force,
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=0, minor=0, patch=0),
@@ -345,6 +366,7 @@ protocol = Protocol(
             exports=[
                 set_swf,
                 get_swf,
+                get_irms
             ],
             descriptor = MetaExportDescriptor(
                 min_protocol_version=Version(major=1, minor=0, patch=0),

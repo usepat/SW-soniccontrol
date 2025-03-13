@@ -22,7 +22,7 @@ class CommandCode(IntEnum):
     GET_SWF = 10
     GET_FREQ = 20
     GET_GAIN = 30
-    GET_TRANSDUCER = 90
+    GET_TRANSDUCER_ID = 90
 
     GET_ATF = 101
     GET_ATK = 111
@@ -49,7 +49,7 @@ class CommandCode(IntEnum):
     GET_TEMP = 50
     GET_TMCU = 60
     GET_UIPT = 70
-    GET_ADC = 80
+    GET_IRMS = 80
     
     GET_ATF_LIST = 100
     GET_ATK_LIST = 110
@@ -72,7 +72,7 @@ class CommandCode(IntEnum):
     SET_SWF = 1010
     SET_FREQ = 1020
     SET_GAIN = 1030
-    SET_TRANSDUCER = 1090
+    SET_TRANSDUCER_ID = 1090
 
     SET_ATF = 1101
     SET_ATK = 1111
@@ -163,6 +163,8 @@ class CommandCode(IntEnum):
     SHUT_DOWN = 19020 # needed for simulation. Because we need to leave the simulation trough a command
 
     INTERNAL_COMMAND = 19030
+    SONIC_FORCE = 19040
+
     # internal command of the device, that is not part of the protocol
     # the firmware uses this for internal commands, that should not be exposed to the user
     # this enum member just functions as a placeholder for the command code

@@ -115,6 +115,8 @@ class Loglevel(Enum):
     INFO = "INFO"
     WARN = "WARN"
     ERROR = "ERROR"
+    DISABLED = "DISABLED"
+    DEBUG_EXTENSIVE = "DEBUG_EXTENSIVE"
 
 class LoggerName(Enum):
     APP_LOGGER = "appLogger"

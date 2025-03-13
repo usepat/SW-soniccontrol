@@ -260,9 +260,10 @@ class NewFirmwareFlasher(FirmwareFlasher):
                 #debug("Erase: " + str(erase_addr) + "size: " + str(device_info.erase_size))
                 has_succeeded = await self.protocol.erase_cmd(erase_addr, device_info.erase_size)
                 if not has_succeeded:
-                    if retries > 2:
+                    if retries > 3:
                         self._logger.info(f"Erasing failed")
-                        return False
+                        self.protocol.wait_time_before_read += 0.1
+                        continue
                     retries += 1
                     self._logger.info(f"Error when erasing flash, at addr: {erase_addr}, try again")
                     start -= device_info.erase_size # Redo the step
@@ -301,7 +302,8 @@ class NewFirmwareFlasher(FirmwareFlasher):
                 if not crc_valid:
                     if retries > 5:
                         self._logger.info(f"Flashing failed")
-                        return False
+                        self.protocol.wait_time_before_read += 0.1
+                        continue
                     retries += 1
                     self._logger.info(f"Error when flashing, at addr: {wr_addr}, try again")
                     start -= device_info.max_data_len # Redo the step
