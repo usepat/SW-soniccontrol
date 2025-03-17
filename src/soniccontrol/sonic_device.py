@@ -57,8 +57,9 @@ class SonicDevice(Scriptable):
             code_str, response_str  = response_str.split(sep="#", maxsplit=1)
             code = CommandCode(int(code_str))
 
-        if code is not None and code.value >= 20000:
-            return Answer(response_str, False, False, code)
+        ERROR_CODES_START = 20000
+        if code is not None and code.value >= ERROR_CODES_START:
+            return Answer(response_str, False, True, code)
         
         if try_deduce_answer_validator and answer_validator is None:
             command_code = self._command_deserializer.get_deserialized_command_code(message.strip())

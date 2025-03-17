@@ -80,7 +80,7 @@ class SonicMessageProtocol(CommunicationProtocol):
             raise SyntaxError("Could not parse response: " + response)
 
     def parse_request(self, request: str, request_id: int) -> str:
-        return f"{SonicMessageProtocol.COMMAND_PREFIX}#{request_id}={request}\n"
+        return f"{SonicMessageProtocol.COMMAND_PREFIX}#{request_id}={request}{self.separator}"
     
     @abc.abstractmethod
     def prot_type(self) -> ProtocolType:

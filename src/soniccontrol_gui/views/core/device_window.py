@@ -50,9 +50,13 @@ class DeviceWindow(UIComponent):
         self._app_state = AppState(self._logger)
 
         self._view.add_close_callback(self.close)
-        self._communicator.subscribe(Communicator.DISCONNECTED_EVENT, lambda _e: self.on_disconnect())
     
         self._app_state.execution_state = ExecutionState.IDLE
+
+        self._communicator.subscribe(Communicator.DISCONNECTED_EVENT, lambda _e: self.on_disconnect())
+        # This needs to be here, for the edge case, that the communicator got disconnected, before it could be subscribed
+        if not self._communicator.connection_opened.is_set():
+            self.on_disconnect()
 
     @async_handler
     async def on_disconnect(self) -> None:

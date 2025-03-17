@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Awaitable, Callable, Dict, List, Optional, cast
+from typing import Awaitable, Callable, Dict, List, Optional
 from async_tkinter_loop import async_handler
 import serial.tools.list_ports as list_ports
 import ttkbootstrap as ttk
@@ -64,7 +64,7 @@ class DeviceWindowManager:
         try:
             logger.debug("Build SonicDevice for device")
             sonicamp = await DeviceBuilder().build_amp(connection, logger=logger)
-        except ConnectionError as e:
+        except Exception as e:
             logger.error(e)
             message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
             message_box = MessageBox.show_yes_no(self._root, message)
@@ -74,9 +74,6 @@ class DeviceWindowManager:
             
             sonicamp = await DeviceBuilder().build_amp(connection, logger=logger, open_in_rescue_mode=True)
             self.open_rescue_window(sonicamp, connection)
-        except Exception as e:
-            logger.error(e)
-            MessageBox.show_error(self._root, str(e))
         else:
             logger.info("Created device successfully, open device window")
             if sonicamp.info.protocol_version >= Version(1, 0, 0):

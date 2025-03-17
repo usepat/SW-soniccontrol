@@ -17,6 +17,12 @@ class MessageFetcher:
         self._protocol: SonicMessageProtocol = protocol
         self._logger: logging.Logger = logging.getLogger(logger.name + "." + MessageFetcher.__name__)
 
+    @property
+    def exception(self) -> BaseException | None:
+        if self._task is not None and self._task.done():
+            return self._task.exception()
+        return None
+
     async def get_answer_of_request(self, request_id: int) -> str:
         if request_id not in self._answer_received:
             self._answer_received[request_id] = asyncio.Event()
@@ -39,6 +45,7 @@ class MessageFetcher:
 
     async def stop(self) -> None:
         self._logger.debug("Stop message fetcher")
+
         if self._task is not None:
             self._task.cancel()
             try:
@@ -61,10 +68,13 @@ class MessageFetcher:
                 return
             except asyncio.IncompleteReadError as e:
                 self._logger.error("Encountered EOF or reached max length before reading separator:\n%s", e.partial)
+                continue # ignore eof. happens if empty strings get send
+            except SyntaxError as e:
+                self._logger.error(e)
                 continue
             except Exception as e:
                 self._logger.error("Exception occured while reading the package:\n%s", e)
-                continue
+                raise e 
 
             if answer:
                 if answer.startswith(COMMAND_CODE_DASH):

@@ -152,7 +152,12 @@ class SerialCommunicator(Communicator):
                 return await asyncio.wait_for(self._send_and_get(request), timeout)
             except asyncio.TimeoutError:
                 self._logger.warn("%d th attempt of %d. Device did not respond in the given timeout of %f s when sending %s", i, MAX_RETRIES, timeout, request)
-        
+            
+            # The message fetcher runs as a task and its exceptions are not propagated
+            # so we have to check here (or somewhere else) if it raised an error
+            if self._message_fetcher.exception:
+                raise self._message_fetcher.exception
+
         if self._connection_opened.is_set():
             await self.close_communication()
             raise ConnectionError("Device is not responding")
