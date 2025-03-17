@@ -60,7 +60,7 @@ Check limits of parameters
 
 
 Check basic setter commands are working
-    [Tags]    -descaler
+    [Tags]    -descale
     [Template]    Send command and check response
     !ON
     !OFF
@@ -85,7 +85,7 @@ Test if gain set by setter can be retrieved with getter
     Send Command And Check Response    ?gain    ${FIELD_GAIN}=${MAX_GAIN}
 
 Test if freq set by setter can be retrieved with getter
-    [Tags]    -descaler
+    [Tags]    -descale
     Send Command And Check Response    !freq\=${MIN_FREQUENCY}
     Send Command And Check Response    ?freq    ${FIELD_FREQUENCY}=${MIN_FREQUENCY}
     Send Command And Check Response    !freq\=${MAX_FREQUENCY}

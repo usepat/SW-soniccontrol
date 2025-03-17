@@ -2,7 +2,7 @@ from typing import List
 import numpy as np
 from sonic_protocol.command_contracts.contract_generators import create_version_field
 from sonic_protocol.defs import (
-    CommandCode, CommandExport, CommandListExport, ConverterType, DeviceParamConstants, FieldType, MetaExportDescriptor, Procedure, 
+    CommandCode, CommandExport, CommandListExport, ConverterType, DeviceParamConstants, FieldType, MetaExport, MetaExportDescriptor, Procedure, 
     Protocol, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType,
 )
@@ -301,7 +301,24 @@ flash_commands: List[CommandContract] = [flash_usb, flash_uart9600, flash_uart11
 
 protocol = Protocol(
     version=Version(1, 0, 0),
-    consts=DeviceParamConstants(),
+    consts=[
+        MetaExport(
+            exports=DeviceParamConstants(),
+            descriptor=MetaExportDescriptor(
+                min_protocol_version=Version(major=1, minor=0, patch=0),
+                excluded_device_types=[DeviceType.DESCALE]
+            )
+        ),
+        MetaExport(
+            exports=DeviceParamConstants(
+                max_gain=101,
+            ),
+            descriptor=MetaExportDescriptor(
+                min_protocol_version=Version(major=1, minor=0, patch=0),
+                included_device_types=[DeviceType.DESCALE]
+            )
+        )
+    ],
     commands=[
         get_update_worker,
         get_update_descale,
@@ -316,10 +333,10 @@ protocol = Protocol(
                 get_frequency,
                 get_transducer,
                 set_transducer,
-                sonic_force,
             ],
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=0, minor=0, patch=0),
+                excluded_device_types=[DeviceType.DESCALE]
             )
         ),
         CommandListExport(
@@ -339,6 +356,7 @@ protocol = Protocol(
                 get_datetime,
                 get_datetime_pico,
                 set_log_level,
+                sonic_force,
             ] + flash_commands,
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=1, minor=0, patch=0)
@@ -364,6 +382,12 @@ protocol = Protocol(
         ),
         CommandListExport(
             exports=[
+                set_gain,
+                get_gain,
+                set_on,
+                set_off,
+                get_transducer,
+                set_transducer,
                 set_swf,
                 get_swf,
                 get_irms

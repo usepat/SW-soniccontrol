@@ -9,7 +9,7 @@ ${TIMEOUT_MS}    ${10000}
 *** Test Cases ***
 
 Set frequency over home tab updates status bar
-    [Tags]    -descaler
+    [Tags]    -descale
     Gui.Switch to tab "${HOME_TAB}"
     Gui.Set text of widget "${HOME_FREQUENCY_ENTRY}" to "200000"
     Gui.Press button "${HOME_SEND_BUTTON}"
