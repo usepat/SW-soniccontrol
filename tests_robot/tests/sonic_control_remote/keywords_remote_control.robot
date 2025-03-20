@@ -22,6 +22,7 @@ Connect to device
         END
         RemoteController.Connect via process to    ${SIMULATION_EXE_PATH}
         RemoteController.Send Command    !sonic_force
+        RemoteController.Send Command    !stop
     ELSE
         IF    $URL is None
             Fail    msg=No url to the serial port was provided

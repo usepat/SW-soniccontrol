@@ -47,6 +47,7 @@ Check if invalid syntax throws error
 
 
 Check limits of parameters
+    [Tags]    worker
     [Template]    Send command and check response
     !gain\=${MAX_GAIN}    ${True}
     !gain\=${MIN_GAIN}    ${True}
@@ -60,7 +61,7 @@ Check limits of parameters
 
 
 Check basic setter commands are working
-    [Tags]    -descale
+    [Tags]    worker
     [Template]    Send command and check response
     !ON
     !OFF
@@ -85,7 +86,7 @@ Test if gain set by setter can be retrieved with getter
     Send Command And Check Response    ?gain    ${FIELD_GAIN}=${MAX_GAIN}
 
 Test if freq set by setter can be retrieved with getter
-    [Tags]    -descale
+    [Tags]    worker
     Send Command And Check Response    !freq\=${MIN_FREQUENCY}
     Send Command And Check Response    ?freq    ${FIELD_FREQUENCY}=${MIN_FREQUENCY}
     Send Command And Check Response    !freq\=${MAX_FREQUENCY}
