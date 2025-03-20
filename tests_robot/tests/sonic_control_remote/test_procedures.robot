@@ -8,7 +8,7 @@ Suite Teardown    RemoteController.Disconnect
 Test Setup    Setup Procedure Test
 Test Teardown    RemoteController.Send Command    !stop
 
-Test Tags    -descaler
+Test Tags    -descale
 
 *** Test Cases ***
 
