@@ -16,7 +16,7 @@ from sonic_protocol.command_contracts.transducer_commands import (
     get_transducer, set_transducer, get_irms
 )
 from sonic_protocol.command_contracts.communication_commands import (
-     set_termination, set_physical_comm_channel, set_comm_protocol, set_input_source, set_datetime, get_datetime, get_datetime_pico,
+     set_termination, set_comm_protocol, set_input_source, set_datetime, get_datetime, get_datetime_pico,
      set_log_level, 
 )
 from sonic_protocol.field_names import EFieldName
@@ -90,28 +90,6 @@ get_info = CommandContract(
         ]
     ),
     is_release=True
-)
-
-list_available_commands = CommandContract(
-    code=CommandCode.LIST_AVAILABLE_COMMANDS,
-    command_defs=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["?list_commands", "?commands"]
-        )
-    ),
-    answer_defs=AnswerDef(
-        fields=[
-            AnswerFieldDef(
-                field_name=EFieldName.MESSAGE,
-                field_type=FieldType(str)
-            )
-        ]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to get a list of available commands."
-    ),
-    is_release=True,
-    tags=["commands"]
 )
 
 get_help = CommandContract(
@@ -343,13 +321,11 @@ protocol = Protocol(
             exports=[
                 get_protocol,
                 get_info,
-                list_available_commands,
                 get_help,
                 get_temp,
                 get_uipt,
                 # set_termination,
                 # TODO: fix termination
-                set_physical_comm_channel,
                 set_comm_protocol,
                 set_input_source,
                 set_datetime,

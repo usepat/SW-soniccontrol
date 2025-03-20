@@ -3,7 +3,6 @@ from sonic_protocol.defs import (
     AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, Timestamp, LoggerName, Loglevel
 )
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative
 
 
 field_termination = AnswerFieldDef(
@@ -39,27 +38,6 @@ field_type_comm_channel = FieldType(
 field_comm_channel = AnswerFieldDef(
     field_name=EFieldName.COMMUNICATION_CHANNEL,
     field_type=field_type_comm_channel,
-)
-
-set_physical_comm_channel = CommandContract(
-    code=CommandCode.SET_PHYS_COM_CHANNEL,
-    command_defs=CommandDef(
-        setter_param=CommandParamDef(
-            name=EFieldName.COMMUNICATION_CHANNEL,
-            param_type=field_type_comm_channel
-        ),
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!phys", "set_physical_comm_channel"]
-        )
-    ),
-    answer_defs=AnswerDef(
-        fields=[field_comm_channel]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to set the physical communication channel"
-    ),
-    is_release=True,
-    tags=["communication"]
 )
 
 field_type_comm_protocol = FieldType(

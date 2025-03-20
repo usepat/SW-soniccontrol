@@ -158,8 +158,7 @@ class CommandCode(IntEnum):
 
     # commands from 19000 are for debugging
     GET_DATETIME_PICO = 19000 
-        # Those commands are only for debugging
-    LIST_AVAILABLE_COMMANDS = 19010
+    
     SHUT_DOWN = 19020 # needed for simulation. Because we need to leave the simulation trough a command
 
     INTERNAL_COMMAND = 19030

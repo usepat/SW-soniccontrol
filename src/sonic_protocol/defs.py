@@ -125,6 +125,7 @@ class LoggerName(Enum):
     PROCEDURE_LOGGER = "procedureLogger"
     GLOBAL = "global"
 
+@attrs.define()
 class Timestamp():
     hour: int = attrs.field()
     minute: int = attrs.field()
@@ -264,7 +265,7 @@ class UserManualAttrs:
     description: Optional[str] = attrs.field(default=None)
     example: Optional[str] = attrs.field(default=None)
 
-T = TypeVar("T", int, np.uint8, np.uint16, np.uint32, float, bool, str, Version, Enum)
+T = TypeVar("T", int, np.uint8, np.uint16, np.uint32, float, bool, str, Version, Enum, Timestamp)
 AttrsExport = Union[E, List[MetaExport[E]]]
 
 @attrs.define(auto_attribs=True)

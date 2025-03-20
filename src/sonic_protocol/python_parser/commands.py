@@ -28,11 +28,6 @@ class GetInfo(Command):
         super().__init__(code=CommandCode.GET_INFO)
 
 @attrs.define()
-class ListAvailableCommands(Command):
-    def __attrs_post_init__(self):
-        super().__init__(code=CommandCode.LIST_AVAILABLE_COMMANDS)
-
-@attrs.define()
 class GetUpdate(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.GET_UPDATE)
