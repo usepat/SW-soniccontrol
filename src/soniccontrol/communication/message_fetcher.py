@@ -3,7 +3,7 @@ import logging
 from typing import Dict
 from asyncio import StreamReader
 
-from soniccontrol.communication.message_protocol import SonicMessageProtocol
+from soniccontrol.communication.message_protocol import SonicMessageProtocol, Message, AnswerMessage, LogMessage, NotifyMessage, DeviceLogLevel
 from soniccontrol.app_config import ENCODING
 
 
@@ -16,6 +16,8 @@ class MessageFetcher:
         self._task = None
         self._protocol: SonicMessageProtocol = protocol
         self._logger: logging.Logger = logging.getLogger(logger.name + "." + MessageFetcher.__name__)
+        self._device_logger: logging.Logger = logging.getLogger(logger.name + ".device")
+
 
     @property
     def exception(self) -> BaseException | None:
@@ -54,6 +56,17 @@ class MessageFetcher:
                 pass
             self._task = None
 
+    def _convert_log_levels(self, log_level: DeviceLogLevel) -> int:
+        match log_level:
+            case DeviceLogLevel.INFO:
+                return logging.INFO
+            case DeviceLogLevel.WARN:
+                return logging.WARN
+            case DeviceLogLevel.ERROR:
+                return logging.ERROR
+            case DeviceLogLevel.DEBUG:
+                return logging.DEBUG
+
     async def _worker(self) -> None:
         COMMAND_CODE_DASH = "20"
 
@@ -62,7 +75,7 @@ class MessageFetcher:
             try:
                 response = await self._read_response()
                 self._queue_message(response)
-                answer_id, answer = self._protocol.parse_response(response)
+                message: Message = self._protocol.parse_response(response)
             except asyncio.CancelledError:
                 self._logger.info("Message fetcher was stopped")
                 return
@@ -76,15 +89,22 @@ class MessageFetcher:
                 self._logger.error("Exception occured while reading the package:\n%s", e)
                 raise e 
 
-            if answer:
-                if answer.startswith(COMMAND_CODE_DASH):
+            if isinstance(message, AnswerMessage):
+                if message.content.startswith(COMMAND_CODE_DASH):
                     self._logger.info("Read message: %s", response)
             
-                self._answers[answer_id] = answer
+                self._answers[message.msg_id] = message.content
 
-                if answer_id not in self._answer_received:
-                    self._answer_received[answer_id] = asyncio.Event()
-                self._answer_received[answer_id].set()
+                if message.msg_id not in self._answer_received:
+                    self._answer_received[message.msg_id] = asyncio.Event()
+                self._answer_received[message.msg_id].set()
+            elif isinstance(message, NotifyMessage):
+                pass # TODO: implement producer consumer architecture here for notify events. We need a NotificationFetcher class similar to updater
+            elif isinstance(message, LogMessage):
+                log_level = self._convert_log_levels(message.log_level)
+                self._device_logger.log(log_level, message.content)
+            else:
+                raise Exception(f"Received unexpected message type: {type(message)}, content is: {message.content}")
                 
 
     async def _read_response(self) -> str:

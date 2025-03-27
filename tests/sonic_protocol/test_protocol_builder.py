@@ -96,7 +96,7 @@ protocol = Protocol(
 def test_build_protocol_chooses_the_right_definitions(device_type, version, release, expected_command_code, expected_command_def):
     protocol_builder = ProtocolBuilder(protocol)
 
-    lookup_table = protocol_builder.build(device_type, version, release)
+    lookup_table, _ = protocol_builder.build(device_type, version, release)
 
     command_lookup = lookup_table.get(expected_command_code)
     if expected_command_def is None:

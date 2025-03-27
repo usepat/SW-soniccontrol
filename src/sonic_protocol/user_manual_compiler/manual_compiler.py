@@ -38,29 +38,31 @@ class MarkdownManualCompiler(ManualCompiler):
 
         description = command_lookup.user_manual_attrs.description
         example = command_lookup.user_manual_attrs.example
-        setter_param = command_lookup.command_def.setter_param
-        index_param = command_lookup.command_def.index_param
-        sonic_text_attrs = command_lookup.command_def.sonic_text_attrs
-        assert isinstance(sonic_text_attrs, SonicTextCommandAttrs) 
-        string_identifier = sonic_text_attrs.string_identifier
-        string_identifier = string_identifier if isinstance(string_identifier, list) else [string_identifier]
-        
+
         section_title = f"## **{command_code.value}**: {command_code.name}  \n"
         command_entry = section_title
         tags = " | ".join(map(lambda tag: f"<u>{tag}</u>", command_lookup.tags)) + "  \n\n"
         command_entry += tags
         command_entry += ("..." if description is None else description) + "  \n\n"
-        
-        command_entry += "### Command Names\n"
-        command_entry += " | ".join(map(lambda id: f"`{id}`", string_identifier)) + "  \n"
 
-        command_entry += "### Params\n"
-        if index_param is None and setter_param is None:
-            command_entry += "No parameters  \n"
-        if index_param is not None:
-            command_entry += self.create_param_entry(index_param)
-        if setter_param is not None:
-            command_entry += self.create_param_entry(setter_param)
+        if command_lookup.command_def:
+            setter_param = command_lookup.command_def.setter_param
+            index_param = command_lookup.command_def.index_param
+            sonic_text_attrs = command_lookup.command_def.sonic_text_attrs
+            assert isinstance(sonic_text_attrs, SonicTextCommandAttrs) 
+            string_identifier = sonic_text_attrs.string_identifier
+            string_identifier = string_identifier if isinstance(string_identifier, list) else [string_identifier]
+            
+            command_entry += "### Command Names\n"
+            command_entry += " | ".join(map(lambda id: f"`{id}`", string_identifier)) + "  \n"
+
+            command_entry += "### Params\n"
+            if index_param is None and setter_param is None:
+                command_entry += "No parameters  \n"
+            if index_param is not None:
+                command_entry += self.create_param_entry(index_param)
+            if setter_param is not None:
+                command_entry += self.create_param_entry(setter_param)
 
         command_entry += "### Answer\n"
         for field in command_lookup.answer_def.fields:

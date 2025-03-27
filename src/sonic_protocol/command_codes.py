@@ -155,6 +155,10 @@ class CommandCode(IntEnum):
     SET_TOFF = 5040 
    
 
+    # commands from 18000 to 19000 are pure notifications
+
+    NOTIFY_TUNE = 18000
+    NOTIFY_PROCEDURE_FAILURE = 18001
 
     # commands from 19000 are for debugging
     GET_DATETIME_PICO = 19000 

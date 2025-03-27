@@ -50,6 +50,9 @@ def deduce_command_examples(protocol_version: Version, device_type: DeviceType, 
 
     for command_lookup in command_table.values():
         command_def = command_lookup.command_def
+
+        if command_def is None:
+            continue
         
         assert (not isinstance(command_def.sonic_text_attrs, list))
         string_identifiers = command_def.sonic_text_attrs.string_identifier

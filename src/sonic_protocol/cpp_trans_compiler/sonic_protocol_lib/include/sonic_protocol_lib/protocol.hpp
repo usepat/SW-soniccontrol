@@ -2,6 +2,7 @@
 #include <initializer_list>
 #include <string_view>
 #include <span>
+#include <otpional>
 #include "answer_def.hpp"
 #include "command_def.hpp"
 #include "enums.hpp"
@@ -20,7 +21,7 @@ public:
     DeviceType device;
     bool isRelease;
     std::string_view options;
-    std::span<const CommandDef> commands;
+    std::span<const std::optional<CommandDef>> commands;
     std::span<const AnswerDef> answers;
 };
 
