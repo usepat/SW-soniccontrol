@@ -157,8 +157,9 @@ class CommandCode(IntEnum):
 
     # commands from 18000 to 19000 are pure notifications
 
-    NOTIFY_TUNE = 18000
-    NOTIFY_PROCEDURE_FAILURE = 18001
+    NOTIFY_MESSAGE = 18000
+    # NOTIFY_TUNE = 18001
+    NOTIFY_PROCEDURE_FAILURE = 18100
 
     # commands from 19000 are for debugging
     GET_DATETIME_PICO = 19000 
