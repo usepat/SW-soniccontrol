@@ -190,6 +190,12 @@ scan_proc_commands: List[CommandContract] = [
     CommandCode.SET_SCAN_T_STEP, 
     ["!scan_t_step"], 
     response_field=fields.field_scan_t_step,
+    ),
+    generate_procedure_arg_setter_contract( 
+    CommandCode.SET_SCAN_GAIN, 
+    ["!scan_gain"], 
+    response_field=fields.field_scan_gain,
+    release=False    
     )
 ]
 
@@ -241,6 +247,12 @@ tune_proc_commands: List[CommandContract] = [
     CommandCode.SET_TUNE_N_STEPS, 
     ["!tune_n_steps"], 
     response_field=fields.field_tune_n_steps,
+    release=False    
+    ),
+    generate_procedure_arg_setter_contract(
+    CommandCode.SET_TUNE_GAIN, 
+    ["!tune_gain"], 
+    response_field=fields.field_tune_gain,
     release=False    
     )
 ]

@@ -245,6 +245,12 @@ field_scan_t_step = AnswerFieldDef(
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Ton: ")
 )
 
+field_scan_gain = AnswerFieldDef(
+    field_name=EFieldName.SCAN_GAIN,
+    field_type=field_type_gain,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Gain: ")
+)
+
 field_tune_f_step = AnswerFieldDef(
     field_name=EFieldName.TUNE_F_STEP,
     field_type=field_type_frequency_step,
@@ -273,6 +279,12 @@ field_tune_n_steps = AnswerFieldDef(
     field_name=EFieldName.TUNE_N_STEPS,
     field_type=field_type_n_steps,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Nsteps: ")
+)
+
+field_tune_gain = AnswerFieldDef(
+    field_name=EFieldName.TUNE_GAIN,
+    field_type=field_type_gain,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Gain: ")
 )
 
 field_wipe_f_step = AnswerFieldDef(
