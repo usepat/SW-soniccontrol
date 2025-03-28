@@ -107,10 +107,23 @@ class Plot(EventManager):
         for _, axis in self._axes.items():
             axis.relim()
             axis.autoscale_view()
+
            
 
     def update_data(self, data: pd.DataFrame):
+        print(f"📦 update_data received timestamp dtype: {data['timestamp'].dtype} | id={id(data)}")
+        if self._dataAttrNameXAxis in data.columns:
+            timestamp_col = data[self._dataAttrNameXAxis]
+            print(f"🔍 [timestamp check] dtype: {timestamp_col.dtype}")
+
+            # If it's object, check for actual types inside
+            if timestamp_col.dtype == 'object':
+                unique_types = timestamp_col.apply(type).value_counts()
+                print(f"timestamp column has object dtype with types: {unique_types.to_dict()}")
+            else:
+                print("timestamp column is datetime64[ns]")
+
         for attrName, line in self._lines.items():
-            line.set_data(data[self._dataAttrNameXAxis], data[attrName])
+                line.set_data(data[self._dataAttrNameXAxis], data[attrName])
         self.update_plot()
         self.emit(PropertyChangeEvent("plot", self._plot, self._plot))
