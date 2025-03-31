@@ -1,3 +1,4 @@
+import logging
 import matplotlib
 from matplotlib.figure import Figure
 import pandas as pd
@@ -20,6 +21,7 @@ class Plot(EventManager):
         self._dataAttrNameXAxis = dataAttrNameXAxis
         self._lines: Dict[str, matplotlib.lines.Line2D] = {}
         self._axes: Dict[str, matplotlib.axes.Axes] = {}
+        self._logger = logging.getLogger(__name__)
         self._plot.legend(
             loc="upper left",
             handles=[]
@@ -114,14 +116,10 @@ class Plot(EventManager):
         print(f"📦 update_data received timestamp dtype: {data['timestamp'].dtype} | id={id(data)}")
         if self._dataAttrNameXAxis in data.columns:
             timestamp_col = data[self._dataAttrNameXAxis]
-            print(f"🔍 [timestamp check] dtype: {timestamp_col.dtype}")
-
             # If it's object, check for actual types inside
             if timestamp_col.dtype == 'object':
-                unique_types = timestamp_col.apply(type).value_counts()
-                print(f"timestamp column has object dtype with types: {unique_types.to_dict()}")
-            else:
-                print("timestamp column is datetime64[ns]")
+                self._logger.error("Timestamp column is of type object instead of type datetime64[ns]")
+                raise TypeError("Timestamp column is of type object instead of type datetime64[ns]")
 
         for attrName, line in self._lines.items():
                 line.set_data(data[self._dataAttrNameXAxis], data[attrName])

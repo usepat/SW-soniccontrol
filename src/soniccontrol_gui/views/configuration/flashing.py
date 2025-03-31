@@ -183,7 +183,7 @@ class FlashingView(TabView):
 
 async def main():
     logger = logging.getLogger("Flashing")
-    selected_file = Path(r"\\wsl.localhost\Ubuntu\home\usepat\GitHub\FW-sonic-firmware\build\pico\descale_v1_0_with_bootloader\devices\firmware_main.elf")
+    selected_file = Path(r"\\wsl.localhost\Ubuntu\home\usepat\GitHub\FW-sonic-firmware\build\pico\descale_v1_1_1_with_bootloader\devices\firmware_main.elf")
     flasher = NewFirmwareFlasher(logger, 115200, selected_file, 0.1)
     success = await flasher.flash_firmware()
     print("Flashing successful" if success else "Flashing failed")

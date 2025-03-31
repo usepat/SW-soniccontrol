@@ -14,8 +14,8 @@ class CsvTable(UIComponent):
     def on_update_data(self, dataFrame: pd.DataFrame):
         df = dataFrame.copy()  # 🛡️ Prevents mutation of shared data
         # The next line causes issues with timeplot and probably also spectralplot.
-        # the timestamp column that is coming from data_provide in add_row is indeed of type datetime64[ns]
-        # but when the next line is called, it sometimes changes to object type and this causes the timeplot to not work
+        # the timestamp column that is coming from data_provider in add_row is indeed of type datetime64[ns]
+        # but when the next line is called, it changes to object type and this causes the timeplot to not work
         df["timestamp"] = df["timestamp"].apply(lambda x: x.strftime('%Y/%m/%d-%H:%M:%S'))
         columns = [{"text": column, "stretch": True} for column in df.columns]
         row_data = df.to_records(index=False).tolist()
