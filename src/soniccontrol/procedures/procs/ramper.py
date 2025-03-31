@@ -11,15 +11,15 @@ from soniccontrol.procedures.procedure import Procedure
 
 @attrs.define(auto_attribs=True)
 class RamperArgs:
-    freq_center: int = attrs.field(validator=[
+    start: int = attrs.field(validator=[
         validators.instance_of(int),
         validators.ge(0),
         validators.le(10000000)
     ])
-    half_range: int = attrs.field(validator=[
+    stop: int = attrs.field(validator=[
         validators.instance_of(int),
         validators.ge(0),
-        validators.le(5000000)
+        validators.le(10000000)
     ])
     step: int = attrs.field(validator=[
         validators.instance_of(int),
@@ -54,9 +54,7 @@ class RamperLocal(Ramper):
         device: Scriptable,
         args: RamperArgs
     ) -> None:
-        start = args.freq_center - args.half_range
-        stop = args.freq_center + args.half_range + args.step # add a step to stop so that stop is inclusive
-        values = [start + i * args.step for i in range(int((stop - start) / args.step)) ]
+        values = [args.start + i * args.step for i in range(int((args.stop - args.start) / args.step)) ]
 
         await device.get_overview()
         # TODO: Do we need those two lines?
@@ -106,11 +104,8 @@ class RamperRemote(Ramper):
         device: Scriptable,
         args: RamperArgs
     ) -> None:
-        start = args.freq_center - args.half_range
-        stop = args.freq_center + args.half_range + args.step
-
-        await device.execute_command(f"!ramp_f_start={start}")
-        await device.execute_command(f"!ramp_f_stop={stop}")
+        await device.execute_command(f"!ramp_f_start={args.start}")
+        await device.execute_command(f"!ramp_f_stop={args.stop}")
         await device.execute_command(f"!ramp_f_step={args.step}")
         await device.execute_command(f"!ramp_t_on={int(args.hold_on.duration_in_ms)}")
         await device.execute_command(f"!ramp_t_off={int(args.hold_off.duration_in_ms)}")
