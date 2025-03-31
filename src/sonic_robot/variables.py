@@ -104,8 +104,8 @@ PROC_CONTROLLING_STOP_BUTTON = 'proc_controlling.stop_button'
 PROC_CONTROLLING_RUNNING_PROC_LABEL = 'proc_controlling.running_proc_label'
 
 # Ramp constants
-RAMP_FREQ_CENTER_ENTRY = 'Ramp.freq_center.entry'
-RAMP_HALF_RANGE_ENTRY = 'Ramp.half_range.entry'
+RAMP_FREQ_START = 'Ramp.start.entry'
+RAMP_FREQ_STOP = 'Ramp.stop.entry'
 RAMP_STEP_ENTRY = 'Ramp.step.entry'
 RAMP_HOLD_ON_TIME_ENTRY = 'Ramp.hold_on.time_entry'
 RAMP_HOLD_ON_UNIT_BUTTON = 'Ramp.hold_on.unit_button'
@@ -117,8 +117,8 @@ MEASURING_TARGET_COMBOBOX = 'measuring.target_combobox'
 MEASURING_CAPTURE_BUTTON = 'measuring.capture_button'
 
 # Spectrum Measure constants
-SPECTRUM_MEASURE_FREQ_CENTER_ENTRY = 'Spectrum Measure.freq_center.entry'
-SPECTRUM_MEASURE_HALF_RANGE_ENTRY = 'Spectrum Measure.half_range.entry'
+SPECTRUM_MEASURE_FREQ_START= 'Spectrum Measure.start.entry'
+SPECTRUM_MEASURE_FREQ_STOP = 'Spectrum Measure.stop.entry'
 SPECTRUM_MEASURE_STEP_ENTRY = 'Spectrum Measure.step.entry'
 SPECTRUM_MEASURE_HOLD_ON_TIME_ENTRY = 'Spectrum Measure.hold_on.time_entry'
 SPECTRUM_MEASURE_HOLD_ON_UNIT_BUTTON = 'Spectrum Measure.hold_on.unit_button'

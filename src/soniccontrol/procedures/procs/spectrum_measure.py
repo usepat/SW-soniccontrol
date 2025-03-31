@@ -35,9 +35,7 @@ class SpectrumMeasure(Procedure):
         device: Scriptable,
         args: SpectrumMeasureArgs
     ) -> None:
-        start = args.freq_center - args.half_range
-        stop = args.freq_center + args.half_range + args.step # add a step to stop so that stop is inclusive
-        values = [start + i * args.step for i in range(int((stop - start) / args.step)) ]
+        values = [args.start + i * args.step for i in range(int((args.stop - args.start) / args.step)) ]
 
         try:
             await device.get_overview()
