@@ -2,6 +2,7 @@ from enum import Enum
 import logging
 from typing import Any
 import abc
+import attrs
 
 
 class ProtocolType(Enum):
@@ -32,35 +33,45 @@ class DeviceLogLevel(Enum):
     INFO = "INFO"
     DEBUG = "DEBUG"
 
+@attrs.define()
+class Message:
+    content: str = attrs.field()
+
+@attrs.define()
+class CommandMessage(Message):
+    msg_id: int = attrs.field()
+
+@attrs.define()
+class AnswerMessage(Message):
+    msg_id: int = attrs.field()
+
+@attrs.define()
+class NotifyMessage(Message):
+    pass
+
+@attrs.define()
+class LogMessage(Message):
+    log_level: DeviceLogLevel = attrs.field()
+
 class SonicMessageProtocol(CommunicationProtocol):
     LOG_PREFIX = "LOG"
     ANSWER_PREFIX = "ANS"
     COMMAND_PREFIX = "COM"
-
-    def __init__(self, logger: logging.Logger = logging.getLogger()):
-        self._logger: logging.Logger = logging.getLogger(logger.name + "." + SonicMessageProtocol.__name__)
-        self._device_logger: logging.Logger = logging.getLogger(logger.name + ".device")
-        super().__init__()
+    NOTIFY_PREFIX = "NOTIFY"
 
     @property
     def separator(self) -> str:
         return "\r"
 
     @staticmethod
-    def _extract_log_level(log: str) -> int:
+    def _extract_log_level(log: str) -> DeviceLogLevel:
         log_level_str = log[log.index("=")+1:log.index(":")]
-        match log_level_str:
-            case DeviceLogLevel.ERROR.value:
-                return logging.ERROR
-            case DeviceLogLevel.WARN.value:
-                return logging.WARN
-            case DeviceLogLevel.INFO.value:
-                return logging.INFO
-            case DeviceLogLevel.DEBUG.value:
-                return logging.DEBUG
-        raise SyntaxError("Could not parse log level")
+        try:
+            return DeviceLogLevel[log_level_str]
+        except (KeyError, ValueError):
+            raise SyntaxError("Could not parse log level")
 
-    def parse_response(self, response: str) -> tuple[int, str | None]:
+    def parse_response(self, response: str) -> Message:
         """
         returns:
         A Tuple with 
@@ -70,12 +81,15 @@ class SonicMessageProtocol(CommunicationProtocol):
         response = response.strip()
         if response.startswith(SonicMessageProtocol.ANSWER_PREFIX):
             response_id = int(response[response.index("#")+1:response.index("=")])
-            answer = response[response.index("=")+1:]
-            return response_id, answer
+            content = response[response.index("=")+1:]
+            return AnswerMessage(content, response_id)
+        elif response.startswith(SonicMessageProtocol.NOTIFY_PREFIX):
+            content = response[response.index("=")+1:]
+            return NotifyMessage(content)
         elif response.startswith(SonicMessageProtocol.LOG_PREFIX):
             log_level = SonicMessageProtocol._extract_log_level(response)
-            self._device_logger.log(log_level, response)
-            return 0, None # has no id
+            log_msg = response[response.index(":")+1:]
+            return LogMessage(log_msg, log_level)
         else:
             raise SyntaxError("Could not parse response: " + response)
 

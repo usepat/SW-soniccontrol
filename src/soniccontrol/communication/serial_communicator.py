@@ -31,7 +31,7 @@ class SerialCommunicator(Communicator):
     def __attrs_post_init__(self) -> None:
         self._logger = logging.getLogger(self._logger.name + "." + SerialCommunicator.__name__)
         #self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
-        self._protocol: CommunicationProtocol = SonicMessageProtocol(self._logger)
+        self._protocol: CommunicationProtocol = SonicMessageProtocol()
 
         super().__init__()
 
@@ -65,7 +65,7 @@ class SerialCommunicator(Communicator):
         self._restart = False 
         self._reader, self._writer = await self._connection.open_connection()
         #self._writer.transport.set_write_buffer_limits(0) #Quick fix
-        self._protocol = SonicMessageProtocol(self._logger)
+        self._protocol = SonicMessageProtocol()
         self._message_fetcher = MessageFetcher(self._reader, self._protocol, self._logger)
         await self._writer.drain()
         self._connection_opened.set()

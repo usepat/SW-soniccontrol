@@ -116,6 +116,7 @@ class CommandCode(IntEnum):
     SET_TUNE_T_STEP = 1333
     SET_TUNE_F_SHIFT = 1334
     SET_TUNE_N_STEPS = 1335
+    SET_TUNE_GAIN = 1336
     SET_WIPE_F_RANGE = 1341
     SET_WIPE_F_STEP = 1342
     SET_WIPE_T_ON = 1343
@@ -155,6 +156,11 @@ class CommandCode(IntEnum):
     SET_TOFF = 5040 
    
 
+    # commands from 18000 to 19000 are pure notifications
+
+    NOTIFY_MESSAGE = 18000
+    # NOTIFY_TUNE = 18001
+    NOTIFY_PROCEDURE_FAILURE = 18100
 
     # commands from 19000 are for debugging
     GET_DATETIME_PICO = 19000 
@@ -176,6 +182,6 @@ class CommandCode(IntEnum):
     E_COMMAND_INVALID = 20004
     E_SYNTAX_ERROR = 20005
     E_INVALID_VALUE = 20006
-    E_PARSING_ERROR = 20007
+    E_PARSING_ERROR = 20007 
 
 

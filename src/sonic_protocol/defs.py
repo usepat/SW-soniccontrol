@@ -380,7 +380,7 @@ class CommandContract:
     It is a contract on how to communicate with each other.
     """
     code: CommandCode = attrs.field()
-    command_defs: Union[CommandDef, List[MetaExport[CommandDef]]] = attrs.field()
+    command_defs: Union[None, CommandDef, List[MetaExport[CommandDef]]] = attrs.field()
     answer_defs: Union[AnswerDef, List[MetaExport[AnswerDef]]] = attrs.field()
     is_release: bool = attrs.field(default=False) #! some commands are only for debugging. They should not be included in release
     tags: List[str] = attrs.field(default=[]) #! tags are used to group commands and to filter them
