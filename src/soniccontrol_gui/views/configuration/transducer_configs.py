@@ -18,13 +18,12 @@ class ATConfig:
 
 @attrs.define(auto_attribs=True)
 class TransducerConfig():
-    name: str = attrs.field()
     atconfigs: List[ATConfig] = attrs.field()
     init_script_path: Optional[Path] = attrs.field(default=None)
+    # We only use this for creating the dropdown menu in the UI
+    # the name should not be stored inside the json file, but should be retrieved from the file name
+    name: str = attrs.field(default="template", metadata={"exclude": True})
 
-@attrs.define(auto_attribs=True)
-class Config:
-    transducers: List[TransducerConfig] = attrs.field(default=[])
 
 
 # schemas used for serialization deserialization
@@ -37,6 +36,7 @@ class TransducerConfigSchema(AttrsSchema):
     class Meta:
         target = TransducerConfig
         register_as_scheme = True
+        exclude = ("name",)
 
     init_script_path = marsh.fields.Method(
         serialize="serialize_path", deserialize="deserialize_path", allow_none=True
@@ -48,11 +48,7 @@ class TransducerConfigSchema(AttrsSchema):
     def deserialize_path(self, value):
         return Path(value) if value else None
     
-class ConfigSchema(AttrsSchema):
-    class Meta: 
-        target = Config
-        register_as_scheme = True
-
+    
 
 class ATConfigFrame(UIComponent):
     def __init__(self, parent: UIComponent, view_parent: View | ttk.Frame, index: int, **kwargs):

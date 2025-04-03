@@ -24,7 +24,8 @@ tk_const: Final[_TkinterConstants] = _TkinterConstants()
 class _Files:
     DATA_DIR =  APP_DATA_DIR
     LOG_DIR = DATA_DIR / "logs"
-    TRANSDUCER_CONFIG_JSON = DATA_DIR / "transducer_configs.json"
+    TRANSDUCER_CONFIG_FOLDER = DATA_DIR / "transducer_configs"
+    TRANSDUCER_CONFIG_JSON = TRANSDUCER_CONFIG_FOLDER / "template.json"
     EXPERIMENT_TEMPLATES_JSON = DATA_DIR / "experiment_templates.json"
     SONICCONTROL_LOG = LOG_DIR / "soniccontrol.log"
 
@@ -194,6 +195,7 @@ class _UIStringsEN:
     USE_SCRIPTING_INSTEAD: Final[str] = "Use scripting instead"
     COMMAND_SET: Final[str] = "Command set"
     NEW_LABEL: Final[str] = "New"
+    IMPORT_LABEL: Final[str] = "Import"
     DATA_VISUALIZER: Final[str] = "Data Visualizer"
     REFRESH: Final[str] = "Refresh"
     VISUALIZE: Final[str] = "Visualize"

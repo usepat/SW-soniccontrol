@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from pathlib import Path
+from tkinter import filedialog
 from typing import Callable, List, Iterable, Optional
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
@@ -17,7 +18,7 @@ from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol.events import PropertyChangeEvent
-from soniccontrol_gui.views.configuration.transducer_configs import ATConfig, ATConfigFrame, Config, ConfigSchema, TransducerConfig
+from soniccontrol_gui.views.configuration.transducer_configs import ATConfig, ATConfigFrame, TransducerConfig, TransducerConfigSchema
 from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -34,8 +35,8 @@ class Configuration(UIComponent):
         
         self._logger.debug("Create Configuration Component")
         self._count_atk_atf = 4
-        self._config: Config = Config()
-        self._config_schema = ConfigSchema()
+        self._configs: List[TransducerConfig] = []
+        self._config_schema = TransducerConfigSchema()
         self._view = ConfigurationView(parent.view, self, self._count_atk_atf)
         self._current_transducer_config: Optional[int] = None
         self._device = device
@@ -44,6 +45,7 @@ class Configuration(UIComponent):
         self._view.set_save_config_command(self._save_config)
         self._view.set_transducer_config_selected_command(self._on_transducer_config_selected)
         self._view.set_add_transducer_config_command(self._add_transducer_config_template)
+        self._view.set_import_transducer_config_command(self._import_transducer_config)
         self._view.set_submit_transducer_config_command(self._submit_transducer_config)
         self._view.set_delete_transducer_config_command(self._delete_transducer_config)
         self._load_config()
@@ -61,20 +63,53 @@ class Configuration(UIComponent):
     def _create_default_config_file(self):
         self._logger.info("Create empty configuration file at %s", files.TRANSDUCER_CONFIG_JSON)
         with open(files.TRANSDUCER_CONFIG_JSON, "w") as file:
-            data_dict = self._config_schema.dump(Config()).data
+            # Create 4 ATConfig objects with default values
+            data_dict = self._config_schema.dump(TransducerConfig(atconfigs=[ATConfig() for _ in range(4)])).data
             json.dump(data_dict, file)
 
     def _load_config(self):
-        if not files.TRANSDUCER_CONFIG_JSON.exists():
+        if files.TRANSDUCER_CONFIG_FOLDER.exists() is False:
+            self._logger.info("Create transducer config folder %s", files.TRANSDUCER_CONFIG_FOLDER)
+            files.TRANSDUCER_CONFIG_FOLDER.mkdir(parents=True, exist_ok=True)
             self._create_default_config_file()
 
-        self._logger.info("Load configuration from %s", files.TRANSDUCER_CONFIG_JSON)
-        with open(files.TRANSDUCER_CONFIG_JSON, "r") as file:
-            data_dict = json.load(file)
-            self._config = self._config_schema.load(data_dict).data
+        if not any(files.TRANSDUCER_CONFIG_FOLDER.glob("*.json")):
+            self._logger.info("No JSON files found in the transducer config folder")
+            self._create_default_config_file()   
 
-        self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._config.transducers))
-        self.current_transducer_config = 0 if len(self._config.transducers) > 0 else None
+        self._logger.info("Load configuration from %s", files.TRANSDUCER_CONFIG_FOLDER)
+        for json_file in files.TRANSDUCER_CONFIG_FOLDER.glob("*.json"):
+            with open(json_file, "r") as file:
+                try:
+                    data_dict = json.load(file)
+                    config = self._config_schema.load(data_dict).data
+                    config.name = json_file.stem
+                    self._configs.append(config)
+                except Exception as e:
+                    self._logger.error("Failed to load config from %s: %s", json_file, e)
+
+        self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
+        self.current_transducer_config = 0 if len(self._configs) > 0 else None
+
+    def _import_transducer_config(self):
+        kwargs = {"defaultextension": ".json", "filetypes": [("JSON files", "*.json")]} 
+        filename: str = filedialog.askopenfilename(**kwargs)
+        if filename == "." or filename == "" or isinstance(filename, (tuple)):
+            return
+        path = Path(filename)
+        if path.exists() is False:
+            self._logger.warn("There exists no file with the specified path")
+            MessageBox.show_error(self._view.root, "There exists no file with the specified path")
+            return
+        with open(path, "r") as file:
+            try:
+                data_dict = json.load(file)
+                config = self._config_schema.load(data_dict).data
+                config.name = path.stem
+                self._configs.append(config)
+                self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
+            except Exception as e:
+                self._logger.error("Failed to load config from %s: %s", path, e)
 
     def _save_config(self):
         transducer_config = TransducerConfig(
@@ -86,19 +121,25 @@ class Configuration(UIComponent):
             return
 
         if self.current_transducer_config is None:
-            self._config.transducers.append(transducer_config)
-            self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._config.transducers))
-            self.current_transducer_config = len(self._config.transducers) - 1
+            self._configs.append(transducer_config)
+            self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
+            self.current_transducer_config = len(self._configs) - 1
         else:
-            self._config.transducers[self.current_transducer_config] = transducer_config
-
-        self._logger.info("Save configuration to %s", files.TRANSDUCER_CONFIG_JSON)
-        with open(files.TRANSDUCER_CONFIG_JSON, "w") as file:
-            data_dict = self._config_schema.dump(self._config).data
+            self._configs[self.current_transducer_config] = transducer_config
+            self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
+            if transducer_config.name != self._view._selected_config.get():
+                path = files.TRANSDUCER_CONFIG_FOLDER / f"{self._view._selected_config.get()}.json"
+                if path.exists():
+                    path.rename(files.TRANSDUCER_CONFIG_FOLDER / f"{transducer_config.name}.json")
+                self._view._selected_config.set(transducer_config.name)
+        path = files.TRANSDUCER_CONFIG_FOLDER / f"{transducer_config.name}.json"
+        self._logger.info("Save configuration to %s", path)
+        with open(path, "w") as file:
+            data_dict = self._config_schema.dump(transducer_config).data
             json.dump(data_dict, file)
 
     def _validate_transducer_config_data(self, transducer_config: TransducerConfig) -> bool:            
-        if self.current_transducer_config is None and any(map(lambda tconfig: tconfig.name == transducer_config.name, self._config.transducers)):
+        if self.current_transducer_config is None and any(map(lambda tconfig: tconfig.name == transducer_config.name, self._configs)):
             self.logger.warn("config with the same name already exists")
             MessageBox.show_error(self._view.root, "config with the same name already exists")
             return False
@@ -113,14 +154,14 @@ class Configuration(UIComponent):
             self._view.selected_transducer_config = "none selected"
             self._add_transducer_config_template()
         else:
-            current_config = self._config.transducers[self.current_transducer_config]
+            current_config = self._configs[self.current_transducer_config]
             self._view.selected_transducer_config = current_config.name
             self._view.transducer_config_name = current_config.name
             self._view.atconfigs = current_config.atconfigs
             self._view.init_script_path = current_config.init_script_path
 
     def _on_transducer_config_selected(self):
-         for i, transducer_config in enumerate(self._config.transducers):
+         for i, transducer_config in enumerate(self._configs):
             if transducer_config.name == self._view.selected_transducer_config:
                 self.current_transducer_config = i
                 break
@@ -129,19 +170,19 @@ class Configuration(UIComponent):
         self._view.atconfigs = [ATConfig()] * self._count_atk_atf
         self._view.transducer_config_name = "no name"
         self._view.init_script_path = None
+        self._view._selected_config.set("no name")
         self.current_transducer_config = None
 
     def _delete_transducer_config(self):
         if self.current_transducer_config is None:
             return
 
-        config = self._config.transducers.pop(self.current_transducer_config)
+        config = self._configs.pop(self.current_transducer_config)
         self._logger.info("Delete transducer config %s", config.name)
-        with open(files.TRANSDUCER_CONFIG_JSON, "w") as file:
-            data_dict = self._config_schema.dump(self._config).data
-            json.dump(data_dict, file)
-
-        self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._config.transducers))
+        path = files.TRANSDUCER_CONFIG_FOLDER / f"{config.name}.json"
+        if path.exists():
+            path.unlink()
+        self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
         self._add_transducer_config_template()
 
     @async_handler
@@ -174,7 +215,7 @@ class Configuration(UIComponent):
     async def _interpreter_engine(self):
         assert(self._current_transducer_config is not None)
 
-        script_file_path = self._config.transducers[self._current_transducer_config].init_script_path
+        script_file_path = self._configs[self._current_transducer_config].init_script_path
         if script_file_path is None:
             return
 
@@ -230,7 +271,11 @@ class ConfigurationView(TabView):
             #     images.PLUS_ICON_WHITE, sizes.BUTTON_ICON_SIZE
             # ),
         )
-
+        self._import_config_button: ttk.Button = ttk.Button(
+            self._config_frame,
+            text=ui_labels.IMPORT_LABEL,
+            style=ttk.DARK,
+        )
         self._selected_config: ttk.StringVar = ttk.StringVar()
         self._config_entry: ttk.Combobox = ttk.Combobox(
             self._config_frame, textvariable=self._selected_config, style=ttk.DARK
@@ -247,6 +292,7 @@ class ConfigurationView(TabView):
         )
 
         WidgetRegistry.register_widget(self._add_config_button, "add_config_button", tab_name)
+        WidgetRegistry.register_widget(self._import_config_button, "import_config_button", tab_name)
         WidgetRegistry.register_widget(self._config_entry, "config_entry", tab_name)
         WidgetRegistry.register_widget(self._save_config_button, "save_config_button", tab_name)
         WidgetRegistry.register_widget(self._submit_config_button, "submit_config_button", tab_name)
@@ -286,28 +332,34 @@ class ConfigurationView(TabView):
             padx=sizes.MEDIUM_PADDING,
             pady=sizes.MEDIUM_PADDING,
         )
-        self._config_entry.grid(
+        self._import_config_button.grid(
             row=0,
             column=1,
+            padx=sizes.MEDIUM_PADDING,
+            pady=sizes.MEDIUM_PADDING,
+        )
+        self._config_entry.grid(
+            row=0,
+            column=2,
             padx=sizes.MEDIUM_PADDING,
             pady=sizes.MEDIUM_PADDING,
             sticky=ttk.EW,
         )
         self._save_config_button.grid(
             row=0,
-            column=2,
+            column=3,
             padx=sizes.MEDIUM_PADDING,
             pady=sizes.MEDIUM_PADDING,
         )
         self._submit_config_button.grid(
             row=0,
-            column=3,
+            column=4,
             padx=sizes.MEDIUM_PADDING,
             pady=sizes.MEDIUM_PADDING,
         )
         self._delete_config_button.grid(
             row=0,
-            column=4,
+            column=5,
             padx=sizes.MEDIUM_PADDING,
             pady=sizes.MEDIUM_PADDING,
         )
@@ -350,6 +402,9 @@ class ConfigurationView(TabView):
 
     def set_add_transducer_config_command(self, command: Callable[[], None]) -> None:
         self._add_config_button.configure(command=command)
+
+    def set_import_transducer_config_command(self, command: Callable[[], None]) -> None:
+        self._import_config_button.configure(command=command)
 
     def set_submit_transducer_config_command(self, command: Callable[[], None]) -> None:
         self._submit_config_button.configure(command=command)
