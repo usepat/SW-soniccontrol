@@ -30,13 +30,13 @@ class SonicDevice(Scriptable):
         self._is_in_rescue_mode = is_in_rescue_mode
 
     def has_command(self, command: CommandCode | Command) -> bool:
-        if isinstance(command, Command):
-            return command.code in self.lookup_table
-        return command in self.lookup_table
+        command_code = command.code if isinstance(command, Command) else command
+        return command_code in self.lookup_table and self.lookup_table[command_code].command_def is not None
 
     async def _send_command(self, command: Command) -> Answer:
         lookup_command = self.lookup_table.get(command.code)
         assert lookup_command is not None, f"The command {command} is not known for the protocol" # throw error?
+        assert lookup_command.command_def is not None, f"For the command_code of {command} exists a message (notify or error), but there exists no command" 
         assert not isinstance(lookup_command.command_def.sonic_text_attrs, list)
 
         request_str = self._command_serializer.serialize_command(command)

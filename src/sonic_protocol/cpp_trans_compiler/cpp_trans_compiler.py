@@ -298,7 +298,7 @@ class CppTransCompiler:
         command_defs_array = f"""
 {"".join(param_defs)}
 {"".join(string_identifiers)}
-inline constexpr std::array<CommandDef, {len(command_defs)}> {command_defs_cpp_var_name} = {{{", ".join(command_defs)}
+inline constexpr std::array<std::optional<CommandDef>, {len(command_defs)}> {command_defs_cpp_var_name} = {{{", ".join(command_defs)}
 }};
         """
         answer_defs_array = f"""
@@ -320,7 +320,10 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_
     }}"""
         return (protocol_def, command_defs_array, answer_defs_array)
 
-    def _transpile_command_def(self, code: CommandCode, command_def: CommandDef, protocol_name: str) -> Tuple[str, str, str]:
+    def _transpile_command_def(self, code: CommandCode, command_def: CommandDef | None, protocol_name: str) -> Tuple[str, str, str]:
+        if command_def is None:
+            return "std::nullopt",  "", ""
+        
         assert isinstance(command_def.sonic_text_attrs, SonicTextCommandAttrs)
         string_identifiers = command_def.sonic_text_attrs.string_identifier
         string_identifiers = [string_identifiers] if isinstance(string_identifiers, str) else string_identifiers

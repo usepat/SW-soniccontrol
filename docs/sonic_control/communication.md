@@ -32,7 +32,7 @@ There a currently three types of messages defined:
 - COM#{ID}={COMMAND}: Command. With a unique id (different for each message sent).
 - ANS#{ID}={ANSWER}: Answer. With the id of the command, the answer responds to.
 - LOG={LOG}: Device Log.
-- In the future, there will maybe also be NOT={NOTIFY_MESSAGE}
+- NOTIFY={NOTIFY_MESSAGE}: For notifications. Messages that are send by pushing not pulling. Similar to logs but can be interpreted
 Commands are sent by SonicControl and Answers and Logs by the device.
 
 ## Communicator
@@ -47,14 +47,7 @@ So we have a method that pushes and waits and a method for pulling.
 
 ### New Communicator
 
-The new communicator uses internally a [MessageFetcher](@ref soniccontrol.communication.message_fetcher.MessageFetcher) that runs in the background and constantly reads messages from the input stream. It stores then the messages in a dictionary (Key is the ID of the answer). The Communicator can then get the answer via [get_answer_of_request](@ref soniccontrol.communication.message_fetcher.MessageFetcher.get_answer_of_request). The method is awaitable. So we can like this support concurrency.
+The new communicator uses internally a [MessageFetcher](@ref soniccontrol.communication.message_fetcher.MessageFetcher) that runs in the background and constantly reads messages from the input stream. It stores then the messages in a dictionary (Key is the ID of the answer). The Communicator can then get the answer via [get_answer_of_request](@ref soniccontrol.communication.message_fetcher.MessageFetcher.get_answer_of_request). The method is awaitable. So we can support like this concurrency.
 
-### Legacy
-
-The legacy communicator just reads blindly the input line for line. Very error prone.
-
-### Determining which one to use
-
-The [CommunicatorBuilder](@ref soniccontrol.communication.communicator_builder.CommunicatorBuilder) tries out to establish a connection with both versions and then uses the one that works and returns it.
 
 @}

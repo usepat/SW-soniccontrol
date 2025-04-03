@@ -9,7 +9,7 @@ from sonic_protocol.defs import AnswerDef, CommandCode, CommandContract, Command
 
 @attrs.define()
 class CommandLookUp:
-    command_def: CommandDef = attrs.field()
+    command_def: CommandDef | None = attrs.field()
     answer_def: AnswerDef = attrs.field() # probably not needed, we leave it anyway here
     answer_validator: AnswerValidator = attrs.field()
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
@@ -45,12 +45,15 @@ class ProtocolBuilder:
 
 
     def _extract_command_lookup(self, command: CommandContract, consts: DeviceParamConstants, version: Version, device_type: DeviceType) -> CommandLookUp:
-        command_def = self._filter_exports(command.command_defs, version, device_type)
-        command_def = self._extract_prot_specific_attrs(command_def, version, device_type)
-        if command_def.index_param is not None:
-            command_def.index_param.param_type = self._adjust_field_type_according_to_constraints(command_def.index_param.param_type, consts)
-        if command_def.setter_param is not None:
-            command_def.setter_param.param_type = self._adjust_field_type_according_to_constraints(command_def.setter_param.param_type, consts)
+        if command.command_defs is not None:
+            command_def = self._filter_exports(command.command_defs, version, device_type)
+            command_def = self._extract_prot_specific_attrs(command_def, version, device_type)
+            if command_def.index_param is not None:
+                command_def.index_param.param_type = self._adjust_field_type_according_to_constraints(command_def.index_param.param_type, consts)
+            if command_def.setter_param is not None:
+                command_def.setter_param.param_type = self._adjust_field_type_according_to_constraints(command_def.setter_param.param_type, consts)
+        else:
+            command_def = None
 
         answer_def = self._filter_exports(command.answer_defs, version, device_type)
         answer_def = self._extract_prot_specific_attrs(answer_def, version, device_type)
