@@ -32,7 +32,7 @@ field_type_atf = FieldType(
     #si_prefix=SIPrefix.KILO,
 	max_value=DeviceParamConstantType.MAX_FREQUENCY,
 	min_value=DeviceParamConstantType.MIN_FREQUENCY,
-    allowed_values=[np.uint32(0)],
+    allowed_values=(np.uint32(0),)
 )
 
 field_type_frequency_step = FieldType(

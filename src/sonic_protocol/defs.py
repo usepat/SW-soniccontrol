@@ -275,7 +275,7 @@ class FieldType(Generic[T]):
     Can be used for an answer field or command parameter.
     """
     field_type: type[T] = attrs.field()
-    allowed_values: Optional[List[T]] = attrs.field(default=None)
+    allowed_values: Optional[Tuple[T, ...]] = attrs.field(default=None)
     max_value: Union[T, None, DeviceParamConstantType] = attrs.field(default=None)
     min_value: Union[T, None, DeviceParamConstantType] = attrs.field(default=None)
     si_unit: Optional[SIUnit] = attrs.field(default=None)
