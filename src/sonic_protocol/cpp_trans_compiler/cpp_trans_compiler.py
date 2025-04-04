@@ -473,7 +473,6 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 num_allowed_values = len(field_limits.allowed_values)
                 allowed_values_ref = f"{var_name}_{num_allowed_values}_allowed_values"
                 self._allowed_values[field_limits.allowed_values] = allowed_values_ref
-            allowed_values_ref = f"{allowed_values_ref})"
         
         cpp_field_limits: str = f"""
     FieldLimits<{field_limits.cpp_data_type()}> {{
