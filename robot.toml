@@ -13,9 +13,9 @@ variables = { TARGET = "url", URL = { expr="'/dev/ttyUSB0' if platform.system() 
 excludes = [ "worker" ]
 
 [profiles.simulation_mvp]
-variables = { TARGET = "simulation", SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/mvp_simulation/test/cli/cli_simulation_mvp/cli_simulation_mvp'"} }
+variables = { TARGET = "simulation", SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp'"} }
 excludes = [ "descale" ]
 
 [profiles.simulation_descale]
-variables = { TARGET = "simulation", SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/mvp_simulation_descale/test/cli/cli_simulation_descale/cli_simulation_descale'"} }
+variables = { TARGET = "simulation", SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'build/linux/mvp_simulation_descale/test/simulation/cli_simulation_descale/cli_simulation_descale'"} }
 excludes = [ "worker" ]

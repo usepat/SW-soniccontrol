@@ -1,4 +1,5 @@
 import asyncio
+from os import environ
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from typing_extensions import List
@@ -72,9 +73,14 @@ class RobotRemoteController:
 
 def main():
     robotController = RobotRemoteController()
-    robotController.connect_via_serial("COM22")
+    #robotController.connect_via_serial("COM22")
+    firmware_dir = environ.get('FIRMWARE_BUILD_DIR_PATH')
+    if not firmware_dir:
+        raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
+    path = firmware_dir + '/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp'
+    robotController.connect_via_process(path)
     print(f"Connected: {robotController.is_connected()}")
-    print(robotController.send_command("-"))
+    print(robotController.send_command("!stop"))
 
 if __name__ == "__main__":
     main()

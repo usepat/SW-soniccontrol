@@ -1,5 +1,6 @@
 import abc
 import asyncio
+import os
 from pathlib import Path
 import attrs
 from typing import Tuple
@@ -60,3 +61,28 @@ class SerialConnection(Connection):
     async def close_connection(self):
         self.writer.close()
         await self.writer.wait_closed()
+
+
+async def main():
+    # Replace 'cat' with the path to your actual binary, if different
+    conn = CLIConnection(bin_file=Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp"),
+                         connection_name="cli_simulation_mvp")
+    reader, writer = await conn.open_connection()
+    await writer.drain()
+    await asyncio.sleep(2)  # Give some time for the process to start
+    try:
+        test_string = "-\r"
+        print(f"Sending: {test_string.strip()}")
+        writer.write(test_string.encode())
+        await writer.drain()
+
+        # Read response (up to a reasonable limit)
+        while True:
+            response = await reader.readline()
+            print(f"Received: {response.decode().strip()}")
+            await asyncio.sleep(1)  # Small delay to avoid busy waiting
+    finally:
+        await conn.close_connection()
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -23,6 +23,9 @@ class CommandDeserializer:
 
     def _find_command_in_lookup_table(self, command_identifier: str) -> CommandCode | None:
         for command_code, command_lookup in self._command_lookup_table.items():
+            # We need this because of notify command contract
+            if command_lookup.command_def is None:
+                continue
             assert isinstance(command_lookup.command_def.sonic_text_attrs, SonicTextCommandAttrs)
             string_identifiers = command_lookup.command_def.sonic_text_attrs.string_identifier
             string_identifiers = string_identifiers if isinstance(string_identifiers, list) else [string_identifiers]
