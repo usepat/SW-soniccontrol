@@ -102,11 +102,12 @@ Send Example Commands
     #[Timeout]   1 minutes
     ${command_examples_list}=    RemoteController.Deduce list of command examples
     IF    "${TARGET}" != 'simulation'
-        Remove Values From List    ${command_examples_list}    !FLASH_USB    !FLASH_UART_SLOW    !FLASH_UART_FAST
+        #We cannot use stop right now, because it will return an error when there is no procedure running
+        Remove Values From List    ${command_examples_list}    !FLASH_USB    !FLASH_UART_SLOW    !FLASH_UART_FAST    !stop
     END
     ${num_iterations} =    Get Length    ${command_examples_list}
     FOR  ${i}    ${command_example}  IN ENUMERATE    @{command_examples_list}
-        IF     ${i} >= 0   #So we can skip commands, used for debugging
+        IF     ${i} >= 276   #So we can skip commands, used for debugging
             Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
             Run Keyword and Continue on Failure    RemoteController.Send Command    !log[global]=ERROR
             Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
