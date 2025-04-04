@@ -274,6 +274,21 @@ sonic_force = CommandContract(  # Used overruling the service mode
     tags=["debugging"]
 )
 
+notify = CommandContract(
+    code=CommandCode.NOTIFY_MESSAGE,
+    command_defs=None,
+    answer_defs=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.MESSAGE,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    is_release=True,
+    tags=["Notification"]
+)
+
 flash_commands: List[CommandContract] = [flash_usb, flash_uart9600, flash_uart115200]
 
 
@@ -333,6 +348,7 @@ protocol = Protocol(
                 get_datetime_pico,
                 set_log_level,
                 sonic_force,
+                notify,
             ] + flash_commands,
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=1, minor=0, patch=0)
