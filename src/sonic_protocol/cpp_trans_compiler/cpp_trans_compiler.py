@@ -27,7 +27,7 @@ def convert_to_cpp_literal(value: Any) -> str:
     else:
         assert False, f"Unknown literal type: {type(value)}"
 
-def convert_to_cpp_initializer_list(value: List[Any]) -> str:
+def convert_to_cpp_initializer_list(value: List[Any] | Tuple[Any]) -> str:
     literals = map(convert_to_cpp_literal, value)
     return "{" + ", ".join(literals) + "}"
 
@@ -142,7 +142,7 @@ T = TypeVar("T")
 class FieldLimits(Generic[T]):
     minimum: T | None = attrs.field()
     maximum: T | None = attrs.field()
-    allowed_values: List[T] | None = attrs.field()
+    allowed_values: Tuple[T] | None = attrs.field()
     data_type: type[T] = attrs.field()
     def cpp_data_type(self) -> str:
         return py_type_to_cpp_type(self.data_type)
@@ -154,7 +154,7 @@ class CppTransCompiler:
         self._field_limits_cache: dict[FieldLimits, str] = {}
         self._param_definitions: dict[CommandParamDef, str] = {}
         self._field_definitions: dict[AnswerFieldDef, str] = {}
-        self._allowed_values: dict[List[Any], str] = {}
+        self._allowed_values: dict[Tuple[Any], str] = {}
 
     def generate_sonic_protocol_lib(self, protocol: Protocol, protocol_version: ProtocolVersion, output_dir: Path):
         # copy protocol definitions to output directory
@@ -421,7 +421,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
         field_limits = FieldLimits(
             minimum=field_type.min_value,
             maximum=field_type.max_value,
-            allowed_values=list(field_type.allowed_values) if field_type.allowed_values is not None else None,
+            allowed_values=field_type.allowed_values,
             data_type=data_type
         )
         if field_limits in self._field_limits_cache:
