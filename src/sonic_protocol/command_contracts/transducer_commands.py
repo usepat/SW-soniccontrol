@@ -9,7 +9,7 @@ from sonic_protocol.command_contracts.fields import (
     field_unknown_answer, field_type_frequency, field_type_temperature_celsius,
     field_frequency, field_gain, field_signal, field_swf,
     field_type_gain, swf_field_type, field_temperature_kelvin,
-    field_urms, field_irms, field_phase, field_ts_flag, field_waveform, waveform_field_type, field_transducer
+    field_urms, field_irms, field_phase, field_ts_flag, field_waveform, waveform_field_type, field_transducer, field_type_atf
 )
 
 
@@ -295,7 +295,7 @@ param_index = CommandParamDef(
 )
 param_atf = CommandParamDef(
     name=EFieldName.ATF,
-    param_type=field_type_frequency
+    param_type=field_type_atf
 )
 
 param_att = CommandParamDef(
@@ -316,7 +316,7 @@ param_atk = CommandParamDef(
 
 field_atf = AnswerFieldDef(
     field_name=EFieldName.ATF,
-    field_type=field_type_frequency
+    field_type=field_type_atf
 )
 
 get_atf = CommandContract(

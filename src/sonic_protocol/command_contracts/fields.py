@@ -26,6 +26,15 @@ field_type_frequency = FieldType(
 	min_value=DeviceParamConstantType.MIN_FREQUENCY,
 )
 
+field_type_atf = FieldType(
+    field_type=np.uint32,
+    si_unit=SIUnit.HERTZ,
+    #si_prefix=SIPrefix.KILO,
+	max_value=DeviceParamConstantType.MAX_FREQUENCY,
+	min_value=DeviceParamConstantType.MIN_FREQUENCY,
+    allowed_values=[np.uint32(0)],
+)
+
 field_type_frequency_step = FieldType(
     field_type=np.uint32,
     si_unit=SIUnit.HERTZ,
