@@ -289,6 +289,21 @@ notify = CommandContract(
     tags=["Notification"]
 )
 
+notify_proc_failure = CommandContract(
+    code=CommandCode.NOTIFY_PROCEDURE_FAILURE,
+    command_defs=None,
+    answer_defs=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.ERROR_MESSAGE,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    is_release=True,
+    tags=["Notification", "Procedure"]
+)
+
 flash_commands: List[CommandContract] = [flash_usb, flash_uart9600, flash_uart115200]
 
 
