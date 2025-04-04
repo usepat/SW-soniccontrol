@@ -421,7 +421,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
         field_limits = FieldLimits(
             minimum=field_type.min_value,
             maximum=field_type.max_value,
-            allowed_values=field_type.allowed_values,
+            allowed_values=list(field_type.allowed_values) if field_type.allowed_values is not None else None,
             data_type=data_type
         )
         if field_limits in self._field_limits_cache:
