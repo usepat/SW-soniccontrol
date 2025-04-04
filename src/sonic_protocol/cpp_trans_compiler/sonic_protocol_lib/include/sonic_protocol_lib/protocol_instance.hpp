@@ -12,13 +12,13 @@ namespace sonic_protocol_lib {
 // this namespace hides the elements. so that they are only accessible in this translation unit
 namespace {
 
-#define FIELD_LIMITS
-/**/FIELD_LIMITS/**/ // the python script will replace this
-#undef FIELD_LIMITS
-
 #define ALLOWED_VALUES
 /**/ALLOWED_VALUES/**/ // the python script will replace this
 #undef ALLOWED_VALUES
+
+#define FIELD_LIMITS
+/**/FIELD_LIMITS/**/ // the python script will replace this
+#undef FIELD_LIMITS
 
 #define FIELD_DEFS
 /**/FIELD_DEFS/**/ // the python script will replace this
