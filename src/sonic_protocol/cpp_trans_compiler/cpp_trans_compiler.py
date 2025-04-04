@@ -21,8 +21,9 @@ def nullopt_if_none(value):
 def convert_to_cpp_literal(value: Any) -> str:
     if isinstance(value, str):
         return '"' + value + '"'
-    elif isinstance(value, (int, float)):
+    elif isinstance(value, (int, float, np.integer, np.unsignedinteger)):
         return str(value)
+    
     else:
         assert False, f"Unknown literal type: {type(value)}"
 
