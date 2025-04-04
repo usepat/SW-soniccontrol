@@ -460,7 +460,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
     def _transpile_allowed_values_from_cache(self) -> str:
         transpilation_output = ""
         for allowed_values, var_name in self._allowed_values.items():
-            transpilation_output += f"constexpr std::array<{py_type_to_cpp_type(type(allowed_values))}> {var_name} = {convert_to_cpp_initializer_list(allowed_values)};\n"
+            transpilation_output += f"constexpr std::array<{py_type_to_cpp_type(type(allowed_values))}, {len(allowed_values)}> {var_name} = {convert_to_cpp_initializer_list(allowed_values)};\n"
         return transpilation_output
 
     def _transpile_field_limits(self, field_limits: FieldLimits, var_name: str) -> str:
