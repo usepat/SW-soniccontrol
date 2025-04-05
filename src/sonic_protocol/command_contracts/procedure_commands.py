@@ -341,6 +341,12 @@ continue_command =  generate_start_procedure_contract(
     ""
 )
 
+pause_command =  generate_start_procedure_contract(
+    CommandCode.SET_CONTINUE,
+    ["!pause", "!pause_procedure"],
+    ""
+)
+
 duty_cycle_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_DUTY_CYCLE,
@@ -359,14 +365,15 @@ duty_cycle_proc_commands: List[CommandContract] = [
         response_field=fields.field_duty_cycle_t_on
     ),
     stop_command,
-    continue_command
+    continue_command,
+    pause_command
 ]
 
 
 
 
 
-all_proc_commands: List[CommandContract] = [stop_command, continue_command]
+all_proc_commands: List[CommandContract] = [stop_command, continue_command, pause_command]
 all_proc_commands.extend(ramp_proc_commands)
 all_proc_commands.extend(wipe_proc_commands)
 all_proc_commands.extend(scan_proc_commands)
