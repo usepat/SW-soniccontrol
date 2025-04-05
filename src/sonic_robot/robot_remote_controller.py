@@ -70,6 +70,15 @@ class RobotRemoteController:
     def disconnect(self) -> None:
         self._loop.run_until_complete(self._controller.disconnect())
 
+    @keyword("Sleep for ${time_ms} ms")
+    def sleep(self, time_ms: int) -> None:
+        """
+        This is needed, because the sleep function of the robot framework pauses the whole application,
+        also the execution of the asyncio event loop
+        """
+        self._loop.run_until_complete(asyncio.sleep(time_ms / 1000))
+        print(f"Sleeping for {time_ms} ms")
+
 
 def main():
     robotController = RobotRemoteController()

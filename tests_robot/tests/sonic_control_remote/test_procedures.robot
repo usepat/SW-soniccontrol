@@ -40,8 +40,8 @@ Test if ramp does not crash
     [Setup]    RemoteController.Send Command     !log[procedureLogger]=DEBUG
     [Teardown]    RemoteController.Send Command     !log[procedureLogger]=ERROR
     RemoteController.Send Command     !ramp
-    Sleep    10s
-    Send command and check if the device crashes    -
+    Sleep for 10000 ms
+    Send command and check if the device crashes    !stop
 
 *** Keywords ***
 
