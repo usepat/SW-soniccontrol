@@ -107,7 +107,7 @@ Send Example Commands
     END
     ${num_iterations} =    Get Length    ${command_examples_list}
     FOR  ${i}    ${command_example}  IN ENUMERATE    @{command_examples_list}
-        IF     ${i} >= 276   #So we can skip commands, used for debugging
+        IF     ${i} >= 0   #So we can skip commands, used for debugging
             Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
             Run Keyword and Continue on Failure    RemoteController.Send Command    !log[global]=ERROR
             Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
