@@ -342,7 +342,7 @@ continue_command =  generate_start_procedure_contract(
 )
 
 pause_command =  generate_start_procedure_contract(
-    CommandCode.SET_CONTINUE,
+    CommandCode.SET_PAUSE,
     ["!pause", "!pause_procedure"],
     ""
 )

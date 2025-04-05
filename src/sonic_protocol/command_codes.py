@@ -141,6 +141,7 @@ class CommandCode(IntEnum):
 
     SET_STOP = 3000
     SET_CONTINUE = 3010
+    SET_PAUSE = 3020
 
     SET_FLASH_USB = 7001
     SET_FLASH_9600 = 7002
