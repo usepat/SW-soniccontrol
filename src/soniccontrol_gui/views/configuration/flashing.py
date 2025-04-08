@@ -188,5 +188,9 @@ async def main():
     success = await flasher.flash_firmware()
     print("Flashing successful" if success else "Flashing failed")
 
+
+
+
+
 if __name__ == "__main__":
     asyncio.run(main())
