@@ -27,14 +27,12 @@ If applicable, add screenshots to help explain your problem.
 
 **Sonic Control (please complete the following information):**
  - software version: [e.g. v2.3.0]
- - program: [e.g. soniccontrol_gui]
+ - program: [e.g. soniccontrol_gui, soniccontrol(cli), soniccontrol(package)]
 
 **Sonic Device (please complete the following information):**
- - Device: [e.g. SonicCatch ]
- - firmware version: [e.g. v1.0.0, use ?info]
- - hardware revision version [use ?info]
- - protocol version [e.g. v2.0.0, use ?info]
- - list of understandable commands [use ?list_commands]
+ - Output of the ?protocol command
+ - Output of the ?info command
+The protocol and info command give you information about the device type, hardware version, firmware version, etc. Check that they are correct.
 
 **Additional context**
 Add any other context about the problem here.
