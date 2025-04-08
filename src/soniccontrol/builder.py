@@ -17,7 +17,7 @@ import sonic_protocol.python_parser.commands as cmds
 
 class DeviceBuilder:
 
-    async def build_amp(self, connection: Connection, logger: logging.Logger = logging.getLogger(), open_in_rescue_mode: bool = False) -> SonicDevice:
+    async def build_amp(self, connection: Connection, logger: logging.Logger = logging.getLogger(), open_in_rescue_mode: bool = False, is_legacy_device: bool = False) -> SonicDevice:
         """!
         @param open_in_rescue_mode This param can be set to False, so that it does not try to deduce which protocol to use. Used for the rescue window
         """
@@ -40,7 +40,7 @@ class DeviceBuilder:
         protocol_builder = ProtocolBuilder(protocol.protocol)
 
         # deduce the right protocol version, device_type and build_type
-        if not open_in_rescue_mode:
+        if not open_in_rescue_mode and not is_legacy_device:
             builder_logger.debug("Try to figure out which protocol to use with ?protocol")
 
             protocol_version: Version = Version(1, 0, 0)
@@ -57,6 +57,14 @@ class DeviceBuilder:
                 is_release = answer.field_value_dict[EFieldName.IS_RELEASE]
             else:
                 builder_logger.debug("Device does not understand ?protocol command")
+        elif not open_in_rescue_mode and is_legacy_device:
+            builder_logger.debug("Building for legacy device")
+
+            protocol_builder = ProtocolBuilder(protocol.legacy_protocol)
+            device_type: DeviceType = DeviceType.CRYSTAL
+            is_release: bool = True
+
+            #info = FirmwareInfo()  # Do we know Firmware Infos?
         else:
             builder_logger.warning("Device uses unknown protocol")
 
