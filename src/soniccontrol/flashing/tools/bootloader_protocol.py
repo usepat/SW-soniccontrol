@@ -237,3 +237,25 @@ class Protocol_RP2040:
             return False
         self._logger.info(f"Unexpected response to boot command: {all_bytes}")
         return False
+    
+    async def read_cmd(self) -> bool:
+        expected_bit_n = len(self.Opcodes['Read']) + 4
+        write_buff = bytes()
+        write_buff += self.Opcodes['Read']
+        write_buff += little_end_uint32_to_bytes(0)
+        if len(write_buff) != expected_bit_n:
+            missing_bits = expected_bit_n - len(write_buff)
+            b = bytes(missing_bits)
+            write_buff += b
+        self._logger.info(f"Send read command: {write_buff}")
+        if(not await self.write(write_buff)):
+            return False
+        all_bytes, data_bytes = await self.read(len(self.Opcodes['ResponseOK']))
+        self._logger.info(f"Booted, response is: {all_bytes} data: {data_bytes}")
+        if all_bytes == b"":
+            return True
+        elif all_bytes[:4] == self.Opcodes['ResponseErr']:
+            return False
+        self._logger.info(f"Unexpected response to boot command: {all_bytes}")
+        return False
+
