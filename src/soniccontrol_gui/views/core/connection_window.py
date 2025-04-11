@@ -136,7 +136,7 @@ class ConnectionWindow(UIComponent):
         baudrate = 9600
 
         connection = SerialConnection(url=url, baudrate=baudrate, connection_name=Path(url).name)
-        await self._attempt_connection(connection, self._view._is_legacy_device_box.instate(["selected"]))
+        await self._attempt_connection(connection, self._view._is_legacy_device.get())
         self._is_connecting = False
 
     @async_handler 
@@ -180,11 +180,15 @@ class ConnectionWindowView(ttk.Window, View):
             state=ttk.READONLY,
         )
         WidgetRegistry.register_widget(self._ports_menue, "ports_combobox", window_name)
-        self._is_legacy_device_box: ttk.Checkbutton = ttk.Checkbutton(
-            self._url_connection_frame,
+        self._is_legacy_device = tk.BooleanVar()
+        self._is_legacy_device_box = tk.Checkbutton(
+            self._url_connection_frame, 
             text=ui_labels.IS_LEGACY_DEVICE_LABEL,
-            variable=tk.BooleanVar(value=False),
+            variable=self._is_legacy_device, 
+            onvalue=1, 
+            offvalue=0
         )
+
         WidgetRegistry.register_widget(self._is_legacy_device_box, "is_legacy_device_box", window_name)
         self._connect_via_url_button: ttk.Button = ttk.Button(
             self._url_connection_frame,
