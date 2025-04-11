@@ -91,6 +91,7 @@ style: Final[_Style] = _Style()
 
 @attrs.frozen
 class _UIStringsEN:
+    IS_LEGACY_DEVICE_LABEL: Final[str] = "SonicCrystal"
     HOME_CONTROL_LABEL: Final[str] = "Manual Control"
     FREQ_PLACEHOLDER: Final[str] = "Set Frequency..."
     GAIN_PLACEHOLDER: Final[str] = "Set Gain..."

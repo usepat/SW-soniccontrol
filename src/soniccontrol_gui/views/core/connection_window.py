@@ -40,12 +40,12 @@ class DeviceWindowManager:
         
         return device_window
 
-    def open_known_device_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
+    def open_known_device_window(self, sonicamp: SonicDevice, connection : Connection, is_legacy_device: bool = False) -> DeviceWindow:
         device_window = KnownDeviceWindow(sonicamp, self._root, connection.connection_name)
         self._open_device_window(device_window, connection)
         return device_window
     
-    def _open_device_window(self, device_window: DeviceWindow, connection : Connection):
+    def _open_device_window(self, device_window: DeviceWindow, connection : Connection, is_legacy_device: bool = False):
         device_window._view.focus_set()  # grab focus and bring window to front
         self._id_device_window_counter += 1
         device_window_id = self._id_device_window_counter
@@ -54,16 +54,16 @@ class DeviceWindowManager:
             DeviceWindow.CLOSE_EVENT, lambda _: self._opened_device_windows.pop(device_window_id) #type: ignore
         )
         device_window.subscribe(
-            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_connection_callback(connection)) #type: ignore
+            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_connection_callback(connection, is_legacy_device)) #type: ignore
         )    
         
-    async def attempt_connection(self, connection: Connection):
+    async def attempt_connection(self, connection: Connection, is_legacy_device: bool = False):
         logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
         logger.debug("Established serial connection")
 
         try:
             logger.debug("Build SonicDevice for device")
-            sonicamp = await DeviceBuilder().build_amp(connection, logger=logger)
+            sonicamp = await DeviceBuilder().build_amp(connection, logger=logger, is_legacy_device=is_legacy_device)
         except Exception as e:
             logger.error(e)
             message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
@@ -77,7 +77,7 @@ class DeviceWindowManager:
         else:
             logger.info("Created device successfully, open device window")
             if sonicamp.info.protocol_version >= Version(1, 0, 0):
-                self.open_known_device_window(sonicamp, connection)
+                self.open_known_device_window(sonicamp, connection, is_legacy_device)
             else:
                 self.open_rescue_window(sonicamp, connection)
 
@@ -101,8 +101,8 @@ class ConnectionWindow(UIComponent):
         decorator = load_animation(animation)
         self._device_window_manager = DeviceWindowManager(self._view)
         
-        async def _attempt_connection(_connection: Connection):
-            await self._device_window_manager.attempt_connection(_connection)
+        async def _attempt_connection(_connection: Connection, is_legacy_device: bool = False):
+            await self._device_window_manager.attempt_connection(_connection, is_legacy_device)
 
         self._is_connecting = False # Make this to asyncio Event if needed
         self._attempt_connection = decorator(_attempt_connection)
@@ -136,7 +136,7 @@ class ConnectionWindow(UIComponent):
         baudrate = 9600
 
         connection = SerialConnection(url=url, baudrate=baudrate, connection_name=Path(url).name)
-        await self._attempt_connection(connection)
+        await self._attempt_connection(connection, self._view._is_legacy_device_box.instate(["selected"]))
         self._is_connecting = False
 
     @async_handler 
@@ -180,7 +180,12 @@ class ConnectionWindowView(ttk.Window, View):
             state=ttk.READONLY,
         )
         WidgetRegistry.register_widget(self._ports_menue, "ports_combobox", window_name)
-
+        self._is_legacy_device_box: ttk.Checkbutton = ttk.Checkbutton(
+            self._url_connection_frame,
+            text=ui_labels.IS_LEGACY_DEVICE_LABEL,
+            variable=tk.BooleanVar(value=False),
+        )
+        WidgetRegistry.register_widget(self._is_legacy_device_box, "is_legacy_device_box", window_name)
         self._connect_via_url_button: ttk.Button = ttk.Button(
             self._url_connection_frame,
             style=ttk.SUCCESS,
@@ -207,7 +212,7 @@ class ConnectionWindowView(ttk.Window, View):
         )
         self._refresh_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._connect_via_url_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
-
+        self._is_legacy_device_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         if show_simulation_button:
             self._connect_to_simulation_button.pack(side=ttk.BOTTOM, fill=ttk.X, padx=sizes.SMALL_PADDING, pady=sizes.MEDIUM_PADDING)
 

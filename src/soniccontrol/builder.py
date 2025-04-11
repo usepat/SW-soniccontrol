@@ -8,6 +8,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import ProtocolBuilder
 from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.serial_communicator import SerialCommunicator
+from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 from soniccontrol.sonic_device import (
     FirmwareInfo,
     SonicDevice,
@@ -63,7 +64,8 @@ class DeviceBuilder:
             protocol_builder = ProtocolBuilder(protocol.legacy_protocol)
             device_type: DeviceType = DeviceType.CRYSTAL
             is_release: bool = True
-
+            comm = LegacyCommunicator(logger=logger) #type: ignore
+            await comm.open_communication(connection)
             #info = FirmwareInfo()  # Do we know Firmware Infos?
         else:
             builder_logger.warning("Device uses unknown protocol")
