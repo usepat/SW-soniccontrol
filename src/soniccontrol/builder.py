@@ -64,6 +64,7 @@ class DeviceBuilder:
             protocol_builder = ProtocolBuilder(protocol.legacy_protocol)
             device_type: DeviceType = DeviceType.CRYSTAL
             is_release: bool = True
+            await comm.close_communication()
             comm = LegacyCommunicator(logger=logger) #type: ignore
             await comm.open_communication(connection)
             #info = FirmwareInfo()  # Do we know Firmware Infos?

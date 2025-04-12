@@ -65,8 +65,9 @@ class SerialConnection(Connection):
 
 async def main():
     # Replace 'cat' with the path to your actual binary, if different
-    conn = CLIConnection(bin_file=Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp"),
-                         connection_name="cli_simulation_mvp")
+    # conn = CLIConnection(bin_file=Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp"),
+    #                      connection_name="cli_simulation_mvp")
+    conn = SerialConnection(url="COM23", baudrate=9600, connection_name="serial_connection")
     reader, writer = await conn.open_connection()
     await writer.drain()
     await asyncio.sleep(2)  # Give some time for the process to start
