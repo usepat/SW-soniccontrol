@@ -195,16 +195,16 @@ class MeasuringView(TabView):
     def _initialize_publish(self) -> None:
         self._main_frame.pack(expand=True, fill=ttk.BOTH)
         
-        self._metadata_form_frame.pack(fill=ttk.BOTH, padx=3, pady=3)
+        self._metadata_form_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
         self._metadata_form_frame.pack_forget()
 
-        self._choose_target_frame.pack(fill=ttk.BOTH, padx=3, pady=3)
+        self._choose_target_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
         self._choose_target_label.pack(fill=ttk.X)
         self._target_combobox.pack(fill=ttk.X)
         self._selected_target_button.pack(fill=ttk.X)
         self._choose_target_frame.pack_forget()
 
-        self._capture_frame.pack(fill=ttk.BOTH, padx=3, pady=3)
+        self._capture_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
         self._capture_btn.pack(fill=ttk.X, padx=sizes.SMALL_PADDING)
         self._notebook.pack(expand=True, fill=ttk.BOTH)
         self._capture_frame.pack_forget()
