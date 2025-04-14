@@ -383,6 +383,7 @@ protocol = Protocol(
                 set_log_level,
                 sonic_force,
                 notify,
+                saveSettings,
             ] + flash_commands,
             descriptor=MetaExportDescriptor(
                 min_protocol_version=Version(major=1, minor=0, patch=0)
