@@ -300,9 +300,10 @@ class NewFirmwareFlasher(FirmwareFlasher):
                 wr_data = data[start:end]
                 crc_valid = await self.protocol.write_cmd(wr_addr, wr_len, wr_data)
                 if not crc_valid:
-                    if retries > 5:
+                    if retries > 0:
                         self._logger.info(f"Flashing failed")
                         self.protocol.wait_time_before_read += 0.1
+                        retries = 0
                         continue
                     retries += 1
                     self._logger.info(f"Error when flashing, at addr: {wr_addr}, try again")
