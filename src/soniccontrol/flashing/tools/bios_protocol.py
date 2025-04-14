@@ -5,8 +5,10 @@ import time
 from typing import ClassVar, Optional, Tuple
 import serial
 import binascii
+from soniccontrol.flashing.tools.elf import load_elf
 from soniccontrol.flashing.tools.utils import hex_bytes_to_int, bytes_to_little_end_uint32, little_end_uint32_to_bytes, custom_crc32
 from dataclasses import dataclass, field
+from serial_asyncio import open_serial_connection
 
 
 @dataclass
@@ -19,24 +21,22 @@ class PicoInfo:
 
 
 @dataclass
-class Protocol_RP2040:
+class Protocol_BIOS_RP2040:
     MAX_SYNC_ATTEMPTS: ClassVar[int] = 3  # Class-level constant
     
     Opcodes: ClassVar[dict] = {
-        'Sync': b'SYNC',
-        'Read': b'READ',
-        'Csum': b'CSUM',
-        'CRC': b'CRCC',
-        'Erase': b'ERAS',
-        'Write': b'WRIT',
-        'Seal': b'SEAL',
-        'Go': b'GOGO',
-        'Info': b'INFO',
-        'Boot': b'BOOT',
-        'ResponseSync': b'PICO',
-        'ResponseSyncWota': b'WOTA',
-        'ResponseOK': b'OKOK',
-        'ResponseErr': b'ERR!',
+        'Sync': b'sync',
+        'Read': b'read',
+        'CRC': b'crc',
+        'Erase': b'erase',
+        'Write': b'write',
+        'Seal': b'seal',
+        'Go': b'gogo',
+        'Info': b'info',
+        'Boot': b'boot',
+        'ResponseSync': b'pico',
+        'ResponseOK': b'okok',
+        'ResponseErr': b'error',
     }
 
     _writer: StreamWriter = field(init=False)  # Instance-level fields, initialized later
@@ -45,7 +45,7 @@ class Protocol_RP2040:
 
     def __init__(self, logger: logging.Logger, writer: StreamWriter, reader: StreamReader, wait_time_before_read):
         super().__init__()
-        self._logger = logging.getLogger(logger.name + "." + Protocol_RP2040.__name__)
+        self._logger = logging.getLogger(logger.name + "." + Protocol_BIOS_RP2040.__name__)
         self._writer = writer
         self._reader = reader
         if wait_time_before_read:
@@ -80,7 +80,7 @@ class Protocol_RP2040:
             await asyncio.sleep(self.wait_time_before_read)
         response = b""
         try:
-            response = await asyncio.wait_for(self._reader.read(response_len), timeout=1.0)
+            response = await self._reader.read(response_len)#asyncio.wait_for(self._reader.read(response_len), timeout=1.0)
         except asyncio.TimeoutError:
             pass  # Timeout means no more data, or read operation took too long
         except Exception as e:
@@ -238,24 +238,42 @@ class Protocol_RP2040:
         self._logger.info(f"Unexpected response to boot command: {all_bytes}")
         return False
     
-    async def read_cmd(self) -> bool:
-        expected_bit_n = len(self.Opcodes['Read']) + 4
+    async def read_cmd(self) -> bytes:
         write_buff = bytes()
         write_buff += self.Opcodes['Read']
-        write_buff += little_end_uint32_to_bytes(0)
-        if len(write_buff) != expected_bit_n:
-            missing_bits = expected_bit_n - len(write_buff)
-            b = bytes(missing_bits)
-            write_buff += b
         self._logger.info(f"Send read command: {write_buff}")
         if(not await self.write(write_buff)):
-            return False
-        all_bytes, data_bytes = await self.read(len(self.Opcodes['ResponseOK']))
-        self._logger.info(f"Booted, response is: {all_bytes} data: {data_bytes}")
-        if all_bytes == b"":
-            return True
-        elif all_bytes[:4] == self.Opcodes['ResponseErr']:
-            return False
-        self._logger.info(f"Unexpected response to boot command: {all_bytes}")
-        return False
+            return bytes()
+        all_bytes, data_bytes = await self.read(200)
+        self._logger.info(f"Read, response is: {all_bytes}")
+        return all_bytes
 
+
+async def main():
+    # Example usage
+    logger = logging.getLogger("Protocol_BIOS_RP2040")
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+    # Replace with actual StreamReader and StreamWriter instances
+    reader, writer = await open_serial_connection(
+            url="COM23", baudrate=9600
+    )
+
+    protocol = Protocol_BIOS_RP2040(logger, writer, reader, 0.1)
+    stored_bytes = await protocol.read_cmd()
+    img = load_elf(r"\\wsl.localhost\Ubuntu\home\usepat\GitHub\FW-sonic-firmware\build\pico\bios\tools\bootloader_new\bootloader.elf")
+    # Load elf file and compare with stored bytes
+    # compare storyed bytes with img.Data
+    if stored_bytes == img.Data:
+        logger.info("Stored bytes match the ELF image data exactly.")
+    else:
+        logger.warning("Mismatch detected between stored bytes and ELF image data.")
+        logger.info(f"First 64 bytes of stored data: {stored_bytes[:64].hex()}")
+        logger.info(f"First 64 bytes of ELF image: {img.Data[:64].hex()}")
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -45,6 +45,7 @@ class DeviceType(Enum):
     CATCH = "catch"
     WIPE = "wipe"
     MVP_WORKER = "mvp_worker"
+    CRYSTAL = "crystal"
 
 class SIUnit(Enum):
     METER = "m"
