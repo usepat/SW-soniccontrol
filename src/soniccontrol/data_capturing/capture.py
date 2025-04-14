@@ -7,6 +7,7 @@ from typing import Any, Dict
 from async_tkinter_loop import async_handler
 import pandas as pd
 import json
+import attrs
 
 from sonic_protocol.field_names import EFieldName
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureTarget
@@ -14,7 +15,15 @@ from soniccontrol.data_capturing.data_provider import DataProvider
 from soniccontrol.data_capturing.experiment import Experiment
 from soniccontrol.data_capturing.experiment_schema import ExperimentSchema
 from soniccontrol.events import Event, EventManager
+from soniccontrol.procedures.holder import HolderArgs
 
+
+class HolderArgsJsonEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, HolderArgs):
+            return attrs.asdict(o)
+        return super().encode(o)
+    
 
 class Capture(EventManager):
     START_CAPTURE_EVENT = "START_CAPTURE_EVENT"
@@ -88,7 +97,7 @@ class Capture(EventManager):
         schema = ExperimentSchema()
         data = schema.dump(self._experiment).data
         with open(capture_filename, "w") as file:
-            json.dump(data, file)
+            json.dump(data, file, cls=HolderArgsJsonEncoder)
 
 
     def on_update(self, status: Dict[EFieldName, Any]):
