@@ -289,6 +289,25 @@ notify = CommandContract(
     tags=["Notification"]
 )
 
+saveSettings = CommandContract(
+    code=CommandCode.SET_SETTINGS,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!saveSettings", "!commission"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    is_release=True,
+    tags=["Settings", "Commissioning"]
+)
+
 notify_proc_failure = CommandContract(
     code=CommandCode.NOTIFY_PROCEDURE_FAILURE,
     command_defs=None,
