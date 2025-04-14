@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 
 from sonic_protocol import protocol
+from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.defs import DeviceType, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import ProtocolBuilder
@@ -66,9 +67,14 @@ class DeviceBuilder:
 
         device = SonicDevice(comm, command_lookups, info, 
                              is_in_rescue_mode=open_in_rescue_mode, logger=logger)
+        
+        # some devices are automatically in default routine.
+        # To force them out of that, send the !sonic_force command
+        if device.has_command(cmds.SonicForce()):
+            await device.execute_command(cmds.SonicForce())
 
         # update info
-        if protocol_version >= Version(1, 0, 0):
+        if device.has_command(cmds.GetInfo()):
             answer = await device.execute_command(cmds.GetInfo(), should_log=False)
             result_dict.update(answer.field_value_dict)
         
