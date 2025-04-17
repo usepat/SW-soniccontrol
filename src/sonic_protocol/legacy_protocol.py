@@ -70,6 +70,104 @@ dash = CommandContract(
             tags=["update", "status"]
         )
 
+get_type = CommandContract(
+    code=None,
+    command_defs=None,
+    answer_defs=None,
+    is_release=True,
+    tags=[" "]
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+get_freq = CommandContract(
+    code=None,
+    command_defs=None,
+    answer_defs=None,
+    is_release=True,
+    tags=[" "]
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+get_gain = CommandContract(
+    code=None,
+    command_defs=None,
+    answer_defs=None,
+    is_release=True,
+    tags=[" "]
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+get_temp = CommandContract(
+    code=None,
+    command_defs=None,
+    answer_defs=None,
+    is_release=True,
+    tags=[" "]
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+get_type = CommandContract(
+    code=None,
+    command_defs=None,
+    answer_defs=None,
+    is_release=True,
+    tags=[" "]
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+get_type = CommandContract(
+    code=None,
+    command_defs=None,
+    answer_defs=None,
+    is_release=True,
+    tags=[" "]
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+get_type = CommandContract(
+    code=None,
+    command_defs=None,
+    answer_defs=None,
+    is_release=True,
+    tags=[" "]
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+get_type = CommandContract(
+    code=None,
+    command_defs=None,
+    answer_defs=None,
+    is_release=True,
+    tags=[" "]
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+get_type = CommandContract(
+    code=None,
+    command_defs=None,
+    answer_defs=None,
+    is_release=True,
+    tags=[" "]
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
 
 legacy_protocol = Protocol(
     version=Version(0, 0, 0),
