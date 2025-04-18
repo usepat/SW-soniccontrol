@@ -63,6 +63,17 @@ class LegacyCommunicator(Communicator):
 
         self._restart = False 
         self._reader, self._writer = await self._connection.open_connection()
+        self._writer.write(b"!SERIAL\n")
+        await self._writer.drain()
+        self._answer_lines = []
+        while True:
+            try:
+                answer = await asyncio.wait_for(self._reader.readline(), timeout=0.2)
+                self._logger.debug("Received: %s", answer)
+                self._answer_lines.append(answer.strip())
+            except asyncio.TimeoutError:
+                self._logger.debug("Timeout while waiting for connection")
+                break
         self._connection_opened.set()
 
     async def _send_chunks(self, message: bytes) -> None:
@@ -99,37 +110,32 @@ class LegacyCommunicator(Communicator):
 
     async def _send_and_get(self, request_str: str) -> str:
         assert self._writer is not None
+        assert self._reader is not None
 
         async with self._lock:
             if request_str != "-":
                 self._logger.info("Send command: %s", request_str)
 
-            self._message_counter = (self._message_counter + 1) % self.MESSAGE_ID_MAX_CLIENT
-            message_counter = self._message_counter
-
-            message = self._protocol.parse_request(
-                request_str, message_counter
-            )
-
-            if request_str != "-":
-                self._logger.info("Write package: %s", message)
-            encoded_message = message.encode(ENCODING)
-
-            
             if PLATFORM == System.WINDOWS:
                 # FIXME: Quick fix. We have a weird error that the buffer does not get flushed somehow
-                await self._send_chunks(encoded_message)    
+                await self._send_chunks(request_str.encode("uft-8"))    
             else:
-                self._writer.write(encoded_message)
+                self._writer.write(request_str.encode("uft-8"))
                 await self._writer.drain()
 
-            # FIXME: to move the awaiting of the response inside the lock is only a quickfix, because the code on
-            # the device of the uart needs to be refactored, so that it can handle messaging bursts.
-            response =  "Nothing"
-            if request_str != "-":
-                self._logger.info("Receive Answer: %s", response)
+            while True:
+                try:
+                    answer = await asyncio.wait_for(self._reader.readline(), timeout=0.2)
+                    self._logger.debug("Received: %s", answer)
+                    self._answer_lines.append(answer.strip())
+                except asyncio.TimeoutError:
+                    self._logger.debug("Timeout while waiting for connection")
+                    break
 
-            return response
+            if request_str != "-":
+                self._logger.info("Receive Answer: %s", self._answer_lines)
+            # Return last, I need to test if we even need to understand multiline answer. The code above, is that I can at least debug it
+            return self._answer_lines[-1] if len(self._answer_lines) > 0 else ""
 
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str:
         if not self._connection_opened.is_set():
@@ -153,7 +159,7 @@ class LegacyCommunicator(Communicator):
             raise ConnectionError("The connection was closed")
     
     async def read_message(self) -> str:
-        return "Error 404"
+        return self._answer_lines.pop(0) if len(self._answer_lines) > 0 else "No message"
 
     async def close_communication(self, restart : bool = False) -> None:
         self._restart = restart

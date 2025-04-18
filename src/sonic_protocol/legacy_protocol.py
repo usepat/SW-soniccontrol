@@ -1,15 +1,15 @@
 from typing import List
 import numpy as np
-from sonic_protocol.command_contracts.contract_generators import create_version_field
+from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative, create_version_field
 from sonic_protocol.protocol import (build_date_field, build_hash_field, field_device_type)
 from sonic_protocol.defs import (
-    CommandCode, CommandExport, CommandListExport, ConverterType, DeviceParamConstants, FieldType, MetaExport, MetaExportDescriptor, Procedure, 
+    CommandCode, CommandExport, CommandListExport, CommandParamDef, ConverterType, DeviceParamConstants, FieldType, MetaExport, MetaExportDescriptor, Procedure, 
     Protocol, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType,
 )
 from sonic_protocol.command_contracts.fields import (
     field_frequency, field_gain, field_temperature_kelvin, field_urms, field_irms, 
-    field_phase, field_signal
+    field_phase, field_signal, field_type_frequency, field_type_gain,
 )
 
 
@@ -52,10 +52,10 @@ dash = CommandContract(
             ),
             answer_defs=AnswerDef(
                 fields=[
-                    error_code_field,
+                    #error_code_field,
                     field_frequency,
                     field_gain,
-                    procedure_field,
+                    #procedure_field,
                     field_temperature_kelvin,
                     field_urms,
                     field_irms,
@@ -70,111 +70,112 @@ dash = CommandContract(
             tags=["update", "status"]
         )
 
-get_type = CommandContract(
-    code=None,
-    command_defs=None,
-    answer_defs=None,
+
+field_unknown_answer = AnswerFieldDef(
+	field_name=EFieldName.UNKNOWN_ANSWER,
+	field_type=FieldType(str)
+)
+
+set_on = CommandContract(
+    code=CommandCode.SET_ON,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!ON"]
+        )
+    ),
+    answer_defs=AnswerDef(fields=[field_unknown_answer]),
     is_release=True,
-    tags=[" "]
+    tags=[" "],
     user_manual_attrs=UserManualAttrs(
         description=""
     ),
 )
 
-get_freq = CommandContract(
-    code=None,
-    command_defs=None,
-    answer_defs=None,
+
+set_off = CommandContract(
+    code=CommandCode.SET_OFF,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!OFF"]
+        )
+    ),
+    answer_defs=AnswerDef(fields=[field_unknown_answer]),
     is_release=True,
-    tags=[" "]
+    tags=[" "],
     user_manual_attrs=UserManualAttrs(
         description=""
     ),
 )
 
-get_gain = CommandContract(
-    code=None,
-    command_defs=None,
-    answer_defs=None,
-    is_release=True,
-    tags=[" "]
+param_frequency = CommandParamDef(
+    name=EFieldName.FREQUENCY,
+    param_type=field_type_frequency,
     user_manual_attrs=UserManualAttrs(
-        description=""
-    ),
+        description="Frequency of the transducer"
+    )
 )
 
-get_temp = CommandContract(
-    code=None,
-    command_defs=None,
-    answer_defs=None,
-    is_release=True,
-    tags=[" "]
-    user_manual_attrs=UserManualAttrs(
-        description=""
+set_frequency = CommandContract(
+    code=CommandCode.SET_FREQ,
+    command_defs=CommandDef(
+        index_param=None,
+        setter_param=param_frequency,
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!f"]
+        )
     ),
+    answer_defs=create_list_with_unknown_answer_alternative(
+        AnswerDef(fields=[field_frequency])
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the frequency of the transducer on the device."
+    ),
+    is_release=True,
+    tags=["frequency", "transducer"]
 )
 
-get_type = CommandContract(
-    code=None,
-    command_defs=None,
-    answer_defs=None,
-    is_release=True,
-    tags=[" "]
+param_gain = CommandParamDef(
+    name=EFieldName.GAIN,
+    param_type=field_type_gain,
     user_manual_attrs=UserManualAttrs(
-        description=""
-    ),
+        description="Gain of the transducer"
+    )
 )
 
-get_type = CommandContract(
-    code=None,
-    command_defs=None,
-    answer_defs=None,
-    is_release=True,
-    tags=[" "]
-    user_manual_attrs=UserManualAttrs(
-        description=""
+
+set_gain = CommandContract(
+    code=CommandCode.SET_GAIN,
+    command_defs=CommandDef(
+        index_param=None,
+        setter_param=param_gain,
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!g", "!gain", "set_gain"]
+        )
     ),
+    answer_defs=create_list_with_unknown_answer_alternative(
+        AnswerDef(fields=[field_gain])
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the gain of the transducer on the device."
+    ),
+    is_release=True,
+    tags=["gain", "transducer"],
 )
 
-get_type = CommandContract(
-    code=None,
-    command_defs=None,
-    answer_defs=None,
-    is_release=True,
-    tags=[" "]
-    user_manual_attrs=UserManualAttrs(
-        description=""
-    ),
-)
-
-get_type = CommandContract(
-    code=None,
-    command_defs=None,
-    answer_defs=None,
-    is_release=True,
-    tags=[" "]
-    user_manual_attrs=UserManualAttrs(
-        description=""
-    ),
-)
-
-get_type = CommandContract(
-    code=None,
-    command_defs=None,
-    answer_defs=None,
-    is_release=True,
-    tags=[" "]
-    user_manual_attrs=UserManualAttrs(
-        description=""
-    ),
-)
 
 legacy_protocol = Protocol(
     version=Version(0, 0, 0),
     consts=DeviceParamConstants(),
     commands=[
         CommandListExport(
-            exports=[get_info, dash],
+            exports=[
+                        get_info, 
+                        dash,
+                        set_on,
+                        set_off,
+                        set_frequency,
+                        set_gain,
+                    ],
             descriptor=MetaExportDescriptor(min_protocol_version=version)
         )
          # freq
