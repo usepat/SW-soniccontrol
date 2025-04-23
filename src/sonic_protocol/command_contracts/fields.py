@@ -40,7 +40,7 @@ field_type_frequency_step = FieldType(
     si_unit=SIUnit.HERTZ,
     #si_prefix=SIPrefix.KILO,
 	max_value=DeviceParamConstantType.MAX_F_STEP,
-	min_value=np.uint32(10),
+	min_value=DeviceParamConstantType.MIN_F_STEP,
 )
 
 field_frequency = AnswerFieldDef(
