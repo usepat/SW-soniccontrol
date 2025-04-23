@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 
 from sonic_protocol import protocol
+from sonic_protocol import legacy_protocol
 from sonic_protocol.defs import DeviceType, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_builder import ProtocolBuilder
@@ -60,12 +61,12 @@ class DeviceBuilder:
                 builder_logger.debug("Device does not understand ?protocol command")
         elif not open_in_rescue_mode and is_legacy_device:
             builder_logger.debug("Building for legacy device")
-
-            protocol_builder = ProtocolBuilder(protocol.legacy_protocol)
+            protocol_version: Version = Version(1, 0, 0)
+            protocol_builder = ProtocolBuilder(legacy_protocol.legacy_protocol)
             device_type: DeviceType = DeviceType.CRYSTAL
             is_release: bool = True
             await comm.close_communication()
-            comm = LegacyCommunicator(logger=logger) #type: ignore
+            comm = LegacyCommunicator(logger=logger, protocol=legacy_protocol.legacy_protocol) #type: ignore
             await comm.open_communication(connection)
             #info = FirmwareInfo()  # Do we know Firmware Infos?
         else:

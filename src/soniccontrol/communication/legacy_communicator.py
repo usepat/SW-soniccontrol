@@ -1,8 +1,10 @@
 import asyncio
 import logging
-from typing import Final, Optional
+from pathlib import Path
+from typing import Final, List, Optional
 
 import attrs
+from sonic_protocol.defs import CommandContract, Protocol
 from soniccontrol.communication.connection import Connection, SerialConnection
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol
@@ -23,6 +25,8 @@ class LegacyCommunicator(Communicator):
     )
     _lock: asyncio.Lock = attrs.field(default=asyncio.Lock())
     _logger: logging.Logger = attrs.field(default=logging.getLogger())
+    _protocol: Protocol = attrs.field(default=None)
+
 
     _restart: bool = attrs.field(default=False, init=False)
     _message_counter: int = attrs.field(default=0, init=False)
@@ -30,7 +34,8 @@ class LegacyCommunicator(Communicator):
     def __attrs_post_init__(self) -> None:
         self._logger = logging.getLogger(self._logger.name + "." + LegacyCommunicator.__name__)
         #self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
-        self._protocol: CommunicationProtocol = SonicMessageProtocol()
+        self._messages = asyncio.Queue(maxsize=100)
+
 
         super().__init__()
 
@@ -54,7 +59,7 @@ class LegacyCommunicator(Communicator):
     
     async def open_communication(
         self, connection: Connection,
-        baudrate = 9600
+        baudrate = 115200
     ) -> None:
         self._connection = connection
         self._logger.debug("try open communication")
@@ -63,14 +68,14 @@ class LegacyCommunicator(Communicator):
 
         self._restart = False 
         self._reader, self._writer = await self._connection.open_connection()
-        self._writer.write(b"!SERIAL\n")
+        #self._writer.write(b"!SERIAL\n")
         await self._writer.drain()
-        self._answer_lines = []
+        await asyncio.sleep(10) # The sonic crystal takes very long until it is ready.
         while True:
             try:
                 answer = await asyncio.wait_for(self._reader.readline(), timeout=0.2)
                 self._logger.debug("Received: %s", answer)
-                self._answer_lines.append(answer.strip())
+                #self._answer_lines.append(answer.strip())
             except asyncio.TimeoutError:
                 self._logger.debug("Timeout while waiting for connection")
                 break
@@ -118,24 +123,59 @@ class LegacyCommunicator(Communicator):
 
             if PLATFORM == System.WINDOWS:
                 # FIXME: Quick fix. We have a weird error that the buffer does not get flushed somehow
-                await self._send_chunks(request_str.encode("uft-8"))    
+                await self._send_chunks(request_str.encode("utf-8"))    
             else:
-                self._writer.write(request_str.encode("uft-8"))
+                self._writer.write(request_str.encode("utf-8"))
                 await self._writer.drain()
-
+            code = 0
+            for export in self._protocol.commands:
+                commands: List[CommandContract] = export.exports if isinstance(export.exports, list) else [export.exports]
+                for command in commands:
+                    if command.command_defs is not None and not isinstance(command.command_defs, list):
+                        if isinstance(command.command_defs.sonic_text_attrs, list):
+                            for attr in command.command_defs.sonic_text_attrs:
+                                if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
+                                    string_identifier = getattr(attr, "string_identifier")
+                                    if string_identifier in request_str:
+                                        code = command.code
+                        elif command.command_defs.sonic_text_attrs.string_identifier is not None and (
+                            (isinstance(command.command_defs.sonic_text_attrs.string_identifier, str) and command.command_defs.sonic_text_attrs.string_identifier in request_str) or
+                            (isinstance(command.command_defs.sonic_text_attrs.string_identifier, list) and any(req in request_str for req in command.command_defs.sonic_text_attrs.string_identifier))
+                        ):
+                            code = command.code
+                    elif command.command_defs is not None and isinstance(command.command_defs, list): 
+                        for def_entry in command.command_defs:
+                            if def_entry is not None and not isinstance(def_entry.exports, list):
+                                if isinstance(def_entry.exports.sonic_text_attrs, list):
+                                    for attr in def_entry.exports.sonic_text_attrs:
+                                        if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
+                                            string_identifier = getattr(attr, "string_identifier")
+                                            if request_str in string_identifier:
+                                                code = command.code
+                            elif def_entry is not None and isinstance(def_entry.exports, list):
+                                for export in def_entry.exports:
+                                    if isinstance(export.sonic_text_attrs, list):
+                                        for attr in export.sonic_text_attrs:
+                                            if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
+                                                string_identifier = getattr(attr, "string_identifier")
+                                                if request_str in string_identifier:
+                                                    code = command.code
+                                    elif export.sonic_text_attrs.string_identifier is not None and request_str in export.sonic_text_attrs.string_identifier:
+                                        code = command.code
+            self._logger.info("Found command code: %s", code)
+            answer = str(code) + "#"
             while True:
                 try:
-                    answer = await asyncio.wait_for(self._reader.readline(), timeout=0.2)
-                    self._logger.debug("Received: %s", answer)
-                    self._answer_lines.append(answer.strip())
+                    answer_byte = await asyncio.wait_for(self._reader.readline(), timeout=0.5)
+                    answer += answer_byte.decode().strip()
                 except asyncio.TimeoutError:
                     self._logger.debug("Timeout while waiting for connection")
                     break
-
+            self._logger.debug("Received: %s", answer)
+            self._messages.put_nowait(answer)
             if request_str != "-":
-                self._logger.info("Receive Answer: %s", self._answer_lines)
-            # Return last, I need to test if we even need to understand multiline answer. The code above, is that I can at least debug it
-            return self._answer_lines[-1] if len(self._answer_lines) > 0 else ""
+                self._logger.info("Receive Answer: %s", answer)
+            return answer
 
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str:
         if not self._connection_opened.is_set():
@@ -159,7 +199,7 @@ class LegacyCommunicator(Communicator):
             raise ConnectionError("The connection was closed")
     
     async def read_message(self) -> str:
-        return self._answer_lines.pop(0) if len(self._answer_lines) > 0 else "No message"
+        return await self._messages.get()
 
     async def close_communication(self, restart : bool = False) -> None:
         self._restart = restart
@@ -174,3 +214,23 @@ class LegacyCommunicator(Communicator):
     async def change_baudrate(self, baudrate: int) -> None:
         await self.close_communication(restart=True)
         await self.open_communication(self._connection, baudrate)
+
+
+async def main():
+    # Example usage
+    url = "COM19"
+    connection = SerialConnection(url=url, baudrate=115200, connection_name=Path(url).name)
+    communicator = LegacyCommunicator()
+    await communicator.open_communication(connection)
+    response = await communicator.send_and_wait_for_response("?info\n")
+    print("Response:", response)
+    message = ""
+    while message != "No message":
+        message = await communicator.read_message()
+        print("Message:", message)
+    await communicator.close_communication()
+    # Example of sending a message
+    # Add your connection setup and usage here
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -158,7 +158,7 @@ class RescueWindow(DeviceWindow):
 
 
 class KnownDeviceWindow(DeviceWindow):
-    def __init__(self, device: SonicDevice, root, connection_name: str):
+    def __init__(self, device: SonicDevice, root, connection_name: str, is_legacy_device: bool = False):
         self._logger: logging.Logger = logging.getLogger(connection_name + ".ui")
         try:
             self._device = device
@@ -166,7 +166,7 @@ class KnownDeviceWindow(DeviceWindow):
             super().__init__(self._logger, self._view, self._device.communicator)
 
             # Models
-            self._updater = Updater(self._device)
+            self._updater = Updater(self._device, time_waiting_between_updates_ms=(1000 * is_legacy_device))
             self._proc_controller = ProcedureController(self._device, self._updater)
             self._proc_controlling_model = ProcControllingModel()
             self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)

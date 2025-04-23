@@ -3,13 +3,13 @@ import numpy as np
 from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative, create_version_field
 from sonic_protocol.protocol import (build_date_field, build_hash_field, field_device_type)
 from sonic_protocol.defs import (
-    CommandCode, CommandExport, CommandListExport, CommandParamDef, ConverterType, DeviceParamConstants, FieldType, MetaExport, MetaExportDescriptor, Procedure, 
-    Protocol, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
+    CommandCode, CommandExport, CommandListExport, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, FieldType, MetaExport, MetaExportDescriptor, Procedure, 
+    Protocol, SIPrefix, SIUnit, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType,
 )
 from sonic_protocol.command_contracts.fields import (
-    field_frequency, field_gain, field_temperature_kelvin, field_urms, field_irms, 
-    field_phase, field_signal, field_type_frequency, field_type_gain,
+    field_temperature_kelvin, field_urms, field_irms, 
+    field_phase, field_signal,
 )
 
 
@@ -17,7 +17,7 @@ from sonic_protocol.field_names import EFieldName
 
 
 # Version instance
-version = Version(major=0, minor=0, patch=0)
+version = Version(major=1, minor=0, patch=0)
 
 
 
@@ -53,8 +53,6 @@ dash = CommandContract(
             answer_defs=AnswerDef(
                 fields=[
                     #error_code_field,
-                    field_frequency,
-                    field_gain,
                     #procedure_field,
                     field_temperature_kelvin,
                     field_urms,
@@ -106,6 +104,19 @@ set_off = CommandContract(
         description=""
     ),
 )
+field_type_gain = FieldType(
+    field_type=np.uint8,
+	max_value=DeviceParamConstantType.MAX_GAIN,
+	min_value=DeviceParamConstantType.MIN_GAIN,
+    )
+
+field_type_frequency = FieldType(
+    field_type=np.uint32,
+    si_unit=SIUnit.HERTZ,
+    si_prefix=SIPrefix.NONE,
+	max_value=DeviceParamConstantType.MAX_FREQUENCY,
+	min_value=DeviceParamConstantType.MIN_FREQUENCY,
+    )
 
 param_frequency = CommandParamDef(
     name=EFieldName.FREQUENCY,
@@ -113,6 +124,14 @@ param_frequency = CommandParamDef(
     user_manual_attrs=UserManualAttrs(
         description="Frequency of the transducer"
     )
+)
+field_gain = AnswerFieldDef(
+    field_name=EFieldName.GAIN,
+    field_type=field_type_gain
+)
+field_frequency = AnswerFieldDef(
+    field_name=EFieldName.FREQUENCY,
+    field_type=field_type_frequency
 )
 
 set_frequency = CommandContract(
@@ -133,6 +152,7 @@ set_frequency = CommandContract(
     is_release=True,
     tags=["frequency", "transducer"]
 )
+
 
 param_gain = CommandParamDef(
     name=EFieldName.GAIN,
@@ -163,9 +183,17 @@ set_gain = CommandContract(
 )
 
 
-legacy_protocol = Protocol(
-    version=Version(0, 0, 0),
-    consts=DeviceParamConstants(),
+class LegacyProtocol(Protocol):
+    @property
+    def major_version(self) -> int:
+        return 2
+
+legacy_protocol = LegacyProtocol(
+    version=Version(1, 0, 0),
+    consts=DeviceParamConstants(
+        min_frequency=600000,
+        max_frequency=6000000,
+    ),
     commands=[
         CommandListExport(
             exports=[
@@ -178,28 +206,5 @@ legacy_protocol = Protocol(
                     ],
             descriptor=MetaExportDescriptor(min_protocol_version=version)
         )
-         # freq
-        # gain
-        # temp
-        # tpcb
-        # sens
-        # prot
-        # list
-        # pval
-        # exD0
-        # exD1
-        # ?duty
-        #  ?
-        # -
-        # =
-        # !KHZ
-        # !MHZ
-        # !ON
-        # !OFF
-        # !WIPE
-        # !AUTO
-        # !SERIAL
-        # """ 
     ]
-
 )

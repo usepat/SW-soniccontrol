@@ -156,6 +156,7 @@ class AnswerValidator:
             bool: True if the data matches the pattern and conversions are successful, False otherwise.
         """
 
+        logging.info("Seraching: %s", data)
         result: Optional[re.Match] = self._compiled_pattern.search(data)
         if result is None:
             return Answer(data, False, True)
@@ -178,5 +179,5 @@ class AnswerValidator:
             result_dict[field_name] = worker.convert_func(kwargs)
 
         answer = Answer(data, True, True, field_value_dict=result_dict)
-
+        logging.info("AnswerValidator: %s", answer)
         return answer

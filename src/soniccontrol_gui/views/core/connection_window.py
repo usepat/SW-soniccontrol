@@ -41,7 +41,7 @@ class DeviceWindowManager:
         return device_window
 
     def open_known_device_window(self, sonicamp: SonicDevice, connection : Connection, is_legacy_device: bool = False) -> DeviceWindow:
-        device_window = KnownDeviceWindow(sonicamp, self._root, connection.connection_name)
+        device_window = KnownDeviceWindow(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
         self._open_device_window(device_window, connection)
         return device_window
     
