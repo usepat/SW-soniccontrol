@@ -120,49 +120,17 @@ class LegacyCommunicator(Communicator):
         async with self._lock:
             if request_str != "-":
                 self._logger.info("Send command: %s", request_str)
-
+            code = self.deduce_command_code(request_str)
+            request_str = request_str + '\n'
             if PLATFORM == System.WINDOWS:
                 # FIXME: Quick fix. We have a weird error that the buffer does not get flushed somehow
                 await self._send_chunks(request_str.encode("utf-8"))    
             else:
                 self._writer.write(request_str.encode("utf-8"))
                 await self._writer.drain()
-            code = 0
-            for export in self._protocol.commands:
-                commands: List[CommandContract] = export.exports if isinstance(export.exports, list) else [export.exports]
-                for command in commands:
-                    if command.command_defs is not None and not isinstance(command.command_defs, list):
-                        if isinstance(command.command_defs.sonic_text_attrs, list):
-                            for attr in command.command_defs.sonic_text_attrs:
-                                if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
-                                    string_identifier = getattr(attr, "string_identifier")
-                                    if string_identifier in request_str:
-                                        code = command.code
-                        elif command.command_defs.sonic_text_attrs.string_identifier is not None and (
-                            (isinstance(command.command_defs.sonic_text_attrs.string_identifier, str) and command.command_defs.sonic_text_attrs.string_identifier in request_str) or
-                            (isinstance(command.command_defs.sonic_text_attrs.string_identifier, list) and any(req in request_str for req in command.command_defs.sonic_text_attrs.string_identifier))
-                        ):
-                            code = command.code
-                    elif command.command_defs is not None and isinstance(command.command_defs, list): 
-                        for def_entry in command.command_defs:
-                            if def_entry is not None and not isinstance(def_entry.exports, list):
-                                if isinstance(def_entry.exports.sonic_text_attrs, list):
-                                    for attr in def_entry.exports.sonic_text_attrs:
-                                        if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
-                                            string_identifier = getattr(attr, "string_identifier")
-                                            if request_str in string_identifier:
-                                                code = command.code
-                            elif def_entry is not None and isinstance(def_entry.exports, list):
-                                for export in def_entry.exports:
-                                    if isinstance(export.sonic_text_attrs, list):
-                                        for attr in export.sonic_text_attrs:
-                                            if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
-                                                string_identifier = getattr(attr, "string_identifier")
-                                                if request_str in string_identifier:
-                                                    code = command.code
-                                    elif export.sonic_text_attrs.string_identifier is not None and request_str in export.sonic_text_attrs.string_identifier:
-                                        code = command.code
-            self._logger.info("Found command code: %s", code)
+            
+            
+            #self._logger.info("Found command code: %s", code)
             answer = str(code) + "#"
             while True:
                 try:
@@ -214,6 +182,44 @@ class LegacyCommunicator(Communicator):
     async def change_baudrate(self, baudrate: int) -> None:
         await self.close_communication(restart=True)
         await self.open_communication(self._connection, baudrate)
+
+    def deduce_command_code(self, request_str: str) -> int:
+        code = 0
+        for export in self._protocol.commands:
+                commands: List[CommandContract] = export.exports if isinstance(export.exports, list) else [export.exports]
+                for command in commands:
+                    if command.command_defs is not None and not isinstance(command.command_defs, list):
+                        if isinstance(command.command_defs.sonic_text_attrs, list):
+                            for attr in command.command_defs.sonic_text_attrs:
+                                if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
+                                    string_identifier = getattr(attr, "string_identifier")
+                                    if string_identifier in request_str:
+                                        code = command.code
+                        elif command.command_defs.sonic_text_attrs.string_identifier is not None and (
+                            (isinstance(command.command_defs.sonic_text_attrs.string_identifier, str) and command.command_defs.sonic_text_attrs.string_identifier in request_str) or
+                            (isinstance(command.command_defs.sonic_text_attrs.string_identifier, list) and any(req in request_str for req in command.command_defs.sonic_text_attrs.string_identifier))
+                        ):
+                            code = command.code
+                    elif command.command_defs is not None and isinstance(command.command_defs, list): 
+                        for def_entry in command.command_defs:
+                            if def_entry is not None and not isinstance(def_entry.exports, list):
+                                if isinstance(def_entry.exports.sonic_text_attrs, list):
+                                    for attr in def_entry.exports.sonic_text_attrs:
+                                        if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
+                                            string_identifier = getattr(attr, "string_identifier")
+                                            if request_str in string_identifier:
+                                                code = command.code
+                            elif def_entry is not None and isinstance(def_entry.exports, list):
+                                for export in def_entry.exports:
+                                    if isinstance(export.sonic_text_attrs, list):
+                                        for attr in export.sonic_text_attrs:
+                                            if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
+                                                string_identifier = getattr(attr, "string_identifier")
+                                                if request_str in string_identifier:
+                                                    code = command.code
+                                    elif export.sonic_text_attrs.string_identifier is not None and request_str in export.sonic_text_attrs.string_identifier:
+                                        code = command.code
+        return code
 
 
 async def main():

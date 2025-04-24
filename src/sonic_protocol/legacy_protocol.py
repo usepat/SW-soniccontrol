@@ -7,10 +7,9 @@ from sonic_protocol.defs import (
     Protocol, SIPrefix, SIUnit, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType,
 )
-from sonic_protocol.command_contracts.fields import (
-    field_temperature_kelvin, field_urms, field_irms, 
-    field_phase, field_signal,
-)
+# from sonic_protocol.command_contracts.fields import (
+
+# )
 
 
 from sonic_protocol.field_names import EFieldName
@@ -43,30 +42,7 @@ get_info = CommandContract(
 
 
 
-dash = CommandContract(
-            code=CommandCode.GET_UPDATE,
-            command_defs=CommandDef(
-                sonic_text_attrs=SonicTextCommandAttrs(
-                    string_identifier=["-"]
-                )
-            ),
-            answer_defs=AnswerDef(
-                fields=[
-                    #error_code_field,
-                    #procedure_field,
-                    field_temperature_kelvin,
-                    field_urms,
-                    field_irms,
-                    field_phase,
-                    field_signal,
-                ]
-            ),
-            user_manual_attrs=UserManualAttrs(
-                description="Mainly used by sonic control to get a short and computer friendly parsable status update."
-            ),
-            is_release=True,
-            tags=["update", "status"]
-        )
+
 
 
 field_unknown_answer = AnswerFieldDef(
@@ -181,6 +157,89 @@ set_gain = CommandContract(
     is_release=True,
     tags=["gain", "transducer"],
 )
+
+field_error_code = AnswerFieldDef(
+    field_name=EFieldName.ERROR_CODE,
+    field_type=FieldType(
+        field_type=np.uint8,
+    )
+)
+
+field_frequency_no_unit = AnswerFieldDef(
+    field_name=EFieldName.FREQUENCY,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+field_procedure = AnswerFieldDef(
+    field_name=EFieldName.UNDEFINED,
+    field_type=FieldType(
+        field_type=str,
+    )
+)
+
+field_signal = AnswerFieldDef(
+    field_name=EFieldName.SIGNAL,
+    field_type=FieldType(
+        field_type=bool,
+    )
+)
+
+field_temperature = AnswerFieldDef(
+    field_name=EFieldName.TEMPERATURE,
+    field_type=FieldType(
+        field_type=float,
+    )
+)
+
+field_urms = AnswerFieldDef(
+    field_name=EFieldName.URMS,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+field_irms = AnswerFieldDef(
+    field_name=EFieldName.IRMS,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+field_phase = AnswerFieldDef(
+    field_name=EFieldName.PHASE,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+dash = CommandContract(
+            code=CommandCode.GET_UPDATE,
+            command_defs=CommandDef(
+                sonic_text_attrs=SonicTextCommandAttrs(
+                    string_identifier=["-"]
+                )
+            ),
+            answer_defs=AnswerDef(
+                fields=[
+                    field_error_code,
+                    field_frequency_no_unit,
+                    field_gain,
+                    field_procedure,
+                    field_signal,
+                    field_temperature,
+                    field_urms,
+                    field_irms,
+                    field_phase,
+                ]
+            ),
+            user_manual_attrs=UserManualAttrs(
+                description="Mainly used by sonic control to get a short and computer friendly parsable status update."
+            ),
+            is_release=True,
+            tags=["update", "status"]
+        )
 
 
 class LegacyProtocol(Protocol):

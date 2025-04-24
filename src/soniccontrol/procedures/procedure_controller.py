@@ -87,7 +87,11 @@ class ProcedureController(EventManager):
         self.emit(Event(ProcedureController.PROCEDURE_STOPPED))
 
     def _on_update(self, event: Event) -> None:
-        procedure: protocol_defs.Procedure = event.data["status"][EFieldName.PROCEDURE]
+        try:
+            procedure: protocol_defs.Procedure = event.data["status"][EFieldName.PROCEDURE]
+        except KeyError:
+            self._logger.debug("No procedure status found in event")
+            return
         proc_type: ProcedureType | None = None
         match procedure:
             case protocol_defs.Procedure.NO_PROC:

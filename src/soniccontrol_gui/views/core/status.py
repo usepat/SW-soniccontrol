@@ -49,6 +49,7 @@ class StatusBar(UIComponent):
             EFieldName.SIGNAL: "Signal",
             EFieldName.PROCEDURE: "Procedure",
             EFieldName.ERROR_CODE: "Error Code",
+            EFieldName.UNDEFINED: "Undefined",
         }
         status_field_text_representations = {
             field: field_labels[field] + ": " + converter.convert(status[field])
