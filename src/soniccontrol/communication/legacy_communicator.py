@@ -33,6 +33,8 @@ class LegacyCommunicator(Communicator):
 
     def __attrs_post_init__(self) -> None:
         self._logger = logging.getLogger(self._logger.name + "." + LegacyCommunicator.__name__)
+        self._device_logger: logging.Logger = logging.getLogger(logger.name + ".device")
+
         #self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
         self._messages = asyncio.Queue(maxsize=100)
 
@@ -98,6 +100,7 @@ class LegacyCommunicator(Communicator):
                 try:
                     message = self._wait_for_response(command)
                     self._messages.put_nowait(message)
+                    self._device_logger.info("%s", message)
                     if future is not None and not future.done():
                         future.set_result(message)
                         self._logger.debug("Set result for future")
@@ -108,6 +111,7 @@ class LegacyCommunicator(Communicator):
                 try:
                     message = (await asyncio.wait_for(self._reader.readline(), timeout=0.2)).decode(ENCODING)
                     self._messages.put_nowait(message)
+                    self._device_logger.info("%s", message)
                     self._handle_unexpected_message(message)
                 except asyncio.TimeoutError:
                     pass
