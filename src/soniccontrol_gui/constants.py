@@ -95,6 +95,7 @@ class _UIStringsEN:
     HOME_CONTROL_LABEL: Final[str] = "Manual Control"
     FREQ_PLACEHOLDER: Final[str] = "Set Frequency..."
     GAIN_PLACEHOLDER: Final[str] = "Set Gain..."
+    APPLY_SETTINGS: Final[str] = "Apply Settings"
     SAVE_LABEL: Final[str] = "Save"
     SAVE_AS_LABEL: Final[str] = "Save As"
     SAVE_PLOT_LABEL: Final[str] = "Save Plot"

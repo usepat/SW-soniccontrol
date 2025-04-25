@@ -27,6 +27,9 @@ class Updater(EventManager):
         if self._task is not None:
             await self._task
 
+    def set_update_interval(self, time_waiting_between_updates_ms: int) -> None:
+        self._time_waiting_between_updates_ms = time_waiting_between_updates_ms
+
     async def update(self) -> None:
         # HINT: If ever needed to update different device attributes, we can do that, by checking what components the device has
         # and then additionally call other commands to get this information

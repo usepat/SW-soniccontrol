@@ -16,6 +16,7 @@ from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
 from soniccontrol.scripting.scripting_facade import BuiltInFunctions
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol_gui.views.configuration.settings import Settings
 from soniccontrol_gui.views.control.log_storage import LogStorage, NotDeviceLogFilter
 from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
@@ -193,6 +194,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
             self._info = Info(self)
             self._configuration = Configuration(self, self._device, self._proc_controller)
+            self._settings = Settings(self, self._device, self._updater)
             self._flashing = Flashing(self, self._logger, self._device, self._app_state, self._updater)
             self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
