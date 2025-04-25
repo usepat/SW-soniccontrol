@@ -70,10 +70,9 @@ class LegacyCommunicator(Communicator):
         self._reader, self._writer = await self._connection.open_connection()
         #self._writer.write(b"!SERIAL\n")
         await self._writer.drain()
-        await asyncio.sleep(10) # The sonic crystal takes very long until it is ready.
         while True:
             try:
-                answer = await asyncio.wait_for(self._reader.readline(), timeout=0.2)
+                answer = await asyncio.wait_for(self._reader.readline(), timeout=10)
                 self._logger.debug("Received: %s", answer)
                 #self._answer_lines.append(answer.strip())
             except asyncio.TimeoutError:

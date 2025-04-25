@@ -139,6 +139,12 @@ class PrimitiveTypeConverter(Converter):
 
     def validate_str(self, text: str) -> bool: 
         try:
+            if self._target_class is bool:
+                lowered = text.strip().lower()
+                if lowered in ('true', '1', 'false', '0'):
+                    return True
+                else:
+                    return False
             self._target_class(text)
         except Exception as _:
             return False
@@ -146,6 +152,12 @@ class PrimitiveTypeConverter(Converter):
             return True
 
     def convert_str_to_val(self, text: str) -> Any: 
+        if self._target_class is bool:
+            lowered = text.strip().lower()
+            if lowered in ('true', '1'):
+                return True
+            else:
+                return False
         return self._target_class(text)
 
 
