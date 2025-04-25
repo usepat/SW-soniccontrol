@@ -66,7 +66,7 @@ class DataFrameField(fields.Field):
     
 
 class ExperimentDataRowSchema(Schema):
-    timestamp = fields.Time(required=True)
+    timestamp = fields.DateTime(required=True)
     freq = fields.Integer(required=True, data_key="frequency")
     gain = fields.Integer(required=True)
     urms = fields.Float(required=True)
