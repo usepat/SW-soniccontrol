@@ -78,3 +78,10 @@ class EFieldName(Enum):
     LOG_LEVEL = "log_level"
     LOGGER_NAME = "logger_name"
 
+    # Legacy Fields
+    RANG = "rang"
+    STEP = "step"
+    SING = "sing"
+    PAUS = "paus"
+
+

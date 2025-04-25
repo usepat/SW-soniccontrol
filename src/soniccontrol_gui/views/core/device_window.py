@@ -211,6 +211,7 @@ class KnownDeviceWindow(DeviceWindow):
                 self._proc_controlling.view,
                 self._editor.view, 
                 self._configuration.view, 
+                self._settings.view,
                 self._flashing.view,
             ], right_one=False)
             self._view.add_tab_views([

@@ -214,5 +214,5 @@ class AnswerValidator:
             result_dict[field_name] = worker.convert_func(kwargs)
 
         answer = Answer(data, True, True, field_value_dict=result_dict)
-        logging.info("AnswerValidator: %s", answer)
+        #logging.info("AnswerValidator: %s", answer)
         return answer

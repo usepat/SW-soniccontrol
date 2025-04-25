@@ -214,6 +214,55 @@ field_phase = AnswerFieldDef(
     )
 )
 
+field_rang = AnswerFieldDef(
+    field_name=EFieldName.RANG,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+field_step = AnswerFieldDef(
+    field_name=EFieldName.STEP,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+field_sing = AnswerFieldDef(
+    field_name=EFieldName.SING,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+field_paus = AnswerFieldDef(
+    field_name=EFieldName.PAUS,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+get_pval = CommandContract(
+    code=CommandCode.GET_PVAL,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?pval"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            field_rang,
+            field_step,
+            field_sing,
+            field_paus,
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get the pval of the transducer on the device."
+    ),
+    is_release=True
+)
+
 dash = CommandContract(
             code=CommandCode.GET_UPDATE,
             command_defs=CommandDef(
@@ -262,6 +311,7 @@ legacy_protocol = LegacyProtocol(
                         set_off,
                         set_frequency,
                         set_gain,
+                        get_pval,
                     ],
             descriptor=MetaExportDescriptor(min_protocol_version=version)
         )

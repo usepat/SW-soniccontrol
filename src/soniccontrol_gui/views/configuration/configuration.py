@@ -257,7 +257,7 @@ class ConfigurationView(TabView):
 
     @property
     def tab_title(self) -> str:
-        return ui_labels.SETTINGS_LABEL
+        return ui_labels.ATF_CONFIGURATION_LABEL
 
     def _initialize_children(self) -> None:
         tab_name = "configuration"

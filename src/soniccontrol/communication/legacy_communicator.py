@@ -33,10 +33,13 @@ class LegacyCommunicator(Communicator):
 
     def __attrs_post_init__(self) -> None:
         self._logger = logging.getLogger(self._logger.name + "." + LegacyCommunicator.__name__)
-        self._device_logger: logging.Logger = logging.getLogger(logger.name + ".device")
+        self._device_logger: logging.Logger = logging.getLogger(self._logger.name + ".device")
+        self._logger.setLevel("DEBUG") # FIXME is there a better way to set the log level?
 
         #self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
         self._messages = asyncio.Queue(maxsize=100)
+        self._send_lock = asyncio.Lock()
+
 
 
         super().__init__()
@@ -53,8 +56,7 @@ class LegacyCommunicator(Communicator):
 
     @property
     def protocol(self) -> CommunicationProtocol: 
-        assert False
-        return CommunicationProtocol()
+        return self._protocol
 
     @property
     def connection_opened(self) -> asyncio.Event:
@@ -65,23 +67,27 @@ class LegacyCommunicator(Communicator):
         baudrate = 115200
     ) -> None:
         self._connection = connection
-        self._logger.debug("try open communication")
+        self._logger.info("try open communication")
         if isinstance(connection, SerialConnection):
             connection.baudrate = baudrate
 
         self._restart = False 
         self._reader, self._writer = await self._connection.open_connection()
         #self._writer.write(b"!SERIAL\n")
-        await self._writer.drain()
+        #await self._writer.drain()
+        timeout = 10  # Crystal devices takes a long time to respond after connecting
         while True:
             try:
-                answer = await asyncio.wait_for(self._reader.readline(), timeout=10)
-                self._logger.debug("Received: %s", answer)
+                answer = await asyncio.wait_for(self._reader.readline(), timeout=timeout)
+                timeout = 0.2 # Change timeout back so we dont have to wait for 10 after the last line
+                self._logger.info("Received: %s", answer)
                 #self._answer_lines.append(answer.strip())
             except asyncio.TimeoutError:
-                self._logger.debug("Timeout while waiting for connection")
+                self._logger.info("Timeout while waiting for connection")
                 break
-        asyncio.create_task(self._serial_master())
+        
+
+        self._serial_master_task = asyncio.create_task(self._serial_master())
         self._connection_opened.set()
 
     async def _serial_master(self) -> None:
@@ -89,31 +95,47 @@ class LegacyCommunicator(Communicator):
         assert self._writer is not None
         while True:
             try:
-                command, future = self._command_queue.get_nowait()
+                command, code, future = self._command_queue.get_nowait()
             except asyncio.QueueEmpty:
-                command, future = None, None
-            
-            if command is not None:
-                self._writer.write(command)
+                command, code, future = None, None, None
+            if command is not None and code is not None:
+                await self._check_for_unexpected_message() # Before sending command, check if there is an unexpected message
+                self._writer.write(command.encode(ENCODING))
                 await self._writer.drain()
                 try:
-                    message = self._wait_for_response(command)
-                    self._messages.put_nowait(message)
-                    self._device_logger.info("%s", message)
+                    message = await self._wait_for_response(command, code)
+                    try:
+                        self._messages.put_nowait(message)
+                    except asyncio.QueueFull:
+                        self._messages.get_nowait()  # Remove the oldest
+                        self._messages.put_nowait(message)
+                    self._device_logger.info("Expected: %s", message.strip())
                     if future is not None and not future.done():
                         future.set_result(message)
-                        self._logger.debug("Set result for future")
+                        self._logger.info("Set result for future")
                 except asyncio.TimeoutError:
                     # send_and_wait_for_response is responsbile for handling the timeout and termination the connection
-                    raise asyncio.TimeoutError("Timeout while waiting for response")
+                    if future is not None and not future.done():
+                        future.set_exception(asyncio.TimeoutError("Timeout while waiting for response"))
+                    else:
+                        assert False, "Future should not be None if we are waiting for a response"
             else:
-                try:
-                    message = (await asyncio.wait_for(self._reader.readline(), timeout=0.2)).decode(ENCODING)
-                    self._messages.put_nowait(message)
-                    self._device_logger.info("%s", message)
-                    self._handle_unexpected_message(message)
-                except asyncio.TimeoutError:
-                    pass
+                await self._check_for_unexpected_message()
+
+    async def _check_for_unexpected_message(self) -> None:
+        assert self._reader is not None
+        try:
+            answer = await asyncio.wait_for(self._reader.readline(), timeout=0.3)
+            message = answer.decode(ENCODING)
+            try:
+                self._messages.put_nowait(message)
+            except asyncio.QueueFull:
+                self._messages.get_nowait()  # Remove the oldest
+                self._messages.put_nowait(message)
+            self._device_logger.info("Unexpected: %s", message.strip())
+            self._handle_unexpected_message(message)
+        except asyncio.TimeoutError:
+            pass
 
     def _handle_unexpected_message(self, message: str) -> None:
         # TODO
@@ -122,21 +144,24 @@ class LegacyCommunicator(Communicator):
         #
         return
 
-    async def _wait_for_response(self, command: str) -> str:
+    async def _wait_for_response(self, command: str, code: int) -> str:
         assert self._reader is not None
-        time_out = 0.5 if command.strip() != "-" else 1
-        
-        code = self.deduce_command_code(command)
+        timeout = 0.5 if command.strip() != "-" else 1
         message = str(code) + "#"
-        if code != 3:
-            self._logger.debug("Got command code: %s", code)
         for _ in range(self._get_number_of_lines(code)):
-            message += (await asyncio.wait_for(self._reader.readline(), timeout=time_out)).decode(ENCODING)
-            self._logger.debug("Received: %s", message)
+            try:
+                answer = await asyncio.wait_for(self._reader.readline(), timeout=timeout)
+                message += answer.decode(ENCODING)
+            except asyncio.TimeoutError:
+                raise asyncio.TimeoutError("Timeout while waiting for response")
+        if command.strip() != "-":
+            self._logger.info("Received: %s", message)
         return message
 
     def _get_number_of_lines(self, code: int) -> int:
         if code == CommandCode.GET_INFO:
+            return 3
+        elif code == CommandCode.GET_PVAL:
             return 4
         return 1
 
@@ -146,12 +171,15 @@ class LegacyCommunicator(Communicator):
                 self._logger.info("Send command: %s", request_str)
             request_str = request_str + '\n'
             future = asyncio.get_event_loop().create_future()
-            await self._command_queue.put((request_str, future))
+            code = self.deduce_command_code(request_str)
+            if code != 3:
+                self._logger.info("Got command code: %s", code)
+            await self._command_queue.put((request_str, code, future))
             if request_str.strip() != "-":
-                self._logger.debug("Sending: %s", request_str)
+                self._logger.info("Sending: %s", request_str)
             answer = await future
             if request_str.strip() != "-":
-                self._logger.debug("Received: %s", answer)
+                self._logger.info("Received: %s", answer)
         except asyncio.TimeoutError:
             # send_and_wait_for_response is responsbile for handling the timeout and termination the connection
             raise asyncio.TimeoutError("Timeout while waiting for response")
@@ -160,27 +188,32 @@ class LegacyCommunicator(Communicator):
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str:
         if not self._connection_opened.is_set():
             raise ConnectionError("Communicator is not connected")
+        async with self._send_lock:
+            MAX_RETRIES = 3 
+            for i in range(1, MAX_RETRIES + 1):
+                try:
+                    return await self._send_and_get(request)
+                except asyncio.TimeoutError:
+                    self._logger.warn("%d th attempt of %d. Device did not respond when sending %s", i, MAX_RETRIES, request)
+                
+                # The message fetcher runs as a task and its exceptions are not propagated
+                # so we have to check here (or somewhere else) if it raised an error
 
-        MAX_RETRIES = 3 
-        for i in range(1, MAX_RETRIES + 1):
-            try:
-                return await self._send_and_get(request)
-            except asyncio.TimeoutError:
-                self._logger.warn("%d th attempt of %d. Device did not respond when sending %s", i, MAX_RETRIES, request)
-            
-            # The message fetcher runs as a task and its exceptions are not propagated
-            # so we have to check here (or somewhere else) if it raised an error
-
-        if self._connection_opened.is_set():
-            await self.close_communication()
-            raise ConnectionError("Device is not responding")
-        else:
-            raise ConnectionError("The connection was closed")
+            if self._connection_opened.is_set():
+                await self.close_communication()
+                raise ConnectionError("Device is not responding")
+            else:
+                raise ConnectionError("The connection was closed")
     
     async def read_message(self) -> str:
         return await self._messages.get()
 
     async def close_communication(self, restart : bool = False) -> None:
+        self._serial_master_task.cancel()
+        try:
+            await self._serial_master_task
+        except asyncio.CancelledError:
+            self._logger.info("Serial master task cancelled")
         self._restart = restart
         self._connection_opened.clear()
         await self._connection.close_connection()
