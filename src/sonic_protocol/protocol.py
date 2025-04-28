@@ -325,12 +325,6 @@ notify_proc_failure = CommandContract(
 
 flash_commands: List[CommandContract] = [flash_usb, flash_uart9600, flash_uart115200]
 
-legacy_protocol = Protocol(
-    version=Version(0, 0, 0),
-    consts=DeviceParamConstants(),
-    commands=[]
-)
-
 protocol = Protocol(
     version=Version(1, 0, 0),
     consts=[

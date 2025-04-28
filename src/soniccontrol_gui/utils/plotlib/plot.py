@@ -113,7 +113,7 @@ class Plot(EventManager):
            
 
     def update_data(self, data: pd.DataFrame):
-        print(f"📦 update_data received timestamp dtype: {data['timestamp'].dtype} | id={id(data)}")
+        #print(f"📦 update_data received timestamp dtype: {data['timestamp'].dtype} | id={id(data)}")
         if self._dataAttrNameXAxis in data.columns:
             timestamp_col = data[self._dataAttrNameXAxis]
             # If it's object, check for actual types inside

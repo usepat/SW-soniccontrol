@@ -16,6 +16,7 @@ from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
 from soniccontrol.scripting.scripting_facade import BuiltInFunctions
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol_gui.views.configuration.settings import Settings
 from soniccontrol_gui.views.control.log_storage import LogStorage, NotDeviceLogFilter
 from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
@@ -158,7 +159,7 @@ class RescueWindow(DeviceWindow):
 
 
 class KnownDeviceWindow(DeviceWindow):
-    def __init__(self, device: SonicDevice, root, connection_name: str):
+    def __init__(self, device: SonicDevice, root, connection_name: str, is_legacy_device: bool = False):
         self._logger: logging.Logger = logging.getLogger(connection_name + ".ui")
         try:
             self._device = device
@@ -166,7 +167,7 @@ class KnownDeviceWindow(DeviceWindow):
             super().__init__(self._logger, self._view, self._device.communicator)
 
             # Models
-            self._updater = Updater(self._device)
+            self._updater = Updater(self._device, time_waiting_between_updates_ms=(1000 * is_legacy_device))
             self._proc_controller = ProcedureController(self._device, self._updater)
             self._proc_controlling_model = ProcControllingModel()
             self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)
@@ -193,6 +194,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
             self._info = Info(self)
             self._configuration = Configuration(self, self._device, self._proc_controller)
+            self._settings = Settings(self, self._device, self._updater)
             self._flashing = Flashing(self, self._logger, self._device, self._app_state, self._updater)
             self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
             self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
@@ -209,6 +211,7 @@ class KnownDeviceWindow(DeviceWindow):
                 self._proc_controlling.view,
                 self._editor.view, 
                 self._configuration.view, 
+                self._settings.view,
                 self._flashing.view,
             ], right_one=False)
             self._view.add_tab_views([

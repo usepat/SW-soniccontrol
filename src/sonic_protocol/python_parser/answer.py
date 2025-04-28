@@ -131,6 +131,9 @@ class AnswerValidator:
         
         keyword_iter = iter(keywords)
         segments = re.split(r"(\(.*?\))", pattern)
+        if len(segments) != (2 * len(keywords)) + 1:
+            # TODO @Thomas add documentation why this is needed
+            segments = AnswerValidator.split_top_level_groups(pattern)
         processed = "".join(
             (
                 f"(?P<{next(keyword_iter)}>{segment[1:-1]})"
@@ -143,6 +146,39 @@ class AnswerValidator:
         assert (next(keyword_iter, None) is None)
 
         return processed
+    
+    @staticmethod
+    def split_top_level_groups(pattern):
+        segments = []
+        buffer = ''
+        depth = 0
+
+        for i, char in enumerate(pattern):
+            if char == '(':
+                if depth == 0 and buffer:
+                    segments.append(buffer)
+                    buffer = ''
+                depth += 1
+            elif char == ')':
+                depth -= 1
+            elif char == '#' and depth == 0:
+                if buffer:
+                    segments.append(buffer)
+                    buffer = ''
+                segments.append('#')
+                continue
+
+            buffer += char
+
+        if buffer:
+            segments.append(buffer)
+
+        # Ensure the pattern starts and ends with ''
+        segments = [''] + segments
+        segments.append('')
+
+        return segments
+
 
     def validate(self, data: str) -> Answer:
         """
@@ -156,6 +192,7 @@ class AnswerValidator:
             bool: True if the data matches the pattern and conversions are successful, False otherwise.
         """
 
+        #logging.info("Searching: %s", data)
         result: Optional[re.Match] = self._compiled_pattern.search(data)
         if result is None:
             return Answer(data, False, True)
@@ -178,5 +215,5 @@ class AnswerValidator:
             result_dict[field_name] = worker.convert_func(kwargs)
 
         answer = Answer(data, True, True, field_value_dict=result_dict)
-
+        #logging.info("AnswerValidator: %s", answer)
         return answer
