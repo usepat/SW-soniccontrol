@@ -35,11 +35,11 @@ class SpectrumMeasure(Procedure):
         device: Scriptable,
         args: SpectrumMeasureArgs
     ) -> None:
-        values = [args.start + i * args.step for i in range(int((args.stop - args.start) / args.step)) ]
+        values = [args.ramp_f_start + i * args.ramp_f_step for i in range(int((args.ramp_f_stop - args.ramp_f_start) / args.ramp_f_step)) ]
 
         try:
             await device.get_overview()
-            await self._ramp(device, list(values), args.hold_on, args.hold_off, args.time_offset_measure)
+            await self._ramp(device, list(values), args.ramp_t_on, args.ramp_t_off, args.time_offset_measure)
         finally:
             await device.set_signal_off()
 

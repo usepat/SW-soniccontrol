@@ -107,11 +107,11 @@ class RamperRemote(Ramper):
         device: Scriptable,
         args: RamperArgs
     ) -> None:
-        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_F_START, args.ramp_f_start))
-        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_F_STOP, args.ramp_f_stop))
-        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_F_STEP, args.ramp_f_step))
-        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_T_ON, int(args.ramp_t_on.duration_in_ms)))
-        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_T_OFF, int(args.ramp_t_off.duration_in_ms)))
+        await device.execute_command(commands.SetRampFStart(args.ramp_f_start))
+        await device.execute_command(commands.SetRampFStop(args.ramp_f_stop))
+        await device.execute_command(commands.SetRampFStep(args.ramp_f_step))
+        await device.execute_command(commands.SetRampTOn(int(args.ramp_t_on.duration_in_ms)))
+        await device.execute_command(commands.SetRampTOff(int(args.ramp_t_off.duration_in_ms)))
         await device.execute_command(commands.SetRamp())
 
     async def fetch_args(self, device: Scriptable) -> Dict[str, Any]:

@@ -46,11 +46,11 @@ class WipeProc(Procedure):
         return True
 
     async def execute(self, device: Scriptable, args: WipeArgs) -> None:
-        await device.execute_command(commands.SetWipeArg(CommandCode.SET_WIPE_F_RANGE, args.wipe_f_range))
-        await device.execute_command(commands.SetWipeArg(CommandCode.SET_WIPE_F_STEP, args.wipe_f_step))
-        await device.execute_command(commands.SetWipeArg(CommandCode.SET_WIPE_T_ON, int(args.wipe_t_on.duration_in_ms)))
-        await device.execute_command(commands.SetWipeArg(CommandCode.SET_WIPE_T_OFF, int(args.wipe_t_off.duration_in_ms)))
-        await device.execute_command(commands.SetWipeArg(CommandCode.SET_WIPE_T_PAUSE, int(args.wipe_t_pause.duration_in_ms)))
+        await device.execute_command(commands.SetWipeFRange(args.wipe_f_range))
+        await device.execute_command(commands.SetWipeFStep(args.wipe_f_step))
+        await device.execute_command(commands.SetWipeTOn(int(args.wipe_t_on.duration_in_ms)))
+        await device.execute_command(commands.SetWipeTOff(int(args.wipe_t_off.duration_in_ms)))
+        await device.execute_command(commands.SetWipeTPause(int(args.wipe_t_pause.duration_in_ms)))
         await device.execute_command(commands.SetWipe())
 
     async def fetch_args(self, device: Scriptable) -> dict[str, Any]:

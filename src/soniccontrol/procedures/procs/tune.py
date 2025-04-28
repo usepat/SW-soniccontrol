@@ -41,9 +41,9 @@ class TuneProc(Procedure):
         return True
 
     async def execute(self, device: Scriptable, args: TuneArgs) -> None:
-        await device.execute_command(commands.SetTuneArg(CommandCode.SET_TUNE_F_STEP, args.tune_f_step))
-        await device.execute_command(commands.SetTuneArg(CommandCode.SET_TUNE_T_TIME, int(args.tune_t_time.duration_in_ms)))
-        await device.execute_command(commands.SetTuneArg(CommandCode.SET_TUNE_T_STEP, int(args.tune_t_step.duration_in_ms)))
+        await device.execute_command(commands.SetTuneFStep(args.tune_f_step))
+        await device.execute_command(commands.SetTuneTTime(int(args.tune_t_time.duration_in_ms)))
+        await device.execute_command(commands.SetTuneTStep(int(args.tune_t_step.duration_in_ms)))
         await device.execute_command(commands.SetTune())
 
     async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
