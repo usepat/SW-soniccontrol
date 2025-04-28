@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Iterable
 from async_tkinter_loop import async_handler
 import attrs
 from soniccontrol.data_capturing.capture_target import CaptureProcedureArgs
+from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -96,7 +97,12 @@ class ProcControlling(UIComponent):
         try:
             proc_args_dict = self._model.procedure_args
             proc_class = self._proc_controller.proc_args_list[self._model.procedure_type]
-            proc_args = proc_class(**proc_args_dict)
+            if isinstance(proc_class, type) and issubclass(proc_class, ProcedureArgs):
+                proc_args = proc_class(proc_args_dict)
+            else:
+                #TODO check if we even this else
+                proc_args = proc_class(**proc_args_dict)
+            
             self._proc_controller.execute_proc(self._model.selected_procedure, proc_args)
         except Exception as e:
             self._logger.error(e)

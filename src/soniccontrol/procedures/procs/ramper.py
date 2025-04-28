@@ -12,7 +12,7 @@ from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from sonic_protocol.python_parser import commands
 
 
-@attrs.define(auto_attribs=True)
+@attrs.define(auto_attribs=True, init=False)
 class RamperArgs(ProcedureArgs):
     f_start: int = attrs.field(
         validator=[
@@ -121,31 +121,16 @@ class RamperRemote(Ramper):
         await device.execute_command(commands.SetRampFStart(args.f_start))
         await device.execute_command(commands.SetRampFStop(args.f_stop))
         await device.execute_command(commands.SetRampFStep(args.f_step))
-        await device.execute_command(commands.SetRampTOn(int(args.t_on.duration_in_ms)))
-        await device.execute_command(commands.SetRampTOff(int(args.t_off.duration_in_ms)))
+        # When the args are retrieved from the Form Widget, the HolderArgs are tuples instead
+        t_on_duration = int(args.t_on.duration_in_ms) if isinstance(args.t_on, HolderArgs) else int(args.t_on[0])
+        t_off_duration = int(args.t_off.duration_in_ms) if isinstance(args.t_off, HolderArgs) else int(args.t_off[0])
+
+        await device.execute_command(commands.SetRampTOn(t_on_duration))
+        await device.execute_command(commands.SetRampTOff(t_off_duration))
         await device.execute_command(commands.SetRamp())
 
     async def fetch_args(self, device: Scriptable) -> Dict[str, Any]:
         answer = await device.execute_command(commands.GetRamp())
-
-        if not (answer.was_validated and answer.valid):
-            return {}
-
-        # Work directly on answer.field_value_dict
-        arg_dict = {}
-        for field in fields(RamperArgs):
-            enum = field.metadata.get("enum", field.name)
-
-            if enum in answer.field_value_dict:
-                value = answer.field_value_dict.get(enum)
-
-                # If it's a _t_ field, wrap in HolderArgs
-                if value is None:
-                    continue
-                if "_t_" in enum.value:
-                    value = HolderArgs(float(value), "ms")
-
-                # Set the new key with the alias
-                arg_dict[enum.value] = value
-
-        return arg_dict
+        if answer.was_validated and answer.valid:
+            return RamperArgs.to_dict_with_holder_args(answer)
+        return {}

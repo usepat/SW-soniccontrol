@@ -9,50 +9,18 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
-from soniccontrol.procedures.procedure import Procedure
+from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
+from soniccontrol.procedures.procs.scan import ScanArgs, ScanProc
+from soniccontrol.procedures.procs.tune import TuneArgs, TuneProc
 
 
-@attrs.define(auto_attribs=True)
-class AutoArgs:
-    scan_f_center: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(100000),
-        validators.le(10000000)
-    ])
-    scan_gain: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(150)
-    ])
-    scan_f_range: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    scan_f_step: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    scan_t_step: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
+@attrs.define(auto_attribs=True, init=False)
+class AutoArgs(ProcedureArgs):
+    scan_arg: ScanArgs = attrs.field(
+        default=ScanArgs(),
     )
-    tune_f_step: int = attrs.field(
-        default=1000,
-        validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    tune_t_time: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
-    )
-
-    tune_t_step: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
+    tune_arg: TuneArgs = attrs.field(
+        default=TuneArgs(),
     )
 
 
@@ -66,27 +34,17 @@ class AutoProc(Procedure):
         return True
 
     async def execute(self, device: Scriptable, args: AutoArgs) -> None:
-        await device.execute_command(commands.SetFrequency(args.scan_f_center))
-        await device.execute_command(commands.SetScanGain(args.scan_gain))
-        await device.execute_command(commands.SetScanFRange(args.scan_f_range))
-        await device.execute_command(commands.SetScanFStep(args.scan_f_step))
-        await device.execute_command(commands.SetScanTStep(int(args.scan_t_step.duration_in_ms)))
-        await device.execute_command(commands.SetTuneFStep(args.tune_f_step))
-        await device.execute_command(commands.SetTuneTTime(int(args.tune_t_time.duration_in_ms)))
-        await device.execute_command(commands.SetTuneTStep(int(args.tune_t_step.duration_in_ms)))
+        scan = ScanProc()
+        # With False we only execute the arg setter
+        await scan.execute(device, args.scan_arg, False)
+
+        tune = TuneProc()
+        await tune.execute(device, args.tune_arg, False)
         await device.execute_command(commands.SetAuto())
 
     async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
+        # TODO ensure GetAuto returns a answer where all FieldName of both scan and tune are returned
         answer = await device.execute_command(commands.GetAuto())
-        answer_freq = await device.execute_command(commands.GetFreq())
         if answer.was_validated and answer.valid:
-            return {
-                "scan_f_center": answer_freq.field_value_dict.get(EFieldName.FREQUENCY, 0),
-                "scan_f_range": answer.field_value_dict.get(EFieldName.SCAN_F_RANGE, 0),
-                "scan_f_step": answer.field_value_dict.get(EFieldName.SCAN_F_STEP, 0),
-                "scan_t_step": HolderArgs(float(answer.field_value_dict.get(EFieldName.SCAN_T_STEP, 0)), "ms"),
-                "tune_f_step": answer.field_value_dict.get(EFieldName.TUNE_F_STEP, 0),
-                "tune_t_time":  HolderArgs(float(answer.field_value_dict.get(EFieldName.TUNE_T_TIME, 0)), "ms"),
-                "tune_t_step": HolderArgs(float(answer.field_value_dict.get(EFieldName.TUNE_T_STEP, 0)), "ms"),
-            }
+            return AutoArgs.to_dict_with_holder_args(answer)
         return {}
