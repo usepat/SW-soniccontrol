@@ -222,11 +222,17 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         return self._time_value, self._unit_value_str.get() # type: ignore
     
     @value.setter
-    def value(self, v: HoldTuple) -> None:
-        self._time_value = v[0]
-        self._time_value_str.set(str(v[0]))
-        self._unit_value_str.set(v[1])
-        self._unit_button.configure(text=v[1])
+    def value(self, v: HoldTuple | HolderArgs) -> None:
+        if isinstance(v, HolderArgs):
+            self._time_value = v.duration
+            self._time_value_str.set(str(v.duration))
+            self._unit_value_str.set(v.unit)
+            self._unit_button.configure(text=v.unit)
+        else:
+            self._time_value = v[0]
+            self._time_value_str.set(str(v[0]))
+            self._unit_value_str.set(v[1])
+            self._unit_button.configure(text=v[1])
  
     def _parse_str_value(self, *_args):
         try:

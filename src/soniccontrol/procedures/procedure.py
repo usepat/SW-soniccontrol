@@ -2,7 +2,7 @@
 
 import abc
 from enum import Enum
-from typing import Any, Type
+from typing import Any, Dict, Type
 
 from soniccontrol.interfaces import Scriptable
 
@@ -26,3 +26,6 @@ class Procedure(abc.ABC):
 
     @abc.abstractmethod
     async def execute(self, device: Scriptable, args: Any) -> None: ...
+
+    @abc.abstractmethod
+    async def fetch_args(self, device: Scriptable) -> Dict[str, Any]: ...

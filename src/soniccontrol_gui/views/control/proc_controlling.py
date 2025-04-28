@@ -81,10 +81,15 @@ class ProcControlling(UIComponent):
         proc_names = map(lambda proc_type: proc_type.value, self._proc_controller.proc_args_list.keys())
         self._view.set_procedure_combobox_items(proc_names)
 
-    def _on_proc_selected(self):
+    @async_handler
+    async def _on_proc_selected(self):
+
         for proc_widget in self._proc_widgets.values():
             proc_widget.view.hide()
         self._model.selected_procedure = ProcedureType(self._view.selected_procedure)
+
+        self._proc_widgets[self._model.selected_procedure].form_data = await self._proc_controller.fetch_args(self._model.selected_procedure)
+
         self._proc_widgets[self._model.selected_procedure].view.show()
 
     def _on_run_pressed(self):
@@ -96,7 +101,7 @@ class ProcControlling(UIComponent):
         except Exception as e:
             self._logger.error(e)
             MessageBox.show_error(self._view.root, str(e))
-
+        
     @async_handler
     async def _on_stop_pressed(self):
         await self._proc_controller.stop_proc()

@@ -1,36 +1,39 @@
-from typing import List, Type, Union
+from typing import Any, Dict, List, Type, Union
 import asyncio
 
 import attrs
 from attrs import validators
 
+from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.field_names import EFieldName
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure
+from sonic_protocol.python_parser import commands
 
 
 @attrs.define(auto_attribs=True)
 class RamperArgs:
-    start: int = attrs.field(validator=[
+    ramp_f_start: int = attrs.field(validator=[
         validators.instance_of(int),
         validators.ge(0),
         validators.le(10000000)
     ])
-    stop: int = attrs.field(validator=[
+    ramp_f_stop: int = attrs.field(validator=[
         validators.instance_of(int),
         validators.ge(0),
         validators.le(10000000)
     ])
-    step: int = attrs.field(validator=[
+    ramp_f_step: int = attrs.field(validator=[
         validators.instance_of(int),
         validators.ge(10),
         validators.le(500000)
     ])
-    hold_on: HolderArgs = attrs.field(
+    ramp_t_on: HolderArgs = attrs.field(
         default=HolderArgs(100, "ms"), 
         converter=convert_to_holder_args
     )
-    hold_off: HolderArgs = attrs.field(
+    ramp_t_off: HolderArgs = attrs.field(
         default=HolderArgs(0, "ms"),
         converter=convert_to_holder_args
     )
@@ -54,13 +57,13 @@ class RamperLocal(Ramper):
         device: Scriptable,
         args: RamperArgs
     ) -> None:
-        values = [args.start + i * args.step for i in range(int((args.stop - args.start) / args.step)) ]
+        values = [args.ramp_f_start + i * args.ramp_f_step for i in range(int((args.ramp_f_stop - args.ramp_f_start) / args.ramp_f_step)) ]
 
         await device.get_overview()
         # TODO: Do we need those two lines?
         # await device.execute_command(f"!freq={start}")
         # await device.set_signal_on()
-        await self._ramp(device, list(values), args.hold_on, args.hold_off)
+        await self._ramp(device, list(values), args.ramp_t_on, args.ramp_t_off)
     
         await device.set_signal_off()
 
@@ -104,9 +107,22 @@ class RamperRemote(Ramper):
         device: Scriptable,
         args: RamperArgs
     ) -> None:
-        await device.execute_command(f"!ramp_f_start={args.start}")
-        await device.execute_command(f"!ramp_f_stop={args.stop}")
-        await device.execute_command(f"!ramp_f_step={args.step}")
-        await device.execute_command(f"!ramp_t_on={int(args.hold_on.duration_in_ms)}")
-        await device.execute_command(f"!ramp_t_off={int(args.hold_off.duration_in_ms)}")
-        await device.execute_command(f"!ramp")
+        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_F_START, args.ramp_f_start))
+        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_F_STOP, args.ramp_f_stop))
+        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_F_STEP, args.ramp_f_step))
+        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_T_ON, int(args.ramp_t_on.duration_in_ms)))
+        await device.execute_command(commands.SetRampArg(CommandCode.SET_RAMP_T_OFF, int(args.ramp_t_off.duration_in_ms)))
+        await device.execute_command(commands.SetRamp())
+
+    async def fetch_args(self, device: Scriptable) -> Dict[str, Any]:
+        answer = await device.execute_command(commands.GetRamp())
+        if answer.was_validated and answer.valid:
+            return {
+                #TODO enforce, that the dictionary fields use the name form the corresponding args
+                "ramp_f_start": answer.field_value_dict.get(EFieldName.RAMP_F_START, 0),
+                "ramp_f_stop": answer.field_value_dict.get(EFieldName.RAMP_F_STOP, 0),
+                "ramp_f_step": answer.field_value_dict.get(EFieldName.RAMP_F_STEP, 0),
+                "ramp_t_on": HolderArgs(float(answer.field_value_dict.get(EFieldName.RAMP_T_ON, 0)), "ms"),
+                "ramp_t_off": HolderArgs(float(answer.field_value_dict.get(EFieldName.RAMP_T_OFF, 0)), "ms"),
+            }
+        return {}

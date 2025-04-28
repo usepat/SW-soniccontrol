@@ -1,6 +1,6 @@
 
 import asyncio
-from typing import List, Type, Union
+from typing import Any, List, Type, Union
 import attrs
 
 from sonic_protocol.python_parser import commands
@@ -63,5 +63,8 @@ class SpectrumMeasure(Procedure):
             if hold_off.duration:
                 await device.set_signal_off()
                 await Holder.execute(hold_off)
+
+    async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
+        return {}
 
 

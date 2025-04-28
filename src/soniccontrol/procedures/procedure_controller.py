@@ -4,6 +4,7 @@ import asyncio
 
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.defs as protocol_defs
+from sonic_protocol.python_parser import commands
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.procedures.procedure import Procedure, ProcedureType
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
@@ -71,8 +72,17 @@ class ProcedureController(EventManager):
         self._running_proc_task.add_done_callback(lambda _e: self._on_proc_finished()) # Not sure, if I should call this directly in proc_task
         self.emit(Event(ProcedureController.PROCEDURE_RUNNING, proc_type=proc_type))
 
+    async def fetch_args(self, proc_type: ProcedureType) -> Dict[str, Any]:
+        assert(proc_type in self._procedures)
+        procedure = self._procedures.get(proc_type, None)
+        if procedure is None:
+            raise Exception(f"The procedure {repr(proc_type)} is not available for the current device")
+        return await procedure.fetch_args(self._device)
+
+
     async def stop_proc(self) -> None:
         self._logger.info("Stop procedure")
+        await self._device.execute_command(commands.SetStop())
         if self._running_proc_task: 
             self._running_proc_task.cancel()
             await self._running_proc_task
