@@ -16,7 +16,7 @@ class Info(UIComponent):
         # Todo implement markdown parser instead of doing this
         content=[
             ui_labels.HOME_HELP_INTRODUCTION,
-            ImageLoader.load_image_resource(images.HOME_CONTROL_PANEL, (300, 200)),
+            # ImageLoader.load_image_resource(images.HOME_CONTROL_PANEL, (300, 200)),
             ui_labels.HOME_HELP_CONTROL_PANEL,
             Text(ui_labels.FREQUENCY, font=fonts.QTYPE_OT_CONDLIGHT),
             ui_labels.HOME_HELP_FREQUENCY,
@@ -28,7 +28,7 @@ class Info(UIComponent):
             ui_labels.HOME_HELP_WIPE,
             ui_labels.HOME_HELP_SET_VALUES,
             ui_labels.HOME_HELP_OUTPUT,
-            Image(images.HOME_SIGNAL_CONTROL_PANEL, (400, 35)),
+            # Image(images.HOME_SIGNAL_CONTROL_PANEL, (400, 35)),
             ui_labels.HOME_HELP_SIGNAL_CONTROL_PANEL,
             Text(ui_labels.SIGNAL_ON, font=fonts.QTYPE_OT_CONDLIGHT),
             ui_labels.HOME_HELP_ON,

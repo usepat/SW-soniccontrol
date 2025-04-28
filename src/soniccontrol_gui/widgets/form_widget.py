@@ -200,8 +200,8 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         self.grid_columnconfigure(1, weight=1)
 
         self._label.grid(row=0, column=0, padx=5, pady=5)
-        self._entry_time.grid(row=0, column=1, padx=5, pady=5)
-        self._unit_button.grid(row=0, column=2, padx=5, pady=5)
+        self._entry_time.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.E)
+        self._unit_button.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
 
     def _toggle_unit(self) -> None:
         unit = self._unit_value_str.get()
@@ -416,15 +416,17 @@ class FormWidgetView(View):
         self._title = ttk.StringVar()
         self._title_label = ttk.Label(self._title_frame, textvariable=self._title, font=("Arial", 16))
         self._scrolled_frame = ScrolledFrame(self)
+        
 
     def _initialize_publish(self) -> None:
-        self.pack(fill=ttk.BOTH)
+        self.pack(fill=ttk.BOTH, expand=True)
         self._title_frame.pack(fill=ttk.X, pady=10)
         self._title_label.pack()
         self._scrolled_frame.pack(fill=ttk.BOTH, pady=10, expand=True)
 
         for i, child in enumerate(self._scrolled_frame.children.values()):
-            child.grid(row=i, column=0, padx=5, pady=5, sticky=ttk.EW)
+            child.pack(fill=ttk.X, padx=5, pady=5)
+        
 
     @property
     def field_slot(self) -> ttk.Frame:
