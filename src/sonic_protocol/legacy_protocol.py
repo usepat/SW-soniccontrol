@@ -292,6 +292,7 @@ dash = CommandContract(
 
 
 class LegacyProtocol(Protocol):
+    # TODO Fix this and INFO tab
     @property
     def major_version(self) -> int:
         return 2

@@ -132,6 +132,7 @@ class AnswerValidator:
         keyword_iter = iter(keywords)
         segments = re.split(r"(\(.*?\))", pattern)
         if len(segments) != (2 * len(keywords)) + 1:
+            # TODO @Thomas add documentation why this is needed
             segments = AnswerValidator.split_top_level_groups(pattern)
         processed = "".join(
             (
