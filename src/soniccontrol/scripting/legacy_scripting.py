@@ -182,10 +182,10 @@ class LegacySequencer(Script):
     def is_finished(self) -> bool:
         return self._current_line >= len(self._commands)
 
-    async def _before_script(self) -> None:
+    async def _setup_script(self) -> None:
         await self._sonicamp.get_overview()
 
-    async def _after_script(self) -> None:
+    async def _clean_up_script(self) -> None:
         await self._sonicamp.set_signal_off()
 
     async def _execute_step(self) -> None: 
