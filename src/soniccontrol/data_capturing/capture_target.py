@@ -2,6 +2,7 @@
 import abc
 from enum import Enum
 from typing import Any, Dict
+import attrs
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasure, SpectrumMeasureArgs
 from soniccontrol.updater import Updater
 from soniccontrol.events import Event, EventManager, PropertyChangeEvent
@@ -180,7 +181,7 @@ class CaptureSpectrumMeasure(CaptureTarget):
     @property
     def args(self) -> Dict[str, Any]: 
         return { 
-            "spectrum_args": self._spectrum_args.spectrum_args
+            "spectrum_args": attrs.asdict(self._spectrum_args.spectrum_args)
         }
 
     def _notify_on_procedure_finished(self, _e: Event):

@@ -238,15 +238,51 @@ class Protocol_BIOS_RP2040:
         self._logger.info(f"Unexpected response to boot command: {all_bytes}")
         return False
     
+    async def read_until_idle(self, timeout: float = 1.0, chunk_size: int = 1024) -> bytes:
+        data = bytearray()
+        while True:
+            try:
+                chunk = await asyncio.wait_for(self._reader.read(chunk_size), timeout=timeout)
+                if not chunk:
+                    break  # EOF
+                data.extend(chunk)
+            except asyncio.TimeoutError:
+                break  # no data for `timeout` seconds = idle = done
+        return bytes(data)
+    
     async def read_cmd(self) -> bytes:
         write_buff = bytes()
         write_buff += self.Opcodes['Read']
         self._logger.info(f"Send read command: {write_buff}")
         if(not await self.write(write_buff)):
             return bytes()
-        all_bytes, data_bytes = await self.read(200)
-        self._logger.info(f"Read, response is: {all_bytes}")
+        all_bytes = await self.read_until_idle()
+        self._logger.info(f"Read, response is: {all_bytes[:50]}")
         return all_bytes
+
+
+def find_first_mismatch(a: bytes, b: bytes, context: int = 16):
+    min_len = min(len(a), len(b))
+    for i in range(min_len):
+        if a[i] != b[i]:
+            print(f"❌ Mismatch at byte {i}:")
+            print(f"  Stored: {a[i]:02X}")
+            print(f"  ELF   : {b[i]:02X}")
+            # Show context
+            start = max(0, i - context)
+            end = min(min_len, i + context)
+            print("\nContext around mismatch:")
+            print("Offset  | Stored           | ELF")
+            print("-----------------------------------------")
+            for j in range(start, end):
+                marker = " <==" if j == i else ""
+                print(f"{j:06X} | {a[j]:02X}              | {b[j]:02X}{marker}")
+            return i
+    if len(a) != len(b):
+        print(f"⚠️ Length mismatch: stored={len(a)}, elf={len(b)}")
+        return min_len
+    print("✅ No mismatches detected.")
+    return -1
 
 
 async def main():
@@ -265,15 +301,20 @@ async def main():
 
     protocol = Protocol_BIOS_RP2040(logger, writer, reader, 0.1)
     stored_bytes = await protocol.read_cmd()
+    stored_hex = stored_bytes.decode('ascii')  # '00 20 04 20 F7 00 01 10 ...'
+    stored_binary = bytes.fromhex(stored_hex)  # now it's real binary bytes
     img = load_elf(r"\\wsl.localhost\Ubuntu\home\usepat\GitHub\FW-sonic-firmware\build\pico\bios\tools\bootloader_new\bootloader.elf")
     # Load elf file and compare with stored bytes
     # compare storyed bytes with img.Data
-    if stored_bytes == img.Data:
-        logger.info("Stored bytes match the ELF image data exactly.")
+    if len(stored_binary) < len(img.Data):
+        logger.error(f"Stored binary is too short ({len(stored_binary)} bytes) — expected at least {len(img.Data)} bytes.")
     else:
-        logger.warning("Mismatch detected between stored bytes and ELF image data.")
-        logger.info(f"First 64 bytes of stored data: {stored_bytes[:64].hex()}")
-        logger.info(f"First 64 bytes of ELF image: {img.Data[:64].hex()}")
-
+        if stored_binary[:len(img.Data)] == img.Data:
+            logger.info("Stored bytes match the ELF image data exactly (prefix match).")
+        else:
+            logger.warning("Mismatch detected between stored bytes and ELF image data.")
+            logger.info("First 64 bytes of stored data: " + ' '.join(f'{b:02X}' for b in stored_binary[:64]))
+            logger.info("First 64 bytes of ELF image:   " + ' '.join(f'{b:02X}' for b in img.Data[:64]))
+            find_first_mismatch(stored_binary, img.Data)
 if __name__ == "__main__":
     asyncio.run(main())

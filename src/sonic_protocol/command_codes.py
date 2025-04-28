@@ -146,6 +146,7 @@ class CommandCode(IntEnum):
     SET_FLASH_USB = 7001
     SET_FLASH_9600 = 7002
     SET_FLASH_115200 = 7003
+    SET_SETTINGS = 8000
 
 
 

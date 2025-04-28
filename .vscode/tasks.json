@@ -4,7 +4,7 @@
         {   
             "label": "Install editable build",
             "type": "shell",
-            "command": "pip install -e ${workspaceFolder}",
+            "command": "pip install -e '${workspaceFolder}'",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -47,7 +47,7 @@
             "type": "shell",
             "command": "pytest",
             "args": [
-                "${relativeFile}"
+                "'${relativeFile}'"
             ],
             "group": {
                 "kind": "test",
@@ -65,7 +65,7 @@
             "type": "shell",
             "command": "doxygen",
             "args": [
-                "${workspaceFolder}/docs/DoxyFile"
+                "'${workspaceFolder}/docs/DoxyFile'"
             ],
             "group": {
                 "kind": "build"

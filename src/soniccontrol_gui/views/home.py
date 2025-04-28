@@ -226,8 +226,8 @@ class HomeView(TabView):
         )
 
         self._signal_frame.grid(
-            row=0, 
-            column=1, 
+            row=1, 
+            column=0, 
             padx=sizes.LARGE_PADDING, 
             pady=sizes.LARGE_PADDING, 
             sticky=ttk.NSEW
@@ -241,8 +241,8 @@ class HomeView(TabView):
         )
 
         self._gain_frame.grid(
-            row=0, 
-            column=2, 
+            row=2, 
+            column=0, 
             padx=sizes.LARGE_PADDING, 
             pady=sizes.LARGE_PADDING, 
             sticky=ttk.NSEW

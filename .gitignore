@@ -254,3 +254,4 @@ tests_robot/results/
 
 # Ignore doxygen generated documentation
 docs/output
+.github/workflows/ssh_workflow

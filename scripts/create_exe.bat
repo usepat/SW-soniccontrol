@@ -8,4 +8,4 @@ PyInstaller  --noconfirm --onedir --windowed ^
 --collect-all soniccontrol_gui ^
 --collect-all soniccontrol ^
 --collect-all shared ^
-"%WORKSPACE_DIR%\src\soniccontrol_gui\__main__.py"
+".\src\soniccontrol_gui\__main__.py"
