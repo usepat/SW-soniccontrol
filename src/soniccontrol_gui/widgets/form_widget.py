@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, Tuple, Type, TypeVar
 
 import attrs
+from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
@@ -342,12 +343,15 @@ FormFieldAttributes = Dict[str, "attrs.Attribute[Any] | FieldViewFactoryType"]
 
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
-                 title: str, form_attrs: Type | FormFieldAttributes, model_dict: dict | None = None):
+                 title: str, form_attrs: Type | FormFieldAttributes | ProcedureArgs, model_dict: dict | None = None):
         """
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
         """
-        self._form_attrs: FormFieldAttributes = form_attrs if isinstance(form_attrs, dict) else attrs.fields_dict(form_attrs) #type: ignore
+        if isinstance(form_attrs, type) and issubclass(form_attrs, ProcedureArgs):
+            self._form_attrs = form_attrs.fields_dict_with_alias()
+        else:
+            self._form_attrs: FormFieldAttributes = form_attrs if isinstance(form_attrs, dict) else attrs.fields_dict(form_attrs) #type: ignore
         self._fields: Dict[str, FieldViewBase] = {}
         self._procedure_name = title
         self._view = FormWidgetView(parent_view)
