@@ -1,4 +1,3 @@
-import enum
 from typing import Any, Tuple
 import lark
 import attrs
@@ -7,13 +6,13 @@ import asyncio
 
 import sonic_protocol.python_parser.commands as cmds
 from soniccontrol.procedures.holder import convert_to_holder_args, HolderArgs
-from soniccontrol.procedures.procedure import Procedure, ProcedureType
+from soniccontrol.procedures.procedure import ProcedureType
 from soniccontrol.procedures.procedure_controller import ProcedureController
-from soniccontrol.procedures.procs.auto import AutoProc
-from soniccontrol.procedures.procs.ramper import Ramper, RamperRemote
-from soniccontrol.procedures.procs.scan import ScanProc
-from soniccontrol.procedures.procs.tune import TuneProc
-from soniccontrol.procedures.procs.wipe import WipeProc
+from soniccontrol.procedures.procs.auto import AutoArgs
+from soniccontrol.procedures.procs.ramper import RamperArgs
+from soniccontrol.procedures.procs.scan import ScanArgs
+from soniccontrol.procedures.procs.tune import TuneArgs
+from soniccontrol.procedures.procs.wipe import WipeArgs
 from soniccontrol.scripting.scripting_facade import CommandFunc, ExecutionStep, RunnableScript, ScriptException, ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
 
@@ -75,29 +74,24 @@ class ProtocolCommand(Function):
         return description, command
     
 class ProcedureCommand(Function):
-    def __init__(self, procedure: Procedure, proc_type: ProcedureType):
+    def __init__(self, proc_args_class: type, proc_type: ProcedureType):
         parameters = []
-        for name, field in attrs.fields_dict(procedure.get_args_class()).items():
+        for name, field in attrs.fields_dict(proc_args_class).items():
             assert field.type is not None
             parameters.append(
                 Parameter(name, field.type)
             )
 
         super().__init__(tuple(parameters))
-        self._procedure = procedure
+        self._proc_args_class = proc_args_class
         self._proc_type = proc_type
 
     def create_command(self, *params) -> Tuple[str, CommandFunc]:
-        args = {}
-        args_class = self._procedure.get_args_class()
-        param_names = attrs.fields_dict(args_class).keys()
-        for i, name in enumerate(param_names):
-            args[name] = params[i]
-        args = args_class(**args)
+        args = self._proc_args_class(*params)
 
         async def command(device: SonicDevice, _proc_controller: ProcedureController, args=args):
             try:
-                _proc_controller.execute_procedure(self._procedure, self._proc_type, args)
+                _proc_controller.execute_proc(self._proc_type, args)
                 await _proc_controller.wait_for_proc_to_finish()
             except asyncio.CancelledError:
                 await _proc_controller.stop_proc()
@@ -108,23 +102,23 @@ class ProcedureCommand(Function):
 
 class Interpreter(RunnableScript):
     def __init__(self, ast):
-        self.ast = ast
-        self.function_table = {
+        self._ast = ast
+        self._function_table = {
             "send": SendCommand(),
             "hold": HoldCommand(),
             "frequency": ProtocolCommand((Parameter("frequency", int),), cmds.SetFrequency), 
             "gain": ProtocolCommand((Parameter("gain", int),), cmds.SetGain), 
             "on": ProtocolCommand((), cmds.SetOn), 
             "off": ProtocolCommand((), cmds.SetOff), 
-            "ramp": ProcedureCommand(RamperRemote(), ProcedureType.RAMP),
-            "auto": ProcedureCommand(AutoProc(), ProcedureType.AUTO),
-            "wipe": ProcedureCommand(WipeProc(), ProcedureType.WIPE),
-            "tune": ProcedureCommand(TuneProc(), ProcedureType.TUNE),
-            "scan": ProcedureCommand(ScanProc(), ProcedureType.SCAN),
+            "ramp": ProcedureCommand(RamperArgs, ProcedureType.RAMP),
+            "auto": ProcedureCommand(AutoArgs, ProcedureType.AUTO),
+            "wipe": ProcedureCommand(WipeArgs, ProcedureType.WIPE),
+            "tune": ProcedureCommand(TuneArgs, ProcedureType.TUNE),
+            "scan": ProcedureCommand(ScanArgs, ProcedureType.SCAN),
         }
 
     def __iter__(self):
-        yield from self._start(self.ast)
+        yield from self._start(self._ast)
         
     def _start(self, tree):
         for child in tree.children:
@@ -148,10 +142,10 @@ class Interpreter(RunnableScript):
     def _command(self, tree: lark.Tree):
         command_name, *args = tree.children
 
-        if command_name not in self.function_table:
+        if command_name not in self._function_table:
             raise ScriptException(f"There exists no command with the name \"{command_name}\"", 
                                   line_begin=tree.meta.line, col_begin=tree.meta.column)
-        function =  self.function_table[str(command_name)]
+        function =  self._function_table[str(command_name)]
 
         # validate params
         num_params = len(function.parameters)
