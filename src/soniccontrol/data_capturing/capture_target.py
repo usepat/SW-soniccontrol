@@ -86,7 +86,8 @@ class CaptureScript(CaptureTarget):
         if self._interpreter_engine.script is None:
             return
         
-        if self._interpreter_engine.script.is_finished and self._is_capturing:
+        # change to ready only happens if the script finished successfully
+        if self._interpreter_engine.interpreter_state == InterpreterState.READY and self._is_capturing:
             self.emit(Event(CaptureTarget.COMPLETED_EVENT))
 
     async def before_start_capture(self) -> None:

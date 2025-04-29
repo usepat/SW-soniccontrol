@@ -1,8 +1,9 @@
 import abc
-from typing import Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Generator, Iterable, Optional
 import attrs
 
-from src.soniccontrol.sonic_device import SonicDevice
+from soniccontrol.procedures.procedure_controller import ProcedureController
+from soniccontrol.sonic_device import SonicDevice
 
 
 @attrs.define()
@@ -13,19 +14,18 @@ class ScriptException(Exception):
     line_end: Optional[int] = attrs.field(default=None)
     col_end: Optional[int] = attrs.field(default=None)
 
-CommandFunc = Callable[[SonicDevice], Awaitable[None]]
+
+CommandFunc = Callable[[SonicDevice, ProcedureController], Awaitable[None]]
 
 @attrs.define
 class ExecutionStep:
     command: CommandFunc = attrs.field()
     line: int = attrs.field()
+    description: str = attrs.field(default="")
 
 class RunnableScript(abc.ABC):
     @abc.abstractmethod
-    def __iter__(self): ...
-    
-    @abc.abstractmethod
-    def __next__(self): ...
+    def __iter__(self) -> Generator[ExecutionStep, Any, None]: ...
 
 
 class ScriptingFacade(abc.ABC):

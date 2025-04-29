@@ -1,33 +1,17 @@
 
-import asyncio
 import logging
-from pathlib import Path
-from tkinter import filedialog
-from typing import Callable, List, Iterable, Optional
+from typing import Callable
 import ttkbootstrap as ttk
-from ttkbootstrap.scrolled import ScrolledFrame
-import json
-from sonic_protocol.python_parser import commands
-from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.updater import Updater
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
-from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
-from soniccontrol.scripting.scripting_facade import ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence
 from soniccontrol_gui.constants import sizes, ui_labels
-from soniccontrol.events import PropertyChangeEvent
-from soniccontrol_gui.views.configuration.transducer_configs import ATConfig, ATConfigFrame, TransducerConfig, TransducerConfigSchema
-from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
-from soniccontrol_gui.widgets.file_browse_button import FileBrowseButtonView
-from soniccontrol_gui.constants import files
 from async_tkinter_loop import async_handler
 
-from soniccontrol_gui.widgets.message_box import MessageBox
     
 
 class Settings(UIComponent):

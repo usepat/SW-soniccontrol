@@ -7,14 +7,13 @@ import tkinter as tk
 from sonic_protocol.command_codes import CommandCode
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
+from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine
-from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
-from soniccontrol.scripting.scripting_facade import BuiltInFunctions
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.views.configuration.settings import Settings
 from soniccontrol_gui.views.control.log_storage import LogStorage, NotDeviceLogFilter
@@ -122,13 +121,9 @@ class RescueWindow(DeviceWindow):
 
              # Models
             self._proc_controller = ProcedureController(self._device, EventManager()) # FIXME: what to do if devices do not support updates?
-            self._scripting = LegacyScriptingFacade(
-                self._device, 
-                self._proc_controller,
-                include_command_aliases=[BuiltInFunctions.ON, BuiltInFunctions.OFF, BuiltInFunctions.HOLD]
-            )
+            self._scripting = NewScriptingFacade()
             self._script_file = ScriptFile(logger=self._logger)
-            self._interpreter = InterpreterEngine(self._logger)
+            self._interpreter = InterpreterEngine(self._device, self._proc_controller, self._logger)
             self._app_state = AppState(self._logger)
 
             self._logger.debug("Create views")
@@ -170,9 +165,9 @@ class KnownDeviceWindow(DeviceWindow):
             self._updater = Updater(self._device, time_waiting_between_updates_ms=(1000 * is_legacy_device))
             self._proc_controller = ProcedureController(self._device, self._updater)
             self._proc_controlling_model = ProcControllingModel()
-            self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)
+            self._scripting = NewScriptingFacade()
             self._script_file = ScriptFile(logger=self._logger)
-            self._interpreter = InterpreterEngine(self._logger)
+            self._interpreter = InterpreterEngine(self._device, self._proc_controller, self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
             self._capture = Capture(files.LOG_DIR, self._logger)
@@ -229,6 +224,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._home.on_execution_state_changed)
         except Exception as e:
             self._logger.error(e)
+            MessageBox.show_error(root, str(e))
             raise
 
 

@@ -1,25 +1,27 @@
 import enum
-from typing import Tuple
+from typing import Any, Tuple
 import lark
 import attrs
 import abc
 import asyncio
 
-from src.soniccontrol.procedures.holder import convert_to_holder_args
-from src.soniccontrol.scripting.scripting_facade import CommandFunc, ExecutionStep, RunnableScript, ScriptException, ScriptingFacade
-from src.soniccontrol.sonic_device import SonicDevice
+import sonic_protocol.python_parser.commands as cmds
+from soniccontrol.procedures.holder import convert_to_holder_args, HolderArgs
+from soniccontrol.procedures.procedure import Procedure, ProcedureType
+from soniccontrol.procedures.procedure_controller import ProcedureController
+from soniccontrol.procedures.procs.auto import AutoProc
+from soniccontrol.procedures.procs.ramper import Ramper, RamperRemote
+from soniccontrol.procedures.procs.scan import ScanProc
+from soniccontrol.procedures.procs.tune import TuneProc
+from soniccontrol.procedures.procs.wipe import WipeProc
+from soniccontrol.scripting.scripting_facade import CommandFunc, ExecutionStep, RunnableScript, ScriptException, ScriptingFacade
+from soniccontrol.sonic_device import SonicDevice
 
-class Type(enum.Enum):
-    TIME = 0,
-    INT = enum.auto(),
-    STRING = enum.auto(),
-    BOOL = enum.auto()
  
-
 @attrs.define()
 class Parameter:
     name: str = attrs.field()
-    type: Type = attrs.field()
+    type_: type[Any] = attrs.field()
 
 
 @attrs.define()
@@ -27,98 +29,152 @@ class Function(abc.ABC):
     parameters: Tuple[Parameter, ...] = attrs.field(factory=tuple)
 
     @abc.abstractmethod
-    def create_command(self, *params) -> CommandFunc: ...
+    def create_command(self, *params) -> Tuple[str, CommandFunc]: ...
 
 
 class HoldCommand(Function):
     def __init__(self):
         super().__init__((
-            Parameter("amount_time", Type.TIME),
+            Parameter("amount_time", HolderArgs),
         ))
 
-    def create_command(self, *params) -> CommandFunc:
+    def create_command(self, *params) -> Tuple[str, CommandFunc]:
         amount_time, = params
         duration = amount_time.duration if amount_time.unit == "s" else amount_time.duration / 1000
 
-        async def hold(sonic_device: SonicDevice, duration=duration):
+        async def hold(_device: SonicDevice, _proc_controller: ProcedureController, duration=duration):
             await asyncio.sleep(duration)
         
-        return hold
+        return f"hold amount_time={str(amount_time)}", hold
     
 class SendCommand(Function):
     def __init__(self):
         super().__init__((
-            Parameter("cmd_str", Type.STRING),
+            Parameter("cmd_str", str),
         ))
 
-    def create_command(self, *params) -> CommandFunc:
+    def create_command(self, *params) -> Tuple[str, CommandFunc]:
         cmd_str, = params
 
-        async def send(sonic_device: SonicDevice, cmd_str=cmd_str):
-            await sonic_device.execute_command(cmd_str)
+        async def send(device: SonicDevice, _proc_controller: ProcedureController, cmd_str=cmd_str):
+            await device.execute_command(cmd_str)
         
-        return send
+        return f"send cmd_str=\"{cmd_str}\"", send
+    
+class ProtocolCommand(Function):
+    def __init__(self, parameters: Tuple[Parameter, ...], command_cls: type[cmds.Command]):
+        super().__init__(parameters)
+        self._command_cls = command_cls
+
+    def create_command(self, *params) -> Tuple[str, CommandFunc]:
+
+        async def command(device: SonicDevice, _proc_controller: ProcedureController, params=params):
+            await device.execute_command(self._command_cls(*params))
+        
+        description = f"{self._command_cls.__name__} { ' '.join([str(param) for param in params ]) }"
+        return description, command
+    
+class ProcedureCommand(Function):
+    def __init__(self, procedure: Procedure, proc_type: ProcedureType):
+        parameters = []
+        for name, field in attrs.fields_dict(procedure.get_args_class()).items():
+            assert field.type is not None
+            parameters.append(
+                Parameter(name, field.type)
+            )
+
+        super().__init__(tuple(parameters))
+        self._procedure = procedure
+        self._proc_type = proc_type
+
+    def create_command(self, *params) -> Tuple[str, CommandFunc]:
+        args = {}
+        args_class = self._procedure.get_args_class()
+        param_names = attrs.fields_dict(args_class).keys()
+        for i, name in enumerate(param_names):
+            args[name] = params[i]
+        args = args_class(**args)
+
+        async def command(device: SonicDevice, _proc_controller: ProcedureController, args=args):
+            try:
+                _proc_controller.execute_procedure(self._procedure, self._proc_type, args)
+                await _proc_controller.wait_for_proc_to_finish()
+            except asyncio.CancelledError:
+                await _proc_controller.stop_proc()
+                raise
+        
+        description = f"Executing {self._proc_type.value} { ' '.join([f'{k}={v}' for k, v in attrs.asdict(args).items() ]) }"
+        return description, command
 
 class Interpreter(RunnableScript):
     def __init__(self, ast):
         self.ast = ast
         self.function_table = {
             "send": SendCommand(),
-            "hold": HoldCommand() 
+            "hold": HoldCommand(),
+            "frequency": ProtocolCommand((Parameter("frequency", int),), cmds.SetFrequency), 
+            "gain": ProtocolCommand((Parameter("gain", int),), cmds.SetGain), 
+            "on": ProtocolCommand((), cmds.SetOn), 
+            "off": ProtocolCommand((), cmds.SetOff), 
+            "ramp": ProcedureCommand(RamperRemote(), ProcedureType.RAMP),
+            "auto": ProcedureCommand(AutoProc(), ProcedureType.AUTO),
+            "wipe": ProcedureCommand(WipeProc(), ProcedureType.WIPE),
+            "tune": ProcedureCommand(TuneProc(), ProcedureType.TUNE),
+            "scan": ProcedureCommand(ScanProc(), ProcedureType.SCAN),
         }
 
-    def __iter__(self): #type: ignore
-        return self
-    
-    def __next__(self): #type: ignore
-        yield self._start(self.ast)
+    def __iter__(self):
+        yield from self._start(self.ast)
         
     def _start(self, tree):
         for child in tree.children:
-            yield self._statement(child)
-        raise StopIteration()
+            yield from self._statement(child)
 
     def _statement(self, tree):
         if tree.data == "loop":
-            yield self._loop(tree)
+            yield from self._loop(tree.children[0])
         elif tree.data == "command":
-            yield self._command(tree)
+            yield self._command(tree.children[0])
 
     def _loop(self, tree):
-        times, block = tree.children
-        for _ in range(int(times)):
-            yield self._code_block(block)
+        n_times, block = tree.children
+        for _ in range(int(n_times)):
+            yield from self._code_block(block)
 
     def _code_block(self, tree):
-        for child in tree:
-            yield self._statement(child)
+        for child in tree.children:
+            yield from self._statement(child)
 
-    def _command(self, tree):
-        command_name, args = tree
+    def _command(self, tree: lark.Tree):
+        command_name, *args = tree.children
 
         if command_name not in self.function_table:
             raise ScriptException(f"There exists no command with the name \"{command_name}\"", 
                                   line_begin=tree.meta.line, col_begin=tree.meta.column)
-        function =  self.function_table[command_name]
+        function =  self.function_table[str(command_name)]
 
         # validate params
         num_params = len(function.parameters)
-        num_provided_params = len(args.children)
+        num_provided_params = len(args)
         if num_provided_params != num_params:
             raise ScriptException(f"The command {command_name} expects {num_params} params but {num_provided_params} were given", 
                                   line_begin=tree.meta.line, col_begin=tree.meta.column)
 
+        arg_values = [ self._value(token) for token in args ]
         for i, param in enumerate(function.parameters):
-            if args.children[i].type != param.type.name:
-                raise ScriptException(f"The command {command_name} expected the type {param.type.name} for its parameter {param.name}, but got {args.children[i].type}", 
-                                      line_begin=args.children[i].meta.line, col_begin=args.children[i].meta.column) 
+            value = arg_values[i]
+            token = args[i]
+            assert isinstance(token, lark.Token)
+
+            if not isinstance(value, param.type_):
+                raise ScriptException(f"The command {command_name} expected the type {param.type_.__name__} for its parameter {param.name}, but got {type(value).__name__}", 
+                                      line_begin=token.line, col_begin=token.column) #type: ignore
 
         # convert args and create command
-        arg_values = [ self._value(token) for token in args.children ]
-        command = function.create_command(*arg_values)
+        description, command = function.create_command(*arg_values)
         line = tree.meta.line
 
-        return ExecutionStep(command, line)
+        return ExecutionStep(command, line, description)
 
 
     def _value(self, token):
@@ -128,7 +184,7 @@ class Interpreter(RunnableScript):
             return convert_to_holder_args(token.value)
         elif token.type == "BOOl":
             return token.value.lower() in ("true", "on")
-        elif token.type == "STRING":
+        elif token.type == "ESCAPED_STRING":
             return token.value[1:-1] # remove "" at beginning and end
 
 
@@ -136,8 +192,8 @@ class NewScriptingFacade(ScriptingFacade):
     GRAMMAR = """
         // ignore whitespace and comments
 
-        %import common.WS
-        %ignore WS
+        %import common.WS_INLINE
+        %ignore WS_INLINE
 
         %import common.SH_COMMENT
         %import common.C_COMMENT
@@ -154,26 +210,26 @@ class NewScriptingFacade(ScriptingFacade):
         %import common.INT
         %import common.NUMBER
         %import common.LETTER
-        %import common.STRING
+        %import common.ESCAPED_STRING
         %import common.CNAME    -> IDENTIFIER
-        %import common.NEWLINE
 
         start: statement+
 
         statement:  loop        -> loop
                 |   command     -> command
+                | empty_line    -> empty_line
 
-        loop: "loop" INT "times" code_block
+        loop: "loop" INT "times" "\\n" code_block
 
-        code_block: "begin" statement+ "end"
+        code_block: "begin" "\\n" statement+ "end" "\\n" 
 
-        command: IDENTIFIER args NEWLINE
+        command: IDENTIFIER _arg* "\\n"
 
-        args: _value*
+        empty_line: "\\n"
 
-        value: _constant
+        _arg: _constant
 
-        constant: INT | STRING | BOOL | TIME
+        _constant: INT | ESCAPED_STRING | BOOL | TIME
 
         BOOL: "true" | "false" | "on" | "off"
 
@@ -181,16 +237,34 @@ class NewScriptingFacade(ScriptingFacade):
     """
 
     def __init__(self):
-        self.parser = lark.Lark(NewScriptingFacade.GRAMMAR, start="start")
+        self.parser = lark.Lark(NewScriptingFacade.GRAMMAR, start="start", propagate_positions=True)
 
     def parse_script(self, text: str) -> RunnableScript:
         try:
-            ast = self.parser.parse(text, propagate_positions=True)
-        except Exception as e:
-            # TODO: convert this into a ScriptingError
-            raise e
-
+            ast = self.parser.parse(text)
+        except lark.exceptions.UnexpectedInput as e:
+            raise ScriptException(f"Syntax Error unexpected input\n: {e.get_context(text)}", e.line, e.column)
         interpreter = Interpreter(ast)
         return interpreter
 
+def main():
+    test_script = """
+        send "!freq=100000"
+        gain 100
+        loop 5 times
+        begin
+            send "!ON"
+            hold 2s
+            off
+            hold 500ms
+            ramp 100000 200000 10000 1s 500ms
+        end
+    """ 
+    scripting = NewScriptingFacade()
+    script = scripting.parse_script(test_script)
+    for execution_step in script:
+        print(f"Executing on line {execution_step.line} command {execution_step.description}")
+
+if __name__ == "__main__":
+    main()
         

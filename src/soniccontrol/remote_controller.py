@@ -16,7 +16,8 @@ from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs
-from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
+from soniccontrol.scripting.interpreter_engine import InterpreterEngine
+from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol.scripting.scripting_facade import ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
@@ -38,15 +39,15 @@ class RemoteController:
 
     async def _connect(self, connection: Connection, connection_name: str):
         if self._log_path:
-            logger = create_logger_for_connection(connection_name, self._log_path)   
+            self._logger = create_logger_for_connection(connection_name, self._log_path)   
         else:
-            logger = create_logger_for_connection(connection_name)
+            self._logger = create_logger_for_connection(connection_name)
 
-        self._device = await DeviceBuilder().build_amp(connection, logger=logger)
+        self._device = await DeviceBuilder().build_amp(connection, logger=self._logger)
         self._updater = Updater(self._device)
         self._updater.start()
         self._proc_controller = ProcedureController(self._device, updater=self._updater)
-        self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)
+        self._scripting = NewScriptingFacade()
 
     async def connect_via_serial(self, url: Path, baudrate: int = 9600) -> None:
         assert self._device is None
@@ -89,13 +90,15 @@ class RemoteController:
         answer.field_value_dict[EFieldName.COMMAND_CODE] = answer.command_code # TODO you gotta do better senator
         return answer.message, answer.field_value_dict, answer.valid
 
-    async def execute_script(self, text: str, callback: Callable[[str], None] = lambda task: None) -> None:
+    async def execute_script(self, text: str) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         assert self._scripting is not None
+        assert self._proc_controller is not None
 
-        interpreter = self._scripting.parse_script(text)
-        async for line_index, task in interpreter:
-            callback(task)
+        runnable_script = self._scripting.parse_script(text)
+        interpreter = InterpreterEngine(self._device, self._proc_controller, self._logger)
+        interpreter.script = runnable_script
+        interpreter.start()
 
     def execute_ramp(self, ramp_args: RamperArgs) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
