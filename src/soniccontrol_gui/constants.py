@@ -28,6 +28,8 @@ class _Files:
     TRANSDUCER_CONFIG_JSON = TRANSDUCER_CONFIG_FOLDER / "template.json"
     EXPERIMENT_TEMPLATES_JSON = DATA_DIR / "experiment_templates.json"
     SONICCONTROL_LOG = LOG_DIR / "soniccontrol.log"
+    SCRIPT_DIR = DATA_DIR / "scripts"
+    EXAMPLE_SCRIPT = SCRIPT_DIR / "example_script"
 
 files: _Files = _Files()
 
@@ -147,6 +149,7 @@ class _UIStringsEN:
     GUIDE_LABEL: Final[str] = "Guide"
     SCRIPT_EDITOR_LABEL: Final[str] = "Script Editor"
     LOAD_LABEL: Final[str] = "Load File"
+    LOAD_EXAMPLE_LABEL: Final[str] = "Load Example"
     SEND_LABEL: Final[str] = "Send"
     DELETE_LABEL: Final[str] = "Delete"
     FINISH_LABEL: Final[str] = "Finish"
