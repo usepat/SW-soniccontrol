@@ -51,6 +51,7 @@ class EFieldName(Enum):
     TIMESTAMP = "timestamp"
     INDEX = "index"
 
+    SCAN_F_CENTER = "scan_f_center"
     SCAN_F_RANGE = "scan_f_range"
     SCAN_F_STEP = "scan_f_step"
     SCAN_F_SHIFT = "scan_f_shift"

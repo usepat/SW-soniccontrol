@@ -14,6 +14,7 @@ class ScriptingGuide(ttk.Toplevel):
         self._editor_text: ScrolledText = editor_text
         self._scrolled_frame: ScrolledFrame = ScrolledFrame(self)
         self._cards_data: List[ScriptingGuideCardDataDict] = cards_data
+                
 
         KEYWORD = "keyword"
         EXAMPLE = "example"

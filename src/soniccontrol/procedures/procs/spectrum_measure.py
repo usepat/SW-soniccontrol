@@ -1,8 +1,10 @@
 
 import asyncio
-from typing import List, Type, Union
+from typing import Any, List, Type, Union
 import attrs
+from attrs import validators
 
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
 from soniccontrol.updater import Updater
 from soniccontrol.interfaces import Scriptable
@@ -10,8 +12,40 @@ from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder
 from soniccontrol.procedures.procedure import Procedure
 from soniccontrol.procedures.procs.ramper import RamperArgs
 
+
+@attrs.define(auto_attribs=True)
+class FixedRamperArgs():
+    f_start: int = attrs.field(validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(10_000_000)
+        ])
+    
+    f_stop: int = attrs.field(
+        validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(10_000_000)
+        ]
+    )
+    f_step: int = attrs.field(
+        validator=[
+            validators.instance_of(int),
+            validators.ge(10),
+            validators.le(500_000)
+        ]
+    )
+    t_on: HolderArgs = attrs.field(
+        default=HolderArgs(100, "ms"),
+        converter=convert_to_holder_args,
+    )
+    t_off: HolderArgs = attrs.field(
+        default=HolderArgs(0, "ms"),
+        converter=convert_to_holder_args,
+    )
+
 @attrs.define()
-class SpectrumMeasureArgs(RamperArgs):
+class SpectrumMeasureArgs(FixedRamperArgs):
     time_offset_measure: HolderArgs = attrs.field(
         default=HolderArgs(100, "ms"), 
         converter=convert_to_holder_args
@@ -35,11 +69,11 @@ class SpectrumMeasure(Procedure):
         device: Scriptable,
         args: SpectrumMeasureArgs
     ) -> None:
-        values = [args.start + i * args.step for i in range(int((args.stop - args.start) / args.step)) ]
+        values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step)) ]
 
         try:
             await device.get_overview()
-            await self._ramp(device, list(values), args.hold_on, args.hold_off, args.time_offset_measure)
+            await self._ramp(device, list(values), args.t_on, args.t_off, args.time_offset_measure)
         finally:
             await device.set_signal_off()
 
@@ -63,5 +97,8 @@ class SpectrumMeasure(Procedure):
             if hold_off.duration:
                 await device.set_signal_off()
                 await Holder.execute(hold_off)
+
+    async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
+        return {}
 
 

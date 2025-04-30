@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, Tuple, Type, TypeVar
 
 import attrs
+from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
@@ -222,11 +223,17 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         return self._time_value, self._unit_value_str.get() # type: ignore
     
     @value.setter
-    def value(self, v: HoldTuple) -> None:
-        self._time_value = v[0]
-        self._time_value_str.set(str(v[0]))
-        self._unit_value_str.set(v[1])
-        self._unit_button.configure(text=v[1])
+    def value(self, v: HoldTuple | HolderArgs) -> None:
+        if isinstance(v, HolderArgs):
+            self._time_value = v.duration
+            self._time_value_str.set(str(v.duration))
+            self._unit_value_str.set(v.unit)
+            self._unit_button.configure(text=v.unit)
+        else:
+            self._time_value = v[0]
+            self._time_value_str.set(str(v[0]))
+            self._unit_value_str.set(v[1])
+            self._unit_button.configure(text=v[1])
  
     def _parse_str_value(self, *_args):
         try:
@@ -336,12 +343,15 @@ FormFieldAttributes = Dict[str, "attrs.Attribute[Any] | FieldViewFactoryType"]
 
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
-                 title: str, form_attrs: Type | FormFieldAttributes, model_dict: dict | None = None):
+                 title: str, form_attrs: Type | FormFieldAttributes | ProcedureArgs, model_dict: dict | None = None):
         """
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
         """
-        self._form_attrs: FormFieldAttributes = form_attrs if isinstance(form_attrs, dict) else attrs.fields_dict(form_attrs) #type: ignore
+        if isinstance(form_attrs, type) and issubclass(form_attrs, ProcedureArgs):
+            self._form_attrs = form_attrs.fields_dict_with_alias()
+        else:
+            self._form_attrs: FormFieldAttributes = form_attrs if isinstance(form_attrs, dict) else attrs.fields_dict(form_attrs) #type: ignore
         self._fields: Dict[str, FieldViewBase] = {}
         self._procedure_name = title
         self._view = FormWidgetView(parent_view)

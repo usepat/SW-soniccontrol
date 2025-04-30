@@ -1,56 +1,25 @@
 import asyncio
-from typing import Type
+from typing import Any, Type
 
 import attrs
 from attrs import validators
 
+from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
 from soniccontrol.interfaces import Scriptable
-from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
-from soniccontrol.procedures.procedure import Procedure
+from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
+from soniccontrol.procedures.procs.scan import ScanArgs, ScanProc
+from soniccontrol.procedures.procs.tune import TuneArgs, TuneProc
 
 
-@attrs.define(auto_attribs=True)
-class AutoArgs:
-    Scanning_f_center_Hz: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(100000),
-        validators.le(10000000)
-    ])
-    Scanning_gain: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(150)
-    ])
-    Scanning_f_range_Hz: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    Scanning_f_step_Hz: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    Scanning_t_step_ms: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
+@attrs.define(auto_attribs=True, init=False)
+class AutoArgs(ProcedureArgs):
+    scan_arg: ScanArgs = attrs.field(
+        default=ScanArgs(),
     )
-    Tuning_f_step_Hz: int = attrs.field(
-        default=1000,
-        validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    Tuning_time_ms: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
-    )
-
-    Tuning_t_step_ms: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
+    tune_arg: TuneArgs = attrs.field(
+        default=TuneArgs(),
     )
 
 
@@ -64,12 +33,17 @@ class AutoProc(Procedure):
         return True
 
     async def execute(self, device: Scriptable, args: AutoArgs) -> None:
-        await device.execute_command(commands.SetFrequency(args.Scanning_f_center_Hz))
-        await device.execute_command(f"!scan_gain={args.Scanning_gain}")
-        await device.execute_command(f"!scan_f_range={args.Scanning_f_range_Hz}")
-        await device.execute_command(f"!scan_f_step={args.Scanning_f_step_Hz}")
-        await device.execute_command(f"!scan_t_step={int(args.Scanning_t_step_ms.duration_in_ms)}")
-        await device.execute_command(f"!tune_f_step={args.Tuning_f_step_Hz}")
-        await device.execute_command(f"!tune_t_time={int(args.Tuning_time_ms.duration_in_ms)}")
-        await device.execute_command(f"!tune_t_step={int(args.Tuning_t_step_ms.duration_in_ms)}")
-        await device.execute_command("!auto")
+        scan = ScanProc()
+        # With False we only execute the arg setter
+        await scan.execute(device, args.scan_arg, False)
+
+        tune = TuneProc()
+        await tune.execute(device, args.tune_arg, False)
+        await device.execute_command(commands.SetAuto())
+
+    async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
+        # TODO ensure GetAuto returns a answer where all FieldName of both scan and tune are returned
+        answer = await device.execute_command(commands.GetAuto())
+        if answer.was_validated and answer.valid:
+            return AutoArgs.to_dict_with_holder_args(answer)
+        return {}
