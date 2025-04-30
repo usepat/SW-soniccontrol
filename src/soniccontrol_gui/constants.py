@@ -188,7 +188,7 @@ class _UIStringsEN:
     END: Final[str] = "End"
     LIVE_PLOT: Final[str] = "Live Plot"
     URMS: Final[str] = "Urms"
-    IRMS: Final[str] = "Irms"
+    IRMS: Final[str] = "Irms"  
     PHASE: Final[str] = "Phase"
     START_LIVE_PLOT: Final[str] = f"{START_LABEL} {LIVE_PLOT}"
     START_VALUE: Final[str] = "Start value:"
@@ -211,10 +211,10 @@ class _UIStringsEN:
     ] = "The Manual Control Panel contains entries to set the named parameters. Based on your Sonicamp those parameters may differ from the shown image."
     HOME_HELP_FREQUENCY: Final[
         str
-    ] = "Here should be a description of the frequency entry."
-    HOME_HELP_GAIN: Final[str] = "Here should be a description of the gain entry."
-    HOME_HELP_CATCH: Final[str] = "Here should be a description of the catch entry."
-    HOME_HELP_WIPE: Final[str] = "Here should be a description of the wipe entry."
+    ] = ""#"Here should be a description of the frequency entry."
+    HOME_HELP_GAIN: Final[str] = ""#"Here should be a description of the gain entry."
+    HOME_HELP_CATCH: Final[str] = ""#"Here should be a description of the catch entry."
+    HOME_HELP_WIPE: Final[str] = ""#"Here should be a description of the wipe entry."
     HOME_HELP_SET_VALUES: Final[
         str
     ] = "The 'Set Values' button sets all currently configured parameters."
@@ -224,9 +224,9 @@ class _UIStringsEN:
     HOME_HELP_SIGNAL_CONTROL_PANEL: Final[
         str
     ] = "The signal of the Sonicamp device can be set to ON, AUTO or OFF."
-    HOME_HELP_ON: Final[str] = "Here should be a description of the on entry."
-    HOME_HELP_AUTO: Final[str] = "Here should be a description of the auto entry."
-    HOME_HELP_OFF: Final[str] = "Here should be a description of the off entry."
+    HOME_HELP_ON: Final[str] = ""#"Here should be a description of the on entry."
+    HOME_HELP_AUTO: Final[str] = ""#"Here should be a description of the auto entry."
+    HOME_HELP_OFF: Final[str] = ""#"Here should be a description of the off entry."
     CHOOSE_A_CAPTURE_TARGET: Final[str] = "Choose a capture target"
     START_CAPTURE: Final[str] = "Start Capture"
     END_CAPTURE: Final[str] = "End Capture"
