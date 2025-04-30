@@ -92,7 +92,7 @@ class Editor(UIComponent):
             self._view.editor_enabled = False
 
     def _set_current_target(self, target: CurrentTarget):
-        self._view.highlight_line(target.line - 1 if target.line else None)
+        self._view.highlight_line(target.line)
         self._view.current_task = target.task
 
     def _set_interpreter_state(self, interpreter_state: InterpreterState):
@@ -222,7 +222,7 @@ class Editor(UIComponent):
         await self._interpreter.pause()
 
     def _handle_script_error(self, e: ScriptException):
-        self._view.highlight_line(e.line_begin-1, color_background="#ff2c2c")
+        self._view.highlight_line(e.line_begin, color_background="#ff2c2c")
         MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
         
 
@@ -411,8 +411,7 @@ class EditorView(TabView):
         current_line_tag = "currentLine"
         self._editor_text.tag_remove(current_line_tag, 1.0, "end") # type: ignore
 
-        if line_idx:
-            line_idx += 1
+        if line_idx is not None:
             self._editor_text.tag_add(current_line_tag, f"{line_idx}.0", f"{line_idx}.end") # type: ignore
             self._editor_text.tag_configure( # type: ignore
                 current_line_tag, background=color_background, foreground=color_foreground

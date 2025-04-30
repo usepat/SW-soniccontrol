@@ -4,6 +4,7 @@ import asyncio
 
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.defs as protocol_defs
+import sonic_protocol.python_parser.commands as cmds
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.procedures.procedure import Procedure, ProcedureType
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
@@ -30,6 +31,7 @@ class ProcedureController(EventManager):
         self._ramp: Optional[Procedure] = self._procedures.get(ProcedureType.RAMP, None)
         self._running_proc_task: Optional[asyncio.Task] = None
         self._remote_procedure_state = RemoteProcedureState()
+        self._remote_procedure_state.subscribe(RemoteProcedureState.PROCEDURE_HALTED, lambda _e: self._on_proc_finished())
 
         updater.subscribe("update", self._on_update)
 
@@ -65,11 +67,12 @@ class ProcedureController(EventManager):
                 if procedure.is_remote:
                     await self._remote_procedure_state.wait_till_procedure_halted()
             except asyncio.CancelledError:
+                if procedure.is_remote:
+                    await self._device.execute_command(cmds.Stop())
                 await self._device.set_signal_off()
 
         self._remote_procedure_state.reset_completion_flag()
         self._running_proc_task = event_loop.create_task(proc_task())
-        self._running_proc_task.add_done_callback(lambda _e: self._on_proc_finished()) # Not sure, if I should call this directly in proc_task
         self.emit(Event(ProcedureController.PROCEDURE_RUNNING, proc_type=proc_type))
 
     async def stop_proc(self) -> None:
@@ -77,7 +80,6 @@ class ProcedureController(EventManager):
         if self._running_proc_task: 
             self._running_proc_task.cancel()
             await self._running_proc_task
-            self._on_proc_finished()
 
     async def wait_for_proc_to_finish(self) -> None:
         await self._remote_procedure_state.wait_till_procedure_halted()
@@ -110,7 +112,6 @@ class ProcedureController(EventManager):
             case _:
                 assert False, "Case not covered"
         self._remote_procedure_state.update(proc_type)
-
 
     async def ramp_freq(
         self,
