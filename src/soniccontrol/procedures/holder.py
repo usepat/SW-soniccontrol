@@ -26,6 +26,9 @@ class HolderArgs:
         else:
             return self.duration * 1000
         
+    def __str__(self) -> str:
+        return f"{self.duration}{self.unit}"
+
     def __sub__(self, other: Union['HolderArgs', float, int]) -> 'HolderArgs':
         """Subtracts another HolderArgs or a duration value and returns a new HolderArgs instance."""
         if isinstance(other, HolderArgs):

@@ -9,10 +9,10 @@ from ttkbootstrap.scrolled import ScrolledFrame
 import json
 from sonic_protocol.python_parser import commands
 from soniccontrol.procedures.procedure_controller import ProcedureController
+from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
-from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
 from soniccontrol.scripting.scripting_facade import ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence
@@ -224,12 +224,14 @@ class Configuration(UIComponent):
 
         self._logger.info("Execute init file")
         self._logger.debug("Init file:\n%s", script)
-        scripting: ScriptingFacade = LegacyScriptingFacade(self._device, self._procedure_controller)
+        scripting: ScriptingFacade = NewScriptingFacade()
         interpreter = scripting.parse_script(script)
 
+        assert False, "need to implement stuff"
+
         try:
-            while anext(interpreter, None):
-                pass
+            while next(interpreter, None):
+                pass # TODO: implement stuff
         except asyncio.CancelledError:
             self._logger.error("The execution of the init file got interrupted")
             return

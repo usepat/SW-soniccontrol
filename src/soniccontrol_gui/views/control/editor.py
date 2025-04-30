@@ -13,7 +13,7 @@ from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
 from soniccontrol.scripting.interpreter_engine import CurrentTarget, InterpreterEngine, InterpreterState
-from soniccontrol.scripting.scripting_facade import Script, ScriptingFacade
+from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade
 from soniccontrol_gui.constants import (sizes, scripting_cards_data,
                                                      ui_labels)
 from soniccontrol.events import PropertyChangeEvent
@@ -60,7 +60,6 @@ class Editor(UIComponent):
         self._app_state = app_state
         self._scripting: ScriptingFacade = scripting
         self._script: ScriptFile = script_file
-        self._parsed_script: Optional[Script] = None
         self._interpreter = interpreter
         self._view = EditorView(parent.view)
         super().__init__(parent, self._view, self._logger)
@@ -68,13 +67,14 @@ class Editor(UIComponent):
         self._view.add_menu_command(ui_labels.LOAD_LABEL, self._on_load_script)
         self._view.add_menu_command(ui_labels.SAVE_LABEL, self._on_save_script)
         self._view.add_menu_command(ui_labels.SAVE_AS_LABEL, self._on_save_as_script)
-        self._view.set_scripting_guide_button_command(self._on_open_scriping_guide)
+        self._view.set_scripting_guide_button_command(self._on_open_scripting_guide)
         def set_text() -> None:
             self._script.text = self._view.editor_text
         self._view.bind_editor_text(set_text)
 
         self._set_interpreter_state(self._interpreter.interpreter_state)
-        self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, lambda e: self._show_err_msg(e.data["error"]))
+        # TODO: highlight errors in script
+        self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, lambda e: self._handle_script_error(e.data["exception"]))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_INTERPRETER_STATE, lambda e: self._set_interpreter_state(e.new_value))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda e: self._set_current_target(e.new_value))
         self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self.on_execution_state_changed)
@@ -182,34 +182,34 @@ class Editor(UIComponent):
         else:
             self._on_save_as_script()
 
-    def _on_open_scriping_guide(self):
+    def _on_open_scripting_guide(self):
         ScriptingGuide(self._view, self._view.editor_text_view, scripting_cards_data)
 
 
-    def _parse_script(self):
+    def _try_parse_script(self) -> bool:
         self._script.text = self._view.editor_text
         try:
-            self._parsed_script = self._scripting.parse_script(self._script.text)  
-            pass
-        except Exception as e:
-            self._show_err_msg(e)
+            self._interpreter.script =  self._scripting.parse_script(self._script.text)
+            return True
+        except ScriptException as e:
+            self._handle_script_error(e)
+            return False
 
     @async_handler
     async def _on_start_script(self):
-        if self._interpreter.interpreter_state == InterpreterState.READY:
-            self._parse_script()
-
-        self._interpreter.script = self._parsed_script
+        if not self._try_parse_script():
+            return
+            
         self._interpreter.start()
 
     @async_handler
     async def _on_single_step_script(self):
         if self._interpreter.interpreter_state == InterpreterState.READY:
-            self._parse_script()
+            if not self._try_parse_script():
+                return
 
-        self._interpreter.script = self._parsed_script
         self._interpreter.single_step()
-            
+
     @async_handler
     async def _on_stop_script(self):
         await self._interpreter.stop()
@@ -221,8 +221,10 @@ class Editor(UIComponent):
     async def _on_pause_script(self):
         await self._interpreter.pause()
 
-    def _show_err_msg(self, e: Exception):
+    def _handle_script_error(self, e: ScriptException):
+        self._view.highlight_line(e.line_begin, color_background="#ff2c2c")
         MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
+        
 
 
 class EditorView(TabView):
@@ -405,13 +407,12 @@ class EditorView(TabView):
     def stop_button(self) -> PushButtonView:
         return self._stop_button
 
-    def highlight_line(self, line_idx: Optional[int]) -> None:
+    def highlight_line(self, line_idx: Optional[int], color_background: str = "#3e3f3a", color_foreground: str = "#dfd7ca") -> None:
         current_line_tag = "currentLine"
         self._editor_text.tag_remove(current_line_tag, 1.0, "end") # type: ignore
 
-        if line_idx:
-            line_idx += 1
+        if line_idx is not None:
             self._editor_text.tag_add(current_line_tag, f"{line_idx}.0", f"{line_idx}.end") # type: ignore
             self._editor_text.tag_configure( # type: ignore
-                current_line_tag, background="#3e3f3a", foreground="#dfd7ca"
+                current_line_tag, background=color_background, foreground=color_foreground
             )

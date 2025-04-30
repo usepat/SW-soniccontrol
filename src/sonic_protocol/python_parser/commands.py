@@ -124,6 +124,11 @@ class SetScan(Command):
         super().__init__(code=CommandCode.SET_SCAN)
 
 @attrs.define()
+class Stop(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_STOP)
+
+@attrs.define()
 class SonicForce(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SONIC_FORCE)

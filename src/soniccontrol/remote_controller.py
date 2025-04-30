@@ -1,9 +1,8 @@
 import asyncio
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 import attrs
 
-from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.commands import Command
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
@@ -14,9 +13,9 @@ from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, Capt
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
-from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs
-from soniccontrol.scripting.legacy_scripting import LegacyScriptingFacade
+from soniccontrol.scripting.interpreter_engine import InterpreterEngine
+from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol.scripting.scripting_facade import ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
@@ -36,17 +35,18 @@ class RemoteController:
         self._log_path: Optional[Path] = log_path
         self._updater: Optional[Updater] = None
 
+    # TODO: make the connect functions classmethods and they give back a RemoteController
     async def _connect(self, connection: Connection, connection_name: str):
         if self._log_path:
-            logger = create_logger_for_connection(connection_name, self._log_path)   
+            self._logger = create_logger_for_connection(connection_name, self._log_path)   
         else:
-            logger = create_logger_for_connection(connection_name)
+            self._logger = create_logger_for_connection(connection_name)
 
-        self._device = await DeviceBuilder().build_amp(connection, logger=logger)
+        self._device = await DeviceBuilder().build_amp(connection, logger=self._logger)
         self._updater = Updater(self._device)
         self._updater.start()
         self._proc_controller = ProcedureController(self._device, updater=self._updater)
-        self._scripting = LegacyScriptingFacade(self._device, self._proc_controller)
+        self._scripting = NewScriptingFacade()
 
     async def connect_via_serial(self, url: Path, baudrate: int = 9600) -> None:
         assert self._device is None
@@ -89,19 +89,18 @@ class RemoteController:
         answer.field_value_dict[EFieldName.COMMAND_CODE] = answer.command_code # TODO you gotta do better senator
         return answer.message, answer.field_value_dict, answer.valid
 
-    async def execute_script(self, text: str, callback: Callable[[str], None] = lambda task: None) -> None:
+    async def execute_script(self, text: str, callback: Callable[[str], None] = lambda _: None) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
         assert self._scripting is not None
-
-        interpreter = self._scripting.parse_script(text)
-        async for line_index, task in interpreter:
-            callback(task)
-
-    def execute_ramp(self, ramp_args: RamperArgs) -> None:
-        assert self._device is not None,    RemoteController.NOT_CONNECTED
+        assert self._updater is not None
         assert self._proc_controller is not None
 
-        self._proc_controller.execute_proc(ProcedureType.RAMP, ramp_args)
+        runnable_script = self._scripting.parse_script(text)
+        interpreter = InterpreterEngine(self._device, self._updater, self._logger)
+        interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda target: callback(target.data.task))
+        interpreter.script = runnable_script
+        interpreter.start()
+        await interpreter.wait_for_script_to_halt()
 
     def execute_procedure(self, procedure: ProcedureType, args: dict, event_loop=asyncio.get_event_loop()) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
@@ -110,6 +109,13 @@ class RemoteController:
         arg_class = self._proc_controller.proc_args_list[procedure]
         procedure_args = arg_class(**args)
         self._proc_controller.execute_proc(procedure, procedure_args, event_loop)
+        
+    async def wait_for_procedure_to_finish(self):
+        assert self._proc_controller is not None
+        assert self._updater
+        assert self._updater.running
+
+        await self._proc_controller.wait_for_proc_to_finish()
 
     async def stop_procedure(self) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
