@@ -14,6 +14,9 @@ class ScriptException(Exception):
     line_end: Optional[int] = attrs.field(default=None)
     col_end: Optional[int] = attrs.field(default=None)
 
+    def __str__(self) -> str:
+        return self.msg
+
 
 CommandFunc = Callable[[SonicDevice, ProcedureController], Awaitable[None]]
 

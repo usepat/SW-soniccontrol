@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 import lark
 import attrs
 import abc
@@ -101,21 +101,23 @@ class ProcedureCommand(Function):
         return description, command
 
 class Interpreter(RunnableScript):
+    FUNCTION_TABLE: Dict[str, Function] = {
+        "send": SendCommand(),
+        "hold": HoldCommand(),
+        "frequency": ProtocolCommand((Parameter("frequency", int),), cmds.SetFrequency), 
+        "gain": ProtocolCommand((Parameter("gain", int),), cmds.SetGain), 
+        "on": ProtocolCommand((), cmds.SetOn), 
+        "off": ProtocolCommand((), cmds.SetOff), 
+        "ramp": ProcedureCommand(RamperArgs, ProcedureType.RAMP),
+        "auto": ProcedureCommand(AutoArgs, ProcedureType.AUTO),
+        "wipe": ProcedureCommand(WipeArgs, ProcedureType.WIPE),
+        "tune": ProcedureCommand(TuneArgs, ProcedureType.TUNE),
+        "scan": ProcedureCommand(ScanArgs, ProcedureType.SCAN),
+    }
+
     def __init__(self, ast):
         self._ast = ast
-        self._function_table = {
-            "send": SendCommand(),
-            "hold": HoldCommand(),
-            "frequency": ProtocolCommand((Parameter("frequency", int),), cmds.SetFrequency), 
-            "gain": ProtocolCommand((Parameter("gain", int),), cmds.SetGain), 
-            "on": ProtocolCommand((), cmds.SetOn), 
-            "off": ProtocolCommand((), cmds.SetOff), 
-            "ramp": ProcedureCommand(RamperArgs, ProcedureType.RAMP),
-            "auto": ProcedureCommand(AutoArgs, ProcedureType.AUTO),
-            "wipe": ProcedureCommand(WipeArgs, ProcedureType.WIPE),
-            "tune": ProcedureCommand(TuneArgs, ProcedureType.TUNE),
-            "scan": ProcedureCommand(ScanArgs, ProcedureType.SCAN),
-        }
+        self._function_table = Interpreter.FUNCTION_TABLE.copy()
 
     def __iter__(self):
         yield from self._start(self._ast)

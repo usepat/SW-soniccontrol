@@ -84,8 +84,7 @@ def procedure_result_callback(ctx: click.Context, *args, **kwargs):
     # TODO: print updates until proc finished
     click.echo("Procedure is being executed")
 
-    assert (remote_controller._proc_controller)
-    async_loop.run_until_complete(remote_controller._proc_controller.wait_for_proc_to_finish())
+    async_loop.run_until_complete(remote_controller.wait_for_procedure_to_finish())
     click.echo("Procedure finished")
 
 add_procedure_commands(procedure)

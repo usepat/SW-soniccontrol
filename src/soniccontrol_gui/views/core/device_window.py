@@ -123,7 +123,7 @@ class RescueWindow(DeviceWindow):
             self._proc_controller = ProcedureController(self._device, EventManager()) # FIXME: what to do if devices do not support updates?
             self._scripting = NewScriptingFacade()
             self._script_file = ScriptFile(logger=self._logger)
-            self._interpreter = InterpreterEngine(self._device, self._proc_controller, self._logger)
+            self._interpreter = InterpreterEngine(self._device, EventManager(), self._logger) # type: ignore
             self._app_state = AppState(self._logger)
 
             self._logger.debug("Create views")
@@ -167,7 +167,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._proc_controlling_model = ProcControllingModel()
             self._scripting = NewScriptingFacade()
             self._script_file = ScriptFile(logger=self._logger)
-            self._interpreter = InterpreterEngine(self._device, self._proc_controller, self._logger)
+            self._interpreter = InterpreterEngine(self._device, self._updater, self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
             self._capture = Capture(files.LOG_DIR, self._logger)

@@ -17,10 +17,11 @@ class ProcedureController(EventManager):
     PROCEDURE_STOPPED: Literal["<<PROCEDURE_STOPPED>>"] = "<<PROCEDURE_STOPPED>>"
     PROCEDURE_RUNNING: Literal["<<PROCEDURE_RUNNING>>"] = "<<PROCEDURE_RUNNING>>"
 
-    def __init__(self, device: SonicDevice, updater: EventManager): # TODO: add type hint to updater after moving updater into sonic control
+    def __init__(self, device: SonicDevice, updater: EventManager, logger = None): # TODO: add type hint to updater after moving updater into sonic control
         super().__init__()
-        base_logger = get_base_logger(device._logger)
-        self._logger = logging.getLogger(base_logger.name + "." + ProcedureController.__name__)
+        if logger is None:
+            logger = get_base_logger(device._logger)
+        self._logger = logging.getLogger(logger.name + "." + ProcedureController.__name__)
         self._device = device
 
         self._logger.debug("Instantiate procedures")
@@ -59,14 +60,14 @@ class ProcedureController(EventManager):
     
 
         async def proc_task():
-            self._remote_procedure_state.reset_completion_flag()
             try:
                 await procedure.execute(self._device, args)
                 if procedure.is_remote:
-                    await self._remote_procedure_state.wait_till_procedure_completed()
+                    await self._remote_procedure_state.wait_till_procedure_halted()
             except asyncio.CancelledError:
                 await self._device.set_signal_off()
 
+        self._remote_procedure_state.reset_completion_flag()
         self._running_proc_task = event_loop.create_task(proc_task())
         self._running_proc_task.add_done_callback(lambda _e: self._on_proc_finished()) # Not sure, if I should call this directly in proc_task
         self.emit(Event(ProcedureController.PROCEDURE_RUNNING, proc_type=proc_type))
@@ -79,7 +80,7 @@ class ProcedureController(EventManager):
             self._on_proc_finished()
 
     async def wait_for_proc_to_finish(self) -> None:
-        await self._remote_procedure_state.wait_till_procedure_completed()
+        await self._remote_procedure_state.wait_till_procedure_halted()
 
     def _on_proc_finished(self) -> None:
         self._logger.info("Procedure stopped")

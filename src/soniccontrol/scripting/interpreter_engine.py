@@ -8,6 +8,7 @@ from soniccontrol.events import Event, EventManager, PropertyChangeEvent
 from soniccontrol.scripting.scripting_facade import ExecutionStep, RunnableScript, ScriptException
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol.updater import Updater
 
 
 
@@ -31,14 +32,15 @@ class InterpreterEngine(EventManager):
     PROPERTY_INTERPRETER_STATE = "interpreter_state"
     PROPERTY_CURRENT_TARGET = "current_target"
 
-    def __init__(self, device: SonicDevice, proc_controller: ProcedureController, logger: logging.Logger):
+    def __init__(self, device: SonicDevice, updater: Updater, logger: logging.Logger):
         super().__init__()
         self._interpreter_worker = None
         self._device = device
-        self._proc_controller = proc_controller
+        self._proc_controller = ProcedureController(device, updater, logger)
         self._script: Optional[RunnableScript] = None
         self._execution_steps: Iterable[ExecutionStep] | None = None
         self._interpreter_state = InterpreterState.READY
+        self._halted = asyncio.Event()
         self._current_target = CurrentTarget.default()
         self._logger = logging.getLogger(logger.name + "." + InterpreterEngine.__name__)
 
@@ -49,6 +51,10 @@ class InterpreterEngine(EventManager):
     def _set_interpreter_state(self, state: InterpreterState):
         old_val = self._interpreter_state
         self._interpreter_state = state
+        if state == InterpreterState.RUNNING:
+            self._halted.clear()
+        else:
+            self._halted.set()
         if old_val != state:
             self.emit(PropertyChangeEvent(InterpreterEngine.PROPERTY_INTERPRETER_STATE, old_val, self._interpreter_state))
 
@@ -57,6 +63,11 @@ class InterpreterEngine(EventManager):
         self._current_target = target
         if old_val != target:
             self.emit(PropertyChangeEvent(InterpreterEngine.PROPERTY_CURRENT_TARGET, old_val, self._current_target))
+
+    async def wait_for_script_to_halt(self):
+        if self._interpreter_state != InterpreterState.RUNNING:
+            return
+        await self._halted.wait()
 
     @property
     def script(self) -> Optional[RunnableScript]:
@@ -115,23 +126,25 @@ class InterpreterEngine(EventManager):
                 self._set_current_target(CurrentTarget(step.line, step.description))
                 self._logger.info("Current task: %s", step.description)
                 await step.command(self._device, self._proc_controller)
-                if single_instruction: #  and step.line != 0:
+                if single_instruction:
+                    self._set_interpreter_state(InterpreterState.PAUSED)
                     break
         except StopIteration:
             self._execution_steps = None
             self._set_interpreter_state(InterpreterState.READY)
-            return
+            self._set_current_target(CurrentTarget.default())
         except asyncio.CancelledError:
             self._logger.warn("Interpreter got interrupted, while executing a script")
+            self._set_interpreter_state(InterpreterState.PAUSED)
         except ScriptException as e:
             self._logger.error(e)
+            self._set_interpreter_state(InterpreterState.READY)
             self.emit(Event(InterpreterEngine.INTERPRETATION_ERROR, exception=e))   
         except Exception as e:
             exception = ScriptException(str(e), line_begin=self._current_target.line, col_begin=0) # type:ignore line should be int and not None 
             self._logger.error(exception)
+            self._set_interpreter_state(InterpreterState.READY)
             self.emit(Event(InterpreterEngine.INTERPRETATION_ERROR, exception=exception))   
         
-        self._set_interpreter_state(InterpreterState.PAUSED)
-
 
 

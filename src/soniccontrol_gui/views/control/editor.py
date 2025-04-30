@@ -13,7 +13,7 @@ from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
 from soniccontrol.scripting.interpreter_engine import CurrentTarget, InterpreterEngine, InterpreterState
-from soniccontrol.scripting.scripting_facade import ScriptingFacade
+from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade
 from soniccontrol_gui.constants import (sizes, scripting_cards_data,
                                                      ui_labels)
 from soniccontrol.events import PropertyChangeEvent
@@ -74,7 +74,7 @@ class Editor(UIComponent):
 
         self._set_interpreter_state(self._interpreter.interpreter_state)
         # TODO: highlight errors in script
-        self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, lambda e: self._show_err_msg(e.data["error"]))
+        self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, lambda e: self._handle_script_error(e.data["exception"]))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_INTERPRETER_STATE, lambda e: self._set_interpreter_state(e.new_value))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda e: self._set_current_target(e.new_value))
         self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self.on_execution_state_changed)
@@ -92,7 +92,7 @@ class Editor(UIComponent):
             self._view.editor_enabled = False
 
     def _set_current_target(self, target: CurrentTarget):
-        self._view.highlight_line(target.line)
+        self._view.highlight_line(target.line - 1 if target.line else None)
         self._view.current_task = target.task
 
     def _set_interpreter_state(self, interpreter_state: InterpreterState):
@@ -186,29 +186,26 @@ class Editor(UIComponent):
         ScriptingGuide(self._view, self._view.editor_text_view, scripting_cards_data)
 
 
-    def _parse_script(self) -> bool:
+    def _try_parse_script(self) -> bool:
         self._script.text = self._view.editor_text
         try:
             self._interpreter.script =  self._scripting.parse_script(self._script.text)
             return True
-        except Exception as e:
-            self._show_err_msg(e)
+        except ScriptException as e:
+            self._handle_script_error(e)
             return False
 
     @async_handler
     async def _on_start_script(self):
-        if self._interpreter.interpreter_state == InterpreterState.READY:
-            success = self._parse_script()
-            if not success:
-                return
+        if not self._try_parse_script():
+            return
             
         self._interpreter.start()
 
     @async_handler
     async def _on_single_step_script(self):
         if self._interpreter.interpreter_state == InterpreterState.READY:
-            success = self._parse_script()
-            if not success:
+            if not self._try_parse_script():
                 return
 
         self._interpreter.single_step()
@@ -224,8 +221,10 @@ class Editor(UIComponent):
     async def _on_pause_script(self):
         await self._interpreter.pause()
 
-    def _show_err_msg(self, e: Exception):
+    def _handle_script_error(self, e: ScriptException):
+        self._view.highlight_line(e.line_begin-1, color_background="#ff2c2c")
         MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
+        
 
 
 class EditorView(TabView):
@@ -408,7 +407,7 @@ class EditorView(TabView):
     def stop_button(self) -> PushButtonView:
         return self._stop_button
 
-    def highlight_line(self, line_idx: Optional[int]) -> None:
+    def highlight_line(self, line_idx: Optional[int], color_background: str = "#3e3f3a", color_foreground: str = "#dfd7ca") -> None:
         current_line_tag = "currentLine"
         self._editor_text.tag_remove(current_line_tag, 1.0, "end") # type: ignore
 
@@ -416,5 +415,5 @@ class EditorView(TabView):
             line_idx += 1
             self._editor_text.tag_add(current_line_tag, f"{line_idx}.0", f"{line_idx}.end") # type: ignore
             self._editor_text.tag_configure( # type: ignore
-                current_line_tag, background="#3e3f3a", foreground="#dfd7ca"
+                current_line_tag, background=color_background, foreground=color_foreground
             )
