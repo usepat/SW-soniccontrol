@@ -104,6 +104,9 @@ class RamperLocal(Ramper):
 
             i += 1
 
+    async def fetch_args(self, device: Scriptable) -> Dict[str, Any]:
+        return {}
+
 
 class RamperRemote(Ramper):
     def __init__(self) -> None:

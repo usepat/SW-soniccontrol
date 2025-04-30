@@ -85,8 +85,8 @@ class ProcedureArgs:
                     # If it's a _t_ field, wrap in HolderArgs
                     if value is None:
                         continue
-                    if "_t_" in enum.value:
-                        value = HolderArgs(float(value), "ms")
+                    if field.type == HolderArgs:
+                        value = HolderArgs(float(value), "ms") 
 
                     # Set the new key with the alias
                     arg_dict[enum.value] = value

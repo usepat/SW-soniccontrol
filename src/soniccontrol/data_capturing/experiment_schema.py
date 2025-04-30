@@ -79,6 +79,7 @@ class ExperimentDataRowSchema(Schema):
 registry.register_field_for_type(Version, VersionField) #type: ignore
 registry.register(CaptureTargets, lambda converter, hints, opts: EnumField(CaptureTargets, **opts))
 registry.register(DeviceType, lambda converter, hints, opts: EnumField(DeviceType, **opts))
+# TODO register procedure enums
 
 
 class ExperimentMetaDataSchema(AttrsSchema):
