@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.scripting.new_scripting import NewScriptingFacade, Interpreter
+from soniccontrol.scripting.scripting_facade import ScriptException
 
 
 @pytest.fixture
@@ -78,33 +79,52 @@ def test_interpreter_ignores_empty_lines_and_comments(command_mocks):
     command_mocks["off"].create_command.assert_called_once()
     
 @pytest.mark.parametrize("script", [
-    """
+     """
         loop 5 times
         begin 
 
-        end
     """,
-        """
+    """
         loop 5
         begin 
             on
         end
-    """
-    ,
-    """on""", # no new line at end
-    
+    """, 
+    "5",   
+    "\"string\"",   
 ])
-def test_interpreter_throws_if_wrong_syntax(command_mocks):
-    pass
+def test_interpreter_throws_if_wrong_syntax(script):
+    with pytest.raises(ScriptException):
+        runnable_script = NewScriptingFacade().parse_script(script)
+        list(runnable_script) 
 
 def test_interpreter_throws_if_unknown_function(command_mocks):
-    pass
+    script = "some_func 1000 100ms"
+    with pytest.raises(ScriptException):
+        runnable_script = NewScriptingFacade().parse_script(script)
+        list(runnable_script) 
 
-def test_interpreter_throws_if_wrong_num_params(command_mocks):
-    pass
+@pytest.mark.parametrize("script", [
+    "hold",
+    "hold 1000ms 100s",  
+    "off true"
+])
+def test_interpreter_throws_if_wrong_num_params(script, command_mocks):
+    with pytest.raises(ScriptException):
+        runnable_script = NewScriptingFacade().parse_script(script)
+        list(runnable_script) 
 
-def test_interpreter_throws_if_wrong_param_type(command_mocks):
-    pass
+@pytest.mark.parametrize("script", [
+    "hold \"200ms\"",
+    "frequency 100ms",  
+    "send 100",
+    "send true",
+    "gain \"a lot\""  
+])
+def test_interpreter_throws_if_wrong_param_type(script, command_mocks):
+    with pytest.raises(ScriptException):
+        runnable_script = NewScriptingFacade().parse_script(script)
+        list(runnable_script) 
 
 
 
