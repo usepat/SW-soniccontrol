@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from PIL import Image
+Image.CUBIC = Image.BICUBIC # FIX: because ttk.bootstrap sets an deprecated, removed value
+
 import fnmatch
 import json
 import logging

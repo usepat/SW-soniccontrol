@@ -3,7 +3,6 @@ import logging
 import pytest
 import pytest_asyncio
 from soniccontrol.consts import ENCODING
-from soniccontrol.communication.package_parser import Package, PackageParser
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from tests.soniccontrol.communication.mock_connection_factory import connection # Needed. Do not delete. Intellisense is shit
 from unittest.mock import Mock

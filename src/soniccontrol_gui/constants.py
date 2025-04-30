@@ -285,18 +285,6 @@ events: Final[_Events] = _Events()
 
 scripting_cards_data: Final[List[ScriptingGuideCardDataDict]] = [
     {
-        "keyword": "startloop",
-        "arguments": "times: optional uint",
-        "description": "Starts a loop and loops until an endloop was found. \nIf no argument was passed, \nthen the loop turns to a 'While True loop'",
-        "example": "startloop 5",
-    },
-    {
-        "keyword": "endloop",
-        "arguments": "None",
-        "description": "Ends the last started loop",
-        "example": "endloop",
-    },
-    {
         "keyword": "on",
         "arguments": "None",
         "description": "Sets the signal to ON",
@@ -307,12 +295,6 @@ scripting_cards_data: Final[List[ScriptingGuideCardDataDict]] = [
         "arguments": "None",
         "description": "Set the signal to OFF",
         "example": "off",
-    },
-    {
-        "keyword": "auto",
-        "arguments": "None",
-        "description": "Turns the auto mode on.\nIt is important to hold after that \ncommand to stay in auto mode.\nIn the following example the \nauto mode is turned on for 5 seconds",
-        "example": "auto\nhold 5s",
     },
     {
         "keyword": "frequency",
@@ -328,14 +310,54 @@ scripting_cards_data: Final[List[ScriptingGuideCardDataDict]] = [
     },
     {
         "keyword": "hold",
-        "arguments": "hold: int,\nunit: 'ms' or 's'",
-        "description": "Hold the state of the device\nfor a certain amount of time",
-        "example": "hold 10s",
+        "arguments": "hold: time",
+        "description": "holds execution for an amount of time",
+        "example": "hold 500ms",
+    },
+        {
+        "keyword": "send",
+        "arguments": "command_string: str",
+        "description": "Sends a command to the device, directly over the serial communication",
+        "example": "send \"!frequency=100000\"",
     },
     {
-        "keyword": "ramp_freq",
-        "arguments": "start: uint,\nstop: uint,\nstep: int,\non_signal_hold: uint,\nunit: 'ms' or 's',\noff_signal_hold: uint,\nunit: 'ms' or 's'",
-        "description": "Ramp up the frequency from\none point to another",
-        "example": "ramp_freq 1000000 2000000 1000 100ms 100ms",
+        "keyword": "loop",
+        "arguments": "n: uint",
+        "description": "Repeats a block of code n times",
+        "example": 
+"""loop 5 times
+begin
+    # code
+end""",
+    },
+    {
+        "keyword": "ramp",
+        "arguments": "f_start: uint\nf_stop: uint\nf_step: uint\nt_on: time\nt_off: time",
+        "description": "Executes the ramp procedure",
+        "example": "ramp 100000 200000 10000 1s 500ms",
+    },
+    {
+        "keyword": "wipe",
+        "arguments": "Wipe_f_range_Hz: uint\nWipe_f_step_Hz: uint\nWipe_t_on_ms: time\nWipe_t_off_ms: time\nWipe_t_pause_ms: time",
+        "description": "Executes the wipe procedure",
+        "example": "wipe 5000000 1000 100ms 0ms 1s",
+    },
+    {
+        "keyword": "scan",
+        "arguments": "Scanning_f_center_Hz: uint\nScanning_gain: uint\nScanning_f_range_Hz: uint\nScanning_f_step_Hz: uint\nScanning_t_step_ms: time",
+        "description": "Executes the scan procedure",
+        "example": "scan 1000000 50 500000 1000 100ms",
+    },
+    {
+        "keyword": "tune",
+        "arguments": "Tuning_f_step_Hz: uint\nTuning_time_ms: time\nTuning_t_step_ms: time",
+        "description": "Executes the tune procedure",
+        "example": "tune 1000 100ms 100ms",
+    },
+    {
+        "keyword": "auto",
+        "arguments": "Scanning_f_center_Hz: uint\nScanning_gain: uint\nScanning_f_range_Hz: uint\nScanning_f_step_Hz: uint\nScanning_t_step_ms: time\nTuning_f_step_Hz: uint\nTuning_time_ms: time\nTuning_t_step_ms: time",
+        "description": "Executes the auto procedure",
+        "example": "auto 1000000 50 500000 1000 100ms 1000 100ms 100ms",
     },
 ]

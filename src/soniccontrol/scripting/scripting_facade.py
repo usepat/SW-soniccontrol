@@ -1,84 +1,34 @@
 import abc
-from enum import Enum
-import sys
-from typing import Optional, Tuple
-from icecream import ic
+from typing import Any, Awaitable, Callable, Generator, Iterable, Optional
 import attrs
+
+from soniccontrol.procedures.procedure_controller import ProcedureController
+from soniccontrol.sonic_device import SonicDevice
 
 
 @attrs.define()
-class ParsingError:
+class ScriptException(Exception):
     msg: str = attrs.field()
     line_begin: int = attrs.field()
     col_begin: int = attrs.field()
     line_end: Optional[int] = attrs.field(default=None)
     col_end: Optional[int] = attrs.field(default=None)
 
-class ScriptError:
-    pass
+    def __str__(self) -> str:
+        return self.msg
 
 
-class Script(abc.ABC):
-    def __init__(self) -> None:
-        super().__init__()
-        self._script_started = False
+CommandFunc = Callable[[SonicDevice, ProcedureController], Awaitable[None]]
 
-    """
-    Raises:
-        ScriptError: If an operation fails
-    """
+@attrs.define
+class ExecutionStep:
+    command: CommandFunc = attrs.field()
+    line: int = attrs.field()
+    description: str = attrs.field(default="")
+
+class RunnableScript(abc.ABC):
     @abc.abstractmethod
-    async def _execute_step(self) -> None: ...
-
-    @property
-    @abc.abstractmethod
-    def current_line(self) -> int: ...
-    
-    @property
-    @abc.abstractmethod
-    def current_task(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def is_finished(self) -> bool: ...
-
-    @abc.abstractmethod
-    async def _before_script(self) -> None: ...
-
-    @abc.abstractmethod
-    async def _after_script(self) -> None: ...
-
-    def __aiter__(self):
-        return self
-    
-    async def __anext__(self) -> Tuple[int, str]:
-        if self.is_finished:
-            self._script_started = False
-            await self._after_script()
-            raise StopAsyncIteration
-        elif not self._script_started: # to return and highlight the line before we execute the line and run before_script
-            self._script_started = True
-            await self._before_script()
-            return self.current_line, self.current_task
-        else:
-            try:
-                await self._execute_step()
-            except:
-                ic(sys.exc_info())
-                await self._after_script()
-                raise # propagate exception
-            return self.current_line, self.current_task
-
-
-class BuiltInFunctions(Enum):
-    ON = "on"
-    OFF = "off"
-    HOLD = "hold"
-    FREQUENCY = "frequency"
-    GAIN = "gain"
-    AUTO = "auto"
-    RAMP_FREQ = "ramp_freq"
-    RAMP_FREQ_RANGE = "ramp_freq_range"
+    def __iter__(self) -> Generator[ExecutionStep, Any, None]: ...
 
 
 class ScriptingFacade(abc.ABC):
@@ -86,7 +36,5 @@ class ScriptingFacade(abc.ABC):
         super().__init__()
 
     @abc.abstractmethod
-    def parse_script(self, text: str) -> Script: ...
+    def parse_script(self, text: str) -> RunnableScript: ...
 
-    @abc.abstractmethod
-    def lint_text(self, text: str) -> str: ...

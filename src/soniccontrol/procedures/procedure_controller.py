@@ -4,7 +4,7 @@ import asyncio
 
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.defs as protocol_defs
-from sonic_protocol.python_parser import commands
+import sonic_protocol.python_parser.commands as cmds
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.procedures.procedure import Procedure, ProcedureType
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
@@ -18,10 +18,11 @@ class ProcedureController(EventManager):
     PROCEDURE_STOPPED: Literal["<<PROCEDURE_STOPPED>>"] = "<<PROCEDURE_STOPPED>>"
     PROCEDURE_RUNNING: Literal["<<PROCEDURE_RUNNING>>"] = "<<PROCEDURE_RUNNING>>"
 
-    def __init__(self, device: SonicDevice, updater: EventManager): # TODO: add type hint to updater after moving updater into sonic control
+    def __init__(self, device: SonicDevice, updater: EventManager, logger = None): # TODO: add type hint to updater after moving updater into sonic control
         super().__init__()
-        base_logger = get_base_logger(device._logger)
-        self._logger = logging.getLogger(base_logger.name + "." + ProcedureController.__name__)
+        if logger is None:
+            logger = get_base_logger(device._logger)
+        self._logger = logging.getLogger(logger.name + "." + ProcedureController.__name__)
         self._device = device
 
         self._logger.debug("Instantiate procedures")
@@ -30,6 +31,7 @@ class ProcedureController(EventManager):
         self._ramp: Optional[Procedure] = self._procedures.get(ProcedureType.RAMP, None)
         self._running_proc_task: Optional[asyncio.Task] = None
         self._remote_procedure_state = RemoteProcedureState()
+        self._remote_procedure_state.subscribe(RemoteProcedureState.PROCEDURE_HALTED, lambda _e: self._on_proc_finished())
 
         updater.subscribe("update", self._on_update)
 
@@ -60,16 +62,17 @@ class ProcedureController(EventManager):
     
 
         async def proc_task():
-            self._remote_procedure_state.reset_completion_flag()
             try:
                 await procedure.execute(self._device, args)
                 if procedure.is_remote:
-                    await self._remote_procedure_state.wait_till_procedure_completed()
+                    await self._remote_procedure_state.wait_till_procedure_halted()
             except asyncio.CancelledError:
+                if procedure.is_remote:
+                    await self._device.execute_command(cmds.SetStop())
                 await self._device.set_signal_off()
 
+        self._remote_procedure_state.reset_completion_flag()
         self._running_proc_task = event_loop.create_task(proc_task())
-        self._running_proc_task.add_done_callback(lambda _e: self._on_proc_finished()) # Not sure, if I should call this directly in proc_task
         self.emit(Event(ProcedureController.PROCEDURE_RUNNING, proc_type=proc_type))
 
     async def fetch_args(self, proc_type: ProcedureType) -> Dict[str, Any]:
@@ -82,14 +85,13 @@ class ProcedureController(EventManager):
 
     async def stop_proc(self) -> None:
         self._logger.info("Stop procedure")
-        await self._device.execute_command(commands.SetStop())
+        await self._device.execute_command(cmds.SetStop())
         if self._running_proc_task: 
             self._running_proc_task.cancel()
             await self._running_proc_task
-            self._on_proc_finished()
 
     async def wait_for_proc_to_finish(self) -> None:
-        await self._remote_procedure_state.wait_till_procedure_completed()
+        await self._remote_procedure_state.wait_till_procedure_halted()
 
     def _on_proc_finished(self) -> None:
         self._logger.info("Procedure stopped")
@@ -119,7 +121,6 @@ class ProcedureController(EventManager):
             case _:
                 assert False, "Case not covered"
         self._remote_procedure_state.update(proc_type)
-
 
     async def ramp_freq(
         self,
