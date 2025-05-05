@@ -23,6 +23,7 @@ from importlib import resources as rs
 # create directories if missing
 os.makedirs(files.DATA_DIR, exist_ok=True)
 os.makedirs(files.LOG_DIR, exist_ok=True)
+os.makedirs(files.MEASUREMENTS_DIR, exist_ok=True)
 
 def setup_logging() -> None:
     config_file: pathlib.Path = resources.LOGGING_CONFIG

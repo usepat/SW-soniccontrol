@@ -52,10 +52,14 @@ class ProcControlling(UIComponent):
         self._view.set_procedure_selected_command(self._on_proc_selected)
         self._view.set_start_button_command(self._on_run_pressed)
         self._view.set_stop_button_command(self._on_stop_pressed)
+        self._view.set_guide_button_command(self._on_guide_pressed)
         self._proc_controller.subscribe(ProcedureController.PROCEDURE_RUNNING, self.on_procedure_running)
         self._proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, self.on_procedure_stopped)
         self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._on_execution_state_changed)
         
+        # setup view to have ramp as default 
+        self._view.selected_procedure = ProcedureType.RAMP.value 
+        self._on_proc_selected()
         self.on_procedure_stopped(None) # type: ignore
 
     def _on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
@@ -107,10 +111,16 @@ class ProcControlling(UIComponent):
         except Exception as e:
             self._logger.error(e)
             MessageBox.show_error(self._view.root, str(e))
-        
+
     @async_handler
     async def _on_stop_pressed(self):
         await self._proc_controller.stop_proc()
+
+    def _on_guide_pressed(self):
+        proc_arg_class = self._proc_controller.proc_args_list.get(self._model.procedure_type)
+        description =proc_arg_class.get_description() # type: ignore
+        MessageBox(self.view.root,  description, "Guide", [])
+
 
     def on_procedure_running(self, e: Event):
         self._view.set_running_proc_label(ui_labels.PROC_RUNNING.format(e.data["proc_type"]))
@@ -148,6 +158,13 @@ class ProcControllingView(TabView):
         self._controls_frame = ttk.Frame(self)
         self._start_button = ttk.Button(self._controls_frame, text=ui_labels.START_LABEL)
         self._stop_button = ttk.Button(self._controls_frame, text=ui_labels.STOP_LABEL)
+        self._guide_button = ttk.Button(
+            self._controls_frame, 
+            text=ui_labels.GUIDE_LABEL,
+            style=ttk.INFO,
+            image=ImageLoader.load_image_resource(images.INFO_ICON_WHITE, (13, 13)),
+            compound=ttk.LEFT
+        )
         self._running_proc_label = ttk.Label(self._controls_frame, text="Status: Not running")
 
         WidgetRegistry.register_widget(self._procedure_combobox, "procedure_combobox", tab_name)
@@ -161,6 +178,7 @@ class ProcControllingView(TabView):
         self._controls_frame.pack(fill=ttk.X, pady=5)
         self._start_button.pack(side=ttk.LEFT, padx=5)
         self._stop_button.pack(side=ttk.LEFT, padx=5)
+        self._guide_button.pack(side=ttk.LEFT, padx=5)
         self._running_proc_label.pack(side=ttk.LEFT, fill=ttk.X, expand=True, padx=5)
 
     @property
@@ -170,6 +188,10 @@ class ProcControllingView(TabView):
     @property
     def selected_procedure(self) -> str:
         return self._selected_procedure_var.get()
+    
+    @selected_procedure.setter
+    def selected_procedure(self, value: str) -> None:
+        return self._selected_procedure_var.set(value)
     
     def set_running_proc_label(self, text: str) -> None:
         self._running_proc_label.configure(text=text)
@@ -185,6 +207,9 @@ class ProcControllingView(TabView):
 
     def set_stop_button_command(self, command: Callable[[], None]) -> None:
         self._stop_button.configure(command=command)
+
+    def set_guide_button_command(self, command: Callable[[], None]) -> None:
+        self._guide_button.configure(command=command)
 
     def set_start_button_enabled(self, enabled: bool) -> None:
         self._start_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)

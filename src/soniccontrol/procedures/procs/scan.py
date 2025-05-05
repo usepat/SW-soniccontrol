@@ -14,6 +14,10 @@ from sonic_protocol.command_codes import CommandCode
 
 @attrs.define(auto_attribs=True, init=False)
 class ScanArgs(ProcedureArgs):
+    @classmethod
+    def get_description(cls) -> str:
+        return ""
+    
     f_center: int = attrs.field(
         default=1000000,
         validator=[

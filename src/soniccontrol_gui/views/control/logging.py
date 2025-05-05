@@ -5,6 +5,7 @@ from typing import Callable, Dict
 from soniccontrol.app_config import PLATFORM, System
 from soniccontrol_gui import constants
 from soniccontrol_gui.ui_component import UIComponent
+from soniccontrol_gui.utils.file_explorer import open_file_explorer
 from soniccontrol_gui.view import TabView, View
 import ttkbootstrap as ttk
 
@@ -47,15 +48,10 @@ class Logging(UIComponent):
         self._view.set_open_logs_command(self._open_logs)
 
     def _open_logs(self):
-        path = str(constants.files.LOG_DIR)
-        if PLATFORM == System.WINDOWS:
-            os.startfile(path) 
-        elif PLATFORM == System.MAC:
-            os.system(f"open {path!r}") # !r calls repr on string and ensures proper escaping of special characters
-        elif PLATFORM == System.LINUX:
-            os.system(f"xdg-open {path!r}")
-        else:
-            MessageBox.show_error(self._view.root, "Unknown platform. Cannot open file explorer")
+        try:
+            open_file_explorer(constants.files.LOG_DIR)
+        except Exception as e:
+            MessageBox.show_error(self._view.root, str(e))
 
 
 class LoggingView(TabView):
