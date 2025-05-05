@@ -1,7 +1,5 @@
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
 import attrs
 import datetime
 
@@ -21,6 +19,8 @@ def convert_authors(x: Any) -> List[str]:
     raise ValueError("Expected type List[str] or str")
 
 
+
+# This here is in his own class, because it is used for the Form class directly.
 @attrs.define(auto_attribs=True)
 class ExperimentMetaData:
     experiment_name: str
@@ -55,9 +55,11 @@ class Experiment:
 
     date_time: datetime.datetime = attrs.field(factory=datetime.datetime.now) 
 
-    data: pd.DataFrame = attrs.Factory(lambda: pd.DataFrame(columns=[
+    @staticmethod
+    def data_columns() -> List[str]:
+        return [
         EFieldName.TIMESTAMP.value, 
         EFieldName.FREQUENCY.value, EFieldName.GAIN.value, 
         EFieldName.URMS.value, EFieldName.IRMS.value, EFieldName.PHASE.value, 
         EFieldName.TEMPERATURE.value
-    ]))        
+    ]     
