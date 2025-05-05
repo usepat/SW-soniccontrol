@@ -40,6 +40,8 @@ class Capture(EventManager):
         self._data_provider = DataProvider()
         self._target: CaptureTarget | None = None
         self._experiment: Experiment | None = None
+        self._hdf5_store: pd.HDFStore | None = None
+        self._metadata_written = False
         self._completed_capturing.set()
 
     @property 
@@ -86,6 +88,11 @@ class Capture(EventManager):
         self._completed_capturing.set()        
         self._write_experiment_data()
 
+        # close the HDF5 store so everything is flushed to disk
+        if hasattr(self, "_hdf5_store") and self._hdf5_store is not None:
+            self._hdf5_store.close()
+            self._hdf5_store = None
+
         self.emit(Event(Capture.END_CAPTURE_EVENT))
         self._logger.info("End Capture")
 
@@ -109,14 +116,54 @@ class Capture(EventManager):
 
             attrs: Dict[str, Any] = { k.value: v for k, v in status.items() }
             
+            timestamp_col = EFieldName.TIMESTAMP.value
             if EFieldName.TIMESTAMP not in status.keys():
-                attrs[EFieldName.TIMESTAMP.value] = datetime.datetime.now()
+                attrs[timestamp_col] = datetime.datetime.now()
 
+            if self._hdf5_store is None:
+                ts0 = self._experiment.date_time.strftime("%Y%m%d_%H%M%S")
+                h5path = self._output_dir / f"sonic_measure_{ts0}.h5"
+                # mode='a': create if missing, else append
+                self._hdf5_store = pd.HDFStore(str(h5path),
+                                                mode="a",
+                                                complevel=9,
+                                                complib="blosc")
+            
             self._data_provider.add_row(attrs)
 
-            attrs_dataframe = pd.DataFrame([attrs])
+            # attrs_dataframe = pd.DataFrame([attrs])
+            attrs_dataframe = pd.DataFrame([attrs])[self._experiment.data.columns]
+            attrs_dataframe[timestamp_col] = attrs_dataframe[timestamp_col].dt.tz_localize(None)
+
+            #if timestamp is tz-aware, convert to UTC and drop tzinfo
+            # ts_col = EFieldName.TIMESTAMP.value
+            # if ts_col in attrs_dataframe and pd.api.types.is_datetime64tz_dtype(attrs_dataframe[ts_col].dtype):
+            #     attrs_dataframe[ts_col] = (
+            #         attrs_dataframe[ts_col]
+            #         .dt.tz_convert('UTC')    # convert any tz to UTC
+            #         .dt.tz_localize(None)    # drop tzinfo, yielding naive datetime64[ns]
+            #     )
+            #     attrs_dataframe['timestamp_tz'] = attrs[ts_col].tzinfo.zone
+
             # ensure attrs has all the columns of experiment.data
-            attrs_dataframe = attrs_dataframe.reindex(columns=self._experiment.data.columns, fill_value=None)
+            # attrs_dataframe = attrs_dataframe.reindex(columns=self._experiment.data.columns, fill_value=None)
+
+            self._hdf5_store.append("data",
+                                    attrs_dataframe,
+                                    format="table",
+                                    data_columns=True)
+            self._hdf5_store.flush()
+
+            if not self._metadata_written:
+                schema = ExperimentSchema()
+                data = schema.dump(self._experiment).data
+                meta_df = pd.DataFrame([data])
+                self._hdf5_store.append("metadata",
+                                                meta_df,
+                                                format="table",
+                                                data_columns=True)
+                self._hdf5_store.flush()
+                self._metadata_written = True
             self._experiment.data = pd.concat([self._experiment.data, attrs_dataframe], ignore_index=True)            
 
 
