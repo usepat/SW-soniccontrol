@@ -131,10 +131,11 @@ class InterpreterEngine(EventManager):
                     break
         except StopIteration:
             self._execution_steps = None
+            self._logger.info("Interpreter finished executing script")
             self._set_interpreter_state(InterpreterState.READY)
             self._set_current_target(CurrentTarget.default())
         except asyncio.CancelledError:
-            self._logger.warn("Interpreter got interrupted, while executing a script")
+            self._logger.info("Interpreter got paused, while executing a script")
             self._set_interpreter_state(InterpreterState.PAUSED)
         except ScriptException as e:
             self._logger.error(e)

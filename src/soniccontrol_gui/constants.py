@@ -329,6 +329,17 @@ scripting_cards_data: Final[List[ScriptingGuideCardDataDict]] = [
 begin
     # code
 end""",
+    },   
+    {
+        "keyword": "breakpoint",
+        "arguments": "None",
+        "description": "Pauses execution. Nice for debugging",
+        "example": """loop 5 times
+begin
+    on
+    breakpoint // pauses execution
+    off
+end""",
     },
     {
         "keyword": "ramp",
