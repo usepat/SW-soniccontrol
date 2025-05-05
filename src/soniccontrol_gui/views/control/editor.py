@@ -23,7 +23,36 @@ from soniccontrol_gui.widgets.message_box import MessageBox
 from soniccontrol_gui.widgets.pushbutton import PushButtonView
 from soniccontrol_gui.views.control.scriptingguide import ScriptingGuide
 from soniccontrol_gui.resources import images
+from soniccontrol_gui.constants import files
 
+
+@attrs.define
+class Script():
+    name: str
+    content: str
+
+basic_ON_OFF_script = Script(
+    name="ON_OFF_with_hold",
+    content="""frequency 2000000
+gain 70
+on
+hold 5s
+off"""
+)
+
+basic_loop_script = Script(
+    name="loop",
+    content="""frequency 2000000
+gain 70
+loop 5 times
+begin
+    on
+    hold 5s
+    off
+    hold 2s
+end
+"""
+)
 
 @attrs.define
 class ScriptFile(CaptureScriptArgs):
@@ -65,6 +94,7 @@ class Editor(UIComponent):
         super().__init__(parent, self._view, self._logger)
 
         self._view.add_menu_command(ui_labels.LOAD_LABEL, self._on_load_script)
+        self._view.add_menu_command(ui_labels.LOAD_EXAMPLE_LABEL, self._on_load_example_script)
         self._view.add_menu_command(ui_labels.SAVE_LABEL, self._on_save_script)
         self._view.add_menu_command(ui_labels.SAVE_AS_LABEL, self._on_save_as_script)
         self._view.set_scripting_guide_button_command(self._on_open_scripting_guide)
@@ -78,6 +108,18 @@ class Editor(UIComponent):
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_INTERPRETER_STATE, lambda e: self._set_interpreter_state(e.new_value))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda e: self._set_current_target(e.new_value))
         self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self.on_execution_state_changed)
+
+        self.save_example_script(basic_ON_OFF_script)
+        self.save_example_script(basic_loop_script)
+
+    def save_example_script(self, script: Script) -> None:
+        example_script = files.EXAMPLE_SCRIPT.with_name(files.EXAMPLE_SCRIPT.name  + "-" + script.name + ".sonic")
+        if not example_script.parent.exists():
+            example_script.parent.mkdir(parents=True, exist_ok=True)
+
+        if not example_script.exists():
+            with open(example_script, "w") as file:
+                file.write(script.content)
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value
@@ -156,7 +198,19 @@ class Editor(UIComponent):
     def _on_load_script(self):
         filename: str = filedialog.askopenfilename(
             defaultextension=self._script.default_extension, 
-            filetypes=self._script.filetypes
+            filetypes=self._script.filetypes,
+        )
+        if filename == "." or filename == "" or isinstance(filename, (tuple)):
+            return
+        
+        self._script.load_script(filename)
+        self._view.editor_text = self._script.text
+
+    def _on_load_example_script(self):
+        filename: str = filedialog.askopenfilename(
+            defaultextension=".sonic",
+            filetypes=[("Sonic Script", "*.sonic")],
+            initialdir=files.SCRIPT_DIR
         )
         if filename == "." or filename == "" or isinstance(filename, (tuple)):
             return

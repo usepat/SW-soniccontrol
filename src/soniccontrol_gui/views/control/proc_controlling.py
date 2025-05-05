@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Iterable
 from async_tkinter_loop import async_handler
 import attrs
 from soniccontrol.data_capturing.capture_target import CaptureProcedureArgs
+from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -81,22 +82,32 @@ class ProcControlling(UIComponent):
         proc_names = map(lambda proc_type: proc_type.value, self._proc_controller.proc_args_list.keys())
         self._view.set_procedure_combobox_items(proc_names)
 
-    def _on_proc_selected(self):
+    @async_handler
+    async def _on_proc_selected(self):
+
         for proc_widget in self._proc_widgets.values():
             proc_widget.view.hide()
         self._model.selected_procedure = ProcedureType(self._view.selected_procedure)
+
+        self._proc_widgets[self._model.selected_procedure].form_data = await self._proc_controller.fetch_args(self._model.selected_procedure)
+
         self._proc_widgets[self._model.selected_procedure].view.show()
 
     def _on_run_pressed(self):
         try:
             proc_args_dict = self._model.procedure_args
             proc_class = self._proc_controller.proc_args_list[self._model.procedure_type]
-            proc_args = proc_class(**proc_args_dict)
+            if isinstance(proc_class, type) and issubclass(proc_class, ProcedureArgs):
+                proc_args = proc_class(proc_args_dict)
+            else:
+                #TODO check if we even this else
+                proc_args = proc_class(**proc_args_dict)
+            
             self._proc_controller.execute_proc(self._model.selected_procedure, proc_args)
         except Exception as e:
             self._logger.error(e)
             MessageBox.show_error(self._view.root, str(e))
-
+        
     @async_handler
     async def _on_stop_pressed(self):
         await self._proc_controller.stop_proc()

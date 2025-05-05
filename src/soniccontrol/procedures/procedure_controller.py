@@ -68,15 +68,24 @@ class ProcedureController(EventManager):
                     await self._remote_procedure_state.wait_till_procedure_halted()
             except asyncio.CancelledError:
                 if procedure.is_remote:
-                    await self._device.execute_command(cmds.Stop())
+                    await self._device.execute_command(cmds.SetStop())
                 await self._device.set_signal_off()
 
         self._remote_procedure_state.reset_completion_flag()
         self._running_proc_task = event_loop.create_task(proc_task())
         self.emit(Event(ProcedureController.PROCEDURE_RUNNING, proc_type=proc_type))
 
+    async def fetch_args(self, proc_type: ProcedureType) -> Dict[str, Any]:
+        assert(proc_type in self._procedures)
+        procedure = self._procedures.get(proc_type, None)
+        if procedure is None:
+            raise Exception(f"The procedure {repr(proc_type)} is not available for the current device")
+        return await procedure.fetch_args(self._device)
+
+
     async def stop_proc(self) -> None:
         self._logger.info("Stop procedure")
+        await self._device.execute_command(cmds.SetStop())
         if self._running_proc_task: 
             self._running_proc_task.cancel()
             await self._running_proc_task

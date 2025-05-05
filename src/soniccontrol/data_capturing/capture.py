@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from enum import Enum
 import logging
 from pathlib import Path
 from typing import Any, Dict
@@ -22,7 +23,9 @@ class HolderArgsJsonEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, HolderArgs):
             return attrs.asdict(o)
-        return super().encode(o)
+        if isinstance(o, Enum):
+            return o.value
+        return super().default(o)  # <<< NOT encode!
     
 
 class Capture(EventManager):

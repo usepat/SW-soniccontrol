@@ -43,6 +43,11 @@ class GetSwf(Command):
         super().__init__(code=CommandCode.GET_SWF)
 
 @attrs.define()
+class GetFreq(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_FREQ)
+
+@attrs.define()
 class SetFrequency(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_FREQ)
@@ -124,11 +129,164 @@ class SetScan(Command):
         super().__init__(code=CommandCode.SET_SCAN)
 
 @attrs.define()
-class Stop(Command):
+class SetScanFRange(Command):
     def __attrs_post_init__(self):
-        super().__init__(code=CommandCode.SET_STOP)
+        super().__init__(code=CommandCode.SET_SCAN_F_RANGE)
+    value: int = attrs.field(alias=EFieldName.SCAN_F_RANGE.value)
+
+@attrs.define()
+class SetScanFShift(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_SCAN_F_SHIFT)
+    value: int = attrs.field(alias=EFieldName.SCAN_F_SHIFT.value)
+
+@attrs.define()
+class SetScanFStep(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_SCAN_F_STEP)
+    value: int = attrs.field(alias=EFieldName.SCAN_F_STEP.value)
+
+@attrs.define()
+class SetScanGain(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_SCAN_GAIN)
+    value: int = attrs.field(alias=EFieldName.SCAN_GAIN.value)
+
+@attrs.define()
+class SetScanTStep(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_SCAN_T_STEP)
+    value: int = attrs.field(alias=EFieldName.SCAN_T_STEP.value)
+
+@attrs.define()
+class SetTuneFShift(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_TUNE_F_SHIFT)
+    value: int = attrs.field(alias=EFieldName.TUNE_F_SHIFT.value)
+
+@attrs.define()
+class SetTuneFStep(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_TUNE_F_STEP)
+    value: int = attrs.field(alias=EFieldName.TUNE_F_STEP.value)
+
+@attrs.define()
+class SetTuneGain(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_TUNE_GAIN)
+    value: int = attrs.field(alias=EFieldName.TUNE_GAIN.value)
+
+@attrs.define()
+class SetTuneNSteps(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_TUNE_N_STEPS)
+    value: int = attrs.field(alias=EFieldName.TUNE_N_STEPS.value)
+
+@attrs.define()
+class SetTuneTStep(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_TUNE_T_STEP)
+    value: int = attrs.field(alias=EFieldName.TUNE_T_STEP.value)
+
+@attrs.define()
+class SetTuneTTime(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_TUNE_T_TIME)
+    value: int = attrs.field(alias=EFieldName.TUNE_T_TIME.value)
+
+@attrs.define()
+class SetWipeFRange(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_WIPE_F_RANGE)
+    value: int = attrs.field(alias=EFieldName.WIPE_F_RANGE.value)
+
+@attrs.define()
+class SetWipeFStep(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_WIPE_F_STEP)
+    value: int = attrs.field(alias=EFieldName.WIPE_F_STEP.value)
+
+@attrs.define()
+class SetWipeTOff(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_WIPE_T_OFF)
+    value: int = attrs.field(alias=EFieldName.WIPE_T_OFF.value)
+
+@attrs.define()
+class SetWipeTOn(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_WIPE_T_ON)
+    value: int = attrs.field(alias=EFieldName.WIPE_T_ON.value)
+
+@attrs.define()
+class SetWipeTPause(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_WIPE_T_PAUSE)
+    value: int = attrs.field(alias=EFieldName.WIPE_T_PAUSE.value)
+
+@attrs.define()
+class SetRampFStart(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_RAMP_F_START)
+    value: int = attrs.field(alias=EFieldName.RAMP_F_START.value)
+
+@attrs.define()
+class SetRampFStep(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_RAMP_F_STEP)
+    value: int = attrs.field(alias=EFieldName.RAMP_F_STEP.value)
+
+@attrs.define()
+class SetRampFStop(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_RAMP_F_STOP)
+    value: int = attrs.field(alias=EFieldName.RAMP_F_STOP.value)
+
+@attrs.define()
+class SetRampTOff(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_RAMP_T_OFF)
+    value: int = attrs.field(alias=EFieldName.RAMP_T_OFF.value)
+
+@attrs.define()
+class SetRampTOn(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_RAMP_T_ON)
+    value: int = attrs.field(alias=EFieldName.RAMP_T_ON.value)
+
 
 @attrs.define()
 class SonicForce(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SONIC_FORCE)
+
+@attrs.define()
+class SetStop(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_STOP)
+
+@attrs.define()
+class GetRamp(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_RAMP)
+
+@attrs.define()
+class GetWipe(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_WIPE)
+
+@attrs.define()
+class GetTune(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_TUNE)
+
+@attrs.define()
+class GetScan(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_SCAN)
+
+
+@attrs.define()
+class GetAuto(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_AUTO)

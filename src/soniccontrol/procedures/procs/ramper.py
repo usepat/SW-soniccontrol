@@ -1,38 +1,52 @@
-from typing import List, Type, Union
+from typing import Any, Dict, List, Type, Union
 import asyncio
 
 import attrs
-from attrs import validators
+from attrs import fields, validators
 
+from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.field_names import EFieldName
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
-from soniccontrol.procedures.procedure import Procedure
+from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
+from sonic_protocol.python_parser import commands
 
 
-@attrs.define(auto_attribs=True)
-class RamperArgs:
-    start: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(10000000)
-    ])
-    stop: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(10000000)
-    ])
-    step: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(10),
-        validators.le(500000)
-    ])
-    hold_on: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
+@attrs.define(auto_attribs=True, init=False)
+class RamperArgs(ProcedureArgs):
+    f_start: int = attrs.field(
+        validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(10_000_000)
+        ],
+        metadata={"enum": EFieldName.RAMP_F_START}
     )
-    hold_off: HolderArgs = attrs.field(
+    f_stop: int = attrs.field(
+        validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(10_000_000)
+        ],
+        metadata={"enum": EFieldName.RAMP_F_STOP}
+    )
+    f_step: int = attrs.field(
+        validator=[
+            validators.instance_of(int),
+            validators.ge(10),
+            validators.le(500_000)
+        ],
+        metadata={"enum": EFieldName.RAMP_F_STEP}
+    )
+    t_on: HolderArgs = attrs.field(
+        default=HolderArgs(100, "ms"),
+        converter=convert_to_holder_args,
+        metadata={"enum": EFieldName.RAMP_T_ON}
+    )
+    t_off: HolderArgs = attrs.field(
         default=HolderArgs(0, "ms"),
-        converter=convert_to_holder_args
+        converter=convert_to_holder_args,
+        metadata={"enum": EFieldName.RAMP_T_OFF}
     )
 
 
@@ -54,13 +68,13 @@ class RamperLocal(Ramper):
         device: Scriptable,
         args: RamperArgs
     ) -> None:
-        values = [args.start + i * args.step for i in range(int((args.stop - args.start) / args.step)) ]
+        values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step)) ]
 
         await device.get_overview()
         # TODO: Do we need those two lines?
         # await device.execute_command(f"!freq={start}")
         # await device.set_signal_on()
-        await self._ramp(device, list(values), args.hold_on, args.hold_off)
+        await self._ramp(device, list(values), args.t_on, args.t_off)
     
         await device.set_signal_off()
 
@@ -90,6 +104,9 @@ class RamperLocal(Ramper):
 
             i += 1
 
+    async def fetch_args(self, device: Scriptable) -> Dict[str, Any]:
+        return {}
+
 
 class RamperRemote(Ramper):
     def __init__(self) -> None:
@@ -104,9 +121,19 @@ class RamperRemote(Ramper):
         device: Scriptable,
         args: RamperArgs
     ) -> None:
-        await device.execute_command(f"!ramp_f_start={args.start}")
-        await device.execute_command(f"!ramp_f_stop={args.stop}")
-        await device.execute_command(f"!ramp_f_step={args.step}")
-        await device.execute_command(f"!ramp_t_on={int(args.hold_on.duration_in_ms)}")
-        await device.execute_command(f"!ramp_t_off={int(args.hold_off.duration_in_ms)}")
-        await device.execute_command(f"!ramp")
+        await device.execute_command(commands.SetRampFStart(args.f_start))
+        await device.execute_command(commands.SetRampFStop(args.f_stop))
+        await device.execute_command(commands.SetRampFStep(args.f_step))
+        # When the args are retrieved from the Form Widget, the HolderArgs are tuples instead
+        t_on_duration = int(args.t_on.duration_in_ms) if isinstance(args.t_on, HolderArgs) else int(args.t_on[0])
+        t_off_duration = int(args.t_off.duration_in_ms) if isinstance(args.t_off, HolderArgs) else int(args.t_off[0])
+
+        await device.execute_command(commands.SetRampTOn(t_on_duration))
+        await device.execute_command(commands.SetRampTOff(t_off_duration))
+        await device.execute_command(commands.SetRamp())
+
+    async def fetch_args(self, device: Scriptable) -> Dict[str, Any]:
+        answer = await device.execute_command(commands.GetRamp())
+        if answer.was_validated and answer.valid:
+            return RamperArgs.to_dict_with_holder_args(answer)
+        return {}
