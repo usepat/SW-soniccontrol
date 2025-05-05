@@ -31,13 +31,27 @@ class Script():
     name: str
     content: str
 
-basic_ramp_script = Script(
-    name="ramp",
-    content="""
-        on
-        hold 500ms
-        off
-    """
+basic_ON_OFF_script = Script(
+    name="ON_OFF_with_hold",
+    content="""frequency 2000000
+gain 70
+on
+hold 5s
+off"""
+)
+
+basic_loop_script = Script(
+    name="loop",
+    content="""frequency 2000000
+gain 70
+loop 5 times
+begin
+    on
+    hold 5s
+    off
+    hold 2s
+end
+"""
 )
 
 @attrs.define
@@ -95,7 +109,8 @@ class Editor(UIComponent):
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda e: self._set_current_target(e.new_value))
         self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self.on_execution_state_changed)
 
-        self.save_example_script(basic_ramp_script)
+        self.save_example_script(basic_ON_OFF_script)
+        self.save_example_script(basic_loop_script)
 
     def save_example_script(self, script: Script) -> None:
         example_script = files.EXAMPLE_SCRIPT.with_name(files.EXAMPLE_SCRIPT.name  + "-" + script.name + ".sonic")
