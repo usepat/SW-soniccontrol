@@ -54,12 +54,3 @@ class Experiment:
     target_parameters: Dict = attrs.field(factory=dict)
 
     date_time: datetime.datetime = attrs.field(factory=datetime.datetime.now) 
-
-    @staticmethod
-    def data_columns() -> List[str]:
-        return [
-        EFieldName.TIMESTAMP.value, 
-        EFieldName.FREQUENCY.value, EFieldName.GAIN.value, 
-        EFieldName.URMS.value, EFieldName.IRMS.value, EFieldName.PHASE.value, 
-        EFieldName.TEMPERATURE.value
-    ]     

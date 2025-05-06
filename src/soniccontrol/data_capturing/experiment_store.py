@@ -1,7 +1,8 @@
 import abc
 from pathlib import Path
+from typing import Any, Dict, List
 
-import pandas as pd
+import tables as tb
 
 from sonic_protocol.field_names import EFieldName
 from soniccontrol.data_capturing.experiment import Experiment
@@ -13,11 +14,37 @@ class ExperimentStore(abc.ABC):
     def write_metadata(self, experiment: Experiment) -> None: ...
 
     @abc.abstractmethod
-    def add_row(self, data: dict) -> None: ...
+    def add_row(self, data: Dict[str, Any]) -> None: ...
 
     @abc.abstractmethod
     def close(self) -> None: ...
 
+
+class HDF5SerializationHelper:
+    @staticmethod
+    def serialize_attribute_tree(file_: tb.File, group: tb.Group, obj: Dict[str, Any]):
+        for name, value in obj.items():
+            assert isinstance(name, str), "attribute tree has to have strings as attribute names"
+            
+            if value is None:
+                continue
+            if isinstance(value, dict):
+                sub_group = file_.create_group(group, name)
+                HDF5SerializationHelper.serialize_attribute_tree(file_, sub_group, value)
+            else:
+                group._v_attrs[name] = value
+        file_.flush()
+
+    @staticmethod
+    def add_rows_to_table(file: tb.File, table: tb.Table, rows: List[Dict[str, Any]]):
+        new_row = table.row
+        for row in rows:
+            for k, v in row.items():
+                new_row[k] = v
+            new_row.append()
+        table.flush()
+
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class HDF5ExperimentStore(ExperimentStore):
     def __init__(self, file_path: Path):
@@ -25,53 +52,43 @@ class HDF5ExperimentStore(ExperimentStore):
         self._file_path_posix = str(file_path) 
         if not self._file_path_posix.endswith(file_extension):
             self._file_path_posix += ".h5" # add extension
-        self._hdf5_store = pd.HDFStore(self._file_path_posix,
-                                        mode="a",
-                                        complevel=9,
-                                        complib="blosc")
-        
+        self._file = tb.open_file(self._file_path_posix, "w")
+        self._create_data_table()
+
+    def _create_data_table(self):
+        # Timestamp gets stored as string, because for a user it is more readable
+        cols = {
+            EFieldName.TIMESTAMP.value: tb.StringCol(len(TIME_FORMAT)), #type: ignore
+            EFieldName.FREQUENCY.value: tb.UInt32Col(), #type: ignore
+            EFieldName.GAIN.value: tb.UInt8Col(), #type: ignore
+            EFieldName.URMS.value: tb.UInt32Col(), #type: ignore
+            EFieldName.IRMS.value: tb.UInt32Col(), #type: ignore
+            EFieldName.PHASE.value: tb.UInt32Col(), #type: ignore
+            EFieldName.TEMPERATURE.value: tb.UInt32Col() #type: ignore
+        }
+        DataTable = type("DataTable", (tb.IsDescription, ), cols)
+        self._data_table = self._file.create_table("/", "data", DataTable)
+
+
     def write_metadata(self, experiment: Experiment) -> None:
         schema = ExperimentSchema()
         data = schema.dump(experiment).data
-
-        df_target_parameters = pd.DataFrame([data["target_parameters"]])
-        df_firmware_info = pd.DataFrame([data["firmware_info"]])
-        df_additional_metadata = pd.DataFrame([data["metadata"]["additional_metadata"]])
-
-        # remove data that we already extracted and flatten the structure
-        del data["target_parameters"]
-        del data["firmware_info"]
-        del data["metadata"]["additional_metadata"]
+        
+        # Unnest metadata, so that the metadata for the form lays also inside the same level as the other meta data
         data.update(data["metadata"])
         del data["metadata"]
 
-        df_metadata = pd.DataFrame([data])
+        group = self._file.create_group("/", "metadata")
+        HDF5SerializationHelper.serialize_attribute_tree(self._file, group, data)
         
-        min_str_size = 32 # used for setting a larger minimum on string columns
-        self._hdf5_store.put("metadata",
-                                df_metadata,
-                                min_itemsize={"values": min_str_size})
-        self._hdf5_store.put("metadata/firmware_info",
-                                df_firmware_info,
-                                min_itemsize={"values": min_str_size})
-        self._hdf5_store.put("metadata/additional_metadata",
-                                df_additional_metadata,
-                                min_itemsize={"values": min_str_size})
-        self._hdf5_store.put("metadata/target_parameters",
-                                df_target_parameters,
-                                min_itemsize={"values": min_str_size})
-
-    def add_row(self, data: dict) -> None:
-        df = pd.DataFrame([data])
-        df = df[Experiment.data_columns()]
+    def add_row(self, data: Dict[str, Any]) -> None:
+        data = data.copy() # make a copy, so that we do not transform the original data
         timestamp_col = EFieldName.TIMESTAMP.value
-        df[timestamp_col] = df[timestamp_col].dt.tz_localize(None)
-
-        self._hdf5_store.append("data",
-                                df,
-                                format="table",
-                                data_columns=True)
+        data[timestamp_col] = data[timestamp_col].strftime(TIME_FORMAT) # convert the time to a string
+        # filter data, so that it only contains the columns of the table
+        filtered_data = { k: v for k, v in data.items() if k in self._data_table.colnames }
+        HDF5SerializationHelper.add_rows_to_table(self._file, self._data_table, [filtered_data])
         
     def close(self) -> None: 
-        if self._hdf5_store.is_open:
-            self._hdf5_store.close()
+        if self._file.isopen:
+            self._file.close()
