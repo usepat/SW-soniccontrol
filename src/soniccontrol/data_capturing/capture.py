@@ -92,41 +92,14 @@ class Capture(EventManager):
 
     def on_update(self, status: Dict[EFieldName, Any]):
         if not self._completed_capturing.is_set():
-            assert self._experiment
             assert self._store
 
             attrs: Dict[str, Any] = { k.value: v for k, v in status.items() }
             
+            # TODO: Maybe it would be better to move this into updater?
             timestamp_col = EFieldName.TIMESTAMP.value
             if EFieldName.TIMESTAMP not in status.keys():
                 attrs[timestamp_col] = datetime.datetime.now()
             
             self._data_provider.add_row(attrs)
             self._store.add_row(attrs)
-
-            # attrs_dataframe = pd.DataFrame([attrs])
-            
-
-
-
-            #if timestamp is tz-aware, convert to UTC and drop tzinfo
-            # ts_col = EFieldName.TIMESTAMP.value
-            # if ts_col in attrs_dataframe and pd.api.types.is_datetime64tz_dtype(attrs_dataframe[ts_col].dtype):
-            #     attrs_dataframe[ts_col] = (
-            #         attrs_dataframe[ts_col]
-            #         .dt.tz_convert('UTC')    # convert any tz to UTC
-            #         .dt.tz_localize(None)    # drop tzinfo, yielding naive datetime64[ns]
-            #     )
-            #     attrs_dataframe['timestamp_tz'] = attrs[ts_col].tzinfo.zone
-
-            # ensure attrs has all the columns of experiment.data
-            # attrs_dataframe = attrs_dataframe.reindex(columns=self._experiment.data.columns, fill_value=None)
-
-
-
-
-            # self._experiment.data = pd.concat([self._experiment.data, attrs_dataframe], ignore_index=True)            
-
-
-
-    
