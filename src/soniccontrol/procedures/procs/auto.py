@@ -17,7 +17,8 @@ from soniccontrol.procedures.procs.tune import TuneArgs, TuneProc
 class AutoArgs(ProcedureArgs):    
     @classmethod
     def get_description(cls) -> str:
-        return "No description"
+        return """The AUTO procedure starts by executing the SCAN procedure, and when finished, immediately starts the TUNE procedure.
+"""
 
     scan_arg: ScanArgs = attrs.field(
         default=ScanArgs(),

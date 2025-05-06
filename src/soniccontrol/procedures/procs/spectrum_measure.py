@@ -48,7 +48,9 @@ class FixedRamperArgs():
 class SpectrumMeasureArgs(FixedRamperArgs):
     @classmethod
     def get_description(cls) -> str:
-        return "No description"
+        return """Spectrum Measure measures the electric response of the connected add-on over the frequency.
+        This is very useful in an explorative study to find the optimal driving frequency.
+"""
     
     time_offset_measure: HolderArgs = attrs.field(
         default=HolderArgs(100, "ms"), 
