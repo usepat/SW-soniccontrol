@@ -14,7 +14,7 @@ from soniccontrol.procedures.procs.ramper import RamperArgs
 
 
 @attrs.define(auto_attribs=True)
-class FixedRamperArgs():
+class FixedRamperArgs():    
     f_start: int = attrs.field(validator=[
             validators.instance_of(int),
             validators.ge(0),
@@ -46,6 +46,10 @@ class FixedRamperArgs():
 
 @attrs.define()
 class SpectrumMeasureArgs(FixedRamperArgs):
+    @classmethod
+    def get_description(cls) -> str:
+        return "No description"
+    
     time_offset_measure: HolderArgs = attrs.field(
         default=HolderArgs(100, "ms"), 
         converter=convert_to_holder_args

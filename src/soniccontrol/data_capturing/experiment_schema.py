@@ -1,14 +1,14 @@
-from marshmallow import Schema, ValidationError, fields
+from marshmallow import ValidationError, fields
 from marshmallow_annotations.ext.attrs import AttrsSchema
 from marshmallow_annotations import registry
 from enum import Enum
-import pandas as pd
-import datetime
 
 from sonic_protocol.defs import DeviceType, Version
 from soniccontrol.data_capturing.capture_target import CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.device_data import FirmwareInfo
+from soniccontrol.procedures.holder import HolderArgs
+from soniccontrol.procedures.procedure import ProcedureType
 
 
 
@@ -43,43 +43,29 @@ class VersionField(fields.Field):
             return Version.to_version(value)  # Convert string to Enum during deserialization
         except (ValueError, TypeError) as e:
             raise ValidationError(e)
-
-
-class DataFrameField(fields.Field):
-    def __init__(self, schema_class, *args, **kwargs):
-        self._schema = schema_class(many=True)  # Marshmallow schema for validation
+        
+class HolderArgsField(fields.Field):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if not isinstance(value, pd.DataFrame):
-            raise ValidationError("Expected a Pandas DataFrame.")
-        
-        data = value.to_dict(orient='records')  # Convert DataFrame to list of dicts
-        return self._schema.dump(data).data  # Serialize using Marshmallow
+        if not isinstance(value, HolderArgs):
+            raise ValidationError(f"Invalid value: {value}. Must be of type HolderArgs")
+        return float(value.duration_in_ms) 
 
     def _deserialize(self, value, attr, data, **kwargs):
-        if not isinstance(value, list):
-            raise ValidationError("Expected a list of dictionaries.")
-        
-        validated_data = self._schema.load(value)  # Validate each row
-        return pd.DataFrame(validated_data)  # Convert back to DataFrame
-    
-
-class ExperimentDataRowSchema(Schema):
-    timestamp = fields.DateTime(required=True)
-    freq = fields.Integer(required=True, data_key="frequency")
-    gain = fields.Integer(required=True)
-    urms = fields.Float(required=True)
-    irms = fields.Float(required=True)
-    phase = fields.Float(required=True)
-    temp = fields.Float(missing=float('nan'), data_key="temperature")
+        try:
+            return HolderArgs(value, unit="ms") 
+        except (ValueError, TypeError) as e:
+            raise ValidationError(e)
 
 
 # register fields for the different types
 registry.register_field_for_type(Version, VersionField) #type: ignore
+registry.register_field_for_type(HolderArgs, HolderArgsField) #type: ignore
 registry.register(CaptureTargets, lambda converter, hints, opts: EnumField(CaptureTargets, **opts))
 registry.register(DeviceType, lambda converter, hints, opts: EnumField(DeviceType, **opts))
-# TODO register procedure enums
+registry.register(ProcedureType, lambda converter, hints, opts: EnumField(ProcedureType, **opts))
 
 
 class ExperimentMetaDataSchema(AttrsSchema):
@@ -97,7 +83,5 @@ class ExperimentSchema(AttrsSchema):
     class Meta: # type: ignore
         target = Experiment
         register_as_scheme = True
-
-    data = DataFrameField(ExperimentDataRowSchema)
 
 

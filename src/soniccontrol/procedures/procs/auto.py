@@ -14,7 +14,11 @@ from soniccontrol.procedures.procs.tune import TuneArgs, TuneProc
 
 
 @attrs.define(auto_attribs=True, init=False)
-class AutoArgs(ProcedureArgs):
+class AutoArgs(ProcedureArgs):    
+    @classmethod
+    def get_description(cls) -> str:
+        return "No description"
+
     scan_arg: ScanArgs = attrs.field(
         default=ScanArgs(),
     )

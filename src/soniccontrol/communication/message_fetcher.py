@@ -120,10 +120,8 @@ class MessageFetcher:
         return message
     
     def _queue_message(self, message: str) -> None:
-        try:
-            self._messages.put_nowait(message)
-        except asyncio.QueueFull:
-            self._messages.get_nowait()
+            if self._messages.full():
+                self._messages.get_nowait()
             self._messages.put_nowait(message)
 
     async def pop_message(self) -> str:

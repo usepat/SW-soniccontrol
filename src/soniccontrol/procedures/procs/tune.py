@@ -14,6 +14,10 @@ from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 
 @attrs.define(auto_attribs=True, init=False)
 class TuneArgs(ProcedureArgs):
+    @classmethod
+    def get_description(cls) -> str:
+        return "No description"
+    
     f_step: int = attrs.field(
         default=1000,
         validator=[

@@ -9,6 +9,7 @@ from soniccontrol.data_capturing.capture_target import CaptureTarget, CaptureTar
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol_gui.ui_component import UIComponent
+from soniccontrol_gui.utils.file_explorer import open_file_explorer
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 import tkinter as tk
@@ -22,7 +23,7 @@ from soniccontrol.data_capturing.capture import Capture
 from soniccontrol_gui.views.measure.csv_table import CsvTable
 matplotlib.use("TkAgg")
 
-from soniccontrol_gui.constants import sizes, ui_labels
+from soniccontrol_gui.constants import sizes, ui_labels, files
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.measure.plotting import Plotting
@@ -55,8 +56,6 @@ class Measuring(UIComponent):
             self,
             self._view._metadata_form_frame
         )
-        self._experiment_form.subscribe(ExperimentForm.FINISHED_EDITING_EVENT, 
-                                        lambda e: self._on_metadata_filled_in(e.data["experiment_metadata"]))
 
         self._time_figure = matplotlib.figure.Figure(dpi=100)
         self._time_subplot = self._time_figure.add_subplot(1, 1, 1)
@@ -70,7 +69,6 @@ class Measuring(UIComponent):
         
         self._csv_table = CsvTable(self)
 
-        self._view.set_target_selected_command(self._on_continue_select_target)
         self._view.add_tabs({
             ui_labels.LIVE_PLOT: self._timeplottab.view, 
             ui_labels.SONIC_MEASURE_LABEL: self._spectralplottab.view, 
@@ -78,6 +76,8 @@ class Measuring(UIComponent):
         })
         target_strs = map(lambda k: k.value, self._capture_targets.keys())
         self._view.set_target_combobox_items(target_strs)
+        self._view.set_guide_button_command(self._on_open_guide)
+        self._view.set_open_measurements_button_command(self._on_open_measurements)
 
         self._capture.data_provider.subscribe_property_listener(
             "data", lambda e: self._timeplot.update_data(e.new_value))
@@ -107,27 +107,35 @@ class Measuring(UIComponent):
         match self._experiment_execution_state:
             case ExperimentExecutionState.FILL_IN_METADATA:
                 self._view.set_metadata_form_frame_visibility(True)
+                self._view.set_control_button_label(ui_labels.FINISH_LABEL)
+                self._view.set_control_button_command(self._on_metadata_filled_in)
             case ExperimentExecutionState.CHOOSE_CAPTURE_TARGET:
                 self._view.set_choose_target_frame_visibility(True)
+                self._view.set_control_button_label(ui_labels.SELECTED)
+                self._view.set_control_button_command(self._on_continue_select_target)
             case ExperimentExecutionState.READY:
                 self._view.set_capture_frame_visibility(True)
-                self._view.set_capture_button_label(ui_labels.START_CAPTURE)
-                self._view.set_capture_button_command(self._on_start_capture)
+                self._view.set_control_button_label(ui_labels.START_CAPTURE)
+                self._view.set_control_button_command(self._on_start_capture)
             case ExperimentExecutionState.CAPTURING:
                 self._view.set_capture_frame_visibility(True)
-                self._view.set_capture_button_label(ui_labels.END_CAPTURE)
-                self._view.set_capture_button_command(self._on_stop_capture)
+                self._view.set_control_button_label(ui_labels.END_CAPTURE)
+                self._view.set_control_button_command(self._on_stop_capture)
             case ExperimentExecutionState.FINISHED:
                 self._view.set_capture_frame_visibility(True)
-                self._view.set_capture_button_label(ui_labels.NEW_EXPERIMENT)
-                self._view.set_capture_button_command(self._on_new_experiment)
+                self._view.set_control_button_label(ui_labels.NEW_EXPERIMENT)
+                self._view.set_control_button_command(self._on_new_experiment)
 
     def _on_new_experiment(self):
         self.experiment_execution_state = ExperimentExecutionState.FILL_IN_METADATA
 
-    def _on_metadata_filled_in(self, metadata: ExperimentMetaData):
-        self._experiment_metadata = metadata
-        self.experiment_execution_state = ExperimentExecutionState.CHOOSE_CAPTURE_TARGET
+    def _on_metadata_filled_in(self):
+        try:
+            self._experiment_metadata = self._experiment_form.get_metadata()
+        except Exception as e:
+            MessageBox.show_error(self.view.root, str(e))
+        else:
+            self.experiment_execution_state = ExperimentExecutionState.CHOOSE_CAPTURE_TARGET
 
     def _on_continue_select_target(self):
         target_str = self._view.selected_target
@@ -158,7 +166,17 @@ class Measuring(UIComponent):
 
         # The execution state gets set as callback for capture. This is needed, because a capture can end automatically (Procedure finished for example)
 
-        
+    def _on_open_guide(self):
+        description = "No description"
+        MessageBox(self.view.root, description, "Guide", [])
+
+    def _on_open_measurements(self):
+        try:
+            open_file_explorer(files.MEASUREMENTS_DIR)
+        except Exception as e:
+            MessageBox.show_error(self.view.root, str(e))
+
+
 class MeasuringView(TabView):
     def __init__(self, master: ttk.Window, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
@@ -167,6 +185,24 @@ class MeasuringView(TabView):
         tab_name = "measuring"
         self._main_frame: ttk.Frame = ttk.Frame(self)
         
+        self._control_frame = ttk.Frame(self._main_frame)
+        self._capture_btn_text = tk.StringVar()
+        self._control_btn: ttk.Button = ttk.Button(
+            self._control_frame,
+            textvariable=self._capture_btn_text
+        )
+        self._open_measurements_button = ttk.Button(
+            self._control_frame,
+            text=ui_labels.GO_TO_MEASUREMENTS
+        )
+        self._guide_button = ttk.Button(
+            self._control_frame, 
+            text=ui_labels.GUIDE_LABEL,
+            style=ttk.INFO,
+            image=ImageLoader.load_image_resource(images.INFO_ICON_WHITE, (13, 13)),
+            compound=ttk.LEFT
+        )
+
         self._metadata_form_frame = ttk.Frame(self._main_frame)
         self._choose_target_frame = ttk.Frame(self._main_frame)
         self._capture_frame: ttk.Frame = ttk.Frame(self._main_frame)
@@ -178,34 +214,30 @@ class MeasuringView(TabView):
             textvariable=self._selected_target_var,
             state="readonly"
         )
-        self._selected_target_button = ttk.Button(self._choose_target_frame, text=ui_labels.SELECTED)
-        WidgetRegistry.register_widget(self._target_combobox, "target_combobox", tab_name)
-        WidgetRegistry.register_widget(self._selected_target_button, "selected_target_button", tab_name)
 
-        self._capture_btn_text = tk.StringVar()
-        self._capture_btn: ttk.Button = ttk.Button(
-            self._capture_frame,
-            textvariable=self._capture_btn_text
-        )
         self._notebook: Notebook = Notebook(self._capture_frame, "measuring")
-        WidgetRegistry.register_widget(self._capture_btn, "capture_button", tab_name)
 
+        WidgetRegistry.register_widget(self._control_btn, "control_button", tab_name)
+        WidgetRegistry.register_widget(self._target_combobox, "target_combobox", tab_name)
 
 
     def _initialize_publish(self) -> None:
         self._main_frame.pack(expand=True, fill=ttk.BOTH)
         
+        self._control_frame.pack(fill=ttk.X, side=ttk.TOP, padx=3, pady=3)
+        self._guide_button.pack(padx=sizes.SMALL_PADDING, side=ttk.RIGHT)
+        self._open_measurements_button.pack(padx=sizes.SMALL_PADDING, side=ttk.RIGHT)
+        self._control_btn.pack(padx=sizes.SMALL_PADDING, side=ttk.LEFT, fill=ttk.X, expand=True)
+
         self._metadata_form_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
         self._metadata_form_frame.pack_forget()
 
         self._choose_target_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
         self._choose_target_label.pack(fill=ttk.X)
         self._target_combobox.pack(fill=ttk.X)
-        self._selected_target_button.pack(fill=ttk.X)
         self._choose_target_frame.pack_forget()
 
         self._capture_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
-        self._capture_btn.pack(fill=ttk.X, padx=sizes.SMALL_PADDING)
         self._notebook.pack(expand=True, fill=ttk.BOTH)
         self._capture_frame.pack_forget()
 
@@ -239,14 +271,17 @@ class MeasuringView(TabView):
         else: 
             self._capture_frame.pack_forget()
 
-    def set_capture_button_label(self, label: str):
+    def set_control_button_label(self, label: str):
         self._capture_btn_text.set(label)
 
-    def set_capture_button_command(self, command):
-        self._capture_btn.configure(command=command)
+    def set_control_button_command(self, command):
+        self._control_btn.configure(command=command)
 
-    def set_target_selected_command(self, command):
-        self._selected_target_button.configure(command=command)
+    def set_guide_button_command(self, command):
+        self._guide_button.configure(command=command)
+
+    def set_open_measurements_button_command(self, command):
+        self._open_measurements_button.configure(command=command)
     
     @property
     def selected_target(self) -> str:
