@@ -10,7 +10,6 @@ from soniccontrol.updater import Updater
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure
-from soniccontrol.procedures.procs.ramper import RamperArgs
 
 
 @attrs.define(auto_attribs=True)
@@ -50,6 +49,15 @@ class SpectrumMeasureArgs(FixedRamperArgs):
     def get_description(cls) -> str:
         return "No description"
     
+    gain: int = attrs.field(
+        default=50,
+        validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(150)
+        ]
+    )
+
     time_offset_measure: HolderArgs = attrs.field(
         default=HolderArgs(100, "ms"), 
         converter=convert_to_holder_args
@@ -76,7 +84,9 @@ class SpectrumMeasure(Procedure):
         values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step)) ]
 
         try:
-            await device.get_overview()
+            await device.get_overview() # Was needed for old devices. Can now be deleted I think?
+
+            await device.execute_command(commands.SetGain(args.gain))
             await self._ramp(device, list(values), args.t_on, args.t_off, args.time_offset_measure)
         finally:
             await device.set_signal_off()
