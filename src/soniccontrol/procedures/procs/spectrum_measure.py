@@ -4,7 +4,6 @@ from typing import Any, List, Type, Union
 import attrs
 from attrs import validators
 
-from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
 from soniccontrol.updater import Updater
 from soniccontrol.interfaces import Scriptable
@@ -13,7 +12,19 @@ from soniccontrol.procedures.procedure import Procedure
 
 
 @attrs.define(auto_attribs=True)
-class FixedRamperArgs():    
+class SpectrumMeasureArgs:
+    @classmethod
+    def get_description(cls) -> str:
+        return "No description"
+    
+    gain: int = attrs.field(
+        validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(150)
+        ]
+    )
+
     f_start: int = attrs.field(validator=[
             validators.instance_of(int),
             validators.ge(0),
@@ -43,24 +54,9 @@ class FixedRamperArgs():
         converter=convert_to_holder_args,
     )
 
-@attrs.define()
-class SpectrumMeasureArgs(FixedRamperArgs):
-    @classmethod
-    def get_description(cls) -> str:
-        return "No description"
-    
-    gain: int = attrs.field(
-        default=50,
-        validator=[
-            validators.instance_of(int),
-            validators.ge(0),
-            validators.le(150)
-        ]
-    )
-
     time_offset_measure: HolderArgs = attrs.field(
         default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
+        converter=convert_to_holder_args,
     )
 
 
