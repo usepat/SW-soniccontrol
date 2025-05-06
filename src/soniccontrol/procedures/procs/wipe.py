@@ -13,6 +13,10 @@ from sonic_protocol.command_codes import CommandCode
 
 @attrs.define(auto_attribs=True, init=False)
 class WipeArgs(ProcedureArgs):
+    @classmethod
+    def get_description(cls) -> str:
+        return "No description"
+
     f_range: int = attrs.field(
         default=8000,
         metadata={"enum": EFieldName.WIPE_F_RANGE},
@@ -47,7 +51,7 @@ class WipeArgs(ProcedureArgs):
         converter=convert_to_holder_args
     )
 
-class WipeProc(Procedure):
+class WipeProc(Procedure):    
     @classmethod
     def get_args_class(cls) -> Type: 
         return WipeArgs

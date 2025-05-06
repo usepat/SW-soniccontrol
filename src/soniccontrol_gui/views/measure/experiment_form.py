@@ -47,7 +47,6 @@ class ExperimentForm(UIComponent):
         self._view.set_new_template_command(self._on_new_template)
         self._view.set_select_template_command(self._on_select_template)
         self._view.set_delete_template_command(self._on_delete_template)
-        self._view.set_finish_command(self._on_finished_editing)
 
         self._load_templates()
         
@@ -154,15 +153,15 @@ class ExperimentForm(UIComponent):
             self._view.template_name = selected_template.name
             self._view.selected_template = selected_template.name
 
-    def _on_finished_editing(self):
+    def get_metadata(self):
         if self.selected_template_index is None:
-            return
+            raise Exception("No template selected")
         
         template = Template(self._view.template_name, ExperimentMetaData(**self._form_dict))
         if not self._validate_template_data(template):
-            return
+            raise Exception("Data is not valid")
         
-        self.emit(Event(self.FINISHED_EDITING_EVENT, experiment_metadata=template.form_data))
+        return template.form_data
 
 
 class ExperimentFormView(View):
@@ -184,9 +183,6 @@ class ExperimentFormView(View):
         )
         self._delete_template_button: ttk.Button = ttk.Button(
             self, text=ui_labels.DELETE_LABEL, style=ttk.SUCCESS
-        )
-        self._finish_button: ttk.Button = ttk.Button(
-            self, text=ui_labels.FINISH_LABEL, style=ttk.SUCCESS
         )
 
         self._template_frame: ttk.Frame = ttk.Frame(
@@ -226,19 +222,13 @@ class ExperimentFormView(View):
             padx=sizes.MEDIUM_PADDING,
             pady=sizes.MEDIUM_PADDING,
         )
-        self._finish_button.grid(
+        self._delete_template_button.grid(
             row=0,
             column=3,
             padx=sizes.MEDIUM_PADDING,
             pady=sizes.MEDIUM_PADDING,
         )
-        self._delete_template_button.grid(
-            row=0,
-            column=4,
-            padx=sizes.MEDIUM_PADDING,
-            pady=sizes.MEDIUM_PADDING,
-        )
-        self._template_frame.grid(row=1, column=0, columnspan=5, sticky=ttk.NSEW)
+        self._template_frame.grid(row=1, column=0, columnspan=4, sticky=ttk.NSEW)
         self._template_frame.columnconfigure(0, weight=sizes.EXPAND)
         self._template_frame.rowconfigure(0, weight=sizes.DONT_EXPAND)
         self._template_frame.rowconfigure(1, weight=sizes.EXPAND)
@@ -269,8 +259,6 @@ class ExperimentFormView(View):
     def set_delete_template_command(self, command: Callable[[], None]) -> None: 
         self._delete_template_button.configure(command=command)
 
-    def set_finish_command(self, command: Callable[[], None]) -> None:
-        self._finish_button.configure(command=command)
 
     @property
     def selected_template(self) -> str: 

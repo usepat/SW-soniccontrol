@@ -22,6 +22,13 @@ class ProcedureType(Enum):
 @attrs.define(init=False)
 class ProcedureArgs:
     """
+        @brief Method used for getting a description of what the procedure does. Used for manuals
+    """
+    @classmethod
+    def get_description(cls) -> str:
+        return "No description"
+
+    """
         In order to centralize the naming of procedure arguments, for example the keys of dictionaries,
         or the names of the Form Widget, or the command itself, we use a metadata field for each procedure argument field.
         This field should reference a corresponding EFieldName enum value.

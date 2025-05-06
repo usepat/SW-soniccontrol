@@ -46,6 +46,16 @@ class HoldCommand(Function):
         
         return f"hold amount_time={str(amount_time)}", hold
     
+class BreakPointCommand(Function):
+    def __init__(self):
+        super().__init__(())
+    
+    def create_command(self, *_params) -> Tuple[str, CommandFunc]:
+        async def interrupt(_device: SonicDevice, _proc_controller: ProcedureController):
+            raise asyncio.CancelledError() # raise a cancel error to interrupt interpretation. It will pause execution
+        
+        return "breakpoint", interrupt
+
 class SendCommand(Function):
     def __init__(self):
         super().__init__((
@@ -113,6 +123,7 @@ class Interpreter(RunnableScript):
         "wipe": ProcedureCommand(WipeArgs, ProcedureType.WIPE),
         "tune": ProcedureCommand(TuneArgs, ProcedureType.TUNE),
         "scan": ProcedureCommand(ScanArgs, ProcedureType.SCAN),
+        "breakpoint": BreakPointCommand(),
     }
 
     def __init__(self, ast):

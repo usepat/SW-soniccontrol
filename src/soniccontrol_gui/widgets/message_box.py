@@ -65,6 +65,7 @@ class MessageBoxView(tk.Toplevel, View):
 
         self._message = message
         self._dialog_options = dialog_options
+        self._close_callback: Callable[[], None] = lambda: None
 
         self._msg_label = ttk.Label(self, text=self._message)
         self._options_frame = ttk.Frame(self)
@@ -88,9 +89,10 @@ class MessageBoxView(tk.Toplevel, View):
         for option in self._dialog_options:
             WidgetRegistry.unregister_widget(option.name, self.WIDGET_NAME)
         super().destroy()
+        self._close_callback()
 
     def add_close_callback(self, callback: Callable[[], None]) -> None:
-        self.protocol("WM_DELETE_WINDOW", callback)
+        self._close_callback = callback
 
     def set_option_buttons_command(self, option: DialogOptions, command: Callable[[], None]) -> None:
         self._option_buttons[option].configure(command=command)

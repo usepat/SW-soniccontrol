@@ -14,6 +14,15 @@ from sonic_protocol.python_parser import commands
 
 @attrs.define(auto_attribs=True, init=False)
 class RamperArgs(ProcedureArgs):
+    @classmethod
+    def get_description(cls) -> str:
+        return """Ramp is a procedure that runs on the device. 
+It starts at a start frequency f_start and steps through frequencies in increments of f_step, 
+until it reaches the end frequency f_stop. 
+The duration for which the signal is turned on is determined by t_on,
+and the duration it remains off is determined by t_off. 
+You can set t_off to 0 if you want the signal to never be turned off."""
+
     f_start: int = attrs.field(
         validator=[
             validators.instance_of(int),

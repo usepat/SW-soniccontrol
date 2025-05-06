@@ -32,7 +32,7 @@ class InterpreterEngine(EventManager):
     PROPERTY_INTERPRETER_STATE = "interpreter_state"
     PROPERTY_CURRENT_TARGET = "current_target"
 
-    def __init__(self, device: SonicDevice, updater: Updater, logger: logging.Logger):
+    def __init__(self, device: SonicDevice, updater: Updater, logger: logging.Logger = logging.getLogger()):
         super().__init__()
         self._interpreter_worker = None
         self._device = device
@@ -75,15 +75,14 @@ class InterpreterEngine(EventManager):
     
     @script.setter
     def script(self, script: Optional[RunnableScript]) -> None:
-        self._script = script
-        if script is not None: # TODO: refactor this mess with None
-            self._execution_steps = iter(script)
+        self._script = script     
 
     def start(self):
         self._logger.info("Start script")
         assert self._interpreter_state != InterpreterState.RUNNING
         assert self._script is not None
-        assert self._execution_steps is not None
+        if self._execution_steps is None:
+            self._execution_steps = iter(self._script)
         
         self._set_interpreter_state(InterpreterState.RUNNING)
         self._interpreter_worker = asyncio.create_task(self._interpreter_engine(single_instruction=False))
@@ -91,7 +90,10 @@ class InterpreterEngine(EventManager):
     def single_step(self):
         self._logger.info("Start script")
         assert self._interpreter_state != InterpreterState.RUNNING
-        
+        assert self._script is not None
+        if self._execution_steps is None:
+            self._execution_steps = iter(self._script)
+
         self._set_interpreter_state(InterpreterState.RUNNING)
         self._interpreter_worker = asyncio.create_task(self._interpreter_engine(single_instruction=True))
 
@@ -103,6 +105,7 @@ class InterpreterEngine(EventManager):
             self._interpreter_worker.cancel()
             await self._interpreter_worker
         
+        self._execution_steps = None
         self._set_current_target(CurrentTarget.default())
         self._set_interpreter_state(InterpreterState.READY)
 
@@ -131,20 +134,20 @@ class InterpreterEngine(EventManager):
                     break
         except StopIteration:
             self._execution_steps = None
+            self._logger.info("Interpreter finished executing script")
             self._set_interpreter_state(InterpreterState.READY)
             self._set_current_target(CurrentTarget.default())
         except asyncio.CancelledError:
-            self._logger.warn("Interpreter got interrupted, while executing a script")
+            self._logger.info("Interpreter got paused, while executing a script")
             self._set_interpreter_state(InterpreterState.PAUSED)
-        except ScriptException as e:
+        except (ScriptException, Exception) as e:
+            if not isinstance(e, ScriptException):
+                e = ScriptException(str(e), line_begin=self._current_target.line, col_begin=0) # type:ignore line should be int and not None 
             self._logger.error(e)
+            self._execution_steps = None
             self._set_interpreter_state(InterpreterState.READY)
+            self._set_current_target(CurrentTarget.default())
             self.emit(Event(InterpreterEngine.INTERPRETATION_ERROR, exception=e))   
-        except Exception as e:
-            exception = ScriptException(str(e), line_begin=self._current_target.line, col_begin=0) # type:ignore line should be int and not None 
-            self._logger.error(exception)
-            self._set_interpreter_state(InterpreterState.READY)
-            self.emit(Event(InterpreterEngine.INTERPRETATION_ERROR, exception=exception))   
         
 
 

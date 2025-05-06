@@ -24,6 +24,7 @@ tk_const: Final[_TkinterConstants] = _TkinterConstants()
 class _Files:
     DATA_DIR =  APP_DATA_DIR
     LOG_DIR = DATA_DIR / "logs"
+    MEASUREMENTS_DIR = DATA_DIR / "measurements"
     TRANSDUCER_CONFIG_FOLDER = DATA_DIR / "transducer_configs"
     TRANSDUCER_CONFIG_JSON = TRANSDUCER_CONFIG_FOLDER / "template.json"
     EXPERIMENT_TEMPLATES_JSON = DATA_DIR / "experiment_templates.json"
@@ -249,6 +250,7 @@ class _UIStringsEN:
     FLASH_UART_FAST: Final[str] = "FLASH_UART_FAST"
     FLASH_USB: Final[str] = "FLASH_USB"
     OPEN_LOGS: Final[str] = "Open Logs"
+    GO_TO_MEASUREMENTS: Final[str] = "Go to Measurements"
     FORM_ADD_ENTRY: Final[str] = "Add Entry"
 
 
@@ -332,35 +334,22 @@ scripting_cards_data: Final[List[ScriptingGuideCardDataDict]] = [
 begin
     # code
 end""",
+    },   
+    {
+        "keyword": "breakpoint",
+        "arguments": "None",
+        "description": "Pauses execution. Nice for debugging",
+        "example": """loop 5 times
+begin
+    on
+    breakpoint // pauses execution
+    off
+end""",
     },
     {
         "keyword": "ramp",
         "arguments": "f_start: uint\nf_stop: uint\nf_step: uint\nt_on: time\nt_off: time",
         "description": "Executes the ramp procedure",
         "example": "ramp 100000 200000 10000 1s 500ms",
-    },
-    {
-        "keyword": "wipe",
-        "arguments": "Wipe_f_range_Hz: uint\nWipe_f_step_Hz: uint\nWipe_t_on_ms: time\nWipe_t_off_ms: time\nWipe_t_pause_ms: time",
-        "description": "Executes the wipe procedure",
-        "example": "wipe 5000000 1000 100ms 0ms 1s",
-    },
-    {
-        "keyword": "scan",
-        "arguments": "Scanning_f_center_Hz: uint\nScanning_gain: uint\nScanning_f_range_Hz: uint\nScanning_f_step_Hz: uint\nScanning_t_step_ms: time",
-        "description": "Executes the scan procedure",
-        "example": "scan 1000000 50 500000 1000 100ms",
-    },
-    {
-        "keyword": "tune",
-        "arguments": "Tuning_f_step_Hz: uint\nTuning_time_ms: time\nTuning_t_step_ms: time",
-        "description": "Executes the tune procedure",
-        "example": "tune 1000 100ms 100ms",
-    },
-    {
-        "keyword": "auto",
-        "arguments": "Scanning_f_center_Hz: uint\nScanning_gain: uint\nScanning_f_range_Hz: uint\nScanning_f_step_Hz: uint\nScanning_t_step_ms: time\nTuning_f_step_Hz: uint\nTuning_time_ms: time\nTuning_t_step_ms: time",
-        "description": "Executes the auto procedure",
-        "example": "auto 1000000 50 500000 1000 100ms 1000 100ms 100ms",
     },
 ]

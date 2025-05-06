@@ -170,7 +170,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._interpreter = InterpreterEngine(self._device, self._updater, self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
-            self._capture = Capture(files.LOG_DIR, self._logger)
+            self._capture = Capture(files.MEASUREMENTS_DIR, self._logger)
             self._capture_targets = {
                 CaptureTargets.FREE: CaptureFree(),
                 CaptureTargets.SCRIPT: CaptureScript(self._script_file, self._scripting, self._interpreter),

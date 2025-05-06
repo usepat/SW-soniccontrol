@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 import attrs
 import ttkbootstrap as ttk
 
@@ -11,6 +11,7 @@ from soniccontrol_gui.view import TabView
 from soniccontrol_gui.widgets.form_widget import FormWidget
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol_gui.resources import images
+from soniccontrol_gui.widgets.message_box import MessageBox
 
 
 @attrs.define()
@@ -36,6 +37,10 @@ class SpectrumMeasureTab(UIComponent):
             SpectrumMeasureArgs,
             spectrum_measure_model.form_fields
         )
+        self._view.set_guide_button_command(self._open_guide)
+
+    def _open_guide(self):
+        MessageBox(self._view.root, SpectrumMeasureArgs.get_description(), "Guide", [])
 
 
 class SpectrumMeasureTabView(TabView):
@@ -44,8 +49,19 @@ class SpectrumMeasureTabView(TabView):
 
     def _initialize_children(self) -> None:
         self._form_frame: ttk.Frame = ttk.Frame(self)
+        self._help_frame: ttk.Frame = ttk.Frame(self)
+        self._guide_button = ttk.Button(
+            self._help_frame, 
+            text=ui_labels.GUIDE_LABEL,
+            style=ttk.INFO,
+            image=ImageLoader.load_image_resource(images.INFO_ICON_WHITE, (13, 13)),
+            compound=ttk.LEFT
+        )
 
     def _initialize_publish(self) -> None:
+        self._help_frame.pack(fill=ttk.X, side=ttk.BOTTOM)
+        self._guide_button.pack(side=ttk.LEFT, padx=5)
+
         self._form_frame.pack(expand=True, fill=ttk.BOTH)
 
     @property
@@ -59,3 +75,6 @@ class SpectrumMeasureTabView(TabView):
     @property
     def form_frame(self) -> ttk.Frame:
         return self._form_frame
+    
+    def set_guide_button_command(self, command: Callable[[], None]) -> None:
+        self._guide_button.configure(command=command)

@@ -111,7 +111,7 @@ def script(ctx: click.Context, script_file: io.IOBase):
     ]
 )
 @click.argument("metadata-file", type=click.Path(path_type=pathlib.Path, dir_okay=False))
-@click.option("--out-dir", type=click.Path(path_type=pathlib.Path, file_okay=False), default=files.LOG_DIR)
+@click.option("--out-dir", type=click.Path(path_type=pathlib.Path, file_okay=False), default=files.MEASUREMENTS_DIR)
 @click.pass_context
 def spectrum(ctx: click.Context, metadata_file: pathlib.Path, *args, **kwargs):
     remote_controller: RemoteController = ctx.obj[REMOTE_CONTROLLER]

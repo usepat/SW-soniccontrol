@@ -16,6 +16,7 @@ from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.resources import resources
+from soniccontrol_gui.widgets.message_box import MessageBox
 
 class SerialMonitor(UIComponent):
     def __init__(self, parent: UIComponent, communicator: Communicator):
@@ -42,11 +43,14 @@ class SerialMonitor(UIComponent):
         self._message_fetcher = MessageFetcher(self._communicator)
         self._command_history: List[str] = []
         self._command_history_index: int = 0
+
         self._view.set_send_command_button_command(self._send_command)
         self._view.set_read_button_command(self._on_read_button_pressed)
+        self._view.set_guide_button_command(self._on_guide_opened)
         self._view.bind_command_line_input_on_return_pressed(self._send_command)
         self._view.bind_command_line_input_on_down_pressed(lambda: self._scroll_command_history(False))
         self._view.bind_command_line_input_on_up_pressed(lambda: self._scroll_command_history(True))
+        
         self._message_fetcher.subscribe(MessageFetcher.MESSAGE_RECEIVED_EVENT, lambda e: self._view.add_text_line(e.data["message"]))
 
     @async_handler
@@ -119,6 +123,10 @@ class SerialMonitor(UIComponent):
         else:
             self._message_fetcher.run()
 
+    def _on_guide_opened(self):
+        description = "No description"
+        MessageBox(self.view.root, description, "Guide", [])
+
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value
         enabled = execution_state not in [ExecutionState.NOT_RESPONSIVE, ExecutionState.BUSY_FLASHING]
@@ -177,6 +185,13 @@ class SerialMonitorView(TabView):
             ),
             compound=ttk.RIGHT,
         )
+        self._guide_button = ttk.Button(
+            self._input_frame, 
+            text=ui_labels.GUIDE_LABEL,
+            style=ttk.INFO,
+            image=ImageLoader.load_image_resource(images.INFO_ICON_WHITE, (13, 13)),
+            compound=ttk.LEFT
+        )
 
         WidgetRegistry.register_widget(self._read_button, "read_button", tab_name)
         WidgetRegistry.register_widget(self.command_line_input_entry, "command_line_input_entry", tab_name)
@@ -221,6 +236,7 @@ class SerialMonitorView(TabView):
         self._input_frame.columnconfigure(0, weight=1)
         self._input_frame.columnconfigure(1, weight=10)
         self._input_frame.columnconfigure(2, weight=3)
+        self._input_frame.columnconfigure(3, weight=3)
         self._read_button.grid(
             row=0,
             column=0,
@@ -242,12 +258,22 @@ class SerialMonitorView(TabView):
             padx=sizes.MEDIUM_PADDING,
             pady=sizes.MEDIUM_PADDING,
         )
+        self._guide_button.grid(
+            row=0,
+            column=3,
+            sticky=ttk.EW,
+            padx=sizes.MEDIUM_PADDING,
+            pady=sizes.MEDIUM_PADDING,
+        )
 
     def set_send_command_button_command(self, command: Callable[[], None]):
         self._send_button.configure(command=command)
 
     def set_read_button_command(self, command: Callable[[], None]):
         self._read_button.configure(command=command)
+
+    def set_guide_button_command(self, command: Callable[[], None]):
+        self._guide_button.configure(command=command)
 
     def set_send_command_button_enabled(self, enabled: bool) -> None:
         self._send_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)
