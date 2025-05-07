@@ -372,7 +372,7 @@ protocol = Protocol(
                 get_help,
                 get_temp,
                 get_uipt,
-                # set_termination,
+                set_termination,
                 # TODO: fix termination
                 set_comm_protocol,
                 set_input_source,
