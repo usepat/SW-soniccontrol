@@ -44,7 +44,7 @@ class HDF5SerializationHelper:
             new_row.append()
         table.flush()
 
-TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+# TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class HDF5ExperimentStore(ExperimentStore):
     def __init__(self, file_path: Path):
@@ -58,7 +58,7 @@ class HDF5ExperimentStore(ExperimentStore):
     def _create_data_table(self):
         # Timestamp gets stored as string, because for a user it is more readable
         cols = {
-            EFieldName.TIMESTAMP.value: tb.StringCol(len(TIME_FORMAT)), #type: ignore
+            EFieldName.TIMESTAMP.value: tb.StringCol(32), #type: ignore
             EFieldName.FREQUENCY.value: tb.UInt32Col(), #type: ignore
             EFieldName.GAIN.value: tb.UInt8Col(), #type: ignore
             EFieldName.URMS.value: tb.UInt32Col(), #type: ignore
@@ -84,7 +84,7 @@ class HDF5ExperimentStore(ExperimentStore):
     def add_row(self, data: Dict[str, Any]) -> None:
         data = data.copy() # make a copy, so that we do not transform the original data
         timestamp_col = EFieldName.TIMESTAMP.value
-        data[timestamp_col] = data[timestamp_col].strftime(TIME_FORMAT) # convert the time to a string
+        data[timestamp_col] = data[timestamp_col].isoformat() #.strftime(TIME_FORMAT) # convert the time to a string
         # filter data, so that it only contains the columns of the table
         filtered_data = { k: v for k, v in data.items() if k in self._data_table.colnames }
         HDF5SerializationHelper.add_rows_to_table(self._file, self._data_table, [filtered_data])

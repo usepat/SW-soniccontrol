@@ -31,7 +31,7 @@ class ProcedureController(EventManager):
         self._ramp: Optional[Procedure] = self._procedures.get(ProcedureType.RAMP, None)
         self._running_proc_task: Optional[asyncio.Task] = None
         self._remote_procedure_state = RemoteProcedureState()
-        self._remote_procedure_state.subscribe(RemoteProcedureState.PROCEDURE_HALTED, lambda _e: self._on_proc_finished())
+        # self._remote_procedure_state.subscribe(RemoteProcedureState.PROCEDURE_HALTED, lambda _e: self._on_proc_finished())
 
         updater.subscribe("update", self._on_update)
 
@@ -66,10 +66,12 @@ class ProcedureController(EventManager):
                 await procedure.execute(self._device, args)
                 if procedure.is_remote:
                     await self._remote_procedure_state.wait_till_procedure_halted()
+                
             except asyncio.CancelledError:
                 if procedure.is_remote:
                     await self._device.execute_command(cmds.SetStop())
                 await self._device.set_signal_off()
+            self._on_proc_finished()
 
         self._remote_procedure_state.reset_completion_flag()
         self._running_proc_task = event_loop.create_task(proc_task())
