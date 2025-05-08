@@ -5,10 +5,8 @@ import asyncio
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.defs as protocol_defs
 import sonic_protocol.python_parser.commands as cmds
-from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.procedures.procedure import Procedure, ProcedureType
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
-from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.procedures.remote_procedure_state import RemoteProcedureState
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logging_utils import get_base_logger
@@ -64,8 +62,7 @@ class ProcedureController(EventManager):
             try:
                 await procedure.execute(self._device, args)
                 if procedure.is_remote:
-                    await self._remote_procedure_state.wait_till_procedure_halted()
-                
+                    await self._remote_procedure_state.wait_till_procedure_halted()          
             except asyncio.CancelledError:
                 if procedure.is_remote:
                     await self._device.execute_command(cmds.SetStop())

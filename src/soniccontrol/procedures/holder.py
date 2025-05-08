@@ -34,9 +34,6 @@ class HolderArgs:
         if isinstance(other, HolderArgs):
             # Convert both durations to milliseconds for calculation
             result_duration_ms = self.duration_in_ms - other.duration_in_ms
-        elif isinstance(other, (float, int)):
-            # Assume the duration is in the same unit as `self.unit`
-            result_duration_ms = self.duration_in_ms - (other * 1000 if self.unit == "s" else other)
         else:
             raise TypeError(f"Unsupported operand type(s) for -: 'HolderArgs' and '{type(other).__name__}'")
 
@@ -73,5 +70,4 @@ class Holder:
     async def execute(
         args: HolderArgs,
     ) -> None:
-        duration = args.duration if args.unit == "s" else args.duration / 1000
-        await asyncio.sleep(duration)
+        await asyncio.sleep(args.duration_in_ms / 1000)

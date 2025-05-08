@@ -1,12 +1,10 @@
-
-
 import abc
 from enum import Enum
 from typing import Any, Dict, Type
 
-from attrs import fields
 import attrs
 
+from sonic_protocol.field_names import EFieldName
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import HolderArgs
 
@@ -34,29 +32,33 @@ class ProcedureArgs:
         This field should reference a corresponding EFieldName enum value.
         TODO check if the sonic_text_attributes for the ProcedureArgs command definition also use this enum
     """
-    def __init__(self, data: dict[str, Any] | None = None):
-        if data is None:
-            return  # <- Empty default constructor, do nothing
-        for field in fields(self.__class__):
+    def __init__(self, **kwargs: dict[str, Any]):
+        for field in attrs.fields(self.__class__):
+            assert (field.type is not None)
             if issubclass(field.type, ProcedureArgs):
                 # If field is a nested ProcedureArgs, recurse
-                nested_instance = field.type(data)  # Value must itself be a dict
-                object.__setattr__(self, field.name, nested_instance)
+                nested_instance = field.type(**kwargs)  # Value must itself be a dict
+                setattr(self, field.name, nested_instance)
             else:
-                enum = field.metadata.get("enum", field.name)
 
+                enum = field.metadata.get("enum", None)
                 # Check if the enum value (str) is in the provided data
-                if isinstance(enum, Enum):
+                if enum:
+                    assert (isinstance(enum, EFieldName))
                     key = enum.value
                 else:
-                    key = enum  # fallback
+                    key = field.name  # fallback
 
-                if key not in data:
+                if key not in kwargs:
                     continue  # Field is missing in input dict; skip it
 
-                value = data[key]
+                value = kwargs[key] 
+                if field.converter is not None:
+                    value = field.converter(value)
+                if field.validator is not None:
+                    field.validator(self, field, value)
 
-                object.__setattr__(self, field.name, value)
+                setattr(self, field.name, value)
         
 
     @classmethod
@@ -64,7 +66,7 @@ class ProcedureArgs:
         """Converts a ProcedureArgs class to a dictionary, where the keys are the string literals of the used EFieldName enum,
             so it can be used for the Form Widget."""
         result = {}
-        for field in fields(cls):
+        for field in attrs.fields(cls):
             if issubclass(field.type, ProcedureArgs):
                 result.update(field.type.fields_dict_with_alias())
             else:
@@ -80,7 +82,7 @@ class ProcedureArgs:
             Likewise the ProcedureArgs class should implement the same arguments and reference the with the EFieldName enum in the metadata field.
         """
         arg_dict = {}
-        for field in fields(cls):
+        for field in attrs.fields(cls):
             if issubclass(field.type, ProcedureArgs):
                 arg_dict.update(field.type.to_dict_with_holder_args(answer_dict))
             else:

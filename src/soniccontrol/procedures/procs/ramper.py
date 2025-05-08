@@ -1,10 +1,8 @@
 from typing import Any, Dict, List, Type, Union
-import asyncio
 
 import attrs
-from attrs import fields, validators
+from attrs import validators
 
-from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import EFieldName
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
@@ -102,7 +100,7 @@ class RamperLocal(Ramper):
         while i < len(values):
             value = values[i]
 
-            await device.execute_command(f"!f={value}") # FIXME use internal freq command of device
+            await device.execute_command(commands.SetFrequency(int(value))) 
             if hold_off.duration:
                 await device.set_signal_on()
             await Holder.execute(hold_on)
@@ -134,8 +132,8 @@ class RamperRemote(Ramper):
         await device.execute_command(commands.SetRampFStop(args.f_stop))
         await device.execute_command(commands.SetRampFStep(args.f_step))
         # When the args are retrieved from the Form Widget, the HolderArgs are tuples instead
-        t_on_duration = int(args.t_on.duration_in_ms) if isinstance(args.t_on, HolderArgs) else int(args.t_on[0])
-        t_off_duration = int(args.t_off.duration_in_ms) if isinstance(args.t_off, HolderArgs) else int(args.t_off[0])
+        t_on_duration = int(args.t_on.duration_in_ms)
+        t_off_duration = int(args.t_off.duration_in_ms)
 
         await device.execute_command(commands.SetRampTOn(t_on_duration))
         await device.execute_command(commands.SetRampTOff(t_off_duration))

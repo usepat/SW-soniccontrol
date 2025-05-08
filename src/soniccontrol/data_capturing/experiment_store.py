@@ -44,7 +44,6 @@ class HDF5SerializationHelper:
             new_row.append()
         table.flush()
 
-# TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class HDF5ExperimentStore(ExperimentStore):
     def __init__(self, file_path: Path):
@@ -77,6 +76,9 @@ class HDF5ExperimentStore(ExperimentStore):
         # Unnest metadata, so that the metadata for the form lays also inside the same level as the other meta data
         data.update(data["metadata"])
         del data["metadata"]
+        data["authors"] = ", ".join(data["authors"]) 
+        # convert authors into a string for easier storage
+        # pytables cannot store as an attribute a list of variable length strings.
 
         group = self._file.create_group("/", "metadata")
         HDF5SerializationHelper.serialize_attribute_tree(self._file, group, data)
@@ -84,7 +86,7 @@ class HDF5ExperimentStore(ExperimentStore):
     def add_row(self, data: Dict[str, Any]) -> None:
         data = data.copy() # make a copy, so that we do not transform the original data
         timestamp_col = EFieldName.TIMESTAMP.value
-        data[timestamp_col] = data[timestamp_col].isoformat() #.strftime(TIME_FORMAT) # convert the time to a string
+        data[timestamp_col] = data[timestamp_col].isoformat()  # convert the time to a string for direct readability in storage
         # filter data, so that it only contains the columns of the table
         filtered_data = { k: v for k, v in data.items() if k in self._data_table.colnames }
         HDF5SerializationHelper.add_rows_to_table(self._file, self._data_table, [filtered_data])

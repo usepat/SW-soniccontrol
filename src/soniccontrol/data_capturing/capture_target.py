@@ -145,11 +145,7 @@ class CaptureProcedure(CaptureTarget):
     async def before_start_capture(self) -> None:
         self._selected_proc = self._proc_args.procedure_type
         proc_class = self._procedure_controller.proc_args_list[self._selected_proc]
-        if isinstance(proc_class, type) and issubclass(proc_class, ProcedureArgs):
-            self._args = proc_class(self._proc_args.procedure_args)
-        else:
-            #TODO check if we even this else
-            self._args = proc_class(**self._proc_args.procedure_args)
+        self._args = proc_class(**self._proc_args.procedure_args)
         self._is_capturing = True
 
     def run_to_capturing_task(self) -> None:
