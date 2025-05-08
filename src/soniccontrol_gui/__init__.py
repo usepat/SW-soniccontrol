@@ -1,6 +1,9 @@
 from __future__ import annotations
+import asyncio
 
 from PIL import Image
+
+from soniccontrol_gui.widgets.message_box import MessageBox
 Image.CUBIC = Image.BICUBIC # FIX: because ttk.bootstrap sets an deprecated, removed value
 
 import fnmatch
@@ -61,12 +64,28 @@ def setup_fonts() -> None:
 check_high_dpi_windows()
 setup_fonts()
 
+
+
 def start_gui(simulation_exe_path: Optional[pathlib.Path] = None):
     main_window = ConnectionWindow(simulation_exe_path=simulation_exe_path)
+    root = main_window.view
+
     if PLATFORM != System.WINDOWS:
         soniccontrol_logger.info("Enabling high dpi awareness for DARWIN/ LINUX")
-        enable_high_dpi_awareness(main_window.view)
-    async_mainloop(main_window.view)
+        enable_high_dpi_awareness(root)    
+
+    def global_exception_handler(loop, context):
+        soniccontrol_logger.error(context['message'])
+        exception = context.get("exception")
+        if exception:
+            soniccontrol_logger.error(str(exception))
+            MessageBox.show_error(root, str(exception))
+    
+    loop = asyncio.new_event_loop()
+    loop.set_exception_handler(global_exception_handler)
+    asyncio.set_event_loop(loop)
+
+    async_mainloop(root)
 
 soniccontrol_logger.info("Python: %s", sys.version)
 soniccontrol_logger.info("Platform: %s", sys.platform)
