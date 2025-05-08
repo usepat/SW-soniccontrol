@@ -31,7 +31,6 @@ class ProcedureController(EventManager):
         self._ramp: Optional[Procedure] = self._procedures.get(ProcedureType.RAMP, None)
         self._running_proc_task: Optional[asyncio.Task] = None
         self._remote_procedure_state = RemoteProcedureState()
-        # self._remote_procedure_state.subscribe(RemoteProcedureState.PROCEDURE_HALTED, lambda _e: self._on_proc_finished())
 
         updater.subscribe("update", self._on_update)
 
