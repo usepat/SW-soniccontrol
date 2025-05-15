@@ -6,7 +6,10 @@ from soniccontrol.procedures.procs.ramper import Ramper, RamperLocal, RamperRemo
 from soniccontrol.procedures.procs.scan import ScanProc
 from soniccontrol.procedures.procs.tune import TuneProc
 from soniccontrol.procedures.procs.wipe import WipeProc
+from soniccontrol.procedures.legacy_procs.auto import AutoLegacyProc
+from soniccontrol.procedures.legacy_procs.wipe import WipeLegacyProc
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 
 
 class ProcedureInstantiator:
@@ -29,13 +32,19 @@ class ProcedureInstantiator:
             procedures[ProcedureType.SCAN] = ScanProc()
 
         if device.has_command(commands.SetAuto()):
-            procedures[ProcedureType.AUTO] = AutoProc()
+            if isinstance(device.communicator, LegacyCommunicator):
+                procedures[ProcedureType.AUTO] = AutoLegacyProc()
+            else:
+                procedures[ProcedureType.AUTO] = AutoProc()
 
         if device.has_command(commands.SetTune()):
             procedures[ProcedureType.TUNE] = TuneProc()
 
         if device.has_command(commands.SetWipe()):
-            procedures[ProcedureType.WIPE] = WipeProc()
+            if isinstance(device.communicator, LegacyCommunicator):
+                procedures[ProcedureType.WIPE] = WipeLegacyProc()
+            else:
+                procedures[ProcedureType.WIPE] = WipeProc()
 
         return procedures
         

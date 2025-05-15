@@ -215,35 +215,107 @@ field_phase = AnswerFieldDef(
 )
 
 field_rang = AnswerFieldDef(
-    field_name=EFieldName.RANG,
+    field_name=EFieldName.LEGACY_RANG,
     field_type=FieldType(
         field_type=np.uint32,
     )
 )
 
 field_step = AnswerFieldDef(
-    field_name=EFieldName.STEP,
+    field_name=EFieldName.LEGACY_STEP,
     field_type=FieldType(
         field_type=np.uint32,
     )
 )
 
 field_sing = AnswerFieldDef(
-    field_name=EFieldName.SING,
+    field_name=EFieldName.LEGACY_SING,
     field_type=FieldType(
         field_type=np.uint32,
     )
 )
 
 field_paus = AnswerFieldDef(
-    field_name=EFieldName.PAUS,
+    field_name=EFieldName.LEGACY_PAUS,
     field_type=FieldType(
         field_type=np.uint32,
     )
 )
 
+set_step = CommandContract(
+    code=CommandCode.LEGACY_STEP,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!step"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            field_step
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the frequency step size for the wipe procedure."
+    ),
+    is_release=True
+)
+
+set_sing = CommandContract(
+    code=CommandCode.LEGACY_SING,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!sing"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            field_sing
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the sing parameter for the wipe procedure."
+    ),
+    is_release=True
+)
+
+set_paus = CommandContract(
+    code=CommandCode.LEGACY_PAUS,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!paus"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            field_paus
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the paus parameter for the wipe procedure."
+    ),
+    is_release=True
+)
+
+set_rang = CommandContract(
+    code=CommandCode.LEGACY_RANG,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!rang"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            field_rang
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the rang parameter for the wipe procedure."
+    ),
+    is_release=True
+)
+
 get_pval = CommandContract(
-    code=CommandCode.GET_PVAL,
+    code=CommandCode.LEGACY_PVAL,
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?pval"]
@@ -262,6 +334,82 @@ get_pval = CommandContract(
     ),
     is_release=True
 )
+
+field_tust = AnswerFieldDef(
+    field_name=EFieldName.LEGACY_TUST,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+field_tutm = AnswerFieldDef(
+    field_name=EFieldName.LEGACY_TUTM,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+field_scst = AnswerFieldDef(
+    field_name=EFieldName.LEGACY_SCST,
+    field_type=FieldType(
+        field_type=np.uint32,
+    )
+)
+
+set_tust = CommandContract(
+    code=CommandCode.LEGACY_TUST,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!tust"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            field_tust
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the tune steps for the auto procedure."
+    ),
+    is_release=True
+)
+
+set_tutm = CommandContract(
+    code=CommandCode.LEGACY_TUTM,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!tutm"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            field_tutm
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the tune time for the auto procedure."
+    ),
+    is_release=True
+)
+
+set_scst = CommandContract(
+    code=CommandCode.LEGACY_SCST,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!scst"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[
+            field_scst
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the scanning for the auto procedure."
+    ),
+    is_release=True
+)
+
 
 dash = CommandContract(
             code=CommandCode.GET_UPDATE,
@@ -313,6 +461,13 @@ legacy_protocol = LegacyProtocol(
                         set_frequency,
                         set_gain,
                         get_pval,
+                        set_paus,
+                        set_sing,
+                        set_step,
+                        set_rang,
+                        set_tust,
+                        set_tutm,
+                        set_scst
                     ],
             descriptor=MetaExportDescriptor(min_protocol_version=version)
         )

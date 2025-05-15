@@ -290,3 +290,64 @@ class GetScan(Command):
 class GetAuto(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.GET_AUTO)
+
+
+# Legacy specific commands
+
+# We need a different auto and wipe command so that procedure instantiator  knows which proc to create
+@attrs.define()
+class SetAutoLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_AUTO)
+
+@attrs.define()
+class SetWipeLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_WIPE)
+
+@attrs.define()
+class SetStepLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_STEP)
+    value: int = attrs.field(alias=EFieldName.LEGACY_STEP.value)
+
+@attrs.define()
+class SetSingLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_SING)
+    value: int = attrs.field(alias=EFieldName.LEGACY_SING.value)
+
+@attrs.define()
+class SetPausLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_PAUS)
+    value: int = attrs.field(alias=EFieldName.LEGACY_PAUS.value)
+
+@attrs.define()
+class SetRangLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_RANG)
+    value: int = attrs.field(alias=EFieldName.LEGACY_RANG.value)
+
+@attrs.define()
+class SetTustLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_TUST)
+    value: int = attrs.field(alias=EFieldName.LEGACY_TUST.value)
+
+@attrs.define()
+class SetTutmLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_TUTM)
+    value: int = attrs.field(alias=EFieldName.LEGACY_TUTM.value)
+
+@attrs.define()
+class SetScstLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_SCST)
+    value: int = attrs.field(alias=EFieldName.LEGACY_SCST.value)
+
+@attrs.define()
+class GetPvalLegacy(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.LEGACY_PVAL)
