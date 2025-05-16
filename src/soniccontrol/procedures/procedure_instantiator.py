@@ -32,19 +32,21 @@ class ProcedureInstantiator:
             procedures[ProcedureType.SCAN] = ScanProc()
 
         if device.has_command(commands.SetAuto()):
-            if isinstance(device.communicator, LegacyCommunicator):
-                procedures[ProcedureType.AUTO] = AutoLegacyProc()
-            else:
-                procedures[ProcedureType.AUTO] = AutoProc()
+            procedures[ProcedureType.AUTO] = AutoProc()
 
         if device.has_command(commands.SetTune()):
             procedures[ProcedureType.TUNE] = TuneProc()
 
         if device.has_command(commands.SetWipe()):
-            if isinstance(device.communicator, LegacyCommunicator):
-                procedures[ProcedureType.WIPE] = WipeLegacyProc()
-            else:
-                procedures[ProcedureType.WIPE] = WipeProc()
+            procedures[ProcedureType.WIPE] = WipeProc()
+
+        if device.has_command(commands.SetWipeLegacy()):
+            procedures[ProcedureType.WIPE] = WipeLegacyProc()
+
+        if device.has_command(commands.SetAutoLegacy()):
+            procedures[ProcedureType.AUTO] = AutoLegacyProc()
+
+
 
         return procedures
         

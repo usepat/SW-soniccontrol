@@ -257,7 +257,7 @@ class DeviceWindowView(tk.Toplevel, View):
         self._notebook_left.pack(side=ttk.LEFT, fill=ttk.BOTH)
         self._notebook_right.pack(side=ttk.LEFT, fill=ttk.BOTH)
 
-        self._paned_window.add(self._notebook_left, minsize=300)
+        self._paned_window.add(self._notebook_left, minsize=600)
         self._paned_window.add(self._notebook_right, minsize=300)
 
         self._notebook_right.add_tabs(
@@ -270,6 +270,7 @@ class DeviceWindowView(tk.Toplevel, View):
             show_titles=True,
             show_images=True,
         )
+        
 
 
     @property

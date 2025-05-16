@@ -161,7 +161,7 @@ class LegacyCommunicator(Communicator):
     def _get_number_of_lines(self, code: int) -> int:
         if code == CommandCode.GET_INFO:
             return 3
-        elif code == CommandCode.GET_PVAL:
+        elif code == CommandCode.LEGACY_PVAL:
             return 4
         return 1
 

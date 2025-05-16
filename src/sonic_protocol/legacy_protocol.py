@@ -4,8 +4,8 @@ from sonic_protocol.command_contracts.contract_generators import create_list_wit
 from sonic_protocol.protocol import (build_date_field, build_hash_field, field_device_type)
 from sonic_protocol.defs import (
     CommandCode, CommandExport, CommandListExport, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, FieldType, MetaExport, MetaExportDescriptor, Procedure, 
-    Protocol, SIPrefix, SIUnit, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
-    AnswerFieldDef, CommandContract, DeviceType,
+    Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
+    AnswerFieldDef, CommandContract, DeviceType, SonicTextAnswerAttrs
 )
 # from sonic_protocol.command_contracts.fields import (
 
@@ -55,6 +55,36 @@ set_on = CommandContract(
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!ON"]
+        )
+    ),
+    answer_defs=AnswerDef(fields=[field_unknown_answer]),
+    is_release=True,
+    tags=[" "],
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+set_auto = CommandContract(
+    code=CommandCode.LEGACY_AUTO,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!AUTO"]
+        )
+    ),
+    answer_defs=AnswerDef(fields=[field_unknown_answer]),
+    is_release=True,
+    tags=[" "],
+    user_manual_attrs=UserManualAttrs(
+        description=""
+    ),
+)
+
+set_wipe = CommandContract(
+    code=CommandCode.LEGACY_WIPE,
+    command_defs=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!WIPE"]
         )
     ),
     answer_defs=AnswerDef(fields=[field_unknown_answer]),
@@ -314,6 +344,46 @@ set_rang = CommandContract(
     is_release=True
 )
 
+field_rang_pval = AnswerFieldDef(
+    field_name=EFieldName.LEGACY_RANG,
+    field_type=FieldType(
+        field_type=np.uint32,
+    ),
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(
+        prefix="rang:"
+    )
+)
+
+field_step_pval = AnswerFieldDef(
+    field_name=EFieldName.LEGACY_STEP,
+    field_type=FieldType(
+        field_type=np.uint32,
+    ),
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(
+        prefix="step:"
+    )
+)
+
+field_sing_pval = AnswerFieldDef(
+    field_name=EFieldName.LEGACY_SING,
+    field_type=FieldType(
+        field_type=np.uint32,
+    ),
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(
+        prefix="sing:"
+    )
+)
+
+field_paus_pval = AnswerFieldDef(
+    field_name=EFieldName.LEGACY_PAUS,
+    field_type=FieldType(
+        field_type=np.uint32,
+    ),
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(
+        prefix="paus:"
+    )
+)
+
 get_pval = CommandContract(
     code=CommandCode.LEGACY_PVAL,
     command_defs=CommandDef(
@@ -323,11 +393,14 @@ get_pval = CommandContract(
     ),
     answer_defs=AnswerDef(
         fields=[
-            field_rang,
-            field_step,
-            field_sing,
-            field_paus,
-        ]
+            field_rang_pval,
+            field_step_pval,
+            field_sing_pval,
+            field_paus_pval,
+        ],
+        sonic_text_attrs=SonicTextAnswerAttrs(
+            separator="\r\n"
+        )
     ),
     user_manual_attrs=UserManualAttrs(
         description="Command to get the pval of the transducer on the device."
@@ -467,7 +540,9 @@ legacy_protocol = LegacyProtocol(
                         set_rang,
                         set_tust,
                         set_tutm,
-                        set_scst
+                        set_scst,
+                        set_auto,
+                        set_wipe,
                     ],
             descriptor=MetaExportDescriptor(min_protocol_version=version)
         )

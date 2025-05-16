@@ -63,11 +63,14 @@ class ProcedureController(EventManager):
                 await procedure.execute(self._device, args)
                 if procedure.is_remote:
                     await self._remote_procedure_state.wait_till_procedure_halted()          
-            except asyncio.CancelledError:
+            except Exception as e:
                 if procedure.is_remote:
                     await self._device.execute_command(cmds.SetStop())
                 await self._device.set_signal_off()
-            self._on_proc_finished()
+                if not isinstance(e, asyncio.CancelledError):
+                    raise e # if task was not cancelled, then some internal unexpected exception occurred
+            finally:
+                self._on_proc_finished()
 
         self._remote_procedure_state.reset_completion_flag()
         self._running_proc_task = event_loop.create_task(proc_task())

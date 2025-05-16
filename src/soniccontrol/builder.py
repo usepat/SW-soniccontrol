@@ -84,7 +84,8 @@ class DeviceBuilder:
         # To force them out of that, send the !sonic_force command
         if device.has_command(cmds.SetStop()):
             await device.execute_command(cmds.SetStop())
-        if device.has_command(cmds.SetOff()):
+        # We can use SetOff for the crystal+ device because it is not ready yet
+        if device.has_command(cmds.SetOff()) and not is_legacy_device:
             await device.execute_command(cmds.SetOff())
         if device.has_command(cmds.SonicForce()):
             await device.execute_command(cmds.SonicForce())

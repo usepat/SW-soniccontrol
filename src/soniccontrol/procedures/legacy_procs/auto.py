@@ -50,7 +50,7 @@ class AutoLegacyArgs(ProcedureArgs):
 class AutoLegacyProc(Procedure):    
     @classmethod
     def get_args_class(cls) -> Type: 
-        return AutoLegacyProc
+        return AutoLegacyArgs
 
     @property
     def is_remote(self) -> bool:
