@@ -65,7 +65,10 @@ class ProcedureController(EventManager):
                     await self._remote_procedure_state.wait_till_procedure_halted()          
             except Exception as e:
                 if procedure.is_remote:
-                    await self._device.execute_command(cmds.SetStop())
+                    if self._device.has_command(cmds.SetStop()):
+                        await self._device.execute_command(cmds.SetStop())
+                    else:
+                        await self._device.execute_command(cmds.SetOff())
                 await self._device.set_signal_off()
                 if not isinstance(e, asyncio.CancelledError):
                     raise e # if task was not cancelled, then some internal unexpected exception occurred
@@ -86,7 +89,10 @@ class ProcedureController(EventManager):
 
     async def stop_proc(self) -> None:
         self._logger.info("Stop procedure")
-        await self._device.execute_command(cmds.SetStop())
+        if self._device.has_command(cmds.SetStop()):
+            await self._device.execute_command(cmds.SetStop())
+        else:
+            await self._device.execute_command(cmds.SetOff())
         if self._running_proc_task: 
             self._running_proc_task.cancel()
             await self._running_proc_task

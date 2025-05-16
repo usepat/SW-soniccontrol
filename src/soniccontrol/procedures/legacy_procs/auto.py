@@ -41,11 +41,6 @@ class AutoLegacyArgs(ProcedureArgs):
             validators.le(5000000)
         ]
     )
-    t_poll: HolderArgs = attrs.field(
-        default=HolderArgs(1000, "ms"),
-        metadata={"enum": EFieldName.LEGACY_POLL},
-        converter=convert_to_holder_args
-    )
 
 class AutoLegacyProc(Procedure):    
     @classmethod
@@ -57,10 +52,10 @@ class AutoLegacyProc(Procedure):
         return True
 
     async def execute(self, device: Scriptable, args: AutoLegacyArgs) -> None:
-        await device.execute_command(commands.SetTustLegacy(args.tust))
-        await device.execute_command(commands.SetScstLegacy(args.scst))
+        #await device.execute_command(commands.SetTustLegacy(args.tust))
+        #await device.execute_command(commands.SetScstLegacy(args.scst))
         tutm_duration = int(args.tutm.duration_in_ms) if isinstance(args.tutm, HolderArgs) else int(args.tutm[0])
-        await device.execute_command(commands.SetTutmLegacy(tutm_duration))
+        #await device.execute_command(commands.SetTutmLegacy(tutm_duration))
 
         await device.execute_command(commands.SetAutoLegacy())
 

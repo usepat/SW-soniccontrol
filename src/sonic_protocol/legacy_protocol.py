@@ -272,12 +272,20 @@ field_paus = AnswerFieldDef(
     )
 )
 
+uint32_param = CommandParamDef(
+            name=EFieldName.UNDEFINED,
+            param_type=FieldType(
+                field_type=np.uint32,
+            )
+        )
+
 set_step = CommandContract(
     code=CommandCode.LEGACY_STEP,
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!step"]
-        )
+        ),
+        setter_param=uint32_param
     ),
     answer_defs=AnswerDef(
         fields=[
@@ -295,7 +303,8 @@ set_sing = CommandContract(
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!sing"]
-        )
+        ),
+        setter_param=uint32_param
     ),
     answer_defs=AnswerDef(
         fields=[
@@ -313,7 +322,8 @@ set_paus = CommandContract(
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!paus"]
-        )
+        ),
+        setter_param=uint32_param
     ),
     answer_defs=AnswerDef(
         fields=[
@@ -331,7 +341,8 @@ set_rang = CommandContract(
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!rang"]
-        )
+        ),
+        setter_param=uint32_param
     ),
     answer_defs=AnswerDef(
         fields=[
@@ -434,7 +445,8 @@ set_tust = CommandContract(
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!tust"]
-        )
+        ),
+        setter_param=uint32_param
     ),
     answer_defs=AnswerDef(
         fields=[
@@ -447,12 +459,15 @@ set_tust = CommandContract(
     is_release=True
 )
 
+
+
 set_tutm = CommandContract(
     code=CommandCode.LEGACY_TUTM,
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!tutm"]
-        )
+        ),
+        setter_param=uint32_param
     ),
     answer_defs=AnswerDef(
         fields=[
@@ -470,7 +485,8 @@ set_scst = CommandContract(
     command_defs=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!scst"]
-        )
+        ),
+        setter_param=uint32_param
     ),
     answer_defs=AnswerDef(
         fields=[
@@ -511,6 +527,116 @@ dash = CommandContract(
             tags=["update", "status"]
         )
 
+param_index = CommandParamDef(
+    name=EFieldName.INDEX,
+    param_type=FieldType(
+        field_type=np.uint8,
+        min_value=DeviceParamConstantType.MIN_TRANSDUCER_INDEX,
+        max_value=DeviceParamConstantType.MAX_TRANSDUCER_INDEX,
+    )
+)
+
+float_param = FieldType(
+    field_type=float,
+)
+
+param_atf = CommandParamDef(
+    name=EFieldName.ATF,
+    param_type=uint32_param
+)
+
+param_att = CommandParamDef(
+    name=EFieldName.ATT,
+    param_type=float_param
+)
+
+uint32_field = FieldType(
+    field_type=np.uint32
+)
+
+float_field = FieldType(
+    field_type=float
+)
+
+param_atk = CommandParamDef(
+    name=EFieldName.ATK,
+    param_type=uint32_field
+)
+
+field_atf = AnswerFieldDef(
+    field_name=EFieldName.ATF,
+    field_type=float_field
+)
+
+set_atf = CommandContract(
+    code=CommandCode.SET_ATF,
+    command_defs=CommandDef(
+        index_param=param_index,
+        setter_param=param_atf,
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!atf"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_atf]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the atf"
+    ),
+    is_release=True,
+    tags=["transducer", "config"]
+)
+
+field_att = AnswerFieldDef(
+    field_name=EFieldName.ATT,
+    field_type=float_field
+)
+
+
+set_att = CommandContract(
+    code=CommandCode.SET_ATT,
+    command_defs=CommandDef(
+        index_param=param_index,
+        setter_param=param_att, # TODO make a better param for att
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!att"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_att]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the att"
+    ),
+    is_release=True,
+    tags=["transducer", "config"]
+)
+
+field_atk = AnswerFieldDef(
+    field_name=EFieldName.ATK,
+    field_type=float_field
+)
+
+
+set_atk = CommandContract(
+    code=CommandCode.SET_ATK,
+    command_defs=CommandDef(
+        index_param=param_index,
+        setter_param=param_atk,
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!atk"]
+        )
+    ),
+    answer_defs=AnswerDef(
+        fields=[field_atk]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the atk"
+    ),
+    is_release=True,
+    tags=["transducer", "config"]
+)
+
 
 class LegacyProtocol(Protocol):
     # TODO Fix this and INFO tab
@@ -543,6 +669,9 @@ legacy_protocol = LegacyProtocol(
                         set_scst,
                         set_auto,
                         set_wipe,
+                        set_atf,
+                        set_atk,
+                        set_att
                     ],
             descriptor=MetaExportDescriptor(min_protocol_version=version)
         )

@@ -37,7 +37,7 @@ class Notebook(ttk.Notebook):
 
     def add_tabs(
         self,
-        tabs: List[Union[TabView, Tuple[int, TabView]]],
+        tabs: List[Union[TabView | None, Tuple[int, TabView]]],
         keep_tabs: bool = False,
         show_titles: bool = True,
         show_images: bool = True,
@@ -45,15 +45,17 @@ class Notebook(ttk.Notebook):
     ) -> None:
         if not keep_tabs:
             for tab in self.tabs():
-                self.forget(tab)
+                if tab:
+                    self.forget(tab)
         self._images_on = show_images
         self._titles_on = show_titles
         for tab in tabs:
-            self.add_tab(
-                tab if isinstance(tab, TabView) else tab[1],
-                index=None if isinstance(tab, TabView) else tab[0],
-                **kwargs
-            )
+            if tab:
+                self.add_tab(
+                    tab if isinstance(tab, TabView) else tab[1],
+                    index=None if isinstance(tab, TabView) else tab[0],
+                    **kwargs
+                )
 
     def configure_tabs(
         self, show_titles: bool = True, show_images: bool = True

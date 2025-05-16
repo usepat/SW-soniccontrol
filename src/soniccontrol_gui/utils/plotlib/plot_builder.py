@@ -20,6 +20,8 @@ class PlotBuilder:
         plot.add_axis("phase_axis", "Phase / °")
         plot.add_axis("urms_axis", "U$_{RMS}$ / mV")
         plot.add_axis("irms_axis", "I$_{RMS}$ / mA")
+        # for k, ax in plot._axes.items():
+        #     print(f"{k:15s} → id = {id(ax)}")
         
         plot.add_line(
             EFieldName.FREQUENCY.value, 
@@ -48,7 +50,8 @@ class PlotBuilder:
 
         plot.update_plot()
         plot.tight_layout()
-
+        # for name, line in plot._lines.items():
+        #     print(name, "→ axis:", line.axes is plot._axes[name + "_axis"], line.axes)
         return plot
 
     # creates a spectralplot for urms, irms and phase

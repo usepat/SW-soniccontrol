@@ -122,6 +122,7 @@ class Plot(EventManager):
                 raise TypeError("Timestamp column is of type object instead of type datetime64[ns]")
 
         for attrName, line in self._lines.items():
+                # print(f"data[{self._dataAttrNameXAxis}]:{data[self._dataAttrNameXAxis]}    data[{attrName}]:{data[attrName]}")
                 line.set_data(data[self._dataAttrNameXAxis], data[attrName])
         self.update_plot()
         self.emit(PropertyChangeEvent("plot", self._plot, self._plot))

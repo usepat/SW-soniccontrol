@@ -26,6 +26,8 @@ class _Files:
     LOG_DIR = DATA_DIR / "logs"
     MEASUREMENTS_DIR = DATA_DIR / "measurements"
     TRANSDUCER_CONFIG_FOLDER = DATA_DIR / "transducer_configs"
+    LEGACY_TRANSDUCER_CONFIG_FOLDER = DATA_DIR / "legacy_transducer_configs"
+    LEGACY_TRANSDUCER_CONFIG_JSON = LEGACY_TRANSDUCER_CONFIG_FOLDER / "template.json"
     TRANSDUCER_CONFIG_JSON = TRANSDUCER_CONFIG_FOLDER / "template.json"
     EXPERIMENT_TEMPLATES_JSON = DATA_DIR / "experiment_templates.json"
     SONICCONTROL_LOG = LOG_DIR / "soniccontrol.log"

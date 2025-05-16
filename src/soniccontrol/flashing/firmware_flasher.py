@@ -37,7 +37,7 @@ class LegacyFirmwareFlasher(FirmwareFlasher):
     def file_uploaded(self) -> asyncio.Event:
         return self._file_uploaded
 
-    async def flash_firmware(self) -> None:
+    async def flash_firmware(self) -> bool:
         """
         Asynchronously flashes the firmware.
 
@@ -54,7 +54,7 @@ class LegacyFirmwareFlasher(FirmwareFlasher):
         """
         await self.validate_firmware()
         await self._file_validated.wait()
-        await self.upload_firmware()
+        return await self.upload_firmware()
 
     async def validate_firmware(self) -> None:
         """
@@ -67,7 +67,7 @@ class LegacyFirmwareFlasher(FirmwareFlasher):
         else:
             logger.error("Firmware validation failed")
 
-    async def upload_firmware(self) -> None:
+    async def upload_firmware(self) -> bool:
         """
         Executes the firmware upload process asynchronously.
         """
@@ -75,8 +75,10 @@ class LegacyFirmwareFlasher(FirmwareFlasher):
         if return_code == 0:
             logger.info("Firmware upload was successfull")
             self._file_uploaded.set()
+            return True
         else:
             logger.error("Firmware upload failed")
+            return False
 
     async def _firmware_worker(
         self, test_mode: bool = True
@@ -123,7 +125,11 @@ class LegacyFirmwareFlasher(FirmwareFlasher):
             str: The command to flash the firmware.
 
         """
-        avrdude_executable = rs.files(soniccontrol.bin.avrdude).joinpath(PLATFORM.platform_name + ".avrdude")
+        avrdude_executable = None
+        if PLATFORM.value == "win32":
+            avrdude_executable = rs.files(soniccontrol.bin.avrdude).joinpath(PLATFORM.value + r"\avrdude.exe")
+        else: 
+            assert False
         return (
             f'"{str(avrdude_executable)}" '
             f'{"-n" if test_mode else ""} -v -p '

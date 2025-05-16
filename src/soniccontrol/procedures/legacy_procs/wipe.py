@@ -46,11 +46,6 @@ class WipeLegacyArgs(ProcedureArgs):
             validators.le(5000000)
         ]
     )
-    t_poll: HolderArgs = attrs.field(
-        default=HolderArgs(1000, "ms"),
-        metadata={"enum": EFieldName.LEGACY_POLL},
-        converter=convert_to_holder_args
-    )
 
 class WipeLegacyProc(Procedure):    
     @classmethod

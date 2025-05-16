@@ -22,7 +22,9 @@ class Settings(UIComponent):
         self._view = SettingsView(parent.view, self)
         self._device = device
         self._updater = updater
+
         super().__init__(parent, self._view, self._logger)
+        self._view.set_updater_interval(updater.get_update_interval())
         self._view.set_apply_settings_command(async_handler(self._apply_settings))
 
     async def _apply_settings(self) -> None:
@@ -107,6 +109,9 @@ class SettingsView(TabView):
 
     def set_apply_settings_command(self, command: Callable[[], None]) -> None:
         self._apply_settings_button.configure(command=command)
+
+    def set_updater_interval(self, interval: int) -> None:
+        self._updater_interval.set(interval)
 
     def get_updater_interval(self) -> int:
         return self._updater_interval.get()
