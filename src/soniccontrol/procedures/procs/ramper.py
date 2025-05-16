@@ -22,6 +22,7 @@ and the duration it remains off is determined by t_off.
 You can set t_off to 0 if you want the signal to never be turned off."""
 
     f_start: int = attrs.field(
+        default=1000000,
         validator=[
             validators.instance_of(int),
             validators.ge(0),
@@ -30,6 +31,7 @@ You can set t_off to 0 if you want the signal to never be turned off."""
         metadata={"enum": EFieldName.RAMP_F_START}
     )
     f_stop: int = attrs.field(
+        default=2000000,
         validator=[
             validators.instance_of(int),
             validators.ge(0),
@@ -38,6 +40,7 @@ You can set t_off to 0 if you want the signal to never be turned off."""
         metadata={"enum": EFieldName.RAMP_F_STOP}
     )
     f_step: int = attrs.field(
+        default=100000,
         validator=[
             validators.instance_of(int),
             validators.ge(10),
@@ -46,7 +49,7 @@ You can set t_off to 0 if you want the signal to never be turned off."""
         metadata={"enum": EFieldName.RAMP_F_STEP}
     )
     t_on: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"),
+        default=HolderArgs(500, "ms"),
         converter=convert_to_holder_args,
         metadata={"enum": EFieldName.RAMP_T_ON}
     )

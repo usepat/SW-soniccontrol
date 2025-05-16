@@ -87,6 +87,7 @@ class EFieldName(Enum):
     LEGACY_TUST = "tust"
     LEGACY_TUTM = "tutm"
     LEGACY_SCST = "scst"
+    LEGACY_F_CENTER = "f_center"
     LEGACY_POLL = "polling_time"
 
 

@@ -1,12 +1,12 @@
 # A loop executes a block of commands n times
 
-frequency 100000
-gain 100
+frequency 2000000
+gain 70
 
 loop 5 times
 begin
     on
-    hold 1s
+    hold 5s
     off
-    hold 500ms
+    hold 2s
 end

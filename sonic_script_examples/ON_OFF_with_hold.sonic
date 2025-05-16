@@ -1,0 +1,7 @@
+# This is an example for setting the signal on and waiting for 5s before turning it off
+
+frequency 2000000
+gain 70
+on
+hold 5s
+of

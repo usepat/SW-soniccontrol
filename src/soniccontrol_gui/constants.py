@@ -2,7 +2,7 @@ from typing import Final, List, Literal
 
 import attrs
 
-from soniccontrol.app_config import APP_DATA_DIR
+from soniccontrol.app_config import APP_DATA_DIR, SONIC_CONTROL_BASE_DIR
 from soniccontrol_gui.utils.types import ScriptingGuideCardDataDict
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol.procedures.procedure_controller import ProcedureController
@@ -33,6 +33,7 @@ class _Files:
     SONICCONTROL_LOG = LOG_DIR / "soniccontrol.log"
     SCRIPT_DIR = DATA_DIR / "scripts"
     EXAMPLE_SCRIPT = SCRIPT_DIR / "example_script"
+    EXAMPLE_SCRIPT_DIR = SONIC_CONTROL_BASE_DIR / "sonic_script_examples"
 
 files: _Files = _Files()
 

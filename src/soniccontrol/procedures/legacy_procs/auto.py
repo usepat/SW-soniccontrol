@@ -18,8 +18,18 @@ class AutoLegacyArgs(ProcedureArgs):
         return "No description"
 
     # TODO set correct limits and defaults
+    f_center: int = attrs.field(
+        default=1000000,
+        metadata={"enum": EFieldName.LEGACY_F_CENTER},
+        validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(5000000)
+        ]
+    )
+
     tust: int = attrs.field(
-        default=8000,
+        default=500,
         metadata={"enum": EFieldName.LEGACY_TUST},
         validator=[
             validators.instance_of(int),
@@ -28,7 +38,7 @@ class AutoLegacyArgs(ProcedureArgs):
         ]
     )
     tutm: HolderArgs = attrs.field(
-        default=HolderArgs(500, "ms"),
+        default=HolderArgs(10000, "ms"),
         metadata={"enum": EFieldName.LEGACY_TUTM},
         converter=convert_to_holder_args
     )
@@ -52,10 +62,11 @@ class AutoLegacyProc(Procedure):
         return True
 
     async def execute(self, device: Scriptable, args: AutoLegacyArgs) -> None:
-        #await device.execute_command(commands.SetTustLegacy(args.tust))
-        #await device.execute_command(commands.SetScstLegacy(args.scst))
+        await device.execute_command(commands.SetTustLegacy(args.tust))
+        await device.execute_command(commands.SetScstLegacy(args.scst))
         tutm_duration = int(args.tutm.duration_in_ms) if isinstance(args.tutm, HolderArgs) else int(args.tutm[0])
-        #await device.execute_command(commands.SetTutmLegacy(tutm_duration))
+        await device.execute_command(commands.SetTutmLegacy(tutm_duration))
+        await device.execute_command(commands.SetFrequency(args.f_center))
 
         await device.execute_command(commands.SetAutoLegacy())
 

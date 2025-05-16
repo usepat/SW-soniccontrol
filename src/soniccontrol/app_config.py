@@ -48,5 +48,18 @@ PLATFORM: Final[System] = decode_platform()
 SOFTWARE_VERSION: Final[Version] = Version.to_version(get_version_tag())
 APP_DATA_DIR: Final[Path] = create_appdata_directory(PLATFORM, "SonicControl")
 
+def get_base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        # In one-dir mode, executable's folder is dist/YourApp/
+        exe_dir = Path(sys.executable).parent
+        # _internal is a sibling folder inside dist/YourApp/
+        internal_dir = exe_dir / "_internal"
+        return internal_dir
+    else:
+    # From source code, adjust as needed to point to project dir or resources
+        return Path(__file__).resolve().parents[2]
+
+SONIC_CONTROL_BASE_DIR = get_base_dir()
+
 ENCODING: Final[str] = "utf-8"
 
