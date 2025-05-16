@@ -38,13 +38,22 @@ class CLIConnection(Connection):
     
     async def close_connection(self):
         assert(self.process.stdin is not None)
-
+        assert(self.process.stdout is not None)
         self.process.stdin.close()
         await self.process.stdin.wait_closed()
+        # Flush output or else process can't terminate
+        # Drain stdout and stderr concurrently
+        await asyncio.gather(
+            self.process.stdout.read(),  # or readlines()
+            self.process.stderr.read() if self.process.stderr else asyncio.sleep(0),
+        )
+        try:
+            self.process.terminate()  # or kill(), one of them
+        except:
+            pass
 
-        self.process.terminate()
         await self.process.wait()
-    
+
 
 @attrs.define()
 class SerialConnection(Connection):
