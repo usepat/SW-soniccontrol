@@ -17,5 +17,5 @@ variables = { TARGET = "simulation", SIMULATION_EXE_PATH = { expr="Path(environ.
 excludes = [ "descale" ]
 
 [profiles.simulation_descale]
-variables = { TARGET = "simulation", SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'build/linux/mvp_simulation_descale/test/simulation/cli_simulation_descale/cli_simulation_descale'"} }
+variables = { TARGET = "simulation", SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/mvp_simulation_descale/test/simulation/cli_simulation_descale/cli_simulation_descale'"} }
 excludes = [ "worker" ]
