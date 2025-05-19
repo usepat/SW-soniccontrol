@@ -34,9 +34,7 @@ class LegacyCommunicator(Communicator):
     def __attrs_post_init__(self) -> None:
         self._logger = logging.getLogger(self._logger.name + "." + LegacyCommunicator.__name__)
         self._device_logger: logging.Logger = logging.getLogger(self._logger.name + ".device")
-        self._logger.setLevel("DEBUG") # FIXME is there a better way to set the log level?
-
-        #self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
+        self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
         self._messages = asyncio.Queue(maxsize=100)
         self._send_lock = asyncio.Lock()
 
@@ -112,7 +110,7 @@ class LegacyCommunicator(Communicator):
                     self._device_logger.info("Expected: %s", message.strip())
                     if future is not None and not future.done():
                         future.set_result(message)
-                        self._logger.info("Set result for future")
+                        self._logger.debug("Set result for future")
                 except asyncio.TimeoutError:
                     # send_and_wait_for_response is responsbile for handling the timeout and termination the connection
                     if future is not None and not future.done():
@@ -161,7 +159,7 @@ class LegacyCommunicator(Communicator):
     def _get_number_of_lines(self, code: int) -> int:
         if code == CommandCode.GET_INFO:
             return 3
-        elif code == CommandCode.GET_PVAL:
+        elif code == CommandCode.LEGACY_PVAL:
             return 4
         return 1
 
@@ -173,13 +171,13 @@ class LegacyCommunicator(Communicator):
             future = asyncio.get_event_loop().create_future()
             code = self.deduce_command_code(request_str)
             if code != 3:
-                self._logger.info("Got command code: %s", code)
+                self._logger.debug("Got command code: %s", code)
             await self._command_queue.put((request_str, code, future))
             if request_str.strip() != "-":
-                self._logger.info("Sending: %s", request_str)
+                self._logger.debug("Sending: %s", request_str)
             answer = await future
             if request_str.strip() != "-":
-                self._logger.info("Received: %s", answer)
+                self._logger.debug("Received: %s", answer)
         except asyncio.TimeoutError:
             # send_and_wait_for_response is responsbile for handling the timeout and termination the connection
             raise asyncio.TimeoutError("Timeout while waiting for response")
@@ -195,7 +193,9 @@ class LegacyCommunicator(Communicator):
                     return await self._send_and_get(request)
                 except asyncio.TimeoutError:
                     self._logger.warn("%d th attempt of %d. Device did not respond when sending %s", i, MAX_RETRIES, request)
-                
+                    if any(keyword in request for keyword in ["!tust", "!tutm", "!scst"]):
+                        self._logger.info("Skipping retry, since !tust, !tutm and !scst are buggy right now")
+                        return "No Answer"
                 # The message fetcher runs as a task and its exceptions are not propagated
                 # so we have to check here (or somewhere else) if it raised an error
 

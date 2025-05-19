@@ -80,7 +80,7 @@ class MessageFetcher:
                 self._logger.info("Message fetcher was stopped")
                 return
             except asyncio.IncompleteReadError as e:
-                self._logger.warning("Encountered EOF or reached max length before reading separator:\n%s", e.partial)
+                #self._logger.warning("Encountered EOF or reached max length before reading separator:\n%s", e.partial)
                 continue # ignore eof. happens if empty strings get send
             except SyntaxError as e:
                 self._logger.error(e)

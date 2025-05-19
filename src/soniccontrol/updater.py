@@ -27,6 +27,9 @@ class Updater(EventManager):
         if self._task is not None:
             await self._task
 
+    def get_update_interval(self) -> int:
+        return self._time_waiting_between_updates_ms
+
     def set_update_interval(self, time_waiting_between_updates_ms: int) -> None:
         self._time_waiting_between_updates_ms = time_waiting_between_updates_ms
 

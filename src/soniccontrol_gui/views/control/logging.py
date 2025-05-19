@@ -1,7 +1,7 @@
 
 import logging
 import os
-from typing import Callable, Dict
+from typing import Callable, Dict, Literal
 from soniccontrol.app_config import PLATFORM, System
 from soniccontrol_gui import constants
 from soniccontrol_gui.ui_component import UIComponent

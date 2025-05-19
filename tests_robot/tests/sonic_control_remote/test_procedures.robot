@@ -19,18 +19,21 @@ Check procedure command returns error, if ramp_f_start and ramp_f_stop are the s
 
 Check setter commands get blocked during procedure run
     ${EXPECTED_PROCEDURE}=    Convert to procedure    RAMP
+    # TODO set ramp args before
     Send command and check response    !ramp    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
     Sleep    1000ms
     Send command and check response    !freq\=100000    ${False}
 
 Check getter commands are allowed during procedure run
     ${EXPECTED_PROCEDURE}=    Convert to procedure    RAMP
+    # TODO set ramp args before
     Send command and check response    !ramp    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
     Sleep    1000ms
     Send command and check response    ?freq    ${True}
 
 Test Stop turns off procedure
     ${EXPECTED_PROCEDURE}=    Convert to procedure    RAMP
+    # TODO set ramp args before
     Send command and check response    !ramp    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
     Sleep    1000ms
     ${EXPECTED_PROCEDURE}=    Convert to procedure    NO_PROC
@@ -50,7 +53,7 @@ Setup Procedure Test
     Set Ramp Args
 
 Set Ramp Args
-    [Arguments]    ${f_start}=100000    ${f_stop}=110000    ${f_step}=1000    ${t_on}=1000    ${t_off}=0
+    [Arguments]    ${f_start}=100000    ${f_stop}=150000    ${f_step}=1000    ${t_on}=1000    ${t_off}=0
     Send Command And Check Response    !ramp_f_start\=${f_start}
     Send Command And Check Response    !ramp_f_stop\=${f_stop}
     Send Command And Check Response    !ramp_f_step\=${f_step}

@@ -21,6 +21,7 @@ from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol.events import Event, EventManager
 from soniccontrol_gui.views.configuration.configuration import Configuration
+from soniccontrol_gui.views.configuration.legacy_configuration import LegacyConfiguration
 from soniccontrol_gui.views.configuration.flashing import Flashing
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
 from soniccontrol_gui.views.home import Home
@@ -188,14 +189,22 @@ class KnownDeviceWindow(DeviceWindow):
             self._editor = Editor(self, self._scripting, self._script_file, self._interpreter, self._app_state)
             self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
             self._info = Info(self)
-            self._configuration = Configuration(self, self._device, self._proc_controller)
+            if is_legacy_device:
+                self._configuration = LegacyConfiguration(self, self._device, self._proc_controller)
+            else:
+                self._configuration = Configuration(self, self._device, self._proc_controller)
             self._settings = Settings(self, self._device, self._updater)
-            self._flashing = Flashing(self, self._logger, self._device, self._app_state, self._updater)
-            self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
-            self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
+            
             self._proc_controlling = ProcControlling(self, self._proc_controller, self._proc_controlling_model, self._app_state)
             self._sonicmeasure = Measuring(self, self._capture , self._capture_targets, self._device.info)
             self._home = Home(self, self._device)
+            flashing_view = None
+            if is_legacy_device:
+                self._flashing = Flashing(self, self._logger, self._app_state, self._updater, connection_name, self._device)
+                self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
+                self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
+                flashing_view = self._flashing.view
+
 
             # Views
             self._logger.debug("Created all views, add them as tabs")
@@ -207,13 +216,15 @@ class KnownDeviceWindow(DeviceWindow):
                 self._editor.view, 
                 self._configuration.view, 
                 self._settings.view,
-                self._flashing.view,
+                flashing_view
             ], right_one=False)
             self._view.add_tab_views([
                 self._info.view,
                 self._sonicmeasure.view, 
                 self._logging.view, 
             ], right_one=True)
+
+            
 
             self._logger.debug("add callbacks and listeners to event emitters")
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
@@ -257,7 +268,7 @@ class DeviceWindowView(tk.Toplevel, View):
         self._notebook_left.pack(side=ttk.LEFT, fill=ttk.BOTH)
         self._notebook_right.pack(side=ttk.LEFT, fill=ttk.BOTH)
 
-        self._paned_window.add(self._notebook_left, minsize=300)
+        self._paned_window.add(self._notebook_left, minsize=600)
         self._paned_window.add(self._notebook_right, minsize=300)
 
         self._notebook_right.add_tabs(
@@ -270,6 +281,7 @@ class DeviceWindowView(tk.Toplevel, View):
             show_titles=True,
             show_images=True,
         )
+        
 
 
     @property
@@ -280,7 +292,7 @@ class DeviceWindowView(tk.Toplevel, View):
     def is_open(self) -> bool:
         return self.winfo_exists()
 
-    def add_tab_views(self, tab_views: List[TabView], right_one: bool = False):
+    def add_tab_views(self, tab_views: List[TabView | None], right_one: bool = False):
         notebook = self._notebook_right if right_one else self._notebook_left
         notebook.add_tabs(
             tab_views,

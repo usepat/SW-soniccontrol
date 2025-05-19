@@ -90,6 +90,7 @@ def main():
     robotController.connect_via_process(path)
     print(f"Connected: {robotController.is_connected()}")
     print(robotController.send_command("!stop"))
+    robotController.disconnect()
 
 if __name__ == "__main__":
     main()

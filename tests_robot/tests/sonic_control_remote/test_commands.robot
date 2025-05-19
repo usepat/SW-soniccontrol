@@ -108,12 +108,18 @@ Send Example Commands
     ${num_iterations} =    Get Length    ${command_examples_list}
     FOR  ${i}    ${command_example}  IN ENUMERATE    @{command_examples_list}
         IF     ${i} >= 0   #So we can skip commands, used for debugging
-            Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
-            Run Keyword and Continue on Failure    RemoteController.Send Command    !log[global]=ERROR
-            Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
-            Run Keyword and Continue on Failure    RemoteController.Send Command    !input_source=external
-            Reconnect if disconnected
-            Log To Console    Progress: Completed ${${i} + 1}/${num_iterations} iterations
+            IF    '${command_example}' not in ['!FLASH_USB', '!FLASH_UART_SLOW', '!FLASH_UART_FAST', "!stop", "!stop_procedure", "!continue", "!continue_procedure", "!pause", "!pause_procedure"]
+                Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
+                Run Keyword and Continue on Failure    RemoteController.Send Command    !log[global]=ERROR
+                Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
+                Run Keyword and Continue on Failure    RemoteController.Send Command    !input_source=external
+                Reconnect if disconnected
+                Log To Console    Progress: Completed ${${i} + 1}/${num_iterations} iterations
+            ELSE
+                Log To Console    Skipped: ${command_example}
+            END
+            
+            
         ELSE
             Log To Console    Progress: Skip ${${i} + 1}/${num_iterations} iterations
         END

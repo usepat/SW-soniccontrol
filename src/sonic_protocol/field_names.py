@@ -80,9 +80,14 @@ class EFieldName(Enum):
     LOGGER_NAME = "logger_name"
 
     # Legacy Fields
-    RANG = "rang"
-    STEP = "step"
-    SING = "sing"
-    PAUS = "paus"
+    LEGACY_RANG = "rang"
+    LEGACY_STEP = "step"
+    LEGACY_SING = "sing"
+    LEGACY_PAUS = "paus"
+    LEGACY_TUST = "tust"
+    LEGACY_TUTM = "tutm"
+    LEGACY_SCST = "scst"
+    LEGACY_F_CENTER = "f_center"
+    LEGACY_POLL = "polling_time"
 
 

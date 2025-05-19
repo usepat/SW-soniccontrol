@@ -1,4 +1,5 @@
 import asyncio
+from os import environ
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple
 import attrs
@@ -164,8 +165,13 @@ from sonic_protocol.field_names import EFieldName
 
 async def main():
     controller = RemoteController()
-    await controller.connect_via_serial(Path("/dev/ttyUSB0"))
-
+    #await controller.connect_via_serial(Path("/dev/ttyUSB0"))
+    firmware_dir = environ.get('FIRMWARE_BUILD_DIR_PATH')
+    if not firmware_dir:
+        raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
+    #path = firmware_dir + '/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp'
+    path = firmware_dir + '/linux/mvp_simulation/test/simulation/cli_simulation_mvp_gui/cli_simulation_mvp_gui'
+    await controller.connect_via_process(Path(path))
     answer_str, _, _ = await controller.send_command("?protocol")
     answer_str, _, _ = await controller.send_command(cmds.GetProtocol())
     answer_str, answer_dict, is_valid = await controller.send_command(cmds.SetAtf(1, 100000))

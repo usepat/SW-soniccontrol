@@ -64,12 +64,13 @@ Send command and check if the device crashes
     [Documentation]    Sends a command and then checks if the remote controller is still connected to the device
     [Arguments]    ${command_request}
     [Timeout]    0 minute 20 seconds
+    Log    Send Command: "${command_request}"
     ${answer}=    RemoteController.Send Command     ${command_request}
     ${code}=   Set Variable    ${answer}[1][${FIELD_COMMAND_CODE}]
     
     ${answer_message}=    Set Variable    ${answer}[0]
     ${is_answer_valid}=    Set Variable    ${answer}[2]
-
+    
     Log    Answer received: "${answer_message}"
     Log    Is Answer Valid: "${is_answer_valid}"
 

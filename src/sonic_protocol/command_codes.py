@@ -63,11 +63,6 @@ class CommandCode(IntEnum):
     GET_AUTO = 350
 
 
-    # WTF are those?
-    GET_PVAL = 500
-    GET_TON = 510
-
-
     # Setters with corresponding getters
     SET_SWF = 1010
     SET_FREQ = 1020
@@ -150,12 +145,7 @@ class CommandCode(IntEnum):
 
 
 
-    # We do not know, if we still need those
-    SET_DAC0 = 5000
-    SET_DAC1 = 5010
-    SET_ATON = 5020
-    SET_TON = 5030
-    SET_TOFF = 5040 
+    
    
 
     # commands from 18000 to 19000 are pure notifications
@@ -186,4 +176,25 @@ class CommandCode(IntEnum):
     E_INVALID_VALUE = 20006
     E_PARSING_ERROR = 20007 
 
+
+    # Legacy commands. They are not really used for anything but for the device to select the correct command class
+    LEGACY_AUTO = -1
+    LEGACY_WIPE = -2
+    LEGACY_STEP = -3
+    LEGACY_SING = -4
+    LEGACY_PAUS = -5
+    LEGACY_RANG = -6
+    LEGACY_TUST = -7
+    LEGACY_TUTM = -8
+    LEGACY_SCST = -9
+    # WTF are those?
+    LEGACY_PVAL = -10
+    # GET_TON = 510
+
+    # We do not know, if we still need those
+    # SET_DAC0 = 5000
+    # SET_DAC1 = 5010
+    # SET_ATON = 5020
+    # SET_TON = 5030
+    # SET_TOFF = 5040 
 

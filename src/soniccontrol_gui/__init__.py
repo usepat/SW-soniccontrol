@@ -81,7 +81,7 @@ def start_gui(simulation_exe_path: Optional[pathlib.Path] = None):
             soniccontrol_logger.error(str(exception))
             MessageBox.show_error(root, str(exception))
     
-    loop = asyncio.new_event_loop()
+    loop = asyncio.get_event_loop()
     loop.set_exception_handler(global_exception_handler)
     asyncio.set_event_loop(loop)
 

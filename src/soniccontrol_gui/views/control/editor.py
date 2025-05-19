@@ -31,29 +31,6 @@ class Script():
     name: str
     content: str
 
-basic_ON_OFF_script = Script(
-    name="ON_OFF_with_hold",
-    content="""frequency 2000000
-gain 70
-on
-hold 5s
-off"""
-)
-
-basic_loop_script = Script(
-    name="loop",
-    content="""frequency 2000000
-gain 70
-loop 5 times
-begin
-    on
-    hold 5s
-    off
-    hold 2s
-end
-"""
-)
-
 @attrs.define
 class ScriptFile(CaptureScriptArgs):
     filepath: str = attrs.field(default="./script.sonic")
@@ -109,8 +86,23 @@ class Editor(UIComponent):
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda e: self._set_current_target(e.new_value))
         self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self.on_execution_state_changed)
 
-        self.save_example_script(basic_ON_OFF_script)
-        self.save_example_script(basic_loop_script)
+
+        self.init_example_scripts()
+        
+
+    def init_example_scripts(self) -> None:
+        if files.EXAMPLE_SCRIPT_DIR.exists() and any(files.EXAMPLE_SCRIPT_DIR.iterdir()):
+            if any(file.suffix == ".sonic" for file in files.EXAMPLE_SCRIPT_DIR.iterdir()):
+                self._logger.info("Example script directory exists and contains .sonic files.")
+            else:
+                self._logger.info("Example script directory exists but does not contain .sonic files.")
+                return
+
+        for script in files.EXAMPLE_SCRIPT_DIR.iterdir():
+            if script.suffix == ".sonic":
+                with script.open() as _script:
+                    self._logger.info("Loaded example script: %s", script.name)
+                    self.save_example_script(Script(name=script.stem, content=_script.read()))
 
     def save_example_script(self, script: Script) -> None:
         example_script = files.EXAMPLE_SCRIPT.with_name(files.EXAMPLE_SCRIPT.name  + "-" + script.name + ".sonic")
