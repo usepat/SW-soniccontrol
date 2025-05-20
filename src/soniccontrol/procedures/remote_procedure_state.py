@@ -17,6 +17,9 @@ class RemoteProcedureState:
                 self._halted.clear()
             self._current_proc = proc_type
 
+    def halt_manually(self):
+        self._halted.set()
+
     def reset_completion_flag(self):
         self._halted.clear()
 

@@ -41,10 +41,10 @@ class ProcedureInstantiator:
             procedures[ProcedureType.WIPE] = WipeProc()
 
         if device.has_command(commands.SetWipeLegacy()):
-            procedures[ProcedureType.WIPE] = WipeLegacyProc()
+            procedures[ProcedureType.WIPE_LEGACY] = WipeLegacyProc()
 
         if device.has_command(commands.SetAutoLegacy()):
-            procedures[ProcedureType.AUTO] = AutoLegacyProc()
+            procedures[ProcedureType.AUTO_LEGACY] = AutoLegacyProc()
 
 
 

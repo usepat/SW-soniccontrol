@@ -15,7 +15,12 @@ from sonic_protocol.command_codes import CommandCode
 class AutoLegacyArgs(ProcedureArgs):
     @classmethod
     def get_description(cls) -> str:
-        return "No description"
+        return """The AUTO procedure starts by executing the SCAN procedure, and when finished, immediately starts the TUNE procedure.
+    - The SCAN procedure measures the electric response of the connected add-on over
+        a wide frequency range at low gain and determines the optimal driving frequency.
+    - The TUNE procedure is designed to tune the driving frequency to create the optimal field for the intended application.
+        It is helpful when certain parameters are expected to change significantly, e.g. temperature, liquid composition etc.
+"""
 
     # TODO set correct limits and defaults
     f_center: int = attrs.field(

@@ -124,7 +124,7 @@ class SerialMonitor(UIComponent):
             self._message_fetcher.run()
 
     def _on_guide_opened(self):
-        description = "No description"
+        description = "The serial monitor can be used to directly send commands and receive infos to and from the device."
         MessageBox(self.view.root, description, "Guide", [])
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:

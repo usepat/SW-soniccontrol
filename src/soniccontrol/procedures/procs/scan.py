@@ -16,7 +16,9 @@ from sonic_protocol.command_codes import CommandCode
 class ScanArgs(ProcedureArgs):
     @classmethod
     def get_description(cls) -> str:
-        return ""
+        return """The SCAN procedure measures the electric response of the connected add-on over
+a wide frequency range at low gain and determines the optimal driving frequency.
+"""
     
     f_center: int = attrs.field(
         default=1000000,

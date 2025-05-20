@@ -4,4 +4,4 @@ frequency 2000000
 gain 70
 on
 hold 5s
-of
+off

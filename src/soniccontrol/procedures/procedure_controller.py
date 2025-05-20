@@ -44,7 +44,8 @@ class ProcedureController(EventManager):
         return not (self._running_proc_task is None or self._running_proc_task.done() or self._running_proc_task.cancelled())
 
     def execute_proc(self, proc_type: ProcedureType, args: Any, event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()) -> None:
-        assert(proc_type in self._procedures)
+        if not proc_type in self._procedures:
+            raise Exception(f"The procedure {repr(proc_type)} is not available for the current device")
         procedure = self._procedures.get(proc_type, None)
         if procedure is None:
             raise Exception(f"The procedure {repr(proc_type)} is not available for the current device")
@@ -103,6 +104,8 @@ class ProcedureController(EventManager):
     def _on_proc_finished(self) -> None:
         self._logger.info("Procedure stopped")
         self._running_proc_task = None
+        # NOTE we could also do this only when procedure is a local one
+        self._remote_procedure_state.halt_manually()
         self.emit(Event(ProcedureController.PROCEDURE_STOPPED))
 
     def _on_update(self, event: Event) -> None:

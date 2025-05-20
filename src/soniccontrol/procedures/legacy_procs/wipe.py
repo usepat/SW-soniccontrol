@@ -15,11 +15,14 @@ from sonic_protocol.command_codes import CommandCode
 class WipeLegacyArgs(ProcedureArgs):
     @classmethod
     def get_description(cls) -> str:
-        return "No description"
+        return """The WIPE procedure is designed for driving our ultrasonic add-ons for cleaning 
+(or keeping clean) various inline probes directly in the process.
+It is a special protocol optimized to enhance the cleaning effect of ultrasound, whilst not creating hard cavitation to keep probe integrity.
+"""   
 
     # TODO set correct limits and defaults
     step: int = attrs.field(
-        default=8000,
+        default=500,
         metadata={"enum": EFieldName.LEGACY_STEP},
         validator=[
             validators.instance_of(int),

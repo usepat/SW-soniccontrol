@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 import lark
 import attrs
 import abc
@@ -6,7 +6,9 @@ import asyncio
 
 import sonic_protocol.python_parser.commands as cmds
 from soniccontrol.procedures.holder import convert_to_holder_args, HolderArgs
-from soniccontrol.procedures.procedure import ProcedureType
+from soniccontrol.procedures.legacy_procs.auto import AutoLegacyArgs
+from soniccontrol.procedures.legacy_procs.wipe import WipeLegacyArgs
+from soniccontrol.procedures.procedure import ProcedureArgs, ProcedureType
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.procedures.procs.auto import AutoArgs
 from soniccontrol.procedures.procs.ramper import RamperArgs
@@ -86,18 +88,28 @@ class ProtocolCommand(Function):
 class ProcedureCommand(Function):
     def __init__(self, proc_args_class: type, proc_type: ProcedureType):
         parameters = []
-        for name, field in attrs.fields_dict(proc_args_class).items():
-            assert field.type is not None
-            parameters.append(
-                Parameter(name, field.type)
-            )
+        if issubclass(proc_args_class, ProcedureArgs):
+            args_dict = proc_args_class.fields_dict_with_alias()
+            for name, field in args_dict.items():
+                assert field.type is not None
+
+                parameters.append(
+                    Parameter(name, field.type)
+                )  
+        else:
+            for name, field in attrs.fields_dict(proc_args_class).items():
+                assert field.type is not None
+
+                parameters.append(
+                    Parameter(name, field.type)
+                )
 
         super().__init__(tuple(parameters))
         self._proc_args_class = proc_args_class
         self._proc_type = proc_type
 
     def create_command(self, *params) -> Tuple[str, CommandFunc]:
-        args = self._proc_args_class(*params)
+        args = self._proc_args_class.from_tuple(params)
 
         async def command(device: SonicDevice, _proc_controller: ProcedureController, args=args):
             try:
@@ -123,6 +135,8 @@ class Interpreter(RunnableScript):
         "wipe": ProcedureCommand(WipeArgs, ProcedureType.WIPE),
         "tune": ProcedureCommand(TuneArgs, ProcedureType.TUNE),
         "scan": ProcedureCommand(ScanArgs, ProcedureType.SCAN),
+        "auto_legacy": ProcedureCommand(AutoLegacyArgs, ProcedureType.AUTO_LEGACY),
+        "wipe_legacy": ProcedureCommand(WipeLegacyArgs, ProcedureType.WIPE_LEGACY),
         "breakpoint": BreakPointCommand(),
     }
 
@@ -161,6 +175,10 @@ class Interpreter(RunnableScript):
         function =  self._function_table[str(command_name)]
 
         # validate params
+        for param in function.parameters:
+            if issubclass(param.type_, ProcedureArgs):
+                # Params should not be ProcedureArgs classes but should always be unpacked
+                assert False
         num_params = len(function.parameters)
         num_provided_params = len(args)
         if num_provided_params != num_params:

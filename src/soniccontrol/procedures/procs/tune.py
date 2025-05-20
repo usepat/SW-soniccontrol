@@ -16,7 +16,9 @@ from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 class TuneArgs(ProcedureArgs):
     @classmethod
     def get_description(cls) -> str:
-        return "No description"
+        return """The TUNE procedure is designed to tune the driving frequency to create the optimal field for the intended application.
+It is helpful when certain parameters are expected to change significantly, e.g. temperature, liquid composition etc.
+"""
     
     f_step: int = attrs.field(
         default=1000,
@@ -28,7 +30,7 @@ class TuneArgs(ProcedureArgs):
         metadata={"enum": EFieldName.TUNE_F_STEP}
     )
     t_time: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
+        default=HolderArgs(5000, "ms"), 
         converter=convert_to_holder_args,
         metadata={"enum": EFieldName.TUNE_T_TIME}
     )

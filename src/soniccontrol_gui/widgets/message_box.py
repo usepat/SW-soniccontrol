@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import font
 from typing import Callable, List
 import ttkbootstrap as ttk
 from enum import Enum
@@ -15,6 +16,7 @@ class DialogOptions(Enum):
     YES = "Yes"
     NO = "No"
     OK = "Ok"
+    PROCEED = "Proceed"
 
 class MessageBox(UIComponent):
     def __init__(self, root, message: str, title: str, options: List[DialogOptions]):
@@ -66,8 +68,20 @@ class MessageBoxView(tk.Toplevel, View):
         self._message = message
         self._dialog_options = dialog_options
         self._close_callback: Callable[[], None] = lambda: None
-
-        self._msg_label = ttk.Label(self, text=self._message)
+        # Check if the text contains an even number of ** for formatting bold text. We could use regex here and in general create a better method for formatting text.
+        # But it works, so I dont care right now
+        if message.count("**") % 2 == 0 and message.count("**") != 0:
+            self._msg_label = tk.Text(self,
+                wrap="word",               # soft-wrap on words
+                height=1,                  # will auto-grow later
+                borderwidth=0,             # no relief
+                highlightthickness=0,      # no focus ring
+                background=self.cget("background"),
+                relief="flat",
+            )
+            self.create_bold_text()
+        else:
+            self._msg_label = ttk.Label(self, text=self._message)
         self._options_frame = ttk.Frame(self)
         self._option_buttons =  {
             opt: ttk.Button(self._options_frame, text=opt.value) for opt in self._dialog_options
@@ -82,6 +96,37 @@ class MessageBoxView(tk.Toplevel, View):
         WidgetRegistry.register_widget(self._msg_label, "message", self.WIDGET_NAME)
         for option in self._dialog_options:
             WidgetRegistry.register_widget(self._option_buttons[option],option.name, self.WIDGET_NAME)
+
+    def create_bold_text(self,
+                     max_chars: int = 60,      # ≈ dialog width
+                     max_lines: int = 12):     # vertical ceiling
+        assert isinstance(self._msg_label, ttk.Text)
+        txt = self._msg_label
+        txt.configure(state="normal",
+                    wrap="word",
+                    borderwidth=0,
+                    highlightthickness=0,
+                    relief="flat",
+                    width=max_chars)             # 1️⃣  limit width
+
+        # --- insert bold / normal text exactly as before -----------------
+        bold_font = font.nametofont("TkDefaultFont").copy()
+        bold_font.configure(weight="bold")
+        txt.tag_configure("bold", font=bold_font)
+
+        for i, chunk in enumerate(self._message.split("**")):
+            tag = "bold" if i % 2 else ()
+            txt.insert("end", chunk, tag)
+        # -----------------------------------------------------------------
+
+        txt.update_idletasks()                     # make geometry info valid
+        lines = txt.count("1.0", "end-1c", "displaylines")[0]
+
+        txt.configure(
+            height=min(lines / max_chars, max_lines),          # 2️⃣  grow just enough
+            state="disabled",                      # 3️⃣  lock the widget
+        )
+
         
     def destroy(self):
         WidgetRegistry.unregister_widget(self.WIDGET_NAME)

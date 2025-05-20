@@ -19,7 +19,7 @@ from soniccontrol_gui.constants import (sizes, scripting_cards_data,
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
-from soniccontrol_gui.widgets.message_box import MessageBox
+from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.pushbutton import PushButtonView
 from soniccontrol_gui.views.control.scriptingguide import ScriptingGuide
 from soniccontrol_gui.resources import images
@@ -109,9 +109,8 @@ class Editor(UIComponent):
         if not example_script.parent.exists():
             example_script.parent.mkdir(parents=True, exist_ok=True)
 
-        if not example_script.exists():
-            with open(example_script, "w") as file:
-                file.write(script.content)
+        with open(example_script, "w") as file:
+            file.write(script.content)
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value
@@ -243,6 +242,14 @@ class Editor(UIComponent):
 
     @async_handler
     async def _on_start_script(self):
+        warning_message = MessageBox(self.view.root, "By pressing \"proceed\" you will start the script without **logging**. If you want to keep a log, please use the SonicMeasure tab and start a new experiment. Are you sure you want to proceed without logging?", "Are you sure?", [DialogOptions.CANCEL, DialogOptions.PROCEED])
+        answer = await warning_message.wait_for_answer()
+        if answer == DialogOptions.CANCEL:
+            return
+        elif answer == DialogOptions.PROCEED:
+            pass
+        else:
+            assert False
         if not self._try_parse_script():
             return
             

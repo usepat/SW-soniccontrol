@@ -15,7 +15,9 @@ from soniccontrol.procedures.procedure import Procedure
 class SpectrumMeasureArgs:
     @classmethod
     def get_description(cls) -> str:
-        return "No description"
+        return """Spectrum Measure measures the electric response of the connected add-on over the frequency.
+This is very useful in an explorative study to find the optimal driving frequency.
+"""
     
     gain: int = attrs.field(
         validator=[

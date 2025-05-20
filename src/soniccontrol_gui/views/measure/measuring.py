@@ -167,7 +167,10 @@ class Measuring(UIComponent):
         # The execution state gets set as callback for capture. This is needed, because a capture can end automatically (Procedure finished for example)
 
     def _on_open_guide(self):
-        description = "No description"
+        description = """SonicMeasure is a functionality of our amplifier to measure applied voltage, current and phase while driving the ultrasound transducer.
+This feature is usually used to measure a spectrum, to find the optimal driving frequency for the intended application. It is recommended to use the "New experiment" button to create
+an experiment file, where all the data and metadata is saved. 
+"""
         MessageBox(self.view.root, description, "Guide", [])
 
     def _on_open_measurements(self):

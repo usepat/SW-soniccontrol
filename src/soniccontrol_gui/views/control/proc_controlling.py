@@ -16,7 +16,7 @@ from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol.events import Event, PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
-from soniccontrol_gui.widgets.message_box import MessageBox
+from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.form_widget import FormWidget
 from soniccontrol_gui.resources import images
 
@@ -97,7 +97,16 @@ class ProcControlling(UIComponent):
 
         self._proc_widgets[self._model.selected_procedure].view.show()
 
-    def _on_run_pressed(self):
+    @async_handler
+    async def _on_run_pressed(self):
+        warning_message = MessageBox(self.view.root, "By pressing \"proceed\" you will start the procedure without **logging**. If you want to keep a log, please use the SonicMeasure tab and start a new experiment. Are you sure you want to proceed without logging?", "Are you sure?", [DialogOptions.CANCEL, DialogOptions.PROCEED])
+        answer = await warning_message.wait_for_answer()
+        if answer == DialogOptions.CANCEL:
+            return
+        elif answer == DialogOptions.PROCEED:
+            pass
+        else:
+            assert False
         try:
             proc_args_dict = self._model.procedure_args
             proc_class = self._proc_controller.proc_args_list[self._model.procedure_type]

@@ -353,6 +353,42 @@ end""",
         "keyword": "ramp",
         "arguments": "f_start: uint\nf_stop: uint\nf_step: uint\nt_on: time\nt_off: time",
         "description": "Executes the ramp procedure",
-        "example": "ramp 100000 200000 10000 1s 500ms",
+        "example": "ramp 1000000 2000000 100000 1s 500ms",
+    },
+    {
+        "keyword": "wipe",
+        "arguments": "f_range: uint\nf_step: uint\nt_on: time\nt_off: time\nt_pause: time",
+        "description": "Executes the wipe procedure",
+        "example": "wipe 8000 1000 500ms 20ms 2s",
+    },
+    {
+        "keyword": "scan",
+        "arguments": "f_center: uint\ngain: uint\nf_range: uint\nf_step: uint\nf_shift: uint\nt_step: time",
+        "description": "Executes the scan procedure",
+        "example": "scan 1000000 20 8000 1000 0 100ms",
+    },
+    {
+        "keyword": "tune",#TODO add gain for the next procotol version
+        "arguments": "f_step: uint\nt_time: time\nn_steps: uint\nf_shift: uint\nt_step: time",
+        "description": "Executes the tune procedure",
+        "example": "tune 1000 5000ms 3 0 100ms",
+    },
+    {
+        "keyword": "auto",
+        "arguments": "scan_f_center: uint\nscan_gain: uint\nscan_f_range: uint\nscan_f_step: uint\nscan_f_shift: uint\nscan_t_step: time\ntune_f_step: uint\ntune_t_time: time\ntune_n_steps: uint\ntune_f_shift: uint\ntune_t_step: time",
+        "description": "Executes the auto procedure",
+        "example": "auto 1000000 20 8000 1000 0 100ms 1000 5000ms 3 0 100ms",
+    },
+    {
+        "keyword": "auto_legacy",
+        "arguments": "f_center: uint\ntust: uint\ntutm: time\nscst: uint\n",
+        "description": "Executes the auto procedure",
+        "example": "auto_legacy 1000000 500 10000ms 1000",
+    },
+    {
+        "keyword": "wipe_legacy",
+        "arguments": "step: uint\nsing: time\npaus: time\nrang: uint",
+        "description": "Executes the wipe procedure",
+        "example": "wipe_legacy 500 500ms 1000ms 8000",
     },
 ]

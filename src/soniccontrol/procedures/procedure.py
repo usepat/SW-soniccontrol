@@ -1,6 +1,6 @@
 import abc
 from enum import Enum
-from typing import Any, Dict, Type
+from typing import Any, Dict, Tuple, Type
 
 import attrs
 
@@ -16,6 +16,8 @@ class ProcedureType(Enum):
     TUNE = "Tune"
     AUTO = "Auto"
     WIPE = "Wipe"
+    WIPE_LEGACY = "Wipe_Legacy"
+    AUTO_LEGACY = "Auto_Legacy"
 
 @attrs.define(init=False)
 class ProcedureArgs:
@@ -32,6 +34,7 @@ class ProcedureArgs:
         This field should reference a corresponding EFieldName enum value.
         TODO check if the sonic_text_attributes for the ProcedureArgs command definition also use this enum
     """
+
     def __init__(self, **kwargs: dict[str, Any]):
         for field in attrs.fields(self.__class__):
             assert (field.type is not None)
@@ -59,7 +62,50 @@ class ProcedureArgs:
                     field.validator(self, field, value)
 
                 setattr(self, field.name, value)
+
+    @classmethod
+    def from_tuple(cls, args: tuple):
+        if cls.count_args() != len(args):
+            raise ValueError("Args count does not match")
+        args_dict, _ = cls.tuple_to_dict(args)
+        return cls(**args_dict)
+    
+
+    @classmethod
+    def tuple_to_dict(cls, args: tuple, index = 0) -> Tuple[dict[str, Any], int]:
+        args_dict = {}
+        for field in attrs.fields(cls):
+            if issubclass(field.type, ProcedureArgs):
+                    # If field is a nested ProcedureArgs, recurse
+                _dict, _index = field.type.tuple_to_dict(args, index)
+                index += _index
+                args_dict.update(_dict)
+            else:
+                enum = field.metadata.get("enum", None)
+                # Check if the enum value (str) is in the provided data
+                if enum:
+                    assert (isinstance(enum, EFieldName))
+                    key = enum.value
+                else:
+                    key = field.name  # fallback
+                args_dict[key] = args[index]
+                index += 1
+           
+        return (args_dict, index)
+
+    @classmethod
+    def count_args(cls) -> int:
+        count = 0
+        for field in attrs.fields(cls):
+                if issubclass(field.type, ProcedureArgs):
+                    # If field is a nested ProcedureArgs, recurse
+                    count += field.type.count_args()
+                else:
+                    count += 1
+        return count
         
+    # @classmethod
+    # def fields_dict(cls) -> tuple
 
     @classmethod
     def fields_dict_with_alias(cls) -> dict[str, Any]:
