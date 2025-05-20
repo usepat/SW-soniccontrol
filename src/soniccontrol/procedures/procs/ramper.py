@@ -78,7 +78,7 @@ class RamperLocal(Ramper):
         device: Scriptable,
         args: RamperArgs
     ) -> None:
-        values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step)) ]
+        values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step) + 1) ]
 
         await device.get_overview()
         # TODO: Do we need those two lines?
@@ -104,7 +104,7 @@ class RamperLocal(Ramper):
             value = values[i]
 
             await device.execute_command(commands.SetFrequency(int(value))) 
-            if hold_off.duration:
+            if hold_on.duration:
                 await device.set_signal_on()
             await Holder.execute(hold_on)
 
