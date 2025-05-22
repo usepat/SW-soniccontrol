@@ -37,20 +37,8 @@ class LegacyCommunicator(Communicator):
         self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
         self._messages = asyncio.Queue(maxsize=100)
         self._send_lock = asyncio.Lock()
-
-
-
         super().__init__()
 
-    @property 
-    def writer(self) -> asyncio.StreamWriter: 
-        assert self._writer
-        return self._writer
-
-    @property 
-    def reader(self) -> asyncio.StreamReader: 
-        assert self._reader
-        return self._reader
 
     @property
     def protocol(self) -> CommunicationProtocol: 
@@ -77,7 +65,7 @@ class LegacyCommunicator(Communicator):
         while True:
             try:
                 answer = await asyncio.wait_for(self._reader.readline(), timeout=timeout)
-                timeout = 0.2 # Change timeout back so we dont have to wait for 10 after the last line
+                timeout = 0.4 # Change timeout back so we dont have to wait for 10 after the last line
                 self._logger.info("Received: %s", answer)
                 #self._answer_lines.append(answer.strip())
             except asyncio.TimeoutError:

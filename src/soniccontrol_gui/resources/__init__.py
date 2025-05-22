@@ -10,7 +10,6 @@ class _Resources:
     PICTURES = rs.files("soniccontrol_gui.resources.pictures")
     FONTS = rs.files("soniccontrol_gui.resources.fonts")
     TEXTS = rs.files("soniccontrol_gui.resources.texts")
-    HELPTEXT_SONIC_V1 = Path(str(TEXTS.joinpath("helpttext_sonic_v1.md")))
     HELPTEXT_INTERNAL_COMMANDS = Path(str(TEXTS.joinpath("helptext_internal_commands.md")))
 
 

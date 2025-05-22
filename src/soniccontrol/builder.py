@@ -27,20 +27,29 @@ class DeviceBuilder:
         
         builder_logger = logging.getLogger(logger.name + "." + DeviceBuilder.__name__)
         
-        comm = SerialCommunicator(logger=logger) #type: ignore
-        await comm.open_communication(connection)
+
+        if not is_legacy_device:
+            comm = SerialCommunicator(logger=logger) #type: ignore
+            await comm.open_communication(connection)
+
+            protocol_builder = ProtocolBuilder(protocol.protocol)
+            protocol_version: Version = Version(0, 0, 0)
+            device_type: DeviceType = DeviceType.UNKNOWN
+            is_release: bool = True
+        else:
+            comm = LegacyCommunicator(logger=logger, protocol=legacy_protocol.legacy_protocol) #type: ignore
+            await comm.open_communication(connection)
+
+            protocol_builder = ProtocolBuilder(legacy_protocol.legacy_protocol)
+            protocol_version: Version = Version(1, 0, 0)
+            device_type: DeviceType = DeviceType.CRYSTAL
+            is_release: bool = True
+
+        result_dict: Dict[EFieldName, Any] = {}
+        info = FirmwareInfo()
 
         builder_logger.debug("Serial connection is open, start building device")
 
-        result_dict: Dict[EFieldName, Any] = {}
-        
-        protocol_version: Version = Version(0, 0, 0)
-        device_type: DeviceType = DeviceType.UNKNOWN
-        is_release: bool = True
-
-        info = FirmwareInfo()
-
-        protocol_builder = ProtocolBuilder(protocol.protocol)
 
         # deduce the right protocol version, device_type and build_type
         if not open_in_rescue_mode and not is_legacy_device:
@@ -60,17 +69,7 @@ class DeviceBuilder:
                 is_release = answer.field_value_dict[EFieldName.IS_RELEASE]
             else:
                 builder_logger.debug("Device does not understand ?protocol command")
-        elif not open_in_rescue_mode and is_legacy_device:
-            builder_logger.debug("Building for legacy device")
-            protocol_version: Version = Version(1, 0, 0)
-            protocol_builder = ProtocolBuilder(legacy_protocol.legacy_protocol)
-            device_type: DeviceType = DeviceType.CRYSTAL
-            is_release: bool = True
-            await comm.close_communication()
-            comm = LegacyCommunicator(logger=logger, protocol=legacy_protocol.legacy_protocol) #type: ignore
-            await comm.open_communication(connection)
-            #info = FirmwareInfo()  # Do we know Firmware Infos?
-        else:
+        elif not is_legacy_device:
             builder_logger.warning("Device uses unknown protocol")
 
         # create device
@@ -101,7 +100,6 @@ class DeviceBuilder:
         info.is_release = is_release
         info.firmware_version = result_dict.get(EFieldName.FIRMWARE_VERSION, Version(0, 0, 0))
         info.hardware_version = result_dict.get(EFieldName.HARDWARE_VERSION, Version(0, 0, 0))
-        # TODO: firmware info
 
         builder_logger.info("Device type: %s", info.device_type)
         builder_logger.info("Firmware version: %s", info.firmware_version)

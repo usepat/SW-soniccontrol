@@ -95,12 +95,7 @@ class SerialMonitor(UIComponent):
         if command_str == "clear":
             self._view.clear()
         elif command_str == "help":
-            help_text = ""
-            if self._communicator.protocol.major_version == 1:
-                with open(resources.HELPTEXT_SONIC_V1, "r") as file:
-                    help_text = file.read()
-            else:
-                help_text = await self._send_and_receive("?help")
+            help_text = await self._send_and_receive("?help")
             
             help_text += "\n"
             with open(resources.HELPTEXT_INTERNAL_COMMANDS, "r") as file:
