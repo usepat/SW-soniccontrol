@@ -32,18 +32,7 @@ class SerialCommunicator(Communicator):
         self._logger = logging.getLogger(self._logger.name + "." + SerialCommunicator.__name__)
         #self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
         self._protocol: CommunicationProtocol = SonicMessageProtocol()
-
         super().__init__()
-
-    @property 
-    def writer(self) -> asyncio.StreamWriter: 
-        assert self._writer
-        return self._writer
-
-    @property 
-    def reader(self) -> asyncio.StreamReader: 
-        assert self._reader
-        return self._reader
 
     @property
     def protocol(self) -> CommunicationProtocol: 

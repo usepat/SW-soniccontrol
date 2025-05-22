@@ -400,6 +400,7 @@ class Protocol:
     for which version and device type the command is valid.
     """
     version: Version = attrs.field()
+    # TODO change to dict
     commands: List[Union[CommandExport, CommandListExport]] = attrs.field()
     consts: Union[DeviceParamConstants, List[MetaExport[DeviceParamConstants]]] = attrs.field(default=DeviceParamConstants())
 
