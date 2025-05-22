@@ -26,7 +26,7 @@ dynamic = ["version", "dependencies"]
 dependencies = {file = ["requirements.txt"]}
 
 [project.scripts]
-soniccontrol = "soniccontrol_cli:cli"
+soniccontrol_cli = "soniccontrol_cli:cli"
 sonic_protocol_manual_builder = "sonic_protocol:build_manual"
 
 [project.gui-scripts] # makes only a difference for windows. (Does not open a terminal, when executing the exe file)

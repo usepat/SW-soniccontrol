@@ -21,37 +21,6 @@ class CaptureTarget {
     +COMPLETED_EVENT : String
 }
 
-class CaptureFree {
-}
-
-class CaptureScript {
-    -_script_file : ScriptFile
-    -_interpreter_engine : InterpreterEngine
-    -_scripting_facade : ScriptingFacade
-    +_complete_on_script_finish(_event : PropertyChangeEvent) : None
-    +before_start_capture() : None
-    +run_to_capturing_task() : None
-    +after_end_capture() : None
-}
-
-class CaptureProcedure {
-    -_procedure_controller : ProcedureController
-    -_proc_model : ProcControllingModel
-    +_notify_on_procedure_finished(_e : Event) : None
-    +before_start_capture() : None
-    +run_to_capturing_task() : None
-    +after_end_capture() : None
-}
-
-class CaptureSpectrumMeasure {
-    -_spectrum_measure_model : SpectrumMeasureModel
-    -_spectrum_measure : SpectrumMeasure
-    +_notify_on_procedure_finished(_e : Event) : None
-    +before_start_capture() : None
-    +run_to_capturing_task() : None
-    +after_end_capture() : None
-}
-
 class Capture {
     +START_CAPTURE_EVENT : String
     +END_CAPTURE_EVENT : String
@@ -62,13 +31,6 @@ class Capture {
     -_target : CaptureTarget
 }
 
-class CsvWriter {
-    -_file : Optional[TextIO]
-    +open_file(filename : Path, header : List[str]) : None
-    +write_entry(data : dict) : None
-    +close_file() : None
-}
-
 class DataProvider {
     -_max_size : int
     -_dataqueue : deque
@@ -77,7 +39,6 @@ class DataProvider {
 }
 
 class Updater {
-    -_device : SonicDevice
     -_running : asyncio.Event
     -_task : Optional[asyncio.Task]
     +start() : None
@@ -95,18 +56,16 @@ class Plot {
     +update_data(data : pd.DataFrame) : None
 }
 
+enum ExperimentExecutionState {
+    FILL_IN_METADATA
+    CHOOSE_CAPTURE_TARGET
+    READY
+    CAPTURING
+    FINISHED
+}
+
 class Measuring {
-    -_capture : Capture
-    -_capture_targets : Dict[CaptureTargets, CaptureTarget]
-    -_view : MeasuringView
-    -_timeplot : Plot
-    -_timeplottab : Plotting
-    -_spectralplot : Plot
-    -_spectralplottab : Plotting
-    -_csv_table : CsvTable
-    -_spectrum_measure_widget : ProcedureWidget
-    +on_status_update(status : Status) : None
-    -_on_toggle_capture() : None
+    + on_status_update(status : Status) : None
 }
 
 class MeasuringView {
@@ -119,7 +78,6 @@ class MeasuringView {
 }
 
 class Plotting {
-    -_plot : Plot
     -_figure : Figure
     -_view : PlottingView
     +create_toggle_line_callback(attrName : str) : Callable[[], None]
@@ -134,25 +92,34 @@ class PlottingView {
     +add_line(attrName : str, line_label : str, toggle_command : Callable[[], None]) : None
 }
 
+class ExperimentForm {
+    + get_metadata(): ExperimentMetaData
+}
+
+class ExperimentMetaData {
+    
+}
+
 ' Define Relationships
-Capture --> DataProvider : notifies
-Capture --> CsvWriter : notifies
-Capture --> CaptureTarget : notifies
-CaptureTarget <|-- CaptureFree
-CaptureTarget <|-- CaptureScript
-CaptureTarget <|-- CaptureProcedure
-CaptureTarget <|-- CaptureSpectrumMeasure
+Capture --> DataProvider
+Capture --> CaptureTarget
+Capture ..> ExperimentMetaData
 
 Measuring --> Capture
+Measuring --> CaptureTarget
 Measuring --> MeasuringView
 Measuring --> Plotting
-Measuring --> CsvTable
-Measuring --> ProcedureWidget
+Measuring --> ExperimentExecutionState
+Measuring --> ExperimentForm
 
+ExperimentForm ..> ExperimentMetaData
+
+DataProvider ..> Plotting : notifies
 Plotting --> Plot
 Plotting --> PlottingView
 
 Updater --> SonicDevice
+Updater ..> Capture : notifies
 
 Plot --> Figure
 

@@ -1,0 +1,124 @@
+@startuml Measuring
+
+set separator . 
+skinparam classSeparator "."
+skinparam packageSeparator "."
+top to bottom direction
+
+' Define Enumerations
+enum CaptureTargets {
+    FREE
+    SCRIPT
+    PROCEDURE
+    SPECTRUM_MEASURE
+}
+
+' Define Classes
+class CaptureTarget {
+    +<<abstract>> before_start_capture() : None
+    +<<abstract>> run_to_capturing_task() : None
+    +<<abstract>> after_end_capture() : None
+    +<<abstract>> args(): dict
+    +COMPLETED_EVENT : String
+}
+
+class CaptureFree {
+}
+
+class CaptureScript {
+    -_script_file : ScriptFile
+    -_interpreter_engine : InterpreterEngine
+    -_scripting_facade : ScriptingFacade
+    +_complete_on_script_finish(_event : PropertyChangeEvent) : None
+    +before_start_capture() : None
+    +run_to_capturing_task() : None
+    +after_end_capture() : None
+}
+
+class CaptureProcedure {
+    -_procedure_controller : ProcedureController
+    -_proc_model : ProcControllingModel
+    +_notify_on_procedure_finished(_e : Event) : None
+    +before_start_capture() : None
+    +run_to_capturing_task() : None
+    +after_end_capture() : None
+}
+
+class CaptureSpectrumMeasure {
+    -_spectrum_measure_model : SpectrumMeasureModel
+    -_spectrum_measure : SpectrumMeasure
+    +_notify_on_procedure_finished(_e : Event) : None
+    +before_start_capture() : None
+    +run_to_capturing_task() : None
+    +after_end_capture() : None
+}
+
+class Capture {
+    +START_CAPTURE_EVENT : String
+    +END_CAPTURE_EVENT : String
+    +is_capturing : bool
+    +start_capture(capture_target : CaptureTarget) : None
+    +end_capture() : None
+    +on_update(status : Status) : None
+    -_target : CaptureTarget
+}
+
+class DataProvider {
+    -_max_size : int
+    -_dataqueue : deque
+    +data : pd.DataFrame
+    +add_row(row : dict) : None
+}
+
+class Updater {
+    -_running : asyncio.Event
+    -_task : Optional[asyncio.Task]
+    +start() : None
+    +stop() : None
+    +update() : None
+}
+
+class ExperimentStore {
+    + write_metadata(experiment: Experiment): None
+    + add_row(dict): None
+    + close(): None
+}
+
+class HDF5ExperimentStore {
+
+}
+
+class Experiment {
+    + device_info: Info
+    + other_attrs
+    + capture_target_args: dict
+}
+
+class ExperimentMetaData {
+    + attr1
+    + attr2
+    + attr3
+    + additional_metadata: dict
+}
+
+ExperimentStore <|-- HDF5ExperimentStore
+ExperimentStore ..> Experiment
+
+Experiment --> ExperimentMetaData : metadata
+
+
+' Define Relationships
+Capture --> DataProvider : _data_provider
+Capture --> CaptureTarget : _target
+Capture --> ExperimentStore : _experiment_store
+Capture ..> Experiment
+CaptureTarget <|-- CaptureFree
+CaptureTarget <|-- CaptureScript
+CaptureTarget <|-- CaptureProcedure
+CaptureTarget <|-- CaptureSpectrumMeasure
+
+Updater ..> Capture : notifies
+Updater --> SonicDevice : _device
+
+
+@enduml
