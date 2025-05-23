@@ -35,6 +35,8 @@ There exists a [ProcedureController](@ref soniccontrol.procedures.procedure_cont
 When a procedure runs remotely on the device, we need to know when it finished. For that the [Updater](@ref soniccontrol.updater.Updater) is used, that periodically fetches updates via the dash command and emits the answers as events to its listeners (Observer Pattern).  
 The Procedure Controller subscribes to it and updates the [RemoteProcedureState](@ref soniccontrol.procedures.remote_procedure_state.RemoteProcedureState) class. 
 
+The [Procedure](@ref soniccontrol.procedures.procedure.Procedure) classes use [ProcedureArgs](@ref soniccontrol.procedures.procedure.ProcedureArgs) classes for their parameters. They are in a separate class, because we use attrs together with introspection, to deduce the right form widgets in soniccontrol gui, as also for a lot of other tasks. We deduce for example scripting commands from the ProcedureArgs classes. Also they contain a method to fetch the args from the device.
+
 @startuml
 !include soniccontrol/class_procedures.puml
 @enduml

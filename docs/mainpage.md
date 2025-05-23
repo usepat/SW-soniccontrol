@@ -9,5 +9,5 @@
 - @subpage SonicControl
 - @subpage SonicProtocol
 - @subpage SonicControlGui
-- @subpage SonicControlCli
+- @subpage sonic_control_cli
 - @subpage Testing
