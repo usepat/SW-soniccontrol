@@ -179,7 +179,7 @@ class KnownDeviceWindow(DeviceWindow):
                 CaptureTargets.SPECTRUM_MEASURE: CaptureSpectrumMeasure(self._updater, self._proc_controller, self._spectrum_measure_model)
             }
 
-            update_answer_fields = self._device.lookup_table[CommandCode.GET_UPDATE].answer_def.fields
+            update_answer_fields = self._device.protocol.command_contracts[CommandCode.GET_UPDATE].answer_def.fields
 
             # Components
             self._logger.debug("Create views")

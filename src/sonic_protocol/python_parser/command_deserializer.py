@@ -3,7 +3,7 @@ from typing_extensions import Dict
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.defs import SonicTextCommandAttrs
 from sonic_protocol.python_parser.commands import Command
-from sonic_protocol.protocol_builder import CommandLookUpTable
+from sonic_protocol.defs import Protocol
 import re
 
 class DeserializedCommand(Command):
@@ -17,17 +17,17 @@ class DeserializedCommand(Command):
 
 
 class CommandDeserializer:
-    def __init__(self, command_lookup_table: CommandLookUpTable):
-        self._command_lookup_table = command_lookup_table
+    def __init__(self, protocol: Protocol):
+        self._command_contracts = protocol.command_contracts
         self._compiled_command_regex = self._compile_command_regex()
 
-    def _find_command_in_lookup_table(self, command_identifier: str) -> CommandCode | None:
-        for command_code, command_lookup in self._command_lookup_table.items():
+    def _find_command_contract_for_identifier(self, command_identifier: str) -> CommandCode | None:
+        for command_code, command_contract in self._command_contracts.items():
             # We need this because of notify command contract
-            if command_lookup.command_def is None:
+            if command_contract.command_def is None:
                 continue
-            assert isinstance(command_lookup.command_def.sonic_text_attrs, SonicTextCommandAttrs)
-            string_identifiers = command_lookup.command_def.sonic_text_attrs.string_identifier
+
+            string_identifiers = command_contract.command_def.sonic_text_attrs.string_identifier
             string_identifiers = string_identifiers if isinstance(string_identifiers, list) else [string_identifiers]
             if command_identifier in string_identifiers:
                 return command_code
@@ -47,7 +47,7 @@ class CommandDeserializer:
             return None
     
         command_identifier = match_result.group("command_identifier")
-        command_code = self._find_command_in_lookup_table(command_identifier)
+        command_code = self._find_command_contract_for_identifier(command_identifier)
 
         return command_code
 

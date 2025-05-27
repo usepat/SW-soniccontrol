@@ -1,5 +1,4 @@
 import numpy as np
-from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative
 from sonic_protocol.defs import (
 	CommandCode, DeviceParamConstantType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
 	AnswerFieldDef, CommandContract
@@ -23,16 +22,14 @@ param_frequency = CommandParamDef(
 
 set_frequency = CommandContract(
     code=CommandCode.SET_FREQ,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=None,
         setter_param=param_frequency,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!f", "!freq", "!frequency", "set_frequency"]
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_frequency])
-    ),
+    answer_def=AnswerDef(fields=[field_frequency]),
     user_manual_attrs=UserManualAttrs(
         description="Command to set the frequency of the transducer on the device."
     ),
@@ -42,14 +39,12 @@ set_frequency = CommandContract(
 
 get_frequency = CommandContract(
     code=CommandCode.GET_FREQ,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?f", "?freq", "?frequency", "get_frequency"]
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_frequency])
-    ),
+    answer_def=AnswerDef(fields=[field_frequency]),
     user_manual_attrs=UserManualAttrs(
         description="Command to get the frequency of the transducer on the device."
     ),
@@ -59,14 +54,12 @@ get_frequency = CommandContract(
 
 get_transducer = CommandContract(
     code=CommandCode.GET_TRANSDUCER_ID,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?transducer", "?tdr", "?transducer_id", "?tdr_id"] 
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_transducer])
-    ),
+    answer_def=AnswerDef(fields=[field_transducer]),
     user_manual_attrs=UserManualAttrs(
         description="Command to get ID of the transducer connected to the device"
     ),
@@ -76,7 +69,7 @@ get_transducer = CommandContract(
 
 set_transducer = CommandContract(
     code=CommandCode.SET_TRANSDUCER_ID,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=None,
         setter_param=CommandParamDef(
             name=EFieldName.TRANSDUCER_ID,
@@ -86,9 +79,7 @@ set_transducer = CommandContract(
             string_identifier=["!transducer", "!tdr", "!transducer_id", "!tdr_id"]
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_transducer])
-    ),
+    answer_def=AnswerDef(fields=[field_transducer]),
     user_manual_attrs=UserManualAttrs(
         description="Command to set ID of the transducer connected to the device"
     ),
@@ -106,16 +97,14 @@ param_gain = CommandParamDef(
 
 set_gain = CommandContract(
     code=CommandCode.SET_GAIN,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=None,
         setter_param=param_gain,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!g", "!gain", "set_gain"]
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_gain])
-    ),
+    answer_def=AnswerDef(fields=[field_gain]),
     user_manual_attrs=UserManualAttrs(
         description="Command to set the gain of the transducer on the device."
     ),
@@ -125,14 +114,12 @@ set_gain = CommandContract(
 
 get_gain = CommandContract(
     code=CommandCode.GET_GAIN,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?g", "?gain", "get_gain"]
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_gain])
-    ),
+    answer_def=AnswerDef(fields=[field_gain]),
     user_manual_attrs=UserManualAttrs(
         description="Command to get the gain of the transducer on the device."
     ),
@@ -142,14 +129,12 @@ get_gain = CommandContract(
 
 set_on = CommandContract(
     code=CommandCode.SET_ON,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!ON", "set_on"]
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_signal])
-    ),
+    answer_def=AnswerDef(fields=[field_signal]),
     user_manual_attrs=UserManualAttrs(
         description="Command to turn the transducer on."
     ),
@@ -159,14 +144,12 @@ set_on = CommandContract(
 
 set_off = CommandContract(
     code=CommandCode.SET_OFF,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!OFF", "set_off"]
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_signal])
-    ),
+    answer_def=AnswerDef(fields=[field_signal]),
     user_manual_attrs=UserManualAttrs(
         description="Command to turn the transducer off."
     ),
@@ -184,14 +167,14 @@ param_swf = CommandParamDef(
 
 set_swf = CommandContract(
     code=CommandCode.SET_SWF,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=None,
         setter_param=param_swf,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!swf", "set_switching_frequency"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_swf]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -203,12 +186,12 @@ set_swf = CommandContract(
 
 get_swf = CommandContract(
     code=CommandCode.GET_SWF,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?swf", "get_switching_frequency"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_swf]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -228,12 +211,12 @@ param_temp_celsius = CommandParamDef(
 
 get_temp = CommandContract(
     code=CommandCode.GET_TEMP,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?temp", "?temperature", "get_temperature"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_temperature_kelvin]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -246,12 +229,12 @@ get_temp = CommandContract(
 # generate the command contract and the answer definition
 get_uipt = CommandContract(
     code=CommandCode.GET_UIPT,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?uipt"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_urms,
             field_irms,
@@ -268,12 +251,12 @@ get_uipt = CommandContract(
 
 get_irms = CommandContract(
     code=CommandCode.GET_IRMS,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?curr", "?irms"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_irms,
         ]
@@ -321,13 +304,13 @@ field_atf = AnswerFieldDef(
 
 get_atf = CommandContract(
     code=CommandCode.GET_ATF,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=param_index,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?atf"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_atf]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -339,12 +322,12 @@ get_atf = CommandContract(
 
 get_atf_list = CommandContract(
     code=CommandCode.GET_ATF_LIST,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?atf_list"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_unknown_answer]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -356,14 +339,14 @@ get_atf_list = CommandContract(
 
 set_atf = CommandContract(
     code=CommandCode.SET_ATF,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=param_index,
         setter_param=param_atf,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!atf"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_atf]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -380,13 +363,13 @@ field_att = AnswerFieldDef(
 
 get_att = CommandContract(
     code=CommandCode.GET_ATT,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=param_index,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?att"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_att]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -398,12 +381,12 @@ get_att = CommandContract(
 
 get_att_list = CommandContract(
     code=CommandCode.GET_ATT_LIST,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?att_list"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_unknown_answer]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -415,14 +398,14 @@ get_att_list = CommandContract(
 
 set_att = CommandContract(
     code=CommandCode.SET_ATT,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=param_index,
         setter_param=param_att, # TODO make a better param for att
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!att"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_att]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -439,13 +422,13 @@ field_atk = AnswerFieldDef(
 
 get_atk = CommandContract(
     code=CommandCode.GET_ATK,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=param_index,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?atk"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_atk]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -457,12 +440,12 @@ get_atk = CommandContract(
 
 get_atk_list = CommandContract(
     code=CommandCode.GET_ATK_LIST,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?atk_list"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_unknown_answer]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -474,14 +457,14 @@ get_atk_list = CommandContract(
 
 set_atk = CommandContract(
     code=CommandCode.SET_ATK,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=param_index,
         setter_param=param_atk,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!atk"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_atk]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -498,13 +481,13 @@ param_waveform = CommandParamDef(
 
 set_waveform = CommandContract(
     code=CommandCode.SET_WAVEFORM,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         setter_param=param_waveform,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!waveform", "set_waveform"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_waveform]
     ),
     user_manual_attrs=UserManualAttrs(

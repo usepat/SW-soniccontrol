@@ -217,23 +217,23 @@ class LegacyCommunicator(Communicator):
 
     def deduce_command_code(self, request_str: str) -> int:
         code = 0
-        for export in self._protocol.commands:
+        for export in self._protocol.command_contracts:
                 commands: List[CommandContract] = export.exports if isinstance(export.exports, list) else [export.exports]
                 for command in commands:
-                    if command.command_defs is not None and not isinstance(command.command_defs, list):
-                        if isinstance(command.command_defs.sonic_text_attrs, list):
-                            for attr in command.command_defs.sonic_text_attrs:
+                    if command.command_def is not None and not isinstance(command.command_def, list):
+                        if isinstance(command.command_def.sonic_text_attrs, list):
+                            for attr in command.command_def.sonic_text_attrs:
                                 if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
                                     string_identifier = getattr(attr, "string_identifier")
                                     if string_identifier in request_str:
                                         code = command.code
-                        elif command.command_defs.sonic_text_attrs.string_identifier is not None and (
-                            (isinstance(command.command_defs.sonic_text_attrs.string_identifier, str) and command.command_defs.sonic_text_attrs.string_identifier in request_str) or
-                            (isinstance(command.command_defs.sonic_text_attrs.string_identifier, list) and any(req in request_str for req in command.command_defs.sonic_text_attrs.string_identifier))
+                        elif command.command_def.sonic_text_attrs.string_identifier is not None and (
+                            (isinstance(command.command_def.sonic_text_attrs.string_identifier, str) and command.command_def.sonic_text_attrs.string_identifier in request_str) or
+                            (isinstance(command.command_def.sonic_text_attrs.string_identifier, list) and any(req in request_str for req in command.command_def.sonic_text_attrs.string_identifier))
                         ):
                             code = command.code
-                    elif command.command_defs is not None and isinstance(command.command_defs, list): 
-                        for def_entry in command.command_defs:
+                    elif command.command_def is not None and isinstance(command.command_def, list): 
+                        for def_entry in command.command_def:
                             if def_entry is not None and not isinstance(def_entry.exports, list):
                                 if isinstance(def_entry.exports.sonic_text_attrs, list):
                                     for attr in def_entry.exports.sonic_text_attrs:

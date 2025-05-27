@@ -21,7 +21,7 @@ class Version:
     
     def __str__(self) -> str:
         return f"v{self.major}.{self.minor}.{self.patch}"
-    
+
     @staticmethod
     def to_version(x: Any) -> "Version":
         if isinstance(x, Version):
@@ -42,8 +42,6 @@ class Version:
 class DeviceType(Enum):
     UNKNOWN = "unknown"
     DESCALE = "descale"
-    CATCH = "catch"
-    WIPE = "wipe"
     MVP_WORKER = "mvp_worker"
     CRYSTAL = "crystal"
 
@@ -211,40 +209,6 @@ class DeviceParamConstantType(Enum):
 
 
 @attrs.define(auto_attribs=True)
-class MetaExportDescriptor:
-    """
-    The MetaExportDescriptor is used to define the conditions under which the export is valid.
-    """
-    min_protocol_version: Version = attrs.field(converter=Version.to_version) #! The minimum protocol version that is required for this export  
-    deprecated_protocol_version: Optional[Version] = attrs.field(
-        converter=attrs.converters.optional(Version.to_version), # this is needed to support none values
-        default=None
-    ) #! The protocol version after which this export is deprecated, so it is the maximum version
-    included_device_types: Optional[List[DeviceType]] = attrs.field(default=None) #! The device types that are included in this export
-    excluded_device_types: Optional[List[DeviceType]] = attrs.field(default=None) #! The device types that are excluded from this export
-
-    def is_valid(self, version: Version, device_type: DeviceType) -> bool:
-        if self.min_protocol_version > version:
-            return False
-        if self.deprecated_protocol_version and self.deprecated_protocol_version <= version:
-            return False
-        if self.included_device_types and device_type not in self.included_device_types:
-            return False
-        if self.excluded_device_types and device_type in self.excluded_device_types:
-            return False
-        return True
-
-E = TypeVar("E")
-@attrs.define(auto_attribs=True)
-class MetaExport(Generic[E]):
-    """!
-    With the MetaExport you can define under which conditions, you want to export the data.
-    So you can define that a command is only exported for a specific version or device type.
-    """
-    exports: E = attrs.field()
-    descriptor: MetaExportDescriptor = attrs.field()
-
-@attrs.define(auto_attribs=True)
 class SonicTextAnswerFieldAttrs:
     """!
     The SonicTextAnswerAttrs are used to define how the AnswerField is formatted.
@@ -267,7 +231,6 @@ class UserManualAttrs:
     example: Optional[str] = attrs.field(default=None)
 
 T = TypeVar("T", int, np.uint8, np.uint16, np.uint32, float, bool, str, Version, Enum, Timestamp)
-AttrsExport = Union[E, List[MetaExport[E]]]
 
 @attrs.define(auto_attribs=True)
 class FieldType(Generic[T]):
@@ -292,7 +255,7 @@ def to_field_type(value: Any) -> FieldType:
 class CommandParamDef():
     name: EFieldName = attrs.field(converter=EFieldName)
     param_type: FieldType = attrs.field(converter=to_field_type)
-    user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
+    user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
     def __hash__(self):
         return hash((self.name, self.param_type.field_type, self.param_type.converter_ref, self.param_type.si_unit, self.param_type.si_prefix, self.param_type.max_value, self.param_type.min_value))
 
@@ -320,10 +283,10 @@ class CommandDef():
     It can have an index parameter and a setter parameter.
     Additional params are not defined yet. And not foreseen for the future.
     """
-    sonic_text_attrs: AttrsExport[SonicTextCommandAttrs] = attrs.field()
+    sonic_text_attrs: SonicTextCommandAttrs = attrs.field()
     index_param: Optional[CommandParamDef] = attrs.field(default=None)
     setter_param: Optional[CommandParamDef] = attrs.field(default=None)
-    user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
+    user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
 
 
 @attrs.define(auto_attribs=True)
@@ -333,8 +296,8 @@ class AnswerFieldDef():
     """
     field_name: EFieldName = attrs.field() #! The field path is used to define the attribute name. It is a path to support nested attributes
     field_type: FieldType = attrs.field(converter=to_field_type)
-    user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
-    sonic_text_attrs: AttrsExport[SonicTextAnswerFieldAttrs] = attrs.field(default=SonicTextAnswerFieldAttrs())
+    user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
+    sonic_text_attrs: SonicTextAnswerFieldAttrs = attrs.field(default=SonicTextAnswerFieldAttrs())
     def __hash__(self):
         return hash((self.field_name, self.field_type.field_type, self.field_type.converter_ref, self.field_type.si_unit, self.field_type.si_prefix, self.field_type.max_value, self.field_type.min_value))
     def to_cpp_var_name(self):
@@ -370,8 +333,8 @@ class AnswerDef():
     It consists of a list of answer fields.
     """
     fields: List[AnswerFieldDef] = attrs.field()
-    user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
-    sonic_text_attrs: AttrsExport[SonicTextAnswerAttrs] = attrs.field(default=SonicTextAnswerAttrs())
+    user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
+    sonic_text_attrs: SonicTextAnswerAttrs = attrs.field(default=SonicTextAnswerAttrs())
 
 
 @attrs.define(auto_attribs=True)
@@ -381,14 +344,19 @@ class CommandContract:
     It is a contract on how to communicate with each other.
     """
     code: CommandCode = attrs.field()
-    command_defs: Union[None, CommandDef, List[MetaExport[CommandDef]]] = attrs.field()
-    answer_defs: Union[AnswerDef, List[MetaExport[AnswerDef]]] = attrs.field()
+    command_def: Union[None, CommandDef] = attrs.field()
+    answer_def: AnswerDef = attrs.field()
     is_release: bool = attrs.field(default=False) #! some commands are only for debugging. They should not be included in release
     tags: List[str] = attrs.field(default=[]) #! tags are used to group commands and to filter them
-    user_manual_attrs: AttrsExport[UserManualAttrs] = attrs.field(default=UserManualAttrs())
+    user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
 
-CommandExport = MetaExport[CommandContract]
-CommandListExport = MetaExport[List[CommandContract]]
+
+@attrs.define(auto_attribs=True)
+class ProtocolInfo:
+    version: Version = attrs.field()
+    device_type: DeviceType = attrs.field()
+    is_release: bool = False
+    additional_opts: str | None = None
 
 @attrs.define(auto_attribs=True)
 class Protocol:
@@ -399,9 +367,7 @@ class Protocol:
     That means that there are multiple command definitions for a single command and it is specified,
     for which version and device type the command is valid.
     """
-    version: Version = attrs.field()
-    # TODO change to dict
-    commands: List[Union[CommandExport, CommandListExport]] = attrs.field()
-    consts: Union[DeviceParamConstants, List[MetaExport[DeviceParamConstants]]] = attrs.field(default=DeviceParamConstants())
-
-
+    info: ProtocolInfo = attrs.field()
+    command_contracts: Dict[CommandCode, CommandContract] = attrs.field()
+    consts: DeviceParamConstants= attrs.field(default=DeviceParamConstants())
+    

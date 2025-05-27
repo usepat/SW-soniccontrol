@@ -11,12 +11,12 @@ def generate_start_procedure_contract(command_code: CommandCode, string_identifi
     procedure_name = "".join(command_code.name.split("_")[1:]) # This is a hack. I am lazy
     return CommandContract(
         code=command_code,
-        command_defs=CommandDef(
+        command_def=CommandDef(
             sonic_text_attrs=SonicTextCommandAttrs(
                 string_identifier=string_identifiers
             )
         ),
-        answer_defs=AnswerDef(
+        answer_def=AnswerDef(
             fields=[fields.field_procedure]
         ),
         user_manual_attrs=UserManualAttrs(
@@ -41,7 +41,7 @@ def generate_procedure_arg_setter_contract(command_code: CommandCode, string_ide
         )
     return CommandContract(
         code=command_code,
-        command_defs=CommandDef(
+        command_def=CommandDef(
             setter_param=CommandParamDef(
                 name=EFieldName.PROCEDURE_ARG,
                 param_type=response_field.field_type
@@ -51,7 +51,7 @@ def generate_procedure_arg_setter_contract(command_code: CommandCode, string_ide
             )
         ),
         is_release=release,
-        answer_defs=AnswerDef(
+        answer_def=AnswerDef(
             fields=[response_field]
         ),
         user_manual_attrs=UserManualAttrs(
@@ -62,13 +62,13 @@ def generate_procedure_arg_setter_contract(command_code: CommandCode, string_ide
 
 get_ramp = CommandContract(
     code=CommandCode.GET_RAMP,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?ramp"]
         )
     ), 
     is_release=True,
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             fields.field_ramp_f_start,
             fields.field_ramp_f_stop,
@@ -119,13 +119,13 @@ ramp_proc_commands: List[CommandContract] = [
 
 get_auto = CommandContract(
     code=CommandCode.GET_AUTO,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?auto"]
         )
     ), 
     is_release=True,
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             fields.field_scan_f_step,
             fields.field_scan_f_half_range,
@@ -148,13 +148,13 @@ auto_proc_commands: List[CommandContract] = [
 
 get_scan = CommandContract(
     code=CommandCode.GET_SCAN,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?scan"]
         )
     ), 
     is_release=True,
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             fields.field_scan_f_step,
             fields.field_scan_f_half_range,
@@ -201,13 +201,13 @@ scan_proc_commands: List[CommandContract] = [
 
 get_tune = CommandContract(
     code=CommandCode.GET_TUNE,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?tune"]
         )
     ), 
     is_release=True,
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             fields.field_tune_f_step,
             fields.field_tune_t_time
@@ -260,13 +260,13 @@ tune_proc_commands: List[CommandContract] = [
 
 get_wipe = CommandContract(
     code=CommandCode.GET_WIPE,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?wipe"]
         )
     ), 
     is_release=True,
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             fields.field_wipe_f_step,
             fields.field_wipe_f_range,
@@ -314,13 +314,13 @@ wipe_proc_commands: List[CommandContract] = [
 
 get_duty_cycle = CommandContract(
     code=CommandCode.GET_DUTY_CYCLE,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?duty_cycle"]
         )
     ), 
     is_release=True,
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             fields.field_duty_cycle_t_on,
             fields.field_duty_cycle_t_off

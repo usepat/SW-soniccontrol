@@ -1,13 +1,10 @@
 
 
-import logging
 import re
-import sys
 from typing import Any, Callable, Dict, List,  Optional
 
 import attrs
 
-from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.converters import Converter
 from sonic_protocol.defs import CommandCode, EFieldName
 
@@ -39,7 +36,6 @@ class AnswerValidator:
     _converters: Dict[EFieldName, Converter] = attrs.field(init=False, repr=False)
     _after_converters: Dict[EFieldName, AfterConverter] = attrs.field(init=False, repr=False)
     _compiled_pattern: re.Pattern[str] = attrs.field(init=False, repr=False)
-    _field_names: Dict[str, EFieldName] = attrs.field(init=False, default={})
 
 
     def __init__(
@@ -90,10 +86,10 @@ class AnswerValidator:
         self.pattern = pattern
         self._converters = workers
         self._after_converters = after_workers
-        self._field_names = [field_name.value for field_name in self._converters.keys()]
+        field_names = [field_name.value for field_name in self._converters.keys()]
             
         self._named_pattern = self.generate_named_pattern(
-            pattern=self.pattern, keywords=self._field_names
+            pattern=self.pattern, keywords=field_names
         )
         self._compiled_pattern = re.compile(
             pattern=self._named_pattern,
