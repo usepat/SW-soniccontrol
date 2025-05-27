@@ -14,9 +14,10 @@ class ManualCompiler(abc.ABC):
 
 class MarkdownManualCompiler(ManualCompiler):
     def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True) -> str:
-        protocol = protocol_list.build_protocol_for2(device_type, protocol_version, is_release)
-        if protocol is None:
-            return "This version of SonicControl does not understand the specified protocol. Maybe it does not even exist at all."
+        try:
+            protocol = protocol_list.build_protocol_for2(device_type, protocol_version, is_release)
+        except Exception as e:
+            return "Error constructing manual: " + str(e) 
 
         self.consts = protocol.consts # save consts as attribute. We need min and max values for fields
 

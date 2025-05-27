@@ -43,12 +43,12 @@ class ProtocolList:
         """
         ...
 
-    def build_protocol_for2(self, device_type: DeviceType, version: Version, is_release: bool = True, opts: str | None = None) -> Protocol | None:
+    def build_protocol_for2(self, device_type: DeviceType, version: Version, is_release: bool = True, opts: str | None = None) -> Protocol:
         return self.build_protocol_for(ProtocolInfo(version, device_type, is_release, opts))
 
-    def build_protocol_for(self, info: ProtocolInfo) -> Protocol | None:
+    def build_protocol_for(self, info: ProtocolInfo) -> Protocol:
         if not self.supports_device_type(info.device_type):
-            return None
+            raise Exception("This version of SonicControl does not understand the protocol used by the device. Please update it!")
 
         if self.previous_protocol is not None and self.previous_protocol.supports_device_type(info.device_type):
             protocol = self.previous_protocol.build_protocol_for(info)

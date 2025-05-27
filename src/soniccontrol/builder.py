@@ -53,7 +53,6 @@ class DeviceBuilder:
 
                 protocol_version: Version = Version(1, 0, 0)
                 protocol = protocol_list.build_protocol_for(ProtocolInfo(protocol_version, device_type, is_release))
-                assert protocol is not None
 
                 device = SonicDevice(comm, protocol, info, logger=logger)
                 answer = await device.execute_command(cmds.GetProtocol())
@@ -72,9 +71,7 @@ class DeviceBuilder:
         # create device
         builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release" if is_release else "build", str(protocol_version))
         protocol = protocol_list.build_protocol_for(ProtocolInfo(protocol_version, device_type, is_release))
-        if protocol is None:
-            raise Exception("This version of SonicControl does not understand the protocol used by the device. Please update it!")
-
+            
         device = SonicDevice(comm, protocol, info, 
                              is_in_rescue_mode=open_in_rescue_mode, logger=logger)
         

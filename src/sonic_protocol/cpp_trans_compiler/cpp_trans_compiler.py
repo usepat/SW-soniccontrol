@@ -1,14 +1,13 @@
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Generic, List, Tuple, TypeVar
+from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import attrs
 import numpy as np
-from sonic_protocol import protocol as prot
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import DeviceParamConstants, LoggerName, Loglevel, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, LoggerName, Loglevel, ProtocolInfo, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.protocol_builder import CommandLookUpTable, ProtocolBuilder
+from sonic_protocol.protocol import protocol_list
 import importlib.resources as rs
 import shutil
 import sonic_protocol.cpp_trans_compiler
@@ -129,13 +128,8 @@ def py_type_to_cpp_type(data_type: type) -> str:
         return "uint32_t"
         #raise ValueError(f"Unknown data type: {data_type}")
 
-@attrs.define()
-class ProtocolVersion:
-    version: Version = attrs.field()
-    device_type: DeviceType = attrs.field()
-    is_release: bool = attrs.field(default=True)
-    def to_cpp_var_name(self) -> str:
-        return f"{self.device_type.name}v{self.version.major}_{self.version.minor}_{self.version.patch}"
+def create_protocol_info_cpp_var_name(info: ProtocolInfo) -> str:
+    return f"{info.device_type.name}v{info.version.major}_{info.version.minor}_{info.version.patch}"
 
 T = TypeVar("T")
 @attrs.define(hash=True)
@@ -156,7 +150,7 @@ class CppTransCompiler:
         self._field_definitions: dict[AnswerFieldDef, str] = {}
         self._allowed_values: dict[Tuple[Any], str] = {}
 
-    def generate_sonic_protocol_lib(self, protocol: Protocol, protocol_version: ProtocolVersion, output_dir: Path):
+    def generate_sonic_protocol_lib(self, protocol_info: ProtocolInfo, output_dir: Path):
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
@@ -235,11 +229,13 @@ class CppTransCompiler:
 
         )
 
-        protocol_builder = ProtocolBuilder(protocol)
         
-        protocol_cpp_name = f"protocol_{protocol_version.to_cpp_var_name()}"
-        command_lookup_table, consts = protocol_builder.build(protocol_version.device_type, protocol_version.version, protocol_version.is_release)
-        protocol_instance, command_defs, answer_defs,  = self._transpile_command_contracts(protocol_version, command_lookup_table, protocol_cpp_name)
+        
+        protocol_cpp_name = f"protocol_{create_protocol_info_cpp_var_name(protocol_info)}"
+        protocol = protocol_list.build_protocol_for(protocol_info)
+
+        self.consts = protocol.consts 
+        protocol_instance, command_defs, answer_defs,  = self._transpile_command_contracts(protocol_info, protocol.command_contracts, protocol_cpp_name)
 
         param_defs = self._transpile_param_defs_from_cache()
         field_defs = self._transpile_field_defs_from_cache()
@@ -256,7 +252,7 @@ class CppTransCompiler:
             ANSWER_DEFS = answer_defs
         )
 
-        consts_defs = self._transpile_consts(consts)
+        consts_defs = self._transpile_consts(self.consts)
         self._inject_code_into_file(
             lib_dir / "consts.hpp",
             CONSTS=consts_defs
@@ -278,7 +274,7 @@ class CppTransCompiler:
         return "\n".join(const_defs)
 
     def _transpile_command_contracts(
-            self, protocol_version: ProtocolVersion, command_list: CommandLookUpTable, protocol_name: str) -> Tuple[str, str, str]:
+            self, protocol_version: ProtocolInfo, command_list: Dict[CommandCode, CommandContract], protocol_name: str) -> Tuple[str, str, str]:
         answer_defs = []
         command_defs = []
         param_defs = []
@@ -418,9 +414,18 @@ inline constexpr AnswerFieldDef {var_name} = {{
         data_type =  np.uint32
         if field_type.field_type in (np.uint32, np.uint16, np.uint8, float):
             data_type = field_type.field_type
+
+        min_val = field_type.min_value
+        if isinstance(min_val, DeviceParamConstantType):
+            min_val = getattr(self.consts, min_val.value)
+
+        max_val = field_type.max_value
+        if isinstance(max_val, DeviceParamConstantType):
+            max_val = getattr(self.consts, max_val.value)
+
         field_limits = FieldLimits(
-            minimum=field_type.min_value,
-            maximum=field_type.max_value,
+            minimum=min_val,
+            maximum=max_val,
             allowed_values=field_type.allowed_values,
             data_type=data_type
         )
@@ -451,6 +456,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
         for param_def, var_name in self._param_definitions.items():
             transpilation_output += self._transpile_param_def(param_def, var_name)
         return transpilation_output
+    
     def _transpile_field_defs_from_cache(self) -> str:
         transpilation_output = ""
         for field, var_name in self._field_definitions.items():
@@ -474,6 +480,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 allowed_values_ref = f"{var_name}_{num_allowed_values}_allowed_values"
                 self._allowed_values[field_limits.allowed_values] = allowed_values_ref
         
+
         cpp_field_limits: str = f"""
     FieldLimits<{field_limits.cpp_data_type()}> {{
         .min = {nullopt_if_none(field_limits.minimum)},
@@ -489,7 +496,6 @@ if __name__ == "__main__":
     compiler = CppTransCompiler()
     output_dir=Path("./output/generated")
     compiler.generate_sonic_protocol_lib(
-        protocol=prot.protocol,
-        protocol_version=ProtocolVersion(Version(1, 0, 0), DeviceType.MVP_WORKER),
+        protocol_info=ProtocolInfo(Version(1, 0, 0), DeviceType.MVP_WORKER),
         output_dir=output_dir
     )
