@@ -352,7 +352,7 @@ class CommandContract:
 
 
 @attrs.define(auto_attribs=True)
-class ProtocolInfo:
+class ProtocolType:
     version: Version = attrs.field()
     device_type: DeviceType = attrs.field()
     is_release: bool = False
@@ -367,7 +367,7 @@ class Protocol:
     That means that there are multiple command definitions for a single command and it is specified,
     for which version and device type the command is valid.
     """
-    info: ProtocolInfo = attrs.field()
+    info: ProtocolType = attrs.field()
     command_contracts: Dict[CommandCode, CommandContract] = attrs.field()
     consts: DeviceParamConstants= attrs.field(default=DeviceParamConstants())
     

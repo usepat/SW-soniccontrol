@@ -5,7 +5,7 @@ from typing import Any, Dict, Generic, List, Tuple, TypeVar
 import attrs
 import numpy as np
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, LoggerName, Loglevel, ProtocolInfo, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, LoggerName, Loglevel, ProtocolType, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol import protocol_list
 import importlib.resources as rs
@@ -128,7 +128,7 @@ def py_type_to_cpp_type(data_type: type) -> str:
         return "uint32_t"
         #raise ValueError(f"Unknown data type: {data_type}")
 
-def create_protocol_info_cpp_var_name(info: ProtocolInfo) -> str:
+def create_protocol_info_cpp_var_name(info: ProtocolType) -> str:
     return f"{info.device_type.name}v{info.version.major}_{info.version.minor}_{info.version.patch}"
 
 T = TypeVar("T")
@@ -150,7 +150,7 @@ class CppTransCompiler:
         self._field_definitions: dict[AnswerFieldDef, str] = {}
         self._allowed_values: dict[Tuple[Any], str] = {}
 
-    def generate_sonic_protocol_lib(self, protocol_info: ProtocolInfo, output_dir: Path):
+    def generate_sonic_protocol_lib(self, protocol_info: ProtocolType, output_dir: Path):
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
@@ -274,7 +274,7 @@ class CppTransCompiler:
         return "\n".join(const_defs)
 
     def _transpile_command_contracts(
-            self, protocol_version: ProtocolInfo, command_list: Dict[CommandCode, CommandContract], protocol_name: str) -> Tuple[str, str, str]:
+            self, protocol_version: ProtocolType, command_list: Dict[CommandCode, CommandContract], protocol_name: str) -> Tuple[str, str, str]:
         answer_defs = []
         command_defs = []
         param_defs = []
@@ -496,6 +496,6 @@ if __name__ == "__main__":
     compiler = CppTransCompiler()
     output_dir=Path("./output/generated")
     compiler.generate_sonic_protocol_lib(
-        protocol_info=ProtocolInfo(Version(1, 0, 0), DeviceType.MVP_WORKER),
+        protocol_info=ProtocolType(Version(1, 0, 0), DeviceType.MVP_WORKER),
         output_dir=output_dir
     )

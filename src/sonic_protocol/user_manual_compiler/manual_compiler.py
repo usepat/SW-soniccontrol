@@ -2,7 +2,7 @@ import abc
 import argparse
 from enum import Enum
 from pathlib import Path
-from sonic_protocol.defs import AnswerFieldDef, CommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
+from sonic_protocol.defs import AnswerFieldDef, CommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
 from sonic_protocol.protocol import protocol_list
 
 
@@ -15,7 +15,7 @@ class ManualCompiler(abc.ABC):
 class MarkdownManualCompiler(ManualCompiler):
     def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True) -> str:
         try:
-            protocol = protocol_list.build_protocol_for2(device_type, protocol_version, is_release)
+            protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
         except Exception as e:
             return "Error constructing manual: " + str(e) 
 

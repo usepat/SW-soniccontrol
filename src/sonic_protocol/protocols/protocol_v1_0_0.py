@@ -3,7 +3,7 @@ import numpy as np
 from sonic_protocol.command_contracts.contract_generators import create_version_field
 from sonic_protocol.defs import (
     CommandCode, ConverterType, DeviceParamConstantType, FieldType, Procedure, 
-    ProtocolInfo, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
+    ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType,
 )
 from sonic_protocol.command_contracts.fields import (
@@ -329,7 +329,7 @@ class Protocol_v1_0_0(ProtocolList):
     def supports_device_type(self, device_type: DeviceType) -> bool:
         return device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.UNKNOWN]
 
-    def _get_command_contracts_for(self, info: ProtocolInfo) -> Dict[CommandCode, CommandContract | None]:
+    def _get_command_contracts_for(self, info: ProtocolType) -> Dict[CommandCode, CommandContract | None]:
         command_contract_list =  [] 
 
         if info.device_type == DeviceType.UNKNOWN:
@@ -405,5 +405,5 @@ class Protocol_v1_0_0(ProtocolList):
 
         return { command_contract.code: command_contract for command_contract in command_contract_list }
 
-    def _get_device_constants_for(self, info: ProtocolInfo) -> Dict[DeviceParamConstantType, Any]:
+    def _get_device_constants_for(self, info: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
         return { DeviceParamConstantType.MAX_GAIN: 101 } if info.device_type == DeviceType.DESCALE else {} 
