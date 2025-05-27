@@ -373,7 +373,8 @@ class FormWidget(UIComponent):
                     kwargs["default_value"] = field.default.factory() if hasattr(field.default, "factory") else field.default
 
                 # is compares for addresses. If variables point to the same underlying object
-                # == compares for equality. 
+                # is compares for types. (needed for windows) 
+                # == compares for equality. (needed for linux) 
                 # == needed for Optional and other compound types, because they are created and not singletons like builtin types
                 if field.type is int:
                     field_view = BasicTypeFieldView[int](self._view.field_slot, int, field_name, parent_widget_name=self._procedure_name, **kwargs)
@@ -381,11 +382,11 @@ class FormWidget(UIComponent):
                     field_view = BasicTypeFieldView[float](self._view.field_slot, float, field_name, parent_widget_name=self._procedure_name, **kwargs)
                 elif field.type is str:
                     field_view = BasicTypeFieldView[str](self._view.field_slot, str, field_name, parent_widget_name=self._procedure_name, **kwargs)
-                elif field.type == Optional[int]:
+                elif field.type == Optional[int] or field.type is Optional[int]:
                     field_view = NullableTypeFieldView[int](self._view.field_slot, int, field_name, parent_widget_name=self._procedure_name, **kwargs)
-                elif field.type == Optional[float]:
+                elif field.type == Optional[float] or field.type is Optional[float]:
                     field_view = NullableTypeFieldView[float](self._view.field_slot, float, field_name, parent_widget_name=self._procedure_name, **kwargs)
-                elif field.type == Optional[str]:
+                elif field.type == Optional[str] or field.type is Optional[str]:
                     field_view = NullableTypeFieldView[str](self._view.field_slot, str, field_name, parent_widget_name=self._procedure_name, **kwargs)
                 elif field.type is Dict or field.type is dict:
                     field_view = DictFieldView(self._view.field_slot, field_name, parent_widget_name=self._procedure_name, **kwargs)
