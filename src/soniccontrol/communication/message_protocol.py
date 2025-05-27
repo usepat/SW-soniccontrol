@@ -95,7 +95,7 @@ class SonicMessageProtocol(CommunicationProtocol):
 
     def parse_request(self, request: str, request_id: int) -> str:
         # The \n at the end ensures that terminals in canonical mode read in the whole message
-        return f"{SonicMessageProtocol.COMMAND_PREFIX}#{request_id}={request}{self.separator}\n"
+        return f"{SonicMessageProtocol.COMMAND_PREFIX}#{request_id}={request}{self.separator}"
     
     @abc.abstractmethod
     def prot_type(self) -> ProtocolType:

@@ -19,10 +19,39 @@ class Connection(abc.ABC):
     async def close_connection(self) -> None:
         ...
 
+
+class StreamWriterWrapper(asyncio.StreamWriter):
+    """
+    This class is a quick fix. 
+    We have the problem, that the cli only buffers lines terminated by '\n'.
+    Therefore we need to append a newline after each message.
+    We could also do this in the SonicProtocol instance, but for that the device has to ignore whitespace. 
+    Currently it does not support that. So this code here is needed until, the feature in the firmware is implemented.
+    Also we have to consider, if we break backwards compatibility with this. So maybe this here is the best way to go.
+    """
+    def __init__(self, writer: asyncio.StreamWriter):
+        self._writer = writer
+
+    def write(self, data) -> None:
+        self._writer.write(data)
+        self._writer.write( "\n".encode())
+
+    async def drain(self) -> None:
+        await self._writer.drain()
+    
+    async def wait_closed(self) -> None:
+        await self._writer.wait_closed()
+    
+    def close(self) -> None:
+        self._writer.close()
+    
+    def is_closing(self) -> bool:
+        return self._writer.is_closing()
+
 @attrs.define()
 class CLIConnection(Connection):
     bin_file: Path | str = attrs.field(init=True)
-    process: asyncio.subprocess.Process = attrs.field(init=False)
+    process: asyncio.subprocess.Process = attrs.field(init=False)     
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
         self.process = await asyncio.create_subprocess_shell(
@@ -34,6 +63,8 @@ class CLIConnection(Connection):
         assert(self.process.stdout is not None)
         assert(self.process.stdin is not None)
         
+        self.process.stdin = StreamWriterWrapper(self.process.stdin)
+
         return self.process.stdout, self.process.stdin
     
     async def close_connection(self):
