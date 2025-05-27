@@ -100,11 +100,12 @@ class RamperLocal(Ramper):
         hold_off: HolderArgs,
     ) -> None:
         i: int = 0
+        await device.set_signal_on()
         while i < len(values):
             value = values[i]
 
             await device.execute_command(commands.SetFrequency(int(value))) 
-            if hold_on.duration:
+            if hold_off.duration:
                 await device.set_signal_on()
             await Holder.execute(hold_on)
 
