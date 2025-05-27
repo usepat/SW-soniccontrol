@@ -1,11 +1,10 @@
 from typing import List
 import numpy as np
-from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative, create_version_field
-from sonic_protocol.protocol import (build_date_field, build_hash_field, field_device_type)
+from sonic_protocol.command_contracts.contract_generators import create_version_field
 from sonic_protocol.defs import (
-    CommandCode, CommandExport, CommandListExport, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, FieldType, MetaExport, MetaExportDescriptor, Procedure, 
-    Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
-    AnswerFieldDef, CommandContract, DeviceType, SonicTextAnswerAttrs
+    CommandCode, CommandParamDef, DeviceParamConstantType, FieldType,
+    SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
+    AnswerFieldDef, CommandContract, SonicTextAnswerAttrs
 )
 # from sonic_protocol.command_contracts.fields import (
 
@@ -17,32 +16,6 @@ from sonic_protocol.field_names import EFieldName
 
 # Version instance
 version = Version(major=1, minor=0, patch=0)
-
-
-
-
-get_info = CommandContract(
-    code=CommandCode.GET_INFO,
-    command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier="?info"
-        )
-    ),
-    answer_def=AnswerDef(
-        fields=[
-            field_device_type,
-            create_version_field(EFieldName.HARDWARE_VERSION),
-            create_version_field(EFieldName.FIRMWARE_VERSION),
-            build_hash_field,
-            build_date_field,
-        ]
-    ),
-    is_release=True
-)
-
-
-
-
 
 
 field_unknown_answer = AnswerFieldDef(
@@ -149,9 +122,7 @@ set_frequency = CommandContract(
             string_identifier=["!f"]
         )
     ),
-    answer_def=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_frequency])
-    ),
+    answer_def=AnswerDef(fields=[field_frequency]),
     user_manual_attrs=UserManualAttrs(
         description="Command to set the frequency of the transducer on the device."
     ),
@@ -178,9 +149,7 @@ set_gain = CommandContract(
             string_identifier=["!g", "!gain", "set_gain"]
         )
     ),
-    answer_def=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_gain])
-    ),
+    answer_def=AnswerDef(fields=[field_gain]),
     user_manual_attrs=UserManualAttrs(
         description="Command to set the gain of the transducer on the device."
     ),
@@ -637,43 +606,28 @@ set_atk = CommandContract(
     tags=["transducer", "config"]
 )
 
+crystal_commands = [ 
+    dash,
+    set_on,
+    set_off,
+    set_frequency,
+    set_gain,
+    get_pval,
+    set_paus,
+    set_sing,
+    set_step,
+    set_rang,
+    set_tust,
+    set_tutm,
+    set_scst,
+    set_auto,
+    set_wipe,
+    set_atf,
+    set_atk,
+    set_att
+]
 
-class LegacyProtocol(Protocol):
-    # TODO Fix this and INFO tab
-    @property
-    def major_version(self) -> int:
-        return 2
-
-legacy_protocol = LegacyProtocol(
-    version=Version(1, 0, 0),
-    consts=DeviceParamConstants(
-        min_frequency=600000,
-        max_frequency=6000000,
-    ),
-    commands=[
-        CommandListExport(
-            exports=[
-                        get_info, 
-                        dash,
-                        set_on,
-                        set_off,
-                        set_frequency,
-                        set_gain,
-                        get_pval,
-                        set_paus,
-                        set_sing,
-                        set_step,
-                        set_rang,
-                        set_tust,
-                        set_tutm,
-                        set_scst,
-                        set_auto,
-                        set_wipe,
-                        set_atf,
-                        set_atk,
-                        set_att
-                    ],
-            descriptor=MetaExportDescriptor(min_protocol_version=version)
-        )
-    ]
-)
+crystal_constants = {
+    DeviceParamConstantType.MIN_FREQUENCY: 600000,
+    DeviceParamConstantType.MAX_FREQUENCY: 6000000,
+}

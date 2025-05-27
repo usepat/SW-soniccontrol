@@ -26,6 +26,10 @@ from sonic_protocol.command_contracts.unknown_commands import (
     unknown_get_frequency, unknown_get_gain, unknown_get_transducer, unknown_set_frequency, 
     unknown_set_gain, unknown_set_off, unknown_set_on, unknown_set_transducer
 )
+from sonic_protocol.command_contracts.crystal_command_contracts import crystal_commands, crystal_constants
+
+
+# TODO: move version and fields into own files 
 
 # Version instance
 version = Version(major=1, minor=0, patch=0)
@@ -327,24 +331,56 @@ class Protocol_v1_0_0(ProtocolList):
         return None
 
     def supports_device_type(self, device_type: DeviceType) -> bool:
-        return device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.UNKNOWN]
+        return device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.CRYSTAL, DeviceType.UNKNOWN]
 
-    def _get_command_contracts_for(self, info: ProtocolType) -> Dict[CommandCode, CommandContract | None]:
+    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[CommandCode, CommandContract | None]:
         command_contract_list =  [] 
 
-        if info.device_type == DeviceType.UNKNOWN:
-            command_contract_list.extend([
-                get_protocol,
-                unknown_get_frequency,
-                unknown_set_frequency,
-                unknown_get_transducer,
-                unknown_set_transducer,
-                unknown_set_on,
-                unknown_set_off,
-                unknown_get_gain,
-                unknown_set_gain,
-            ])
-        else:
+        match protocol_type.device_type:
+            case DeviceType.DESCALE:
+                command_contract_list.extend([
+                    get_update_descale,
+                    set_swf,
+                    get_swf,
+                    get_irms
+                ])
+                command_contract_list.extend(duty_cycle_proc_commands)
+            case DeviceType.MVP_WORKER: 
+                command_contract_list.extend([
+                    get_update_worker,
+                    set_frequency,
+                    get_frequency,
+                    get_atf,
+                    get_atf_list,
+                    set_atf,
+                    get_att,
+                    get_att_list,
+                    set_att,
+                    get_atk,
+                    get_atk_list,
+                    set_atk,
+                    set_waveform,
+                ])
+                command_contract_list.extend(all_proc_commands)
+            case DeviceType.UNKNOWN:
+                command_contract_list.extend([
+                    get_protocol,
+                    unknown_get_frequency,
+                    unknown_set_frequency,
+                    unknown_get_transducer,
+                    unknown_set_transducer,
+                    unknown_set_on,
+                    unknown_set_off,
+                    unknown_get_gain,
+                    unknown_set_gain,
+                ])
+            case DeviceType.CRYSTAL:
+                command_contract_list.append(get_info)
+                command_contract_list.extend(crystal_commands)
+            case _:
+                assert False, "Unreachable"
+
+        if protocol_type.device_type in [DeviceType.DESCALE, DeviceType.MVP_WORKER]:
             command_contract_list.extend([
                     get_protocol,
                     get_info,
@@ -377,33 +413,13 @@ class Protocol_v1_0_0(ProtocolList):
                     flash_uart115200
             ])
 
-        if info.device_type == DeviceType.DESCALE:
-            command_contract_list.extend([
-                get_update_descale,
-                set_swf,
-                get_swf,
-                get_irms
-            ])
-            command_contract_list.extend(duty_cycle_proc_commands)
-        elif info.device_type == DeviceType.MVP_WORKER: 
-            command_contract_list.extend([
-                get_update_worker,
-                set_frequency,
-                get_frequency,
-                get_atf,
-                get_atf_list,
-                set_atf,
-                get_att,
-                get_att_list,
-                set_att,
-                get_atk,
-                get_atk_list,
-                set_atk,
-                set_waveform,
-            ])
-            command_contract_list.extend(all_proc_commands)
-
         return { command_contract.code: command_contract for command_contract in command_contract_list }
 
-    def _get_device_constants_for(self, info: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
-        return { DeviceParamConstantType.MAX_GAIN: 101 } if info.device_type == DeviceType.DESCALE else {} 
+    def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
+        match protocol_type.device_type:
+            case DeviceType.DESCALE:
+                return { DeviceParamConstantType.MAX_GAIN: 101 }
+            case DeviceType.CRYSTAL:
+                return crystal_constants
+            case _:
+                return {}
