@@ -25,7 +25,6 @@ class LegacyCommunicator(Communicator):
         init=False, default=None, repr=False
     )
     _logger: logging.Logger = attrs.field(default=logging.getLogger())
-    _protocol: Protocol = attrs.field(default=None)
 
     _command_queue: asyncio.Queue = attrs.field(default=asyncio.Queue(), init=False)
     _restart: bool = attrs.field(default=False, init=False)
@@ -42,7 +41,7 @@ class LegacyCommunicator(Communicator):
 
     @property
     def protocol(self) -> CommunicationProtocol: 
-        return self._protocol
+        return SonicMessageProtocol()
 
     @property
     def connection_opened(self) -> asyncio.Event:
@@ -151,13 +150,12 @@ class LegacyCommunicator(Communicator):
             return 4
         return 1
 
-    async def _send_and_get(self, request_str: str) -> str:
+    async def _send_and_get(self, request_str: str, code: int) -> str:
         try:
             if request_str != "-":
                 self._logger.info("Send command: %s", request_str)
             request_str = request_str + '\n'
             future = asyncio.get_event_loop().create_future()
-            code = self.deduce_command_code(request_str)
             if code != 3:
                 self._logger.debug("Got command code: %s", code)
             await self._command_queue.put((request_str, code, future))
@@ -174,11 +172,15 @@ class LegacyCommunicator(Communicator):
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str:
         if not self._connection_opened.is_set():
             raise ConnectionError("Communicator is not connected")
+        code_value = kwargs.get('code')
+        if code_value is None or not isinstance(code_value, int):
+            raise ConnectionError("Command code not included in kwargs or is not an integer")
+        code: int = code_value
         async with self._send_lock:
             MAX_RETRIES = 3 
             for i in range(1, MAX_RETRIES + 1):
                 try:
-                    return await self._send_and_get(request)
+                    return await self._send_and_get(request, code)
                 except asyncio.TimeoutError:
                     self._logger.warn("%d th attempt of %d. Device did not respond when sending %s", i, MAX_RETRIES, request)
                     if any(keyword in request for keyword in ["!tust", "!tutm", "!scst"]):
@@ -215,43 +217,6 @@ class LegacyCommunicator(Communicator):
         await self.close_communication(restart=True)
         await self.open_communication(self._connection, baudrate)
 
-    def deduce_command_code(self, request_str: str) -> int:
-        code = 0
-        for export in self._protocol.command_contracts:
-                commands: List[CommandContract] = export.exports if isinstance(export.exports, list) else [export.exports]
-                for command in commands:
-                    if command.command_def is not None and not isinstance(command.command_def, list):
-                        if isinstance(command.command_def.sonic_text_attrs, list):
-                            for attr in command.command_def.sonic_text_attrs:
-                                if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
-                                    string_identifier = getattr(attr, "string_identifier")
-                                    if string_identifier in request_str:
-                                        code = command.code
-                        elif command.command_def.sonic_text_attrs.string_identifier is not None and (
-                            (isinstance(command.command_def.sonic_text_attrs.string_identifier, str) and command.command_def.sonic_text_attrs.string_identifier in request_str) or
-                            (isinstance(command.command_def.sonic_text_attrs.string_identifier, list) and any(req in request_str for req in command.command_def.sonic_text_attrs.string_identifier))
-                        ):
-                            code = command.code
-                    elif command.command_def is not None and isinstance(command.command_def, list): 
-                        for def_entry in command.command_def:
-                            if def_entry is not None and not isinstance(def_entry.exports, list):
-                                if isinstance(def_entry.exports.sonic_text_attrs, list):
-                                    for attr in def_entry.exports.sonic_text_attrs:
-                                        if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
-                                            string_identifier = getattr(attr, "string_identifier")
-                                            if request_str in string_identifier:
-                                                code = command.code
-                            elif def_entry is not None and isinstance(def_entry.exports, list):
-                                for export in def_entry.exports:
-                                    if isinstance(export.sonic_text_attrs, list):
-                                        for attr in export.sonic_text_attrs:
-                                            if hasattr(attr, "string_identifier") and getattr(attr, "string_identifier") is not None:
-                                                string_identifier = getattr(attr, "string_identifier")
-                                                if request_str in string_identifier:
-                                                    code = command.code
-                                    elif export.sonic_text_attrs.string_identifier is not None and request_str in export.sonic_text_attrs.string_identifier:
-                                        code = command.code
-        return code
 
 
 async def main():

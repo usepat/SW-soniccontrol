@@ -6,6 +6,7 @@ from sonic_protocol.protocol import protocol_list
 from sonic_protocol.defs import DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName
 from soniccontrol.communication.connection import Connection
+from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.sonic_device import FirmwareInfo, SonicDevice
 import sonic_protocol.python_parser.commands as cmds
@@ -32,7 +33,7 @@ class DeviceBuilder:
             # await comm.open_communication(connection)
             
             # FIXME: Delete this
-            comm = SerialCommunicator(logger=logger) #type: ignore
+            comm = LegacyCommunicator(logger=logger)
             await comm.open_communication(connection)
         
         else:

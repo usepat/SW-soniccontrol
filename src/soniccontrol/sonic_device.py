@@ -6,7 +6,7 @@ from sonic_protocol.python_parser.answer import Answer, AnswerValidator
 from sonic_protocol.python_parser.answer_validator_builder import AnswerValidatorBuilder
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
-from sonic_protocol.python_parser.commands import Command
+from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
 from sonic_protocol.defs import Protocol
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.interfaces import Scriptable
@@ -47,7 +47,9 @@ class SonicDevice(Scriptable):
         answer = await self._send_message(
             request_str, 
             self._answer_validators[command.code], 
-            **command_contract.command_def.sonic_text_attrs.kwargs
+            **command_contract.command_def.sonic_text_attrs.kwargs,
+            code=command.code  # We need this because of the legacyCommunicator since the answers of the crystal+ device don't include the commandcode. 
+            #We need to remember them and prepend them to the answers
         )
 
         return answer
@@ -137,10 +139,16 @@ class SonicDevice(Scriptable):
 
 
     async def set_signal_off(self) -> Answer:
-        return await self.execute_command("!OFF")
+        if self.has_command(SetOff()):
+            return await self.execute_command(SetOff()) # We need this for legacy device
+        else:
+            return await self.execute_command("!OFF")
 
     async def set_signal_on(self) -> Answer:
-        return await self.execute_command("!ON")
+        if self.has_command(SetOn()):
+            return await self.execute_command(SetOn()) # We need this for legacy device
+        else:
+            return await self.execute_command("!ON")
 
     async def get_overview(self) -> Answer:
         return await self.execute_command("?")
