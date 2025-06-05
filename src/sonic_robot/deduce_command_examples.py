@@ -1,11 +1,10 @@
 from enum import Enum
 from typing import List
-from sonic_protocol import protocol
-from sonic_protocol.defs import CommandParamDef, DeviceType, Version
-from sonic_protocol.protocol_builder import ProtocolBuilder
+from sonic_protocol.defs import CommandParamDef, DeviceParamConstantType, DeviceParamConstants, DeviceType, ProtocolType, Version
+from sonic_protocol.protocol import protocol_list
 
 # TODO: we could from max and min values also deduce commands that should fail
-def deduce_param_limits(param_def: CommandParamDef | None) -> List[str]:
+def deduce_param_limits(consts: DeviceParamConstants, param_def: CommandParamDef | None) -> List[str]:
     if param_def is None:
         return []
     
@@ -15,10 +14,16 @@ def deduce_param_limits(param_def: CommandParamDef | None) -> List[str]:
 
     param_limits = []
     if max_val is not None:
+        if isinstance(max_val, DeviceParamConstantType):
+            max_val = getattr(consts, max_val.value)
+
         param_limits.append(max_val)
         # Also create example commands that should be wrong, but not fail. Commands should never fail
         param_limits.append(int(max_val) + 1) #type: ignore
     if min_val is not None:
+        if isinstance(min_val, DeviceParamConstantType):
+            min_val = getattr(consts, min_val.value)
+
         param_limits.append(min_val)
         # Also create example commands that should be wrong, but not fail. Commands should never fail
         param_limits.append(int(min_val) - 1) #type: ignore
@@ -46,10 +51,10 @@ def deduce_command_examples(protocol_version: Version, device_type: DeviceType, 
     """
     command_examples: List[str] = []
 
-    command_table, _ = ProtocolBuilder(protocol.protocol).build(device_type, protocol_version, is_release)
+    protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
 
-    for command_lookup in command_table.values():
-        command_def = command_lookup.command_def
+    for command_contract in protocol.command_contracts.values():
+        command_def = command_contract.command_def
 
         if command_def is None:
             continue
@@ -60,12 +65,12 @@ def deduce_command_examples(protocol_version: Version, device_type: DeviceType, 
             string_identifiers = [string_identifiers]
         
         index_param = command_def.index_param
-        index_limits = deduce_param_limits(index_param)
+        index_limits = deduce_param_limits(protocol.consts, index_param)
         if len(index_limits) == 0:
             index_limits = [""] # Hacky solution, so that empty index_limits does not skip setter_limits 
 
         setter_param = command_def.setter_param
-        setter_limits = deduce_param_limits(setter_param)
+        setter_limits = deduce_param_limits(protocol.consts, setter_param)
 
         for string_identifier in string_identifiers:
             for index_limit in index_limits:

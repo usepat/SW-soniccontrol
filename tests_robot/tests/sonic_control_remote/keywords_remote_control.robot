@@ -14,8 +14,6 @@ Variables    sonic_robot.command_codes
 
 Connect to device
     [Documentation]    Tries to connect over simulation or url to the device, depending, on what target is set
-    Log    Connect to device. Suite SETUP
-    Log To Console    Connect to device. Suite SETUP
     IF    "${TARGET}" == 'simulation'
         IF    $SIMULATION_EXE_PATH is None
             Set Suite Variable    ${SIMULATION_EXE_PATH}    %{SIMULATION_EXE_PATH}    # robotcode: ignore
