@@ -255,6 +255,7 @@ class _UIStringsEN:
     OPEN_LOGS: Final[str] = "Open Logs"
     GO_TO_MEASUREMENTS: Final[str] = "Go to Measurements"
     FORM_ADD_ENTRY: Final[str] = "Add Entry"
+    CONFIGURING_LABEL: Final[str] = "configuring device"
 
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()

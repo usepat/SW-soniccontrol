@@ -199,10 +199,10 @@ class Configuration(UIComponent):
         
         # Start animation
         animation = Animator(
-            DotAnimationSequence(ui_labels.SEND_LABEL), 
-            self._view.set_submit_config_button_label, 
+            DotAnimationSequence(ui_labels.CONFIGURING_LABEL), 
+            self._view.set_loading_label, 
             2,
-            done_callback=lambda: self._view.set_submit_config_button_label(ui_labels.SEND_LABEL)
+            done_callback=lambda: self._view.set_loading_label("")
         )
         animation.run(num_repeats=-1)
         
@@ -312,6 +312,10 @@ class ConfigurationView(TabView):
         WidgetRegistry.register_widget(self._submit_config_button, "submit_config_button", tab_name)
         WidgetRegistry.register_widget(self._delete_config_button, "delete_config_button", tab_name)
 
+        self._loading_label = ttk.Label(
+            self._config_frame, text=""
+        )
+
         self._transducer_config_frame: ttk.Frame = ttk.Frame(
             self._config_frame
         )
@@ -334,12 +338,14 @@ class ConfigurationView(TabView):
     def _initialize_publish(self) -> None:
         self._config_frame.pack(expand=True, fill=ttk.BOTH)
         self._config_frame.columnconfigure(0, weight=sizes.DONT_EXPAND)
-        self._config_frame.columnconfigure(1, weight=sizes.EXPAND)
-        self._config_frame.columnconfigure(2, weight=sizes.DONT_EXPAND)
+        self._config_frame.columnconfigure(1, weight=sizes.DONT_EXPAND)
+        self._config_frame.columnconfigure(2, weight=sizes.EXPAND)
         self._config_frame.columnconfigure(3, weight=sizes.DONT_EXPAND)
         self._config_frame.columnconfigure(4, weight=sizes.DONT_EXPAND)
+        self._config_frame.columnconfigure(5, weight=sizes.DONT_EXPAND)
         self._config_frame.rowconfigure(0, weight=sizes.DONT_EXPAND)
-        self._config_frame.rowconfigure(1, weight=sizes.EXPAND)
+        self._config_frame.rowconfigure(1, weight=sizes.DONT_EXPAND)
+        self._config_frame.rowconfigure(2, weight=sizes.EXPAND)
         self._add_config_button.grid(
             row=0,
             column=0,
@@ -378,7 +384,12 @@ class ConfigurationView(TabView):
             pady=sizes.MEDIUM_PADDING,
         )
 
-        self._transducer_config_frame.grid(row=1, column=0, columnspan=5, sticky=ttk.NSEW)
+        self._loading_label.grid(row=1, column=0, columnspan=6,
+            padx=sizes.MEDIUM_PADDING,
+            pady=sizes.MEDIUM_PADDING
+        )
+
+        self._transducer_config_frame.grid(row=2, column=0, columnspan=6, sticky=ttk.NSEW)
         self._transducer_config_frame.columnconfigure(0, weight=sizes.EXPAND)
         self._transducer_config_frame.rowconfigure(0, weight=sizes.DONT_EXPAND)
         self._transducer_config_frame.rowconfigure(1, weight=sizes.EXPAND)
@@ -429,8 +440,8 @@ class ConfigurationView(TabView):
     def set_submit_config_button_enabled(self, enabled: bool) -> None:
         self._submit_config_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)
 
-    def set_submit_config_button_label(self, text: str) -> None:
-        self._submit_config_button.configure(text=text)
+    def set_loading_label(self, text: str) -> None:
+        self._loading_label.configure(text=text)
 
     @property 
     def atconfigs(self) -> List[ATConfig]:
