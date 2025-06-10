@@ -66,7 +66,7 @@ class ProtocolList:
                     del protocol.command_contracts[command_code]
                 elif not protocol_type.is_release:
                     protocol.command_contracts[command_code] = command_contract
-                elif command_contract.is_release and protocol_type.is_release:
+                elif command_contract.is_release:
                     protocol.command_contracts[command_code] = command_contract
 
         return protocol
