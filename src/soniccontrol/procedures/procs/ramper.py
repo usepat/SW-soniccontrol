@@ -10,7 +10,7 @@ from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from sonic_protocol.python_parser import commands
 
 
-@attrs.define(auto_attribs=True, init=False)
+@attrs.define(auto_attribs=True)
 class RamperArgs(ProcedureArgs):
     @classmethod
     def get_description(cls) -> str:

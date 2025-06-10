@@ -10,7 +10,6 @@
 		// github and git
 		"github.vscode-github-actions",
 		"github.vscode-pull-request-github",
-		"mhutchie.git-graph",
 
 		// for serial communication
 		"ms-vscode.vscode-serial-monitor",

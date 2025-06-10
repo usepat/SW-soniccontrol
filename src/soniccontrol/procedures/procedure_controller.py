@@ -5,7 +5,7 @@ import asyncio
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.defs as protocol_defs
 import sonic_protocol.python_parser.commands as cmds
-from soniccontrol.procedures.procedure import Procedure, ProcedureType
+from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, ProcedureType
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
 from soniccontrol.procedures.remote_procedure_state import RemoteProcedureState
 from soniccontrol.sonic_device import SonicDevice
@@ -33,7 +33,7 @@ class ProcedureController(EventManager):
         updater.subscribe("update", self._on_update)
 
     @property
-    def proc_args_list(self) -> Dict[ProcedureType, Type]:
+    def proc_args_list(self) -> Dict[ProcedureType, Type[ProcedureArgs]]:
         return { 
             proc_type: procedure.get_args_class() 
             for proc_type, procedure in self._procedures.items() 
@@ -43,8 +43,11 @@ class ProcedureController(EventManager):
     def is_proc_running(self) -> bool:
         return not (self._running_proc_task is None or self._running_proc_task.done() or self._running_proc_task.cancelled())
 
-    def execute_proc(self, proc_type: ProcedureType, args: Any, event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()) -> None:
-        if not proc_type in self._procedures:
+    def execute_proc(self, proc_type: ProcedureType, args: Any, event_loop: asyncio.AbstractEventLoop | None = None) -> None:
+        if event_loop is None:
+            event_loop = asyncio.get_running_loop()
+        
+        if proc_type not in self._procedures:
             raise Exception(f"The procedure {repr(proc_type)} is not available for the current device")
         procedure = self._procedures.get(proc_type, None)
         if procedure is None:
@@ -52,7 +55,10 @@ class ProcedureController(EventManager):
        
         self.execute_procedure(procedure, proc_type, args, event_loop)
 
-    def execute_procedure(self, procedure: Procedure, proc_type: ProcedureType, args: Any, event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()):
+    def execute_procedure(self, procedure: Procedure, proc_type: ProcedureType, args: Any, event_loop: asyncio.AbstractEventLoop | None = None):
+        if event_loop is None:
+            event_loop = asyncio.get_running_loop()
+        
         if self.is_proc_running:
             raise Exception("There is already a procedure running")
         

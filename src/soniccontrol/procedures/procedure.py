@@ -35,13 +35,16 @@ class ProcedureArgs:
         TODO check if the sonic_text_attributes for the ProcedureArgs command definition also use this enum
     """
 
-    def __init__(self, **kwargs: dict[str, Any]):
-        for field in attrs.fields(self.__class__):
+    @classmethod
+    def from_dict(cls, **kwargs: dict[str, Any]):
+        fields_dict = {}
+
+        for field in attrs.fields(cls):
             assert (field.type is not None)
             if issubclass(field.type, ProcedureArgs):
                 # If field is a nested ProcedureArgs, recurse
                 nested_instance = field.type(**kwargs)  # Value must itself be a dict
-                setattr(self, field.name, nested_instance)
+                fields_dict[field.name] = nested_instance
             else:
 
                 enum = field.metadata.get("enum", None)
@@ -59,16 +62,18 @@ class ProcedureArgs:
                 if field.converter is not None:
                     value = field.converter(value)
                 if field.validator is not None:
-                    field.validator(self, field, value)
+                    field.validator(cls, field, value)
 
-                setattr(self, field.name, value)
+                fields_dict[field.name] = value
+
+        return cls(**fields_dict)
 
     @classmethod
     def from_tuple(cls, args: tuple):
         if cls.count_args() != len(args):
             raise ValueError("Args count does not match")
         args_dict, _ = cls.tuple_to_dict(args)
-        return cls(**args_dict)
+        return cls.from_dict(**args_dict)
     
 
     @classmethod

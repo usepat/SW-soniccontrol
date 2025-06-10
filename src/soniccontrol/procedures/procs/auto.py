@@ -13,7 +13,7 @@ from soniccontrol.procedures.procs.scan import ScanArgs, ScanProc
 from soniccontrol.procedures.procs.tune import TuneArgs, TuneProc
 
 
-@attrs.define(auto_attribs=True, init=False)
+@attrs.define(auto_attribs=True)
 class AutoArgs(ProcedureArgs):    
     @classmethod
     def get_description(cls) -> str:
