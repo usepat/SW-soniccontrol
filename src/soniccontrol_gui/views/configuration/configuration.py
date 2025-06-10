@@ -271,7 +271,7 @@ class ConfigurationView(TabView):
 
     @property
     def tab_title(self) -> str:
-        return ui_labels.ATF_CONFIGURATION_LABEL
+        return ui_labels.CONFIGURATION_TAB
 
     def _initialize_children(self) -> None:
         tab_name = "configuration"
@@ -331,6 +331,7 @@ class ConfigurationView(TabView):
             
         self._browse_script_init_button: FileBrowseButtonView = FileBrowseButtonView(
             self._transducer_config_frame, 
+            tab_name,
             text=ui_labels.SPECIFY_PATH_LABEL, 
             style=ttk.DARK,
         )

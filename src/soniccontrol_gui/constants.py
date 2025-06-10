@@ -97,7 +97,7 @@ style: Final[_Style] = _Style()
 
 @attrs.frozen
 class _UIStringsEN:
-    ATF_CONFIGURATION_LABEL: Final[str] = "ATF Configuration"
+    CONFIGURATION_TAB: Final[str] = "Configuration"
     UPDATER_INTERVAL_LABEL: Final[str] = "Updater Interval (ms):"
     IS_LEGACY_DEVICE_LABEL: Final[str] = "SonicCrystal"
     HOME_CONTROL_LABEL: Final[str] = "Manual Control"

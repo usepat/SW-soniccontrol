@@ -81,13 +81,15 @@ class FlashingView(TabView):
         return ui_labels.FLASHER_LABEL
     
     def _initialize_children(self) -> None:
+        widget_name = "Flashing"
+
         FLASH_PADDING: Final[tuple[int, int, int, int]] = (5, 0, 5, 5)
         self._flash_frame: ttk.Labelframe = ttk.Labelframe(
             self, padding=FLASH_PADDING
         )
 
         self._browse_flash_file_button: FileBrowseButtonView = FileBrowseButtonView(
-            self._flash_frame, text=ui_labels.SPECIFY_PATH_LABEL
+            self._flash_frame, widget_name, text=ui_labels.SPECIFY_PATH_LABEL
         )
         self._submit_button: ttk.Button = ttk.Button(
             self._flash_frame, text=ui_labels.SUBMIT_LABEL, style=ttk.DARK
