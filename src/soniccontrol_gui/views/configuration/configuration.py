@@ -224,7 +224,7 @@ class Configuration(UIComponent):
     async def _execute_init_script(self):
         assert(self._current_transducer_config is not None)
 
-        script_file_path = self._configs[self._current_transducer_config].init_script_path
+        script_file_path = self._view.init_script_path
         if script_file_path is None:
             return
 
