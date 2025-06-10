@@ -6,17 +6,19 @@ import numpy as np
 
 
 class AnswerValidatorBuilder:
-    def create_answer_validator(self, answer_def: AnswerDef) -> AnswerValidator: 
+    @staticmethod
+    def create_answer_validator(answer_def: AnswerDef) -> AnswerValidator: 
         value_dict: Dict[EFieldName, Converter | AfterConverter] = {}
         for field in answer_def.fields:
             field_type = field.field_type.field_type
             value_dict[field.field_name] = get_converter(field.field_type.converter_ref, field_type)
 
-        regex = self._create_regex_for_answer(answer_def)
+        regex = AnswerValidatorBuilder._create_regex_for_answer(answer_def)
         
         return AnswerValidator(regex, value_dict)
 
-    def _create_regex_for_answer(self, answer_def: AnswerDef) -> str:
+    @staticmethod
+    def _create_regex_for_answer(answer_def: AnswerDef) -> str:
         assert (not isinstance(answer_def.sonic_text_attrs, list))
 
         regex_patterns: List[str] = []
@@ -24,11 +26,12 @@ class AnswerValidatorBuilder:
         # TODO: add command code to regex
 
         for answer_field in answer_def.fields:
-            regex_patterns.append(self._create_regex_for_answer_field(answer_field)) 
+            regex_patterns.append(AnswerValidatorBuilder._create_regex_for_answer_field(answer_field)) 
 
         return answer_def.sonic_text_attrs.separator.join(regex_patterns)
     
-    def _create_regex_for_answer_field(self, answer_field: AnswerFieldDef) -> str:
+    @staticmethod
+    def _create_regex_for_answer_field(answer_field: AnswerFieldDef) -> str:
         assert (not isinstance(answer_field.sonic_text_attrs, list))
         sonic_text_attrs = answer_field.sonic_text_attrs
 

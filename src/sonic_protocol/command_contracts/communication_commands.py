@@ -12,7 +12,7 @@ field_termination = AnswerFieldDef(
 
 set_termination = CommandContract(
     code=CommandCode.SET_TERMINATION,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         setter_param=CommandParamDef(
             name=EFieldName.TERMINATION,
             param_type=FieldType(field_type=bool)
@@ -21,7 +21,7 @@ set_termination = CommandContract(
             string_identifier=["!term", "set_termination"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_termination]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -51,7 +51,7 @@ field_comm_protocol = AnswerFieldDef(
 
 set_comm_protocol = CommandContract(
     code=CommandCode.SET_COM_PROT,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         setter_param=CommandParamDef(
             name=EFieldName.COMMUNICATION_PROTOCOL,
             param_type=field_type_comm_protocol
@@ -60,7 +60,7 @@ set_comm_protocol = CommandContract(
             string_identifier=["!prot", "set_comm_protocol"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_comm_protocol]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -81,7 +81,7 @@ field_input_source = AnswerFieldDef(
 
 set_input_source = CommandContract(
     code=CommandCode.SET_INPUT_SOURCE,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         setter_param=CommandParamDef(
             name=EFieldName.INPUT_SOURCE,
             param_type=field_type_input_source
@@ -90,7 +90,7 @@ set_input_source = CommandContract(
             string_identifier=["!input", "!input_source", "set_input_source"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_input_source]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -110,7 +110,7 @@ field_timestamp = AnswerFieldDef(
 )
 set_datetime = CommandContract(
     code=CommandCode.SET_DATETIME,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         setter_param=CommandParamDef(
             name=EFieldName.TIMESTAMP,
             param_type=param_type_timestamp
@@ -119,7 +119,7 @@ set_datetime = CommandContract(
             string_identifier=["!datetime", "set_datetime"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_timestamp]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -131,12 +131,12 @@ set_datetime = CommandContract(
 
 get_datetime = CommandContract(
     code=CommandCode.GET_DATETIME,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?datetime", "get_datetime"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_timestamp]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -148,12 +148,12 @@ get_datetime = CommandContract(
 
 get_datetime_pico = CommandContract(
     code=CommandCode.GET_DATETIME_PICO,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?datetime_pico", "get_datetime_pico"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_timestamp]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -165,7 +165,7 @@ get_datetime_pico = CommandContract(
 
 set_log_level = CommandContract(
     code=CommandCode.SET_LOG_LEVEL,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=CommandParamDef(
             name=EFieldName.LOGGER_NAME,
             param_type=FieldType(
@@ -184,7 +184,7 @@ set_log_level = CommandContract(
             string_identifier=["!log", "set_log_level"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             AnswerFieldDef(
                 field_name=EFieldName.LOGGER_NAME,

@@ -1,11 +1,10 @@
 from typing import List
 import numpy as np
-from sonic_protocol.command_contracts.contract_generators import create_list_with_unknown_answer_alternative, create_version_field
-from sonic_protocol.protocol import (build_date_field, build_hash_field, field_device_type)
+from sonic_protocol.command_contracts.contract_generators import create_version_field
 from sonic_protocol.defs import (
-    CommandCode, CommandExport, CommandListExport, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, FieldType, MetaExport, MetaExportDescriptor, Procedure, 
-    Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
-    AnswerFieldDef, CommandContract, DeviceType, SonicTextAnswerAttrs
+    CommandCode, CommandParamDef, DeviceParamConstantType, FieldType,
+    SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
+    AnswerFieldDef, CommandContract, SonicTextAnswerAttrs
 )
 # from sonic_protocol.command_contracts.fields import (
 
@@ -19,32 +18,6 @@ from sonic_protocol.field_names import EFieldName
 version = Version(major=1, minor=0, patch=0)
 
 
-
-
-get_info = CommandContract(
-    code=CommandCode.GET_INFO,
-    command_defs=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier="?info"
-        )
-    ),
-    answer_defs=AnswerDef(
-        fields=[
-            field_device_type,
-            create_version_field(EFieldName.HARDWARE_VERSION),
-            create_version_field(EFieldName.FIRMWARE_VERSION),
-            build_hash_field,
-            build_date_field,
-        ]
-    ),
-    is_release=True
-)
-
-
-
-
-
-
 field_unknown_answer = AnswerFieldDef(
 	field_name=EFieldName.UNKNOWN_ANSWER,
 	field_type=FieldType(str)
@@ -52,12 +25,12 @@ field_unknown_answer = AnswerFieldDef(
 
 set_on = CommandContract(
     code=CommandCode.SET_ON,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!ON"]
         )
     ),
-    answer_defs=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_unknown_answer]),
     is_release=True,
     tags=[" "],
     user_manual_attrs=UserManualAttrs(
@@ -67,12 +40,12 @@ set_on = CommandContract(
 
 set_auto = CommandContract(
     code=CommandCode.LEGACY_AUTO,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!AUTO"]
         )
     ),
-    answer_defs=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_unknown_answer]),
     is_release=True,
     tags=[" "],
     user_manual_attrs=UserManualAttrs(
@@ -82,12 +55,12 @@ set_auto = CommandContract(
 
 set_wipe = CommandContract(
     code=CommandCode.LEGACY_WIPE,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!WIPE"]
         )
     ),
-    answer_defs=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_unknown_answer]),
     is_release=True,
     tags=[" "],
     user_manual_attrs=UserManualAttrs(
@@ -98,12 +71,12 @@ set_wipe = CommandContract(
 
 set_off = CommandContract(
     code=CommandCode.SET_OFF,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!OFF"]
         )
     ),
-    answer_defs=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_unknown_answer]),
     is_release=True,
     tags=[" "],
     user_manual_attrs=UserManualAttrs(
@@ -142,16 +115,14 @@ field_frequency = AnswerFieldDef(
 
 set_frequency = CommandContract(
     code=CommandCode.SET_FREQ,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=None,
         setter_param=param_frequency,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!f"]
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_frequency])
-    ),
+    answer_def=AnswerDef(fields=[field_frequency]),
     user_manual_attrs=UserManualAttrs(
         description="Command to set the frequency of the transducer on the device."
     ),
@@ -171,16 +142,14 @@ param_gain = CommandParamDef(
 
 set_gain = CommandContract(
     code=CommandCode.SET_GAIN,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=None,
         setter_param=param_gain,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!g", "!gain", "set_gain"]
         )
     ),
-    answer_defs=create_list_with_unknown_answer_alternative(
-        AnswerDef(fields=[field_gain])
-    ),
+    answer_def=AnswerDef(fields=[field_gain]),
     user_manual_attrs=UserManualAttrs(
         description="Command to set the gain of the transducer on the device."
     ),
@@ -281,13 +250,13 @@ uint32_param = CommandParamDef(
 
 set_step = CommandContract(
     code=CommandCode.LEGACY_STEP,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!step"]
         ),
         setter_param=uint32_param
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_step
         ]
@@ -300,13 +269,13 @@ set_step = CommandContract(
 
 set_sing = CommandContract(
     code=CommandCode.LEGACY_SING,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!sing"]
         ),
         setter_param=uint32_param
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_sing
         ]
@@ -319,13 +288,13 @@ set_sing = CommandContract(
 
 set_paus = CommandContract(
     code=CommandCode.LEGACY_PAUS,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!paus"]
         ),
         setter_param=uint32_param
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_paus
         ]
@@ -338,13 +307,13 @@ set_paus = CommandContract(
 
 set_rang = CommandContract(
     code=CommandCode.LEGACY_RANG,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!rang"]
         ),
         setter_param=uint32_param
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_rang
         ]
@@ -397,12 +366,12 @@ field_paus_pval = AnswerFieldDef(
 
 get_pval = CommandContract(
     code=CommandCode.LEGACY_PVAL,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?pval"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_rang_pval,
             field_step_pval,
@@ -442,13 +411,13 @@ field_scst = AnswerFieldDef(
 
 set_tust = CommandContract(
     code=CommandCode.LEGACY_TUST,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!tust"]
         ),
         setter_param=uint32_param
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_tust
         ]
@@ -463,13 +432,13 @@ set_tust = CommandContract(
 
 set_tutm = CommandContract(
     code=CommandCode.LEGACY_TUTM,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!tutm"]
         ),
         setter_param=uint32_param
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_tutm
         ]
@@ -482,13 +451,13 @@ set_tutm = CommandContract(
 
 set_scst = CommandContract(
     code=CommandCode.LEGACY_SCST,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!scst"]
         ),
         setter_param=uint32_param
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[
             field_scst
         ]
@@ -502,12 +471,12 @@ set_scst = CommandContract(
 
 dash = CommandContract(
             code=CommandCode.GET_UPDATE,
-            command_defs=CommandDef(
+            command_def=CommandDef(
                 sonic_text_attrs=SonicTextCommandAttrs(
                     string_identifier=["-"]
                 )
             ),
-            answer_defs=AnswerDef(
+            answer_def=AnswerDef(
                 fields=[
                     field_error_code,
                     field_frequency_no_unit,
@@ -570,14 +539,14 @@ field_atf = AnswerFieldDef(
 
 set_atf = CommandContract(
     code=CommandCode.SET_ATF,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=param_index,
         setter_param=param_atf,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!atf"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_atf]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -595,14 +564,14 @@ field_att = AnswerFieldDef(
 
 set_att = CommandContract(
     code=CommandCode.SET_ATT,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=param_index,
         setter_param=param_att, # TODO make a better param for att
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!att"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_att]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -620,14 +589,14 @@ field_atk = AnswerFieldDef(
 
 set_atk = CommandContract(
     code=CommandCode.SET_ATK,
-    command_defs=CommandDef(
+    command_def=CommandDef(
         index_param=param_index,
         setter_param=param_atk,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!atk"]
         )
     ),
-    answer_defs=AnswerDef(
+    answer_def=AnswerDef(
         fields=[field_atk]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -637,43 +606,28 @@ set_atk = CommandContract(
     tags=["transducer", "config"]
 )
 
+crystal_commands = [ 
+    dash,
+    set_on,
+    set_off,
+    set_frequency,
+    set_gain,
+    get_pval,
+    set_paus,
+    set_sing,
+    set_step,
+    set_rang,
+    set_tust,
+    set_tutm,
+    set_scst,
+    set_auto,
+    set_wipe,
+    set_atf,
+    set_atk,
+    set_att
+]
 
-class LegacyProtocol(Protocol):
-    # TODO Fix this and INFO tab
-    @property
-    def major_version(self) -> int:
-        return 2
-
-legacy_protocol = LegacyProtocol(
-    version=Version(1, 0, 0),
-    consts=DeviceParamConstants(
-        min_frequency=600000,
-        max_frequency=6000000,
-    ),
-    commands=[
-        CommandListExport(
-            exports=[
-                        get_info, 
-                        dash,
-                        set_on,
-                        set_off,
-                        set_frequency,
-                        set_gain,
-                        get_pval,
-                        set_paus,
-                        set_sing,
-                        set_step,
-                        set_rang,
-                        set_tust,
-                        set_tutm,
-                        set_scst,
-                        set_auto,
-                        set_wipe,
-                        set_atf,
-                        set_atk,
-                        set_att
-                    ],
-            descriptor=MetaExportDescriptor(min_protocol_version=version)
-        )
-    ]
-)
+crystal_constants = {
+    DeviceParamConstantType.MIN_FREQUENCY: 600000,
+    DeviceParamConstantType.MAX_FREQUENCY: 6000000,
+}

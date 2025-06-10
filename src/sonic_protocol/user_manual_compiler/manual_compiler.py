@@ -2,9 +2,8 @@ import abc
 import argparse
 from enum import Enum
 from pathlib import Path
-from sonic_protocol.defs import AnswerFieldDef, CommandCode, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
-from sonic_protocol.protocol_builder import CommandLookUp, ProtocolBuilder
-from sonic_protocol.protocol import protocol as sonic_protocol
+from sonic_protocol.defs import AnswerFieldDef, CommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
+from sonic_protocol.protocol import protocol_list
 
 
 
@@ -14,19 +13,18 @@ class ManualCompiler(abc.ABC):
 
 
 class MarkdownManualCompiler(ManualCompiler):
-    def __init__(self, protocol: Protocol):
-        self._protocol_builder = ProtocolBuilder(protocol)
-        
-
     def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True) -> str:
-        command_list, _ = self._protocol_builder.build(device_type, protocol_version, is_release)
-        
+        try:
+            protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
+        except Exception as e:
+            return "Error constructing manual: " + str(e) 
+
+        self.consts = protocol.consts # save consts as attribute. We need min and max values for fields
+
         manual = ""
         manual += self.create_title(device_type, protocol_version, is_release)
-        command_codes = sorted(command_list.keys())
-        for command_code in command_codes:
-            command_lookup = command_list[command_code]
-            manual += self.create_command_entry(command_lookup, command_code)
+        for command_code, command_contract in protocol.command_contracts.items():
+            manual += self.create_command_entry(command_contract, command_code)
 
         return manual
 
@@ -34,21 +32,21 @@ class MarkdownManualCompiler(ManualCompiler):
         title = f"# Sonic Protocol for {device_type.value} - {protocol_version}.{ 'Release' if is_release else 'Beta'}\n"
         return title
 
-    def create_command_entry(self, command_lookup: CommandLookUp, command_code: CommandCode) -> str:
+    def create_command_entry(self, command_contract: CommandContract, command_code: CommandCode) -> str:
 
-        description = command_lookup.user_manual_attrs.description
-        example = command_lookup.user_manual_attrs.example
+        description = command_contract.user_manual_attrs.description
+        example = command_contract.user_manual_attrs.example
 
         section_title = f"## **{command_code.value}**: {command_code.name}  \n"
         command_entry = section_title
-        tags = " | ".join(map(lambda tag: f"<u>{tag}</u>", command_lookup.tags)) + "  \n\n"
+        tags = " | ".join(map(lambda tag: f"<u>{tag}</u>", command_contract.tags)) + "  \n\n"
         command_entry += tags
         command_entry += ("..." if description is None else description) + "  \n\n"
 
-        if command_lookup.command_def:
-            setter_param = command_lookup.command_def.setter_param
-            index_param = command_lookup.command_def.index_param
-            sonic_text_attrs = command_lookup.command_def.sonic_text_attrs
+        if command_contract.command_def:
+            setter_param = command_contract.command_def.setter_param
+            index_param = command_contract.command_def.index_param
+            sonic_text_attrs = command_contract.command_def.sonic_text_attrs
             assert isinstance(sonic_text_attrs, SonicTextCommandAttrs) 
             string_identifier = sonic_text_attrs.string_identifier
             string_identifier = string_identifier if isinstance(string_identifier, list) else [string_identifier]
@@ -65,7 +63,7 @@ class MarkdownManualCompiler(ManualCompiler):
                 command_entry += self.create_param_entry(setter_param)
 
         command_entry += "### Answer\n"
-        for field in command_lookup.answer_def.fields:
+        for field in command_contract.answer_def.fields:
             command_entry += self.create_answer_field_entry(field)
 
         if example is not None:
@@ -116,11 +114,13 @@ class MarkdownManualCompiler(ManualCompiler):
                 type_header += f"\t- {value}  \n"
 
         if field_type.min_value is not None:
-            assert not isinstance(field_type.min_value, DeviceParamConstantType)
-            type_header += f"\tMinimum value: {field_type.min_value}  \n"
+            assert isinstance(field_type.min_value, DeviceParamConstantType)
+            val = getattr(self.consts, field_type.min_value.value)
+            type_header += f"\tMinimum value: {val}  \n"
         if field_type.max_value is not None:
-            assert not isinstance(field_type.max_value, DeviceParamConstantType)
-            type_header += f"\tMaximum value: {field_type.max_value}  \n"
+            assert isinstance(field_type.max_value, DeviceParamConstantType)
+            val = getattr(self.consts, field_type.max_value.value)
+            type_header += f"\tMaximum value: {val}  \n"
 
         if description is not None:
             type_header += f"\t{description}  \n"
@@ -149,7 +149,7 @@ def build_manual():
         raise Exception(f"The output-dir must be a directory, but is instead a file: {str(output_dir)}")
 
 
-    manual_compiler = MarkdownManualCompiler(sonic_protocol)
+    manual_compiler = MarkdownManualCompiler()
     manual = manual_compiler.compile_manual_for_specific_device(device_type, protocol_version, is_release)
 
     with open(file_name, "w") as file:

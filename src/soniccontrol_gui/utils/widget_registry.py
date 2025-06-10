@@ -13,6 +13,8 @@ def get_text_of_widget(widget: tk.Widget) -> str:
         return widget.get()
     elif isinstance(widget, ScrolledText):
         return widget.text.get(1.0, ttk.END)
+    elif isinstance(widget, tk.Text):
+        return widget.get("1.0", "end")
     elif isinstance(widget, (tk.Label, ttk.Label, tk.Button, tk.Checkbutton, ttk.Button, ttk.Checkbutton)):
         return str(widget.cget("text"))
     elif isinstance(widget, ttk.Meter):

@@ -266,7 +266,9 @@ class NewScriptingFacade(ScriptingFacade):
 
     def parse_script(self, text: str) -> RunnableScript:
         try:
-            ast = self.parser.parse(text)
+            # all commands need to end with a newline.
+            # Add newline here to make it more robust. So people do not have to remind them selfs to add a newline at the end of the script 
+            ast = self.parser.parse(text + "\n")
         except lark.exceptions.UnexpectedInput as e:
             raise ScriptException(f"Syntax Error unexpected input\n: {e.get_context(text)}", e.line, e.column)
         interpreter = Interpreter(ast)

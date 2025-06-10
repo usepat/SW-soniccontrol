@@ -82,8 +82,8 @@ class SpectrumMeasure(Procedure):
         values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step)) ]
 
         try:
-            await device.get_overview() # Was needed for old devices. Can now be deleted I think?
-
+            # await device.get_overview() # FIXME I dont think we need this
+            # I am removing it for now because we can't send commands to the crystal device that have no command code
             await device.execute_command(commands.SetGain(args.gain))
             await self._ramp(device, list(values), args.t_on, args.t_off, args.time_offset_measure)
         finally:

@@ -1,16 +1,16 @@
 from sonic_protocol.python_parser.commands import Command
-from sonic_protocol.protocol_builder import CommandLookUpTable
+from sonic_protocol.defs import Protocol
 
 class CommandSerializer:
-    def __init__(self, command_lookup_table: CommandLookUpTable):
-        self._command_lookup_table = command_lookup_table
+    def __init__(self, protocol: Protocol):
+        self._command_contracts = protocol.command_contracts
 
     def serialize_command(self, command: Command) -> str:
-        lookup_command = self._command_lookup_table.get(command.code, None)
-        assert lookup_command is not None, f"The command {command} is not known for the protocol" # throw error?
-        
-        command_def = lookup_command.command_def
-        assert not isinstance(command_def.sonic_text_attrs, list)
+        command_contract = self._command_contracts.get(command.code, None)
+        assert command_contract is not None, f"The command {command} is not known for the protocol" # throw error?
+        assert command_contract.command_def is not None, f"There exists no command definition for {command}"
+
+        command_def = command_contract.command_def
         
         identifier = command_def.sonic_text_attrs.string_identifier
         request_msg: str = identifier[0] if isinstance(identifier, list) else identifier

@@ -52,7 +52,8 @@ Send command "${COMMAND}" over serial monitor
     Gui.Set text of widget "${SERIAL_MONITOR_COMMAND_LINE_INPUT_ENTRY}" to "${COMMAND}"
     Gui.Press button "${SERIAL_MONITOR_SEND_BUTTON}"
     Gui.Let the app update for "500" ms
-
+    ${answer_str}=    Gui.Get text of "-1"th child of widget "${SERIAL_MONITOR_SCROLL_FRAME}"
+    RETURN    ${answer_str}
 
 Set device to default state
     Send command "!OFF" over serial monitor

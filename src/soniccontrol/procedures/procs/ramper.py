@@ -10,7 +10,7 @@ from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from sonic_protocol.python_parser import commands
 
 
-@attrs.define(auto_attribs=True, init=False)
+@attrs.define(auto_attribs=True)
 class RamperArgs(ProcedureArgs):
     @classmethod
     def get_description(cls) -> str:
@@ -80,7 +80,8 @@ class RamperLocal(Ramper):
     ) -> None:
         values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step) + 1) ]
 
-        await device.get_overview()
+        # await device.get_overview() # FIXME I dont think we need this
+        # I am removing it for now because we can't send commands to the crystal device that have no command code
         # TODO: Do we need those two lines?
         # await device.execute_command(f"!freq={start}")
         # await device.set_signal_on()

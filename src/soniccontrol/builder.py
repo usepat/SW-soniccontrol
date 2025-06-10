@@ -2,19 +2,13 @@ import logging
 from typing import Any, Dict
 
 
-from sonic_protocol import protocol
-from sonic_protocol import legacy_protocol
-from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import DeviceType, Version
+from sonic_protocol.protocol import protocol_list
+from sonic_protocol.defs import DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.protocol_builder import ProtocolBuilder
 from soniccontrol.communication.connection import Connection
-from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.communication.legacy_communicator import LegacyCommunicator
-from soniccontrol.sonic_device import (
-    FirmwareInfo,
-    SonicDevice,
-)
+from soniccontrol.communication.serial_communicator import SerialCommunicator
+from soniccontrol.sonic_device import FirmwareInfo, SonicDevice
 import sonic_protocol.python_parser.commands as cmds
 
 
@@ -27,56 +21,59 @@ class DeviceBuilder:
         
         builder_logger = logging.getLogger(logger.name + "." + DeviceBuilder.__name__)
         
+        info = FirmwareInfo()
 
-        if not is_legacy_device:
-            comm = SerialCommunicator(logger=logger) #type: ignore
-            await comm.open_communication(connection)
-
-            protocol_builder = ProtocolBuilder(protocol.protocol)
-            protocol_version: Version = Version(0, 0, 0)
-            device_type: DeviceType = DeviceType.UNKNOWN
-            is_release: bool = True
-        else:
-            comm = LegacyCommunicator(logger=logger, protocol=legacy_protocol.legacy_protocol) #type: ignore
-            await comm.open_communication(connection)
-
-            protocol_builder = ProtocolBuilder(legacy_protocol.legacy_protocol)
+        if is_legacy_device:
             protocol_version: Version = Version(1, 0, 0)
             device_type: DeviceType = DeviceType.CRYSTAL
             is_release: bool = True
 
-        result_dict: Dict[EFieldName, Any] = {}
-        info = FirmwareInfo()
+            # FIXME: adapt changes for legacy_protocol
+            # comm = LegacyCommunicator(logger=logger, protocol=legacy_protocol.legacy_protocol) #type: ignore
+            # await comm.open_communication(connection)
+            
+            # FIXME: Delete this
+            comm = LegacyCommunicator(logger=logger)
+            await comm.open_communication(connection)
+        
+        else:
+            protocol_version: Version = Version(0, 0, 0)
+            device_type: DeviceType = DeviceType.UNKNOWN
+            is_release: bool = True
 
-        builder_logger.debug("Serial connection is open, start building device")
+            comm = SerialCommunicator(logger=logger) #type: ignore
+            await comm.open_communication(connection)
 
 
-        # deduce the right protocol version, device_type and build_type
-        if not open_in_rescue_mode and not is_legacy_device:
-            builder_logger.debug("Try to figure out which protocol to use with ?protocol")
+            builder_logger.debug("Serial connection is open, start building device")
 
-            protocol_version: Version = Version(1, 0, 0)
-            base_command_lookups, _ = protocol_builder.build(device_type, protocol_version, is_release)
 
-            device = SonicDevice(comm, base_command_lookups, info, logger=logger)
-            answer = await device.execute_command(cmds.GetProtocol())
-            if answer.valid:
-                assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
-                assert(EFieldName.PROTOCOL_VERSION in answer.field_value_dict)
-                assert(EFieldName.IS_RELEASE in answer.field_value_dict)
-                device_type = answer.field_value_dict[EFieldName.DEVICE_TYPE]
-                protocol_version = answer.field_value_dict[EFieldName.PROTOCOL_VERSION]
-                is_release = answer.field_value_dict[EFieldName.IS_RELEASE]
+            # deduce the right protocol version, device_type and build_type
+            if not open_in_rescue_mode:
+                builder_logger.debug("Try to figure out which protocol to use with ?protocol")
+
+                protocol_version: Version = Version(1, 0, 0)
+                protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
+
+                device = SonicDevice(comm, protocol, info, logger=logger)
+                answer = await device.execute_command(cmds.GetProtocol())
+                if answer.valid:
+                    assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
+                    assert(EFieldName.PROTOCOL_VERSION in answer.field_value_dict)
+                    assert(EFieldName.IS_RELEASE in answer.field_value_dict)
+                    device_type = answer.field_value_dict[EFieldName.DEVICE_TYPE]
+                    protocol_version = answer.field_value_dict[EFieldName.PROTOCOL_VERSION]
+                    is_release = answer.field_value_dict[EFieldName.IS_RELEASE]
+                else:
+                    builder_logger.debug("Device does not understand ?protocol command")
             else:
-                builder_logger.debug("Device does not understand ?protocol command")
-        elif not is_legacy_device:
-            builder_logger.warning("Device uses unknown protocol")
+                builder_logger.warning("Device uses unknown protocol")
 
         # create device
         builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release" if is_release else "build", str(protocol_version))
-        command_lookups, _ = protocol_builder.build(device_type, protocol_version, is_release)
-
-        device = SonicDevice(comm, command_lookups, info, 
+        protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
+            
+        device = SonicDevice(comm, protocol, info, 
                              is_in_rescue_mode=open_in_rescue_mode, logger=logger)
         
         # some devices are automatically in default routine.
@@ -91,6 +88,7 @@ class DeviceBuilder:
         
 
         # update info
+        result_dict: Dict[EFieldName, Any] = {}
         if device.has_command(cmds.GetInfo()):
             answer = await device.execute_command(cmds.GetInfo(), should_log=False)
             result_dict.update(answer.field_value_dict)

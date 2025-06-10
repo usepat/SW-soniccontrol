@@ -16,6 +16,7 @@ FLASHER_TAB = "left_notebook.Flasher_tab"
 INFO_TAB = "right_notebook.Info_tab"
 SONIC_MEASURE_TAB = "right_notebook.Sonic Measure_tab"
 LOGS_TAB = "right_notebook.Logs_tab"
+CONFIGURATION_TAB = "left_notebook.Configuration_tab"
 
 
 # Connection constants
@@ -72,30 +73,28 @@ CONFIGURATION_CONFIG_ENTRY = 'configuration.config_entry'
 CONFIGURATION_SAVE_CONFIG_BUTTON = 'configuration.save_config_button'
 CONFIGURATION_SUBMIT_CONFIG_BUTTON = 'configuration.submit_config_button'
 CONFIGURATION_DELETE_CONFIG_BUTTON = 'configuration.delete_config_button'
+CONFIGURATION_BROWSE_FILES_ENTRY = 'configuration.browse_files_entry'
+CONFIGURATION_BROWSE_FILES_BUTTON = 'configuration.browse_files_button'
 
 # AT Configuration (Index 0)
 CONFIGURATION_AT_CONFIG_0_ATF_ENTRY = 'configuration.at_config.0.atf_entry'
 CONFIGURATION_AT_CONFIG_0_ATK_ENTRY = 'configuration.at_config.0.atk_entry'
 CONFIGURATION_AT_CONFIG_0_ATT_ENTRY = 'configuration.at_config.0.att_entry'
-CONFIGURATION_AT_CONFIG_0_ATON_ENTRY = 'configuration.at_config.0.aton_entry'
 
 # AT Configuration (Index 1)
 CONFIGURATION_AT_CONFIG_1_ATF_ENTRY = 'configuration.at_config.1.atf_entry'
 CONFIGURATION_AT_CONFIG_1_ATK_ENTRY = 'configuration.at_config.1.atk_entry'
 CONFIGURATION_AT_CONFIG_1_ATT_ENTRY = 'configuration.at_config.1.att_entry'
-CONFIGURATION_AT_CONFIG_1_ATON_ENTRY = 'configuration.at_config.1.aton_entry'
 
 # AT Configuration (Index 2)
 CONFIGURATION_AT_CONFIG_2_ATF_ENTRY = 'configuration.at_config.2.atf_entry'
 CONFIGURATION_AT_CONFIG_2_ATK_ENTRY = 'configuration.at_config.2.atk_entry'
 CONFIGURATION_AT_CONFIG_2_ATT_ENTRY = 'configuration.at_config.2.att_entry'
-CONFIGURATION_AT_CONFIG_2_ATON_ENTRY = 'configuration.at_config.2.aton_entry'
 
 # AT Configuration (Index 3)
 CONFIGURATION_AT_CONFIG_3_ATF_ENTRY = 'configuration.at_config.3.atf_entry'
 CONFIGURATION_AT_CONFIG_3_ATK_ENTRY = 'configuration.at_config.3.atk_entry'
 CONFIGURATION_AT_CONFIG_3_ATT_ENTRY = 'configuration.at_config.3.att_entry'
-CONFIGURATION_AT_CONFIG_3_ATON_ENTRY = 'configuration.at_config.3.aton_entry'
 
 # Procedure Controlling constants
 PROC_CONTROLLING_PROCEDURE_COMBOBOX = 'proc_controlling.procedure_combobox'

@@ -108,7 +108,7 @@ class RemoteController:
         assert self._proc_controller is not None
 
         arg_class = self._proc_controller.proc_args_list[procedure]
-        procedure_args = arg_class(**args)
+        procedure_args = arg_class.from_dict(**args)
         self._proc_controller.execute_proc(procedure, procedure_args, event_loop)
         
     async def wait_for_procedure_to_finish(self):

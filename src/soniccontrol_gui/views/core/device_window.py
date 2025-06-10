@@ -179,7 +179,7 @@ class KnownDeviceWindow(DeviceWindow):
                 CaptureTargets.SPECTRUM_MEASURE: CaptureSpectrumMeasure(self._updater, self._proc_controller, self._spectrum_measure_model)
             }
 
-            update_answer_fields = self._device.lookup_table[CommandCode.GET_UPDATE].answer_def.fields
+            update_answer_fields = self._device.protocol.command_contracts[CommandCode.GET_UPDATE].answer_def.fields
 
             # Components
             self._logger.debug("Create views")
@@ -192,7 +192,7 @@ class KnownDeviceWindow(DeviceWindow):
             if is_legacy_device:
                 self._configuration = LegacyConfiguration(self, self._device, self._proc_controller)
             else:
-                self._configuration = Configuration(self, self._device, self._proc_controller)
+                self._configuration = Configuration(self, self._device, self._updater)
             self._settings = Settings(self, self._device, self._updater)
             
             self._proc_controlling = ProcControlling(self, self._proc_controller, self._proc_controlling_model, self._app_state)
@@ -225,7 +225,6 @@ class KnownDeviceWindow(DeviceWindow):
             ], right_one=True)
 
             
-
             self._logger.debug("add callbacks and listeners to event emitters")
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))

@@ -12,7 +12,7 @@ from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 
 
-@attrs.define(auto_attribs=True, init=False)
+@attrs.define(auto_attribs=True)
 class TuneArgs(ProcedureArgs):
     @classmethod
     def get_description(cls) -> str:

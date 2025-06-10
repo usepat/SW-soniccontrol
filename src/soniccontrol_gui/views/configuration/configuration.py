@@ -8,12 +8,13 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 import json
 from sonic_protocol.python_parser import commands
-from soniccontrol.procedures.procedure_controller import ProcedureController
+from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
+from soniccontrol.updater import Updater
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
-from soniccontrol.scripting.scripting_facade import ScriptingFacade
+from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence
 from soniccontrol_gui.constants import sizes, ui_labels
@@ -30,7 +31,7 @@ from soniccontrol_gui.widgets.message_box import MessageBox
     
 
 class Configuration(UIComponent):
-    def __init__(self, parent: UIComponent, device: SonicDevice, procedure_controller: ProcedureController):
+    def __init__(self, parent: UIComponent, device: SonicDevice, updater: Updater):
         self._logger = logging.getLogger(parent.logger.name + "." + Configuration.__name__)
         
         self._logger.debug("Create Configuration Component")
@@ -40,8 +41,15 @@ class Configuration(UIComponent):
         self._view = ConfigurationView(parent.view, self, self._count_atk_atf)
         self._current_transducer_config: Optional[int] = None
         self._device = device
-        self._procedure_controller = procedure_controller
+        self._interpreter = InterpreterEngine(device, updater)
         super().__init__(parent, self._view, self._logger)
+
+
+        def show_script_error(e):
+                error = e.data["exception"]
+                MessageBox.show_error(self._view.root, f"{error.__class__.__name__}: {str(error)}")
+        self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, show_script_error)
+
         self._view.set_save_config_command(self._save_config)
         self._view.set_transducer_config_selected_command(self._on_transducer_config_selected)
         self._view.set_add_transducer_config_command(self._add_transducer_config_template)
@@ -191,20 +199,21 @@ class Configuration(UIComponent):
         
         # Start animation
         animation = Animator(
-            DotAnimationSequence(ui_labels.SEND_LABEL), 
-            self._view.set_submit_config_button_label, 
+            DotAnimationSequence(ui_labels.CONFIGURING_LABEL), 
+            self._view.set_loading_label, 
             2,
-            done_callback=lambda: self._view.set_submit_config_button_label(ui_labels.SEND_LABEL)
+            done_callback=lambda: self._view.set_loading_label("")
         )
         animation.run(num_repeats=-1)
         
         # Send data
         for i, atconfig in enumerate(self._view.atconfigs):
-            await self._device.execute_command(commands.SetAtf(i, atconfig.atf))
-            await self._device.execute_command(commands.SetAtk(i, atconfig.atk))
-            await self._device.execute_command(commands.SetAtt(i, atconfig.att))
+            # i+1 because atfs start at 1 and not 0.
+            await self._device.execute_command(commands.SetAtf(i+1, atconfig.atf))
+            await self._device.execute_command(commands.SetAtk(i+1, atconfig.atk))
+            await self._device.execute_command(commands.SetAtt(i+1, atconfig.att))
 
-        task = asyncio.create_task(self._interpreter_engine())
+        task = asyncio.create_task(self._execute_init_script())
 
         # add stop animation callback
         @async_handler
@@ -212,10 +221,10 @@ class Configuration(UIComponent):
             await animation.stop()
         task.add_done_callback(stop_animation)
 
-    async def _interpreter_engine(self):
+    async def _execute_init_script(self):
         assert(self._current_transducer_config is not None)
 
-        script_file_path = self._configs[self._current_transducer_config].init_script_path
+        script_file_path = self._view.init_script_path
         if script_file_path is None:
             return
 
@@ -225,20 +234,23 @@ class Configuration(UIComponent):
         self._logger.info("Execute init file")
         self._logger.debug("Init file:\n%s", script)
         scripting: ScriptingFacade = NewScriptingFacade()
-        interpreter = scripting.parse_script(script)
-
-        assert False, "need to implement stuff"
-
         try:
-            while next(interpreter, None):
-                pass # TODO: implement stuff
+            runnable_script = scripting.parse_script(script)
+        except ScriptException as error:
+            MessageBox.show_error(self._view.root, f"{error.__class__.__name__}: {str(error)}")
+            return
+        else: 
+            self._interpreter.script = runnable_script
+            self._interpreter.start()
+
+        timeout = 5 * 60 # 5 minutes
+        try:
+            await asyncio.wait_for(self._interpreter.wait_for_script_to_halt(), timeout)
+        except TimeoutError:
+            MessageBox.show_error(self.view.root, f"The initialization script took longer to execute than {timeout} seconds")
         except asyncio.CancelledError:
             self._logger.error("The execution of the init file got interrupted")
-            return
-        except Exception as e:
-            self._logger.error(e)
-            MessageBox.show_error(self._view.root,str(e))
-            return
+
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value
@@ -259,7 +271,7 @@ class ConfigurationView(TabView):
 
     @property
     def tab_title(self) -> str:
-        return ui_labels.ATF_CONFIGURATION_LABEL
+        return ui_labels.CONFIGURATION_TAB
 
     def _initialize_children(self) -> None:
         tab_name = "configuration"
@@ -300,6 +312,10 @@ class ConfigurationView(TabView):
         WidgetRegistry.register_widget(self._submit_config_button, "submit_config_button", tab_name)
         WidgetRegistry.register_widget(self._delete_config_button, "delete_config_button", tab_name)
 
+        self._loading_label = ttk.Label(
+            self._config_frame, text=""
+        )
+
         self._transducer_config_frame: ttk.Frame = ttk.Frame(
             self._config_frame
         )
@@ -310,11 +326,12 @@ class ConfigurationView(TabView):
         self._atconfigs_frame: ScrolledFrame = ScrolledFrame(self._transducer_config_frame)
         self._atconfig_frames: List[ATConfigFrame] = []
         for i in range(0, self._count_atk_atf):
-            at_config_frame = ATConfigFrame(self._presenter, self._atconfigs_frame, i, parent_widget_name=tab_name)
+            at_config_frame = ATConfigFrame(self._presenter, self._atconfigs_frame, i+1, parent_widget_name=tab_name)
             self._atconfig_frames.append(at_config_frame)
             
         self._browse_script_init_button: FileBrowseButtonView = FileBrowseButtonView(
             self._transducer_config_frame, 
+            tab_name,
             text=ui_labels.SPECIFY_PATH_LABEL, 
             style=ttk.DARK,
         )
@@ -322,12 +339,14 @@ class ConfigurationView(TabView):
     def _initialize_publish(self) -> None:
         self._config_frame.pack(expand=True, fill=ttk.BOTH)
         self._config_frame.columnconfigure(0, weight=sizes.DONT_EXPAND)
-        self._config_frame.columnconfigure(1, weight=sizes.EXPAND)
-        self._config_frame.columnconfigure(2, weight=sizes.DONT_EXPAND)
+        self._config_frame.columnconfigure(1, weight=sizes.DONT_EXPAND)
+        self._config_frame.columnconfigure(2, weight=sizes.EXPAND)
         self._config_frame.columnconfigure(3, weight=sizes.DONT_EXPAND)
         self._config_frame.columnconfigure(4, weight=sizes.DONT_EXPAND)
+        self._config_frame.columnconfigure(5, weight=sizes.DONT_EXPAND)
         self._config_frame.rowconfigure(0, weight=sizes.DONT_EXPAND)
-        self._config_frame.rowconfigure(1, weight=sizes.EXPAND)
+        self._config_frame.rowconfigure(1, weight=sizes.DONT_EXPAND)
+        self._config_frame.rowconfigure(2, weight=sizes.EXPAND)
         self._add_config_button.grid(
             row=0,
             column=0,
@@ -366,7 +385,12 @@ class ConfigurationView(TabView):
             pady=sizes.MEDIUM_PADDING,
         )
 
-        self._transducer_config_frame.grid(row=1, column=0, columnspan=5, sticky=ttk.NSEW)
+        self._loading_label.grid(row=1, column=0, columnspan=6,
+            padx=sizes.MEDIUM_PADDING,
+            pady=sizes.MEDIUM_PADDING
+        )
+
+        self._transducer_config_frame.grid(row=2, column=0, columnspan=6, sticky=ttk.NSEW)
         self._transducer_config_frame.columnconfigure(0, weight=sizes.EXPAND)
         self._transducer_config_frame.rowconfigure(0, weight=sizes.DONT_EXPAND)
         self._transducer_config_frame.rowconfigure(1, weight=sizes.EXPAND)
@@ -417,8 +441,8 @@ class ConfigurationView(TabView):
     def set_submit_config_button_enabled(self, enabled: bool) -> None:
         self._submit_config_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)
 
-    def set_submit_config_button_label(self, text: str) -> None:
-        self._submit_config_button.configure(text=text)
+    def set_loading_label(self, text: str) -> None:
+        self._loading_label.configure(text=text)
 
     @property 
     def atconfigs(self) -> List[ATConfig]:

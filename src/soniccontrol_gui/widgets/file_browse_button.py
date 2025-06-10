@@ -3,11 +3,13 @@ from tkinter import filedialog
 from typing import Any, Optional
 import ttkbootstrap as ttk
 
+from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 
 
 class FileBrowseButtonView(View):
-    def __init__(self, master: Any, *args, **kwargs):
+    def __init__(self, master: Any, parent_widget_name: str, *args, **kwargs):
+        self._parent_widget_name = parent_widget_name
         self._text = kwargs.pop("text", "")
         self._default_extension = kwargs.pop("default_extension", None)
         self._filetypes = kwargs.pop("filetypes", None)
@@ -19,6 +21,9 @@ class FileBrowseButtonView(View):
         self._prefix_text = ttk.Label(self._frame, text=self._text)
         self._path_entry = ttk.Entry(self._frame, textvariable=self._path_str)
         self._button = ttk.Button(self._frame, text="Browse Files", command=self._browse_files)
+
+        WidgetRegistry.register_widget(self._path_entry, "browse_files_entry", self._parent_widget_name)
+        WidgetRegistry.register_widget(self._button, "browse_files_button", self._parent_widget_name)
 
     def _initialize_publish(self) -> None:
         self._frame.pack(expand = True, fill=ttk.BOTH)

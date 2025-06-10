@@ -11,7 +11,7 @@ from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from sonic_protocol.command_codes import CommandCode
 
 
-@attrs.define(auto_attribs=True, init=False)
+@attrs.define(auto_attribs=True)
 class WipeArgs(ProcedureArgs):
     @classmethod
     def get_description(cls) -> str:

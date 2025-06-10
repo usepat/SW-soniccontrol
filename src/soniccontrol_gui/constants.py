@@ -97,7 +97,7 @@ style: Final[_Style] = _Style()
 
 @attrs.frozen
 class _UIStringsEN:
-    ATF_CONFIGURATION_LABEL: Final[str] = "ATF Configuration"
+    CONFIGURATION_TAB: Final[str] = "Configuration"
     UPDATER_INTERVAL_LABEL: Final[str] = "Updater Interval (ms):"
     IS_LEGACY_DEVICE_LABEL: Final[str] = "SonicCrystal"
     HOME_CONTROL_LABEL: Final[str] = "Manual Control"
@@ -255,6 +255,7 @@ class _UIStringsEN:
     OPEN_LOGS: Final[str] = "Open Logs"
     GO_TO_MEASUREMENTS: Final[str] = "Go to Measurements"
     FORM_ADD_ENTRY: Final[str] = "Add Entry"
+    CONFIGURING_LABEL: Final[str] = "configuring device"
 
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()
