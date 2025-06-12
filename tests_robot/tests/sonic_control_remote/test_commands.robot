@@ -68,15 +68,15 @@ Check basic setter commands are working
     !gain\=100
     !frequency\=${MIN_FREQUENCY}
 
-    !att4\=${0}
-    !atk1\=${100}
+    !att4\=0
+    !atk1\=100
     !atf2\=${MIN_FREQUENCY}
 
     !wipe_f_step\=${MIN_FREQUENCY}
-    !wipe_t_on\=${100}
-    !scan_f_step\=${1000}
+    !wipe_t_on\=100
+    !scan_f_step\=1000
     !ramp_f_start\=${MIN_FREQUENCY}
-    !tune_f_step\=${1000}
+    !tune_f_step\=1000
 
 
 Test if gain set by setter can be retrieved with getter

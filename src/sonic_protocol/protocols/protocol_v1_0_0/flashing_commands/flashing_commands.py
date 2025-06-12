@@ -1,0 +1,98 @@
+from sonic_protocol.defs import (
+    CommandCode, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    AnswerFieldDef, CommandContract
+)
+from sonic_protocol.field_names import EFieldName
+
+flash_usb = CommandContract(
+    code=CommandCode.SET_FLASH_USB,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!FLASH_USB"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Used for flashing the device with a new firmware."
+    ),
+    is_release=True,
+    tags=["flashing"]
+)
+
+flash_uart9600 = CommandContract(
+    code=CommandCode.SET_FLASH_9600,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!FLASH_UART_SLOW"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Used for flashing the device with a new firmware."
+    ),
+    is_release=True,
+    tags=["flashing"]
+)
+
+flash_uart115200 = CommandContract(
+    code=CommandCode.SET_FLASH_115200,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!FLASH_UART_FAST"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Used for flashing the device with a new firmware."
+    ),
+    is_release=True,
+    tags=["flashing"]
+)
+
+
+saveSettings = CommandContract(
+    code=CommandCode.SET_SETTINGS,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!saveSettings", "!commission"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.SUCCESS,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    is_release=True,
+    tags=["Settings", "Commissioning"]
+)
+
+flashing_command_contracts = [
+    flash_usb, 
+    flash_uart9600, 
+    flash_uart115200,
+    saveSettings
+]

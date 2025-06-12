@@ -4,7 +4,7 @@ from typing import List
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
 from sonic_protocol.field_names import EFieldName
-import sonic_protocol.command_contracts.fields as fields
+import sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_fields as fields
 
 
 def generate_start_procedure_contract(command_code: CommandCode, string_identifiers: List[str], description: str | None = None, release: bool = True) -> CommandContract:
@@ -369,7 +369,20 @@ duty_cycle_proc_commands: List[CommandContract] = [
     pause_command
 ]
 
-
+notify_proc_failure = CommandContract(
+    code=CommandCode.NOTIFY_PROCEDURE_FAILURE,
+    command_def=None,
+    answer_def=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.ERROR_MESSAGE,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    is_release=True,
+    tags=["Notification", "Procedure"]
+)
 
 
 

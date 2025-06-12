@@ -1,6 +1,4 @@
-from typing import List
 import numpy as np
-from sonic_protocol.command_contracts.contract_generators import create_version_field
 from sonic_protocol.defs import (
     CommandCode, CommandParamDef, DeviceParamConstantType, FieldType,
     SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,

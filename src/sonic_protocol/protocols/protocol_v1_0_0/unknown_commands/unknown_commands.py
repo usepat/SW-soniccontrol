@@ -1,10 +1,14 @@
 
 
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import AnswerDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
-from sonic_protocol.command_contracts.transducer_commands import param_frequency, param_gain
-from sonic_protocol.command_contracts.fields import field_frequency, field_transducer, field_signal, field_gain, field_unknown_answer
+from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
+from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import param_frequency, param_gain
 from sonic_protocol.field_names import EFieldName
+
+field_unknown_answer = AnswerFieldDef(
+	field_name=EFieldName.UNKNOWN_ANSWER,
+	field_type=FieldType(str)
+)
 
 
 unknown_set_frequency = CommandContract(
@@ -136,3 +140,14 @@ unknown_set_off = CommandContract(
     is_release=True,
     tags=["transducer"]
 )
+
+unknown_command_contract_list = [
+    unknown_get_frequency,
+    unknown_set_frequency,
+    unknown_get_transducer,
+    unknown_set_transducer,
+    unknown_set_on,
+    unknown_set_off,
+    unknown_get_gain,
+    unknown_set_gain,
+]

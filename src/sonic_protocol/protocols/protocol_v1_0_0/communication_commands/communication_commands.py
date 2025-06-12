@@ -1,14 +1,14 @@
 from sonic_protocol.defs import (
-    CommandCode, CommunicationChannel, CommunicationProtocol, ConverterType, FieldType, InputSource, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandParamDef, 
-    AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, Timestamp, LoggerName, Loglevel
+    CommandCode, ConverterType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, 
+    AnswerDef, CommandParamDef, AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, LoggerName, Loglevel
+)
+from sonic_protocol.protocols.protocol_v1_0_0.communication_commands.communication_fields import (
+    field_termination, field_type_comm_protocol, field_comm_protocol, field_type_input_source, field_input_source
 )
 from sonic_protocol.field_names import EFieldName
 
 
-field_termination = AnswerFieldDef(
-    field_name=EFieldName.TERMINATION,
-    field_type=FieldType(field_type=bool, converter_ref=ConverterType.TERMINATION),
-)
+
 
 set_termination = CommandContract(
     code=CommandCode.SET_TERMINATION,
@@ -31,23 +31,7 @@ set_termination = CommandContract(
     tags=["communication", "rs485"]
 )
 
-field_type_comm_channel = FieldType(
-    field_type=CommunicationChannel, 
-    converter_ref=ConverterType.ENUM
-)
-field_comm_channel = AnswerFieldDef(
-    field_name=EFieldName.COMMUNICATION_CHANNEL,
-    field_type=field_type_comm_channel,
-)
 
-field_type_comm_protocol = FieldType(
-    field_type=CommunicationProtocol, 
-    converter_ref=ConverterType.ENUM
-)
-field_comm_protocol = AnswerFieldDef(
-    field_name=EFieldName.COMMUNICATION_PROTOCOL,
-    field_type=field_type_comm_protocol
-)
 
 set_comm_protocol = CommandContract(
     code=CommandCode.SET_COM_PROT,
@@ -70,14 +54,6 @@ set_comm_protocol = CommandContract(
     tags=["communication", "protocol"]
 )
 
-field_type_input_source = FieldType(
-    field_type=InputSource, 
-    converter_ref=ConverterType.ENUM
-)
-field_input_source = AnswerFieldDef(
-    field_name=EFieldName.INPUT_SOURCE,
-    field_type=field_type_input_source
-)
 
 set_input_source = CommandContract(
     code=CommandCode.SET_INPUT_SOURCE,
@@ -99,69 +75,8 @@ set_input_source = CommandContract(
     is_release=True,
     tags=["communication"]
 )
-param_type_timestamp = FieldType(
-    field_type=Timestamp,
-    converter_ref=ConverterType.TIMESTAMP
-)
 
-field_timestamp = AnswerFieldDef(
-    field_name=EFieldName.TIMESTAMP,
-    field_type=param_type_timestamp
-)
-set_datetime = CommandContract(
-    code=CommandCode.SET_DATETIME,
-    command_def=CommandDef(
-        setter_param=CommandParamDef(
-            name=EFieldName.TIMESTAMP,
-            param_type=param_type_timestamp
-        ),
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!datetime", "set_datetime"]
-        )
-    ),
-    answer_def=AnswerDef(
-        fields=[field_timestamp]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to set the datetime"
-    ),
-    is_release=True,
-    tags=["datetime"]
-)
 
-get_datetime = CommandContract(
-    code=CommandCode.GET_DATETIME,
-    command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["?datetime", "get_datetime"]
-        )
-    ),
-    answer_def=AnswerDef(
-        fields=[field_timestamp]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to get the datetime"
-    ),
-    is_release=True,
-    tags=["datetime"]
-)
-
-get_datetime_pico = CommandContract(
-    code=CommandCode.GET_DATETIME_PICO,
-    command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["?datetime_pico", "get_datetime_pico"]
-        )
-    ),
-    answer_def=AnswerDef(
-        fields=[field_timestamp]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to get the datetime from the rp2040"
-    ),
-    is_release=True,
-    tags=["datetime"]
-)
 
 set_log_level = CommandContract(
     code=CommandCode.SET_LOG_LEVEL,
@@ -209,3 +124,10 @@ set_log_level = CommandContract(
     is_release=True,
     tags=["log"]
 )
+
+communication_command_contract_list = [
+    set_termination,
+    set_comm_protocol,
+    set_input_source,
+    set_log_level,
+]
