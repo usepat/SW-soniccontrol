@@ -29,7 +29,7 @@ Delete simulation memory file
 
 
 Open device window
-    IF  ${SIMULATION_EXE_PATH} is None
+    IF  '${SIMULATION_EXE_PATH}' == '' or '${SIMULATION_EXE_PATH}' == 'None'
         Set Suite Variable    ${SIMULATION_EXE_PATH}    %{SIMULATION_EXE_PATH}    # robotcode: ignore
     END
     Gui.Open app    ${SIMULATION_EXE_PATH}
@@ -51,11 +51,28 @@ Open device window
 Send command "${COMMAND}" over serial monitor
     Gui.Set text of widget "${SERIAL_MONITOR_COMMAND_LINE_INPUT_ENTRY}" to "${COMMAND}"
     Gui.Press button "${SERIAL_MONITOR_SEND_BUTTON}"
-    Gui.Let the app update for "500" ms
-    ${answer_str}=    Gui.Get text of "-1"th child of widget "${SERIAL_MONITOR_SCROLL_FRAME}"
+
+    ${answer_str}=    Get answer of serial monitor
+
     RETURN    ${answer_str}
 
+Get answer of serial monitor
+    [Timeout]    5 s
+    WHILE    True
+        Gui.Let the app update for "500" ms
+        ${loading_label}=    Gui.Get text of widget "${SERIAL_MONITOR_LOADING_LABEL}"
+        IF       '${LABEL_WAITING_FOR_ANSWER}' in '${loading_label}'
+            CONTINUE
+        END
+
+        ${answer_str}=    Gui.Get text of "-1"th child of widget "${SERIAL_MONITOR_SCROLL_FRAME}"
+        RETURN    ${answer_str}
+    END
+
+
 Set device to default state
+    Gui.Switch to tab "${SERIAL_MONITOR_TAB}"
+    Gui.Let the app update for "200" ms
     Send command "!OFF" over serial monitor
     Send command "!freq=100000" over serial monitor
     Send command "!gain=100" over serial monitor

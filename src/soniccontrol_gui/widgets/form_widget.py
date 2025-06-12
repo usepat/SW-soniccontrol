@@ -73,7 +73,7 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self.label = ttk.Label(self, text=self._field_name)
         self.entry = ttk.Entry(self, textvariable=self._str_value)
 
-        WidgetRegistry.register_widget(self.entry, "entry", self._widget_name)
+        WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
 
     def _initialize_publish(self) -> None:
         self.grid_columnconfigure(0, weight=1, uniform="col")
@@ -135,7 +135,7 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
         self.label = ttk.Label(self, text=self._field_name)
         self.entry = ttk.Entry(self, textvariable=self._str_value)
 
-        WidgetRegistry.register_widget(self.entry, "entry", self._widget_name)
+        WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
 
     def _initialize_publish(self) -> None:
         self.grid_columnconfigure(0, weight=1, uniform="col")
@@ -197,8 +197,8 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         self._entry_time = ttk.Entry(self._entry_frame, textvariable=self._time_value_str)
         self._unit_button = ttk.Button(self._entry_frame, text=self._unit_value_str.get(), command=self._toggle_unit)
 
-        WidgetRegistry.register_widget(self._entry_time, "time_entry", self._widget_name)
-        WidgetRegistry.register_widget(self._unit_button, "unit_button", self._widget_name)
+        WidgetRegistry.register_widget(self._time_value_str, "time_str", self._widget_name)
+        WidgetRegistry.register_widget(self._unit_value_str, "unit_str", self._widget_name)
 
     def _initialize_publish(self) -> None:
         self.grid_columnconfigure(0, weight=1, uniform="col")

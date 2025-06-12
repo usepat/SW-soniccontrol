@@ -32,15 +32,18 @@ Send atf configs to device
 
     Gui.Switch to tab "${SERIAL_MONITOR_TAB}"
     ${answer_atf}=    Send command "?atf1" over serial monitor
-    ${answer_atk}=    Send command "?atk1" over serial monitor
-    ${answer_att}=    Send command "?att1" over serial monitor
-
     Should Contain    ${answer_atf}    ${ATF_1} Hz
+
+    ${answer_atk}=    Send command "?atk1" over serial monitor
     Should Contain    ${answer_atk}    ${ATK_1}
+
+    ${answer_att}=    Send command "?att1" over serial monitor
     Should Contain    ${answer_att}    ${ATT_1}
 
 
 Configure device with init script
+    [Teardown]    Set device to default state
+
     Gui.Switch to tab "${CONFIGURATION_TAB}"
     Create File    ${INIT_SCRIPT_PATH}    ${INIT_SCRIPT}
     File Should Exist    ${INIT_SCRIPT_PATH}

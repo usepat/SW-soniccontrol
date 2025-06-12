@@ -4,12 +4,14 @@ Resource    ../keywords_gui.robot
 
 Test Teardown    Set scripting tab to default state
 
+
 *** Variables ***
 ${TEST_SCRIPT_HOLD}    
     ...    send "!ON"\n
     ...    hold 5s\n
     ...    send "!OFF"
 
+    
 *** Test Cases ***
 
 Execute test script holds application
@@ -30,7 +32,6 @@ Execute test script holds application
 
 
 *** Keywords ***
-
 
 Set scripting tab to default state
     ${start_stop_button_text}=    Gui.Get text of widget "${EDITOR_START_PAUSE_CONTINUE_BUTTON}"

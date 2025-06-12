@@ -116,6 +116,7 @@ class RobotSonicControlGui:
             @usage Useful for inspecting the monitor tab.
         """      
         widget = WidgetRegistry.get_widget(name_widget)
+        assert isinstance(widget, tk.Widget), "widget has to be an instance or subclass of tk.Widget"
         child = widget.winfo_children()[index_child]
         return get_text_of_widget(child)             
 

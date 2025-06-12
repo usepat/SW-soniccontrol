@@ -26,7 +26,7 @@ class SerialMonitor(UIComponent):
 
         # decorate send and receive with loading animation
         self._animation = Animator(
-            DotAnimationSequence("Wait for answer", num_dots=5), 
+            DotAnimationSequence(ui_labels.WAITING_FOR_ANSWER, num_dots=5), 
             self._view.set_loading_text, 
             5,
             done_callback=lambda: self._view.set_loading_text("")
@@ -192,6 +192,7 @@ class SerialMonitorView(TabView):
         WidgetRegistry.register_widget(self.command_line_input_entry, "command_line_input_entry", tab_name)
         WidgetRegistry.register_widget(self._send_button, "send_button", tab_name)
         WidgetRegistry.register_widget(self._scrolled_frame, "scroll_frame", tab_name)
+        WidgetRegistry.register_widget(self._loading_label, "loading_label", tab_name)
 
     def _initialize_publish(self) -> None:
         self._main_frame.pack(expand=True, fill=ttk.BOTH)
