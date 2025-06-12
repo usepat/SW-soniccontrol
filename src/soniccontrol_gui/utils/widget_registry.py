@@ -8,8 +8,10 @@ import datetime
 from soniccontrol_gui.view import TabView
 
 
-def get_text_of_widget(widget: tk.Widget) -> str:
-    if isinstance(widget, (tk.Entry, ttk.Entry, ttk.Combobox)):
+def get_text_of_widget(widget: tk.Widget | tk.Variable) -> str:
+    if isinstance(widget, tk.StringVar):
+        return widget.get()
+    elif isinstance(widget, (tk.Entry, ttk.Entry, ttk.Combobox)):
         return widget.get()
     elif isinstance(widget, ScrolledText):
         return widget.text.get(1.0, ttk.END)
@@ -30,11 +32,13 @@ def get_text_of_widget(widget: tk.Widget) -> str:
     else:
         raise TypeError("The object has to be of type tk.Label, tk.Entry or tk.Button or inherit from them")
 
-def set_text_of_widget(widget: tk.Widget, text: str) -> None:
-    if isinstance(widget, (ttk.Combobox)): # specialization of Entry, so this condition has to be asked first
+def set_text_of_widget(widget: tk.Widget | tk.Variable, text: str) -> None:
+    if isinstance(widget, tk.StringVar):
+        return widget.set(text)
+    elif isinstance(widget, (ttk.Combobox)): # specialization of Entry, so this condition has to be asked first
         widget.set(text)
     elif isinstance(widget, (tk.Entry, ttk.Entry)):
-        widget.delete(0, ttk.END)
+        widget.delete(0, 'end') # need to be 'end', ttk.END does not work for some reason.
         widget.insert(0, text)
     elif isinstance(widget, ScrolledText):
         widget.text.delete(1.0, ttk.END)
@@ -51,8 +55,8 @@ def set_text_of_widget(widget: tk.Widget, text: str) -> None:
 
 
 class WidgetReference:
-    def __init__(self, widget: tk.Widget):
-        self.widget: tk.Widget = widget
+    def __init__(self, widget: tk.Widget | tk.Variable):
+        self.widget: tk.Widget | tk.Variable = widget
         self.old_text_value = get_text_of_widget(self.widget)
         self.last_time_text_has_changed = datetime.datetime.now()
         self.text_has_changed = asyncio.Event()
@@ -74,7 +78,7 @@ class WidgetRegistry:
     _polling_task: Optional[asyncio.Task] = None
 
     @staticmethod
-    def register_widget(widget: tk.Widget, widget_name: str, parent_widget_name: Optional[str] = None):
+    def register_widget(widget: tk.Widget | tk.Variable, widget_name: str, parent_widget_name: Optional[str] = None):
         if WidgetRegistry._enabled:
             key = (parent_widget_name + "." + widget_name) if parent_widget_name else widget_name
             WidgetRegistry._widget_registry[key] = WidgetReference(widget)
@@ -97,7 +101,7 @@ class WidgetRegistry:
         return full_widget_name in WidgetRegistry._widget_registry
 
     @staticmethod
-    def get_widget(full_widget_name: str) -> tk.Widget:
+    def get_widget(full_widget_name: str) -> tk.Widget | tk.Variable:
         return WidgetRegistry._widget_registry[full_widget_name].widget
 
     @staticmethod

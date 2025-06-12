@@ -128,7 +128,8 @@ class ProcControlling(UIComponent):
 
 
     def on_procedure_running(self, e: Event):
-        self._view.set_running_proc_label(ui_labels.PROC_RUNNING.format(e.data["proc_type"]))
+        proc_type: ProcedureType = e.data["proc_type"]
+        self._view.set_running_proc_label(ui_labels.PROC_RUNNING.format(proc_type.value))
         self._view.set_start_button_enabled(False)
         self._view.set_stop_button_enabled(True)
         self._app_state.execution_state = ExecutionState.BUSY_EXECUTING_PROCEDURE
