@@ -1,3 +1,4 @@
+from typing import List
 from sonic_protocol.defs import (
     CommandCode, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract
@@ -90,7 +91,7 @@ saveSettings = CommandContract(
     tags=["Settings", "Commissioning"]
 )
 
-flashing_command_contracts = [
+flashing_command_contracts: List[CommandContract] = [
     flash_usb, 
     flash_uart9600, 
     flash_uart115200,

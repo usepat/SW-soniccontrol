@@ -1,3 +1,4 @@
+from typing import List
 from sonic_protocol.defs import (
     CommandCode, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract
@@ -138,7 +139,7 @@ get_datetime_pico = CommandContract(
     tags=["datetime"]
 )
 
-generic_command_contract_list = [
+generic_command_contract_list: List[CommandContract]  = [
     get_info,
     get_help,
     set_datetime,

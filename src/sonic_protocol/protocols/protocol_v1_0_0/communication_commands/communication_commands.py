@@ -1,3 +1,4 @@
+from typing import List
 from sonic_protocol.defs import (
     CommandCode, ConverterType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, 
     AnswerDef, CommandParamDef, AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, LoggerName, Loglevel
@@ -125,7 +126,7 @@ set_log_level = CommandContract(
     tags=["log"]
 )
 
-communication_command_contract_list = [
+communication_command_contract_list: List[CommandContract]  = [
     set_termination,
     set_comm_protocol,
     set_input_source,

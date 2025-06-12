@@ -22,12 +22,6 @@ class Protocol_v2_0_0(ProtocolList):
 
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[CommandCode, CommandContract | None]:
         command_contract_list: List[CommandContract] = []
-
-        _dict: Dict[CommandCode, CommandContract | None] = { command_contract.code: command_contract for command_contract in command_contract_list } 
-        deleted_codes = []
-        for code in deleted_codes:
-            _dict[code] = None
-        return _dict
-
+        return { command_contract.code: command_contract for command_contract in command_contract_list } 
     def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
         return {}

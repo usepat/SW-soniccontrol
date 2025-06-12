@@ -1,3 +1,4 @@
+from typing import List
 from sonic_protocol.defs import (
 	CommandCode, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandContract
 )
@@ -305,7 +306,7 @@ get_update_worker = CommandContract(
     tags=["update", "status"]
 )
 
-transducer_command_contract_list = [
+transducer_command_contract_list: List[CommandContract]  = [
     get_update_worker,
     set_frequency,
     get_frequency,

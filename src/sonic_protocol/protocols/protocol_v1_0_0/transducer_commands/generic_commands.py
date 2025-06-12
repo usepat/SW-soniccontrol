@@ -1,3 +1,4 @@
+from typing import List
 from sonic_protocol.defs import (
 	CommandCode, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, 
     CommandParamDef, CommandContract
@@ -124,7 +125,7 @@ get_temp = CommandContract(
 )
 
 
-transducer_generic_command_contract_list = [
+transducer_generic_command_contract_list: List[CommandContract]  = [
     get_transducer,
     set_gain,
     get_gain,

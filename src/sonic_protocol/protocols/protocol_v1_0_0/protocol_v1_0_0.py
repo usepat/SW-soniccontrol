@@ -81,6 +81,7 @@ class Protocol_v1_0_0(ProtocolList):
                 command_contract_list.extend(descale_command_contract_list)
                 command_contract_list.extend(duty_cycle_proc_commands)
             case DeviceType.MVP_WORKER: 
+                #command_contract_list.append(transducer_command_contract_list)
                 command_contract_list.extend(transducer_command_contract_list)
                 command_contract_list.extend(all_proc_commands)
             case DeviceType.UNKNOWN:
@@ -96,13 +97,11 @@ class Protocol_v1_0_0(ProtocolList):
                 assert False, "Unreachable"
 
         if protocol_type.device_type in [DeviceType.DESCALE, DeviceType.MVP_WORKER]:
-            command_contract_list.extend([
-                    get_protocol,
-                    transducer_generic_command_contract_list,
-                    communication_command_contract_list, 
-                    generic_command_contract_list, 
-                    flashing_command_contracts 
-            ])
+            command_contract_list.extend([get_protocol])
+            command_contract_list.extend(transducer_generic_command_contract_list)
+            command_contract_list.extend(communication_command_contract_list)
+            command_contract_list.extend(generic_command_contract_list)
+            command_contract_list.extend(flashing_command_contracts)
 
         return { command_contract.code: command_contract for command_contract in command_contract_list }
 

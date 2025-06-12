@@ -1,5 +1,6 @@
 
 
+from typing import List
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import param_frequency, param_gain
@@ -141,7 +142,7 @@ unknown_set_off = CommandContract(
     tags=["transducer"]
 )
 
-unknown_command_contract_list = [
+unknown_command_contract_list: List[CommandContract]  = [
     unknown_get_frequency,
     unknown_set_frequency,
     unknown_get_transducer,

@@ -1,3 +1,4 @@
+from typing import List
 from sonic_protocol.defs import (
 	CommandCode, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandContract
 )
@@ -78,7 +79,7 @@ get_update_descale = CommandContract(
     tags=["update", "status"]
 )
 
-descale_command_contract_list =  [
+descale_command_contract_list: List[CommandContract]  =  [
     get_update_descale,
     set_swf,
     get_swf,
