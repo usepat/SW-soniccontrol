@@ -108,7 +108,7 @@ Send Example Commands
     ${num_iterations} =    Get Length    ${command_examples_list}
     FOR  ${i}    ${command_example}  IN ENUMERATE    @{command_examples_list}
         IF     ${i} >= 0   #So we can skip commands, used for debugging
-            IF    '${command_example}' not in ['!FLASH_USB', '!FLASH_UART_SLOW', '!FLASH_UART_FAST', "!stop", "!stop_procedure", "!continue", "!continue_procedure", "!pause", "!pause_procedure",]# "!ramp", "!wipe", "!tune", "!auto", "!scan", "start_ramp"]
+            IF    '${command_example}' not in ['!FLASH_USB', '!FLASH_UART_SLOW', '!FLASH_UART_FAST', "!restart", "restart_device"]
                 Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
                 Reconnect if disconnected
                 
