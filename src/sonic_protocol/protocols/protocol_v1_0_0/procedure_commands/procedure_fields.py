@@ -122,7 +122,7 @@ field_tune_t_step = AnswerFieldDef(
 field_tune_t_time = AnswerFieldDef(
     field_name=EFieldName.TUNE_T_TIME,
     field_type=field_type_time_span_on,
-    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tust: ")
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Tutm: ")
 )
 
 field_tune_n_steps = AnswerFieldDef(

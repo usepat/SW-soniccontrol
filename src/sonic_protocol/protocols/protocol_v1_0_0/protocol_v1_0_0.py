@@ -85,11 +85,8 @@ class Protocol_v1_0_0(ProtocolList):
                 command_contract_list.extend(transducer_command_contract_list)
                 command_contract_list.extend(all_proc_commands)
             case DeviceType.UNKNOWN:
-                command_contract_list.extend([
-                    get_protocol,
-                    unknown_command_contract_list
-                ])
-
+                command_contract_list.extend([get_protocol])
+                command_contract_list.extend(unknown_command_contract_list)
             case DeviceType.CRYSTAL:
                 command_contract_list.append(get_info)
                 command_contract_list.extend(crystal_commands)

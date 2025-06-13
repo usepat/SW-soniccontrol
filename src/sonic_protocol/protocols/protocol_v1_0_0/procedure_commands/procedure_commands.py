@@ -210,7 +210,11 @@ get_tune = CommandContract(
     answer_def=AnswerDef(
         fields=[
             fields.field_tune_f_step,
-            fields.field_tune_t_time
+            fields.field_tune_t_time,
+            fields.field_tune_f_shift,
+            fields.field_tune_gain,
+            fields.field_tune_n_steps,
+            fields.field_tune_t_step
         ]
     ),
     tags=["Procedure", "TUNE"]
