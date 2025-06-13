@@ -115,6 +115,7 @@ Send Example Commands
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !log[global]=ERROR
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !sonic_force
+                Run Keyword And Continue On Failure    RemoteController.Send Command    !clear_errors
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !input_source=external
 
                 Log To Console    Progress: Completed ${${i} + 1}/${num_iterations} iterations

@@ -5,6 +5,11 @@ from sonic_protocol.defs import (
 )
 from sonic_protocol.field_names import EFieldName
 
+field_success = AnswerFieldDef(
+    field_name=EFieldName.SUCCESS,
+    field_type=FieldType(str)
+)
+
 flash_usb = CommandContract(
     code=CommandCode.SET_FLASH_USB,
     command_def=CommandDef(
@@ -13,12 +18,7 @@ flash_usb = CommandContract(
         )
     ),
     answer_def=AnswerDef(
-        fields=[
-            AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
-                field_type=FieldType(str)
-            )
-        ]
+        fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
         description="Used for flashing the device with a new firmware."
@@ -35,12 +35,7 @@ flash_uart9600 = CommandContract(
         )
     ),
     answer_def=AnswerDef(
-        fields=[
-            AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
-                field_type=FieldType(str)
-            )
-        ]
+        fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
         description="Used for flashing the device with a new firmware."
@@ -57,12 +52,7 @@ flash_uart115200 = CommandContract(
         )
     ),
     answer_def=AnswerDef(
-        fields=[
-            AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
-                field_type=FieldType(str)
-            )
-        ]
+        fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
         description="Used for flashing the device with a new firmware."
@@ -80,12 +70,7 @@ saveSettings = CommandContract(
         )
     ),
     answer_def=AnswerDef(
-        fields=[
-            AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
-                field_type=FieldType(str)
-            )
-        ]
+        fields=[field_success]
     ),
     is_release=True,
     tags=["Settings", "Commissioning"]

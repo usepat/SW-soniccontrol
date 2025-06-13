@@ -496,6 +496,6 @@ if __name__ == "__main__":
     compiler = CppTransCompiler()
     output_dir=Path("./output/generated")
     compiler.generate_sonic_protocol_lib(
-        protocol_info=ProtocolType(Version(1, 0, 0), DeviceType.MVP_WORKER),
+        protocol_info=ProtocolType(Version(2, 0, 0), DeviceType.MVP_WORKER),
         output_dir=output_dir
     )
