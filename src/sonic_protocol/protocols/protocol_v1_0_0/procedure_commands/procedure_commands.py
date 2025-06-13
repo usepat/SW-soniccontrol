@@ -350,6 +350,20 @@ pause_command =  generate_start_procedure_contract(
     ["!pause", "!pause_procedure"],
     ""
 )
+notify_proc_failure = CommandContract(
+    code=CommandCode.NOTIFY_PROCEDURE_FAILURE,
+    command_def=None,
+    answer_def=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.ERROR_MESSAGE,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    is_release=True,
+    tags=["Notification", "Procedure"]
+)
 
 duty_cycle_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
@@ -370,27 +384,15 @@ duty_cycle_proc_commands: List[CommandContract] = [
     ),
     stop_command,
     continue_command,
-    pause_command
+    pause_command,
+    notify_proc_failure
 ]
 
-notify_proc_failure = CommandContract(
-    code=CommandCode.NOTIFY_PROCEDURE_FAILURE,
-    command_def=None,
-    answer_def=AnswerDef(
-        fields=[
-            AnswerFieldDef(
-                field_name=EFieldName.ERROR_MESSAGE,
-                field_type=FieldType(str)
-            )
-        ]
-    ),
-    is_release=True,
-    tags=["Notification", "Procedure"]
-)
 
 
 
-all_proc_commands: List[CommandContract] = [stop_command, continue_command, pause_command]
+
+all_proc_commands: List[CommandContract] = [stop_command, continue_command, pause_command, notify_proc_failure]
 all_proc_commands.extend(ramp_proc_commands)
 all_proc_commands.extend(wipe_proc_commands)
 all_proc_commands.extend(scan_proc_commands)
