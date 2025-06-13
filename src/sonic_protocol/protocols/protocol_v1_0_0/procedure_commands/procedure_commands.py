@@ -130,8 +130,14 @@ get_auto = CommandContract(
             fields.field_scan_f_step,
             fields.field_scan_f_half_range,
             fields.field_scan_t_step,
+            fields.field_scan_f_shift,
+            fields.field_scan_gain,
             fields.field_tune_f_step,
-            fields.field_tune_t_time
+            fields.field_tune_t_time,
+            fields.field_tune_f_shift,
+            fields.field_tune_gain,
+            fields.field_tune_n_steps,
+            fields.field_tune_t_step
         ]
     ),
     tags=["Procedure", "AUTO"]
@@ -159,6 +165,8 @@ get_scan = CommandContract(
             fields.field_scan_f_step,
             fields.field_scan_f_half_range,
             fields.field_scan_t_step,
+            fields.field_scan_f_shift,
+            fields.field_scan_gain,
         ]
     ),
     tags=["Procedure", "SCAN"]
