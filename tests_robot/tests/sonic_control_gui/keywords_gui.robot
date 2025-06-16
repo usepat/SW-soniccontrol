@@ -77,3 +77,27 @@ Set device to default state
     Send command "!freq=100000" over serial monitor
     Send command "!gain=100" over serial monitor
     Gui.Let the app update for "100" ms
+
+
+Set ramp args
+    Gui.Set text of widget "${PROC_CONTROLLING_PROCEDURE_COMBOBOX}" to "Ramp"
+    Gui.Set text of widget "${RAMP_F_START}" to "100000"
+    Gui.Set text of widget "${RAMP_F_STOP}" to "200000"
+    Gui.Set text of widget "${RAMP_F_STEP}" to "10000"
+    Gui.Set text of widget "${RAMP_T_ON_TIME}" to "500"
+    Gui.Set text of widget "${RAMP_T_ON_UNIT}" to "ms"
+    Gui.Set text of widget "${RAMP_T_OFF_TIME}" to "500"
+    Gui.Set text of widget "${RAMP_T_OFF_UNIT}" to "ms"
+
+Set spectrum measure args
+    Gui.Set text of widget "${SPECTRUM_MEASURE_GAIN}" to "50"
+    Gui.Set text of widget "${SPECTRUM_MEASURE_F_START}" to "100000"
+    Gui.Set text of widget "${SPECTRUM_MEASURE_F_STOP}" to "105000"
+    Gui.Set text of widget "${SPECTRUM_MEASURE_F_STEP}" to "1000"
+    Gui.Set text of widget "${SPECTRUM_MEASURE_T_ON_TIME}" to "250"
+    Gui.Set text of widget "${SPECTRUM_MEASURE_T_ON_UNIT}" to "ms"
+    Gui.Set text of widget "${SPECTRUM_MEASURE_T_OFF_TIME}" to "250"
+    Gui.Set text of widget "${SPECTRUM_MEASURE_T_OFF_UNIT}" to "ms"
+    Gui.Set text of widget "${SPECTRUM_MEASURE_T_OFFSET_TIME}" to "500"
+    Gui.Set text of widget "${SPECTRUM_MEASURE_T_OFFSET_UNIT}" to "ms"
+

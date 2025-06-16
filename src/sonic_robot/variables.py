@@ -14,9 +14,10 @@ SCRIPTING_TAB = "left_notebook.Scripting_tab"
 SETTINGS_TAB = "left_notebook.Settings_tab"
 FLASHER_TAB = "left_notebook.Flasher_tab"
 INFO_TAB = "right_notebook.Info_tab"
-SONIC_MEASURE_TAB = "right_notebook.Sonic Measure_tab"
 LOGS_TAB = "right_notebook.Logs_tab"
 CONFIGURATION_TAB = "left_notebook.Configuration_tab"
+MEASURING_TAB = "right_notebook.Sonic Measure_tab"
+SPECTRUM_MEASURE_TAB = "left_notebook.Spectrum Measure_tab"
 
 
 # Connection constants
@@ -113,18 +114,22 @@ RAMP_T_ON_UNIT = 'Ramp.ramp_t_on.unit_str'
 RAMP_T_OFF_TIME = 'Ramp.ramp_t_off.time_str'
 RAMP_T_OFF_UNIT = 'Ramp.ramp_t_off.unit_str'
 
-# Measuring constants
-MEASURING_TARGET_COMBOBOX = 'measuring.target_combobox'
-MEASURING_CAPTURE_BUTTON = 'measuring.capture_button'
+# Spectrum Measure
 
-# Spectrum Measure constants
-SPECTRUM_MEASURE_FREQ_START= 'Spectrum Measure.start.entry'
-SPECTRUM_MEASURE_FREQ_STOP = 'Spectrum Measure.stop.entry'
-SPECTRUM_MEASURE_STEP_ENTRY = 'Spectrum Measure.step.entry'
-SPECTRUM_MEASURE_HOLD_ON_TIME_ENTRY = 'Spectrum Measure.hold_on.time_entry'
-SPECTRUM_MEASURE_HOLD_ON_UNIT_BUTTON = 'Spectrum Measure.hold_on.unit_button'
-SPECTRUM_MEASURE_HOLD_OFF_TIME_ENTRY = 'Spectrum Measure.hold_off.time_entry'
-SPECTRUM_MEASURE_HOLD_OFF_UNIT_BUTTON = 'Spectrum Measure.hold_off.unit_button'
+SPECTRUM_MEASURE_GAIN = "Spectrum Measure.gain.entry_str"
+SPECTRUM_MEASURE_F_START = "Spectrum Measure.f_start.entry_str"
+SPECTRUM_MEASURE_F_STOP = "Spectrum Measure.f_stop.entry_str"
+SPECTRUM_MEASURE_F_STEP = "Spectrum Measure.f_step.entry_str"
+SPECTRUM_MEASURE_T_ON_TIME = "Spectrum Measure.t_on.time_str"
+SPECTRUM_MEASURE_T_ON_UNIT = "Spectrum Measure.t_on.unit_str"
+SPECTRUM_MEASURE_T_OFF_TIME = "Spectrum Measure.t_off.time_str"
+SPECTRUM_MEASURE_T_OFF_UNIT = "Spectrum Measure.t_off.unit_str"
+SPECTRUM_MEASURE_T_OFFSET_TIME = "Spectrum Measure.time_offset_measure.time_str"
+SPECTRUM_MEASURE_T_OFFSET_UNIT = "Spectrum Measure.time_offset_measure.unit_str"
+
+# Measuring
+MEASURING_TARGET_COMBOBOX = 'measuring.target_combobox'
+MEASURING_CONTROL_BUTTON = 'measuring.control_button'
 
 # Message Box constants
 MESSAGE_BOX = "MessageBox"
