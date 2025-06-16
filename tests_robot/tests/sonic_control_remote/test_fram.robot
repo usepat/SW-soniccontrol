@@ -9,6 +9,7 @@ Test Setup    Reconnect if disconnected
 
 *** Test Cases ***
 
+# Wont work if device is in Debug Mode(because of USB)
 Test if device save parameters like freq and gain
     [Documentation]    After restarting parameters should be saved
     [Tags]    expensive_to_run

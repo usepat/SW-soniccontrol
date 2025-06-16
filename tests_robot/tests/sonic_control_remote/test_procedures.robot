@@ -60,7 +60,16 @@ Test if tune notifies or halts
     [Teardown]    RemoteController.Send Command    !stop
     RemoteController.Send Command     !tune
     # TODO check if tune send notification or send procedure halted
-
+    
+# Invalid args error should not mark the procedure component as damaged and therefore should not block setter
+Test if user errors dont mark the prodedure component as damaged
+    [Setup]    Set faulty ramp args
+    [Teardown]    Send stop and clear errors
+    FOR    ${i}    IN RANGE    10
+        RemoteController.Send Command    !ramp
+        Sleep for 3000 ms
+    END
+    Send Command And Check Response    !gain\=50
 
 *** Keywords ***
 
@@ -70,6 +79,7 @@ Setup Procedure Test
 
 Set Ramp Args
     [Arguments]    ${f_start}=100000    ${f_stop}=150000    ${f_step}=10000    ${t_on}=2000    ${t_off}=0
+    RemoteController.Send Command     !sonic_force    
     Send Command And Check Response    !ramp_f_start\=${f_start}
     Send Command And Check Response    !ramp_f_stop\=${f_stop}
     Send Command And Check Response    !ramp_f_step\=${f_step}
@@ -79,9 +89,22 @@ Set Ramp Args
 
 Set Tune Args
     [Arguments]    ${t_time}=5000    ${t_step}=200    ${f_shift}=0    ${n_steps}=4    ${f_step}=1000    ${gain}=100
+    RemoteController.Send Command     !sonic_force    
     Send Command And Check Response    !tune_t_time\=${t_time}
     Send Command And Check Response    !tune_t_step\=${t_step}
     Send Command And Check Response    !tune_f_shift\=${f_shift}
     Send Command And Check Response    !tune_n_steps\=${n_steps}
     Send Command And Check Response    !tune_f_step\=${f_step}
     Send Command And Check Response    !tune_gain\=${gain}
+
+Set faulty ramp args
+    [Arguments]   ${f_start}=1000000    ${f_stop}=1000000     
+    RemoteController.Send Command     !sonic_force    
+    Send Command And Check Response    !ramp_f_start\=${f_start}
+    Send Command And Check Response    !ramp_f_stop\=${f_stop}
+
+Send stop and clear errors
+    RemoteController.Send Command     !stop
+    Send Command And Check Response    !clear_errors
+
+    
