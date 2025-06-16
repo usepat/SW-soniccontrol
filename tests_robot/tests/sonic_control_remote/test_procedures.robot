@@ -46,6 +46,22 @@ Test if ramp does not crash
     Sleep for 10000 ms
     Send command and check if the device crashes    !stop
 
+Test if after ramp signal is off
+    [Setup]    RemoteController.Send Command     !log[procedureLogger]=DEBUG
+    [Teardown]    RemoteController.Send Command     !log[procedureLogger]=ERROR
+    Set Ramp Args
+    RemoteController.Send Command     !ramp
+    Sleep for 15000 ms
+    ${EXPECTED_PROCEDURE}=    Convert to procedure    NO_PROC
+    Send command and check response    -    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
+
+Test if tune notifies or halts
+    [Setup]     Set Tune Args
+    [Teardown]    RemoteController.Send Command    !stop
+    RemoteController.Send Command     !tune
+    # TODO check if tune send notification or send procedure halted
+
+
 *** Keywords ***
 
 Setup Procedure Test
@@ -53,9 +69,19 @@ Setup Procedure Test
     Set Ramp Args
 
 Set Ramp Args
-    [Arguments]    ${f_start}=100000    ${f_stop}=150000    ${f_step}=1000    ${t_on}=1000    ${t_off}=0
+    [Arguments]    ${f_start}=100000    ${f_stop}=150000    ${f_step}=10000    ${t_on}=2000    ${t_off}=0
     Send Command And Check Response    !ramp_f_start\=${f_start}
     Send Command And Check Response    !ramp_f_stop\=${f_stop}
     Send Command And Check Response    !ramp_f_step\=${f_step}
     Send Command And Check Response    !ramp_t_on\=${t_on}
     Send Command And Check Response    !ramp_t_off\=${t_off} 
+
+
+Set Tune Args
+    [Arguments]    ${t_time}=5000    ${t_step}=200    ${f_shift}=0    ${n_steps}=4    ${f_step}=1000    ${gain}=100
+    Send Command And Check Response    !tune_t_time\=${t_time}
+    Send Command And Check Response    !tune_t_step\=${t_step}
+    Send Command And Check Response    !tune_f_shift\=${f_shift}
+    Send Command And Check Response    !tune_n_steps\=${n_steps}
+    Send Command And Check Response    !tune_f_step\=${f_step}
+    Send Command And Check Response    !tune_gain\=${gain}

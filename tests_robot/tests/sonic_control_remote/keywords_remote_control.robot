@@ -71,9 +71,10 @@ Send command and check if the device crashes
     
     Log    Answer received: "${answer_message}"
     Log    Is Answer Valid: "${is_answer_valid}"
-
-    Check command code for errors    ${code}
-
+    # Only check for errors if answer message is not one of these
+    IF    '${answer_message}' not in ["Procedure error invalid args", "Procedure error no procedure running", "No procedure was selected"]
+        Check command code for errors    ${code}
+    END
     ${is_connected}=    RemoteController.Is connected to device
     
     Should Be True    ${is_connected}

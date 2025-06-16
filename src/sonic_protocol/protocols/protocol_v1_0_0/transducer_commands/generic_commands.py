@@ -1,52 +1,21 @@
-
-
-from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import AnswerDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
-from sonic_protocol.command_contracts.transducer_commands import param_frequency, param_gain
-from sonic_protocol.command_contracts.fields import field_frequency, field_transducer, field_signal, field_gain, field_unknown_answer
+from typing import List
+from sonic_protocol.defs import (
+	CommandCode, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, 
+    CommandParamDef, CommandContract
+)
+from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import (
+    field_transducer, param_gain, field_gain, field_signal, field_temperature_kelvin
+)
 from sonic_protocol.field_names import EFieldName
 
-
-unknown_set_frequency = CommandContract(
-    code=CommandCode.SET_FREQ,
-    command_def=CommandDef(
-        index_param=None,
-        setter_param=param_frequency,
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!f", "!freq", "!frequency", "set_frequency"]
-        )
-    ),
-    answer_def=AnswerDef(fields=[field_unknown_answer]),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to set the frequency of the transducer on the device."
-    ),
-    is_release=True,
-    tags=["frequency", "transducer"]
-)
-
-unknown_get_frequency = CommandContract(
-    code=CommandCode.GET_FREQ,
-    command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["?f", "?freq", "?frequency", "get_frequency"]
-        )
-    ),
-    answer_def=AnswerDef(fields=[field_unknown_answer]),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to get the frequency of the transducer on the device."
-    ),
-    is_release=True,
-    tags=["frequency", "transducer"]
-)
-
-unknown_get_transducer = CommandContract(
+get_transducer = CommandContract(
     code=CommandCode.GET_TRANSDUCER_ID,
     command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?transducer", "?tdr", "?transducer_id", "?tdr_id"] 
         )
     ),
-    answer_def=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_transducer]),
     user_manual_attrs=UserManualAttrs(
         description="Command to get ID of the transducer connected to the device"
     ),
@@ -54,7 +23,7 @@ unknown_get_transducer = CommandContract(
     tags=["transducer"]
 )
 
-unknown_set_transducer = CommandContract(
+set_transducer = CommandContract(
     code=CommandCode.SET_TRANSDUCER_ID,
     command_def=CommandDef(
         index_param=None,
@@ -66,7 +35,7 @@ unknown_set_transducer = CommandContract(
             string_identifier=["!transducer", "!tdr", "!transducer_id", "!tdr_id"]
         )
     ),
-    answer_def=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_transducer]),
     user_manual_attrs=UserManualAttrs(
         description="Command to set ID of the transducer connected to the device"
     ),
@@ -75,7 +44,8 @@ unknown_set_transducer = CommandContract(
 )
 
 
-unknown_set_gain = CommandContract(
+
+set_gain = CommandContract(
     code=CommandCode.SET_GAIN,
     command_def=CommandDef(
         index_param=None,
@@ -84,7 +54,7 @@ unknown_set_gain = CommandContract(
             string_identifier=["!g", "!gain", "set_gain"]
         )
     ),
-    answer_def=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_gain]),
     user_manual_attrs=UserManualAttrs(
         description="Command to set the gain of the transducer on the device."
     ),
@@ -92,14 +62,14 @@ unknown_set_gain = CommandContract(
     tags=["gain", "transducer"],
 )
 
-unknown_get_gain = CommandContract(
+get_gain = CommandContract(
     code=CommandCode.GET_GAIN,
     command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?g", "?gain", "get_gain"]
         )
     ),
-    answer_def=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_gain]),
     user_manual_attrs=UserManualAttrs(
         description="Command to get the gain of the transducer on the device."
     ),
@@ -107,14 +77,14 @@ unknown_get_gain = CommandContract(
     tags=["gain", "transducer"]
 )
 
-unknown_set_on = CommandContract(
+set_on = CommandContract(
     code=CommandCode.SET_ON,
     command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!ON", "set_on"]
         )
     ),
-    answer_def=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_signal]),
     user_manual_attrs=UserManualAttrs(
         description="Command to turn the transducer on."
     ),
@@ -122,17 +92,46 @@ unknown_set_on = CommandContract(
     tags=["transducer"]
 )
 
-unknown_set_off = CommandContract(
+set_off = CommandContract(
     code=CommandCode.SET_OFF,
     command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!OFF", "set_off"]
         )
     ),
-    answer_def=AnswerDef(fields=[field_unknown_answer]),
+    answer_def=AnswerDef(fields=[field_signal]),
     user_manual_attrs=UserManualAttrs(
         description="Command to turn the transducer off."
     ),
     is_release=True,
     tags=["transducer"]
 )
+
+get_temp = CommandContract(
+    code=CommandCode.GET_TEMP,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?temp", "?temperature", "get_temperature"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[field_temperature_kelvin]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get the temperature of the device in celsiuus."
+    ),
+    is_release=True,
+    tags=["temperature", "transducer"]
+)
+
+
+transducer_generic_command_contract_list: List[CommandContract]  = [
+    get_transducer,
+    set_gain,
+    get_gain,
+    set_on,
+    set_off,
+    get_transducer,
+    set_transducer,
+    get_temp
+]

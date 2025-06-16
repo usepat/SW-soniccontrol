@@ -68,15 +68,15 @@ Check basic setter commands are working
     !gain\=100
     !frequency\=${MIN_FREQUENCY}
 
-    !att4\=${0}
-    !atk1\=${100}
+    !att4\=0
+    !atk1\=100
     !atf2\=${MIN_FREQUENCY}
 
     !wipe_f_step\=${MIN_FREQUENCY}
-    !wipe_t_on\=${100}
-    !scan_f_step\=${1000}
+    !wipe_t_on\=100
+    !scan_f_step\=1000
     !ramp_f_start\=${MIN_FREQUENCY}
-    !tune_f_step\=${1000}
+    !tune_f_step\=1000
 
 
 Test if gain set by setter can be retrieved with getter
@@ -108,13 +108,14 @@ Send Example Commands
     ${num_iterations} =    Get Length    ${command_examples_list}
     FOR  ${i}    ${command_example}  IN ENUMERATE    @{command_examples_list}
         IF     ${i} >= 0   #So we can skip commands, used for debugging
-            IF    '${command_example}' not in ['!FLASH_USB', '!FLASH_UART_SLOW', '!FLASH_UART_FAST', "!stop", "!stop_procedure", "!continue", "!continue_procedure", "!pause", "!pause_procedure"]
+            IF    '${command_example}' not in ['!FLASH_USB', '!FLASH_UART_SLOW', '!FLASH_UART_FAST', "!restart", "restart_device"]
                 Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
                 Reconnect if disconnected
                 
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !log[global]=ERROR
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !sonic_force
+                Run Keyword And Continue On Failure    RemoteController.Send Command    !clear_errors
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !input_source=external
 
                 Log To Console    Progress: Completed ${${i} + 1}/${num_iterations} iterations

@@ -18,6 +18,7 @@ class ProcedureType(Enum):
     WIPE = "Wipe"
     WIPE_LEGACY = "Wipe_Legacy"
     AUTO_LEGACY = "Auto_Legacy"
+    DUTY_CYCLE = "DutyCycle"
 
 @attrs.define(init=False)
 class ProcedureArgs:

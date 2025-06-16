@@ -82,14 +82,15 @@ class RobotRemoteController:
 
 def main():
     robotController = RobotRemoteController()
-    #robotController.connect_via_serial("COM22")
+    robotController.connect_via_serial("/dev/ttyUSB0")
     firmware_dir = environ.get('FIRMWARE_BUILD_DIR_PATH')
     if not firmware_dir:
         raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
-    path = firmware_dir + '/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp'
-    robotController.connect_via_process(path)
+    # path = firmware_dir + '/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp'
+    # robotController.connect_via_process(path)
     print(f"Connected: {robotController.is_connected()}")
     print(robotController.send_command("!stop"))
+    robotController.deduce_command_examples()
     robotController.disconnect()
 
 if __name__ == "__main__":

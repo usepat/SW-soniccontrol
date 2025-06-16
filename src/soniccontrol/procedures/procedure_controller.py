@@ -134,6 +134,8 @@ class ProcedureController(EventManager):
                 proc_type = ProcedureType.SCAN
             case protocol_defs.Procedure.RAMP:
                 proc_type = ProcedureType.RAMP
+            case protocol_defs.Procedure.DUTY_CYCLE:
+                proc_type = ProcedureType.DUTY_CYCLE
             case _:
-                assert False, "Case not covered"
+                assert False, f"Case not covered: {procedure}"
         self._remote_procedure_state.update(proc_type)

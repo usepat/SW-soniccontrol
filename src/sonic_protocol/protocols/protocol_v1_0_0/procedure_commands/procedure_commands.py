@@ -4,7 +4,7 @@ from typing import List
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
 from sonic_protocol.field_names import EFieldName
-import sonic_protocol.command_contracts.fields as fields
+import sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_fields as fields
 
 
 def generate_start_procedure_contract(command_code: CommandCode, string_identifiers: List[str], description: str | None = None, release: bool = True) -> CommandContract:
@@ -130,8 +130,14 @@ get_auto = CommandContract(
             fields.field_scan_f_step,
             fields.field_scan_f_half_range,
             fields.field_scan_t_step,
+            fields.field_scan_f_shift,
+            fields.field_scan_gain,
             fields.field_tune_f_step,
-            fields.field_tune_t_time
+            fields.field_tune_t_time,
+            fields.field_tune_f_shift,
+            fields.field_tune_gain,
+            fields.field_tune_n_steps,
+            fields.field_tune_t_step
         ]
     ),
     tags=["Procedure", "AUTO"]
@@ -159,6 +165,8 @@ get_scan = CommandContract(
             fields.field_scan_f_step,
             fields.field_scan_f_half_range,
             fields.field_scan_t_step,
+            fields.field_scan_f_shift,
+            fields.field_scan_gain,
         ]
     ),
     tags=["Procedure", "SCAN"]
@@ -210,7 +218,11 @@ get_tune = CommandContract(
     answer_def=AnswerDef(
         fields=[
             fields.field_tune_f_step,
-            fields.field_tune_t_time
+            fields.field_tune_t_time,
+            fields.field_tune_f_shift,
+            fields.field_tune_gain,
+            fields.field_tune_n_steps,
+            fields.field_tune_t_step
         ]
     ),
     tags=["Procedure", "TUNE"]
@@ -346,6 +358,20 @@ pause_command =  generate_start_procedure_contract(
     ["!pause", "!pause_procedure"],
     ""
 )
+notify_proc_failure = CommandContract(
+    code=CommandCode.NOTIFY_PROCEDURE_FAILURE,
+    command_def=None,
+    answer_def=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.ERROR_MESSAGE,
+                field_type=FieldType(str)
+            )
+        ]
+    ),
+    is_release=True,
+    tags=["Notification", "Procedure"]
+)
 
 duty_cycle_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
@@ -366,14 +392,15 @@ duty_cycle_proc_commands: List[CommandContract] = [
     ),
     stop_command,
     continue_command,
-    pause_command
+    pause_command,
+    notify_proc_failure
 ]
 
 
 
 
 
-all_proc_commands: List[CommandContract] = [stop_command, continue_command, pause_command]
+all_proc_commands: List[CommandContract] = [stop_command, continue_command, pause_command, notify_proc_failure]
 all_proc_commands.extend(ramp_proc_commands)
 all_proc_commands.extend(wipe_proc_commands)
 all_proc_commands.extend(scan_proc_commands)
