@@ -12,14 +12,7 @@ Test Teardown    Set procedure tab to default state
 
 Run ramp procedure
     Gui.Switch to tab "${PROCEDURES_TAB}"
-    Gui.Set text of widget "${PROC_CONTROLLING_PROCEDURE_COMBOBOX}" to "Ramp"
-    Gui.Set text of widget "${RAMP_F_START}" to "100000"
-    Gui.Set text of widget "${RAMP_F_STOP}" to "200000"
-    Gui.Set text of widget "${RAMP_F_STEP}" to "10000"
-    Gui.Set text of widget "${RAMP_T_ON_TIME}" to "500"
-    Gui.Set text of widget "${RAMP_T_ON_UNIT}" to "ms"
-    Gui.Set text of widget "${RAMP_T_OFF_TIME}" to "500"
-    Gui.Set text of widget "${RAMP_T_OFF_UNIT}" to "ms"
+    Set ramp args
     Gui.Press button "${PROC_CONTROLLING_START_BUTTON}"
 
     Gui.Wait up to "200" ms for the widget "${MESSAGE_BOX}" to be registered
@@ -37,6 +30,22 @@ Run ramp procedure
     END
 
     ${proc_running_label}=    Gui.Wait up to "700" ms for the widget "${PROC_CONTROLLING_RUNNING_PROC_LABEL}" to change text
+    Should Be Equal As Strings    ${proc_running_label}    ${LABEL_PROC_NOT_RUNNING}
+
+
+Stop ramp procedure
+    Gui.Switch to tab "${PROCEDURES_TAB}"
+    Set ramp args
+    Gui.Press button "${PROC_CONTROLLING_START_BUTTON}"
+
+    Gui.Wait up to "200" ms for the widget "${MESSAGE_BOX}" to be registered
+    Gui.Press button "${MESSAGE_BOX_OPTION_PROCEED}"
+    
+    Gui.Wait up to "10000" ms for the widget "${STATUS_BAR_PROCEDURE_LABEL}" to change text
+
+    Gui.Press button "${PROC_CONTROLLING_STOP_BUTTON}"
+
+    ${proc_running_label}=    Gui.Wait up to "2000" ms for the widget "${PROC_CONTROLLING_RUNNING_PROC_LABEL}" to change text
     Should Be Equal As Strings    ${proc_running_label}    ${LABEL_PROC_NOT_RUNNING}
 
 
