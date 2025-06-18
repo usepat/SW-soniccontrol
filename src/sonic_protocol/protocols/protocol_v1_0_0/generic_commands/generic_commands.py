@@ -4,7 +4,7 @@ from sonic_protocol.defs import (
     AnswerFieldDef, CommandContract
 )
 from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_fields import (
-    field_device_type, build_date_field, build_hash_field, field_timestamp, param_type_timestamp
+    field_device_type, build_date_field, build_hash_field, field_timestamp, param_type_timestamp, field_message
 )
 from sonic_protocol.contract_helper.contract_generators import create_version_field
 from sonic_protocol.field_names import EFieldName
@@ -36,12 +36,7 @@ get_help = CommandContract(
         )
     ),
     answer_def=AnswerDef(
-        fields=[
-            AnswerFieldDef(
-                field_name=EFieldName.MESSAGE,
-                field_type=FieldType(str)
-            )
-        ]
+        fields=[field_message]
     ),
     user_manual_attrs=UserManualAttrs(
         description="Command to get help information."
@@ -73,12 +68,7 @@ notify = CommandContract(
     code=CommandCode.NOTIFY_MESSAGE,
     command_def=None,
     answer_def=AnswerDef(
-        fields=[
-            AnswerFieldDef(
-                field_name=EFieldName.MESSAGE,
-                field_type=FieldType(str)
-            )
-        ]
+        fields=[field_message]
     ),
     is_release=True,
     tags=["Notification"]

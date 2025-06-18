@@ -61,6 +61,7 @@ class CommandCode(IntEnum):
     GET_TUNE = 330
     GET_WIPE = 340
     GET_AUTO = 350
+    GET_ADC = 360
 
 
     # Setters with corresponding getters

@@ -4,6 +4,7 @@ from sonic_protocol.defs import (
     AnswerFieldDef, CommandContract
 )
 from sonic_protocol.protocols.protocol_v1_0_0.flashing_commands.flashing_commands import field_success
+from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_fields import field_message
 
 clear_errors = CommandContract(
     code=CommandCode.CLEAR_ERRORS,
@@ -37,4 +38,21 @@ restart_device = CommandContract(
     ),
     is_release=True,
     tags=["restart"]
+)
+
+get_adc = CommandContract(
+    code=CommandCode.GET_ADC,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?adc", "get_adc"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[field_message]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to retrieve 40 adc samples"
+    ),
+    is_release=False,
+    tags=["debug"]
 )

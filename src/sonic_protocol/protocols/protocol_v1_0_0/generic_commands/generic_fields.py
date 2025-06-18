@@ -37,3 +37,8 @@ field_timestamp = AnswerFieldDef(
     field_name=EFieldName.TIMESTAMP,
     field_type=param_type_timestamp
 )
+
+field_message = AnswerFieldDef(
+    field_name=EFieldName.MESSAGE,
+    field_type=FieldType(str)
+)
