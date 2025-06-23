@@ -1,9 +1,10 @@
 from typing import List
 from sonic_protocol.defs import (
-    CommandCode, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract
 )
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.command_codes import CommandCode
 
 field_success = AnswerFieldDef(
     field_name=EFieldName.SUCCESS,

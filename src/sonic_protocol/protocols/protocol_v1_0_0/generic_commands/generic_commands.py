@@ -1,8 +1,9 @@
 from typing import List
 from sonic_protocol.defs import (
-    CommandCode, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract
 )
+from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_fields import (
     field_device_type, build_date_field, build_hash_field, field_timestamp, param_type_timestamp, field_message
 )

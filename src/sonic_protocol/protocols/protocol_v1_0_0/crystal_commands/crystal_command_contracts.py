@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 from sonic_protocol.defs import (
-    CommandCode, CommandParamDef, DeviceParamConstantType, FieldType,
+    CommandParamDef, DeviceParamConstantType, FieldType,
     SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, SonicTextAnswerAttrs
 )
@@ -9,7 +9,7 @@ from sonic_protocol.defs import (
 
 # )
 
-
+from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import EFieldName
 
 

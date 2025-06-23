@@ -2,7 +2,7 @@ import abc
 import argparse
 from enum import Enum
 from pathlib import Path
-from sonic_protocol.defs import AnswerFieldDef, CommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
+from sonic_protocol.defs import AnswerFieldDef, ICommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
 from sonic_protocol.protocol import protocol_list
 
 
@@ -32,7 +32,7 @@ class MarkdownManualCompiler(ManualCompiler):
         title = f"# Sonic Protocol for {device_type.value} - {protocol_version}.{ 'Release' if is_release else 'Beta'}\n"
         return title
 
-    def create_command_entry(self, command_contract: CommandContract, command_code: CommandCode) -> str:
+    def create_command_entry(self, command_contract: CommandContract, command_code: ICommandCode) -> str:
 
         description = command_contract.user_manual_attrs.description
         example = command_contract.user_manual_attrs.example

@@ -1,13 +1,13 @@
 from typing import List
 from sonic_protocol.defs import (
-    CommandCode, ConverterType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, 
+    ConverterType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, 
     AnswerDef, CommandParamDef, AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, LoggerName, Loglevel
 )
 from sonic_protocol.protocols.protocol_v1_0_0.communication_commands.communication_fields import (
     field_termination, field_type_comm_protocol, field_comm_protocol, field_type_input_source, field_input_source
 )
 from sonic_protocol.field_names import EFieldName
-
+from sonic_protocol.command_codes import CommandCode
 
 
 

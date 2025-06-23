@@ -1,11 +1,13 @@
+from enum import Enum
 from typing import Any, Dict
 import numpy as np
 from sonic_protocol.contract_helper.contract_generators import create_version_field
 from sonic_protocol.defs import (
-    CommandCode, ConverterType, DeviceParamConstantType, FieldType, 
+    ConverterType, DeviceParamConstantType, FieldType, 
     ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType,
 )
+from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_commands import field_device_type
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_commands import all_proc_commands, duty_cycle_proc_commands
@@ -69,6 +71,14 @@ class Protocol_v1_0_0(ProtocolList):
     @property
     def previous_protocol(self) -> ProtocolList | None:
         return None
+    
+    @property
+    def FieldName(self) -> type[Enum]:
+        return EFieldName
+
+    @property
+    def CommandCode(self) -> type[ICommandCode]:
+        return CommandCode
 
     def supports_device_type(self, device_type: DeviceType) -> bool:
         return device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.CRYSTAL, DeviceType.UNKNOWN]

@@ -1,6 +1,6 @@
 from typing import List
 from sonic_protocol.defs import (
-	CommandCode, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandContract
+	SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandContract
 )
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import (
     param_swf, field_swf, field_gain, field_temperature_kelvin, field_irms, field_signal
@@ -16,7 +16,7 @@ from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_fields im
     error_code_field
 )
 
-
+from sonic_protocol.command_codes import CommandCode
 
 set_swf = CommandContract(
     code=CommandCode.SET_SWF,

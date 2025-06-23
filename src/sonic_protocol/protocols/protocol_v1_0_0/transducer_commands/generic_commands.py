@@ -1,12 +1,13 @@
 from typing import List
 from sonic_protocol.defs import (
-	CommandCode, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, 
+	FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, 
     CommandParamDef, CommandContract
 )
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import (
     field_transducer, param_gain, field_gain, field_signal, field_temperature_kelvin
 )
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.command_codes import CommandCode
 
 get_transducer = CommandContract(
     code=CommandCode.GET_TRANSDUCER_ID,

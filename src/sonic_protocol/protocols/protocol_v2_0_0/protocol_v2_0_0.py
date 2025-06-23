@@ -1,6 +1,8 @@
+from enum import Enum
 from typing import Any, Dict, List
-from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceType, ProtocolType, Version
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocols.protocol_v1_0_0.protocol_v1_0_0 import Protocol_v1_0_0
 from sonic_protocol.protocols.protocol_v2_0_0.commands import (
@@ -19,11 +21,19 @@ class Protocol_v2_0_0(ProtocolList):
     @property
     def previous_protocol(self) -> ProtocolList | None:
         return self._previous_protocol
+    
+    @property
+    def FieldName(self) -> type[Enum]:
+        return EFieldName
+
+    @property
+    def CommandCode(self) -> type[ICommandCode]:
+        return CommandCode
 
     def supports_device_type(self, device_type: DeviceType) -> bool:
         return self._previous_protocol.supports_device_type(device_type)
 
-    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[CommandCode, CommandContract | None]:
+    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
         command_contract_list: List[CommandContract] = [clear_errors, restart_device]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_adc])
