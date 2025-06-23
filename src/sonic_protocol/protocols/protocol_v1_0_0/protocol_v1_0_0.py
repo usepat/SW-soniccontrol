@@ -3,7 +3,7 @@ from typing import Any, Dict
 import numpy as np
 from sonic_protocol.contract_helper.contract_generators import create_version_field
 from sonic_protocol.defs import (
-    ConverterType, DeviceParamConstantType, FieldType, 
+    ConverterType, DeviceParamConstantType, FieldType, IEFieldName, 
     ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType,
 )
@@ -73,7 +73,7 @@ class Protocol_v1_0_0(ProtocolList):
         return None
     
     @property
-    def FieldName(self) -> type[Enum]:
+    def FieldName(self) -> type[IEFieldName]:
         return EFieldName
 
     @property
@@ -83,7 +83,7 @@ class Protocol_v1_0_0(ProtocolList):
     def supports_device_type(self, device_type: DeviceType) -> bool:
         return device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.CRYSTAL, DeviceType.UNKNOWN]
 
-    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[CommandCode, CommandContract | None]:
+    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
         command_contract_list =  [] 
 
         match protocol_type.device_type:

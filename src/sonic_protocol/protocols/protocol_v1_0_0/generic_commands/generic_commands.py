@@ -1,11 +1,22 @@
 from typing import List
 from sonic_protocol.defs import (
-    CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
-    AnswerFieldDef, CommandContract
+    CommandParamDef,
+    FieldType,
+    SonicTextCommandAttrs,
+    UserManualAttrs,
+    CommandDef,
+    AnswerDef,
+    AnswerFieldDef,
+    CommandContract,
 )
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_fields import (
-    field_device_type, build_date_field, build_hash_field, field_timestamp, param_type_timestamp, field_message
+    field_device_type,
+    build_date_field,
+    build_hash_field,
+    field_timestamp,
+    param_type_timestamp,
+    field_message,
 )
 from sonic_protocol.contract_helper.contract_generators import create_version_field
 from sonic_protocol.field_names import EFieldName
@@ -13,9 +24,7 @@ from sonic_protocol.field_names import EFieldName
 get_info = CommandContract(
     code=CommandCode.GET_INFO,
     command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier="?info"
-        )
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?info")
     ),
     answer_def=AnswerDef(
         fields=[
@@ -26,24 +35,18 @@ get_info = CommandContract(
             build_date_field,
         ]
     ),
-    is_release=True
+    is_release=True,
 )
 
 get_help = CommandContract(
     code=CommandCode.GET_HELP,
     command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier="?help"
-        )
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?help")
     ),
-    answer_def=AnswerDef(
-        fields=[field_message]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to get help information."
-    ),
+    answer_def=AnswerDef(fields=[field_message]),
+    user_manual_attrs=UserManualAttrs(description="Command to get help information."),
     is_release=True,
-    tags=["help"]
+    tags=["help"],
 )
 
 sonic_force = CommandContract(  # Used overruling the service mode
@@ -55,45 +58,35 @@ sonic_force = CommandContract(  # Used overruling the service mode
     ),
     answer_def=AnswerDef(
         fields=[
-            AnswerFieldDef(
-                field_name=EFieldName.SUCCESS,
-                field_type=FieldType(str)
-            )
+            AnswerFieldDef(field_name=EFieldName.SUCCESS, field_type=FieldType(str))
         ]
     ),
     is_release=False,
-    tags=["debugging"]
+    tags=["debugging"],
 )
 
 notify = CommandContract(
     code=CommandCode.NOTIFY_MESSAGE,
     command_def=None,
-    answer_def=AnswerDef(
-        fields=[field_message]
-    ),
+    answer_def=AnswerDef(fields=[field_message]),
     is_release=True,
-    tags=["Notification"]
+    tags=["Notification"],
 )
 
 set_datetime = CommandContract(
     code=CommandCode.SET_DATETIME,
     command_def=CommandDef(
         setter_param=CommandParamDef(
-            name=EFieldName.TIMESTAMP,
-            param_type=param_type_timestamp
+            name=EFieldName.TIMESTAMP, param_type=param_type_timestamp
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!datetime", "set_datetime"]
-        )
+        ),
     ),
-    answer_def=AnswerDef(
-        fields=[field_timestamp]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to set the datetime"
-    ),
+    answer_def=AnswerDef(fields=[field_timestamp]),
+    user_manual_attrs=UserManualAttrs(description="Command to set the datetime"),
     is_release=True,
-    tags=["datetime"]
+    tags=["datetime"],
 )
 
 get_datetime = CommandContract(
@@ -103,14 +96,10 @@ get_datetime = CommandContract(
             string_identifier=["?datetime", "get_datetime"]
         )
     ),
-    answer_def=AnswerDef(
-        fields=[field_timestamp]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to get the datetime"
-    ),
+    answer_def=AnswerDef(fields=[field_timestamp]),
+    user_manual_attrs=UserManualAttrs(description="Command to get the datetime"),
     is_release=True,
-    tags=["datetime"]
+    tags=["datetime"],
 )
 
 get_datetime_pico = CommandContract(
@@ -120,22 +109,20 @@ get_datetime_pico = CommandContract(
             string_identifier=["?datetime_pico", "get_datetime_pico"]
         )
     ),
-    answer_def=AnswerDef(
-        fields=[field_timestamp]
-    ),
+    answer_def=AnswerDef(fields=[field_timestamp]),
     user_manual_attrs=UserManualAttrs(
         description="Command to get the datetime from the rp2040"
     ),
     is_release=True,
-    tags=["datetime"]
+    tags=["datetime"],
 )
 
-generic_command_contract_list: List[CommandContract]  = [
+generic_command_contract_list: List[CommandContract] = [
     get_info,
     get_help,
     set_datetime,
     get_datetime,
     get_datetime_pico,
     notify,
-    sonic_force
+    sonic_force,
 ]

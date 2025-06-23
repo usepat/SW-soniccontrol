@@ -1,10 +1,8 @@
-from enum import Enum, auto
+from enum import Enum, IntEnum, auto
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Generic, Union
 import attrs
 import numpy as np
 
-from sonic_protocol.command_codes import ICommandCode
-from sonic_protocol.field_names import EFieldName
 import re
 
 VersionTuple = Tuple[int, int, int]
@@ -37,6 +35,14 @@ class Version:
             return Version(*x)
         else:
             raise TypeError("The type cannot be converted into a version")
+        
+        
+class IEFieldName(Enum):
+    ...
+
+class ICommandCode(IntEnum):
+    ...
+        
 
 
 class DeviceType(Enum):
@@ -253,7 +259,7 @@ def to_field_type(value: Any) -> FieldType:
 
 @attrs.define(auto_attribs=True)
 class CommandParamDef():
-    name: EFieldName = attrs.field(converter=EFieldName)
+    name: IEFieldName = attrs.field()
     param_type: FieldType = attrs.field(converter=to_field_type)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
     def __hash__(self):
@@ -294,7 +300,7 @@ class AnswerFieldDef():
     """!
     The AnswerFieldDef defines a field in the answer of a command.
     """
-    field_name: EFieldName = attrs.field() #! The field path is used to define the attribute name. It is a path to support nested attributes
+    field_name: IEFieldName = attrs.field() #! The field path is used to define the attribute name. It is a path to support nested attributes
     field_type: FieldType = attrs.field(converter=to_field_type)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
     sonic_text_attrs: SonicTextAnswerFieldAttrs = attrs.field(default=SonicTextAnswerFieldAttrs())

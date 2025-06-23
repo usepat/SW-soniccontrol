@@ -1,7 +1,8 @@
-from enum import Enum
+
+from sonic_protocol.defs import IEFieldName
 
 
-class EFieldName(Enum):
+class EFieldName(IEFieldName):
     UNDEFINED = "undefined"
     UNKNOWN_ANSWER = "unknown_answer"
     COMMAND_CODE = "command_code"

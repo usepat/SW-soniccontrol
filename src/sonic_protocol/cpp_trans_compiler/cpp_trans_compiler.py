@@ -4,7 +4,7 @@ from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import attrs
 import numpy as np
-from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, LoggerName, Loglevel, ProtocolType, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, IEFieldName, LoggerName, Loglevel, ProtocolType, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 import importlib.resources as rs
 import shutil
 import sonic_protocol.cpp_trans_compiler
@@ -71,7 +71,7 @@ def convert_to_enum_data_type(data_type: type[Any]) -> str:
 
     return f"DataType::{enum_member}"
 
-def convert_to_cpp_field_name(enum_member: Enum) -> str:
+def convert_to_cpp_field_name(enum_member: IEFieldName) -> str:
     return f"FieldName::{enum_member.name}"
 
 def convert_to_cpp_enum_members(enum: type[Enum]) -> str: 

@@ -1,7 +1,6 @@
-from enum import IntEnum
 
-class ICommandCode(IntEnum):
-    ...
+from sonic_protocol.defs import ICommandCode
+
 
 class CommandCode(ICommandCode):
     """!
