@@ -1,7 +1,8 @@
 
+from enum import unique
 from sonic_protocol.defs import ICommandCode
 
-
+@unique
 class CommandCode(ICommandCode):
     """!
     Command codes are the bridge between the commands implemented in python and c++ and the 
@@ -80,12 +81,12 @@ class CommandCode(ICommandCode):
     SET_ATF2 = 1102
     SET_ATF3 = 1103
     SET_ATF4 = 1104
-    SET_ATK2 = 1102
-    SET_ATK3 = 1103
-    SET_ATK4 = 1104
-    SET_ATT2 = 1102
-    SET_ATT3 = 1103
-    SET_ATT4 = 1104
+    SET_ATK2 = 1112
+    SET_ATK3 = 1113
+    SET_ATK4 = 1114
+    SET_ATT2 = 1122
+    SET_ATT3 = 1123
+    SET_ATT4 = 1124
 
     SET_DATETIME = 1130
     SET_WAVEFORM = 1140

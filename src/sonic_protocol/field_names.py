@@ -1,7 +1,8 @@
 
+from enum import unique
 from sonic_protocol.defs import IEFieldName
 
-
+@unique
 class EFieldName(IEFieldName):
     UNDEFINED = "undefined"
     UNKNOWN_ANSWER = "unknown_answer"
