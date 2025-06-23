@@ -312,7 +312,7 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_
         }},
         .device = DeviceType::{protocol_version.device_type.name},
         .isRelease = {str(protocol_version.is_release).lower()},
-        .options = {", ".join(options) if options else ""},
+        .options = "{", ".join(options) if options else ""}",
         .commands = {command_defs_cpp_var_name},
         .answers = {answer_defs_cpp_var_name}
     }}"""
