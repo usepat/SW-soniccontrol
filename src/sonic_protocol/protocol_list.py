@@ -1,5 +1,7 @@
+from enum import Enum
 from typing import Any, Dict
-from sonic_protocol.defs import DeviceParamConstantType, DeviceType, ProtocolType, Protocol, Version, CommandContract, CommandCode
+from sonic_protocol.command_codes import ICommandCode
+from sonic_protocol.defs import DeviceParamConstantType, DeviceType, ProtocolType, Protocol, Version, CommandContract
 import abc
 import attrs
 
@@ -21,8 +23,18 @@ class ProtocolList:
     def previous_protocol(self) -> "ProtocolList | None":
         ...
 
+    @property
     @abc.abstractmethod
-    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[CommandCode, CommandContract | None]:
+    def FieldName(self) -> type[Enum]:
+        ...
+
+    @property
+    @abc.abstractmethod
+    def CommandCode(self) -> type[ICommandCode]:
+        ...
+
+    @abc.abstractmethod
+    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
         """
             returns a dict, where command contracts are mapped to a command code. 
             Those will overwrite then the command contracts of the previous protocol.

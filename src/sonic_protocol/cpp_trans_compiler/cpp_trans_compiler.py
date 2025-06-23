@@ -4,13 +4,14 @@ from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import attrs
 import numpy as np
-from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, LoggerName, Loglevel, ProtocolType, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, Protocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
-from sonic_protocol.field_names import EFieldName
-from sonic_protocol.protocol import protocol_list
+from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, LoggerName, Loglevel, ProtocolType, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 import importlib.resources as rs
 import shutil
 import sonic_protocol.cpp_trans_compiler
+
+from sonic_protocol.command_codes import ICommandCode
+from sonic_protocol.protocol_list import ProtocolList
+from sonic_protocol.protocol import protocol_list as prot_list
 
 CPP_NULLOPT = "std::nullopt"
 
@@ -70,7 +71,7 @@ def convert_to_enum_data_type(data_type: type[Any]) -> str:
 
     return f"DataType::{enum_member}"
 
-def convert_to_cpp_field_name(enum_member: EFieldName) -> str:
+def convert_to_cpp_field_name(enum_member: Enum) -> str:
     return f"FieldName::{enum_member.name}"
 
 def convert_to_cpp_enum_members(enum: type[Enum]) -> str: 
@@ -150,7 +151,7 @@ class CppTransCompiler:
         self._field_definitions: dict[AnswerFieldDef, str] = {}
         self._allowed_values: dict[Tuple[Any], str] = {}
 
-    def generate_sonic_protocol_lib(self, protocol_info: ProtocolType, output_dir: Path):
+    def generate_sonic_protocol_lib(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path):
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
@@ -158,18 +159,18 @@ class CppTransCompiler:
     
         lib_dir = output_dir / "include" / "sonic_protocol_lib"
 
-        field_name_members = convert_to_cpp_enum_members(EFieldName)
+        field_name_members = convert_to_cpp_enum_members(protocol_list.FieldName)
         self._inject_code_into_file(
             lib_dir / "field_names.hpp",
             FIELD_NAME_MEMBERS=field_name_members,
-            FIELD_NAME_TO_STR_CONVERSIONS=create_enum_to_string_conversions(EFieldName)
+            FIELD_NAME_TO_STR_CONVERSIONS=create_enum_to_string_conversions(protocol_list.FieldName)
         )
 
-        command_code_members = convert_to_cpp_enum_members(CommandCode)
+        command_code_members = convert_to_cpp_enum_members(protocol_list.CommandCode)
         self._inject_code_into_file(
             lib_dir / "command_code.hpp",
             COMMAND_CODE_MEMBERS=command_code_members,
-            COMMAND_CODE_SWITCH_CASE=create_enum_cases(CommandCode)
+            COMMAND_CODE_SWITCH_CASE=create_enum_cases(protocol_list.CommandCode)
         )
 
         si_unit_members = convert_to_cpp_enum_members(SIUnit)
@@ -274,7 +275,7 @@ class CppTransCompiler:
         return "\n".join(const_defs)
 
     def _transpile_command_contracts(
-            self, protocol_version: ProtocolType, command_list: Dict[CommandCode, CommandContract], protocol_name: str) -> Tuple[str, str, str]:
+            self, protocol_version: ProtocolType, command_list: Dict[ICommandCode, CommandContract], protocol_name: str) -> Tuple[str, str, str]:
         answer_defs = []
         command_defs = []
         param_defs = []
@@ -317,7 +318,7 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_
     }}"""
         return (protocol_def, command_defs_array, answer_defs_array)
 
-    def _transpile_command_def(self, code: CommandCode, command_def: CommandDef | None, protocol_name: str) -> Tuple[str, str, str]:
+    def _transpile_command_def(self, code: ICommandCode, command_def: CommandDef | None, protocol_name: str) -> Tuple[str, str, str]:
         if command_def is None:
             return "std::nullopt",  "", ""
         
@@ -376,7 +377,7 @@ inline constexpr ParamDef {var_name} = {{
 }};"""
         return cpp_param_def
 
-    def _transpile_answer_def(self, code: CommandCode, answer_def: AnswerDef, protocol_name: str) -> Tuple[str,str]:
+    def _transpile_answer_def(self, code: ICommandCode, answer_def: AnswerDef, protocol_name: str) -> Tuple[str,str]:
         transpiled_field_references = []
         for field in answer_def.fields:
             if field in self._field_definitions:
@@ -496,6 +497,7 @@ if __name__ == "__main__":
     compiler = CppTransCompiler()
     output_dir=Path("./output/generated")
     compiler.generate_sonic_protocol_lib(
+        protocol_list=prot_list,
         protocol_info=ProtocolType(Version(2, 0, 0), DeviceType.MVP_WORKER),
         output_dir=output_dir
     )

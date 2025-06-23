@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar, Generic, Union
 import attrs
 import numpy as np
 
-from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.command_codes import ICommandCode
 from sonic_protocol.field_names import EFieldName
 import re
 
@@ -343,7 +343,7 @@ class CommandContract:
     The CommandContract defines a command and the corresponding answer in the protocol.
     It is a contract on how to communicate with each other.
     """
-    code: CommandCode = attrs.field()
+    code: ICommandCode = attrs.field()
     command_def: Union[None, CommandDef] = attrs.field()
     answer_def: AnswerDef = attrs.field()
     is_release: bool = attrs.field(default=False) #! some commands are only for debugging. They should not be included in release
@@ -368,6 +368,6 @@ class Protocol:
     for which version and device type the command is valid.
     """
     info: ProtocolType = attrs.field()
-    command_contracts: Dict[CommandCode, CommandContract] = attrs.field()
+    command_contracts: Dict[ICommandCode, CommandContract] = attrs.field()
     consts: DeviceParamConstants= attrs.field(default=DeviceParamConstants())
     

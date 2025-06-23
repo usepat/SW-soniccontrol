@@ -1,6 +1,9 @@
 from enum import IntEnum
 
-class CommandCode(IntEnum):
+class ICommandCode(IntEnum):
+    ...
+
+class CommandCode(ICommandCode):
     """!
     Command codes are the bridge between the commands implemented in python and c++ and the 
     CommandDefs in the generated CommandLookups from the protocol_builder.
