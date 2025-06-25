@@ -124,7 +124,7 @@ class CommandCode(ICommandCode):
     SET_PHYS_COM_CHANNEL = 2020 
     SET_TERMINATION = 2030
     CLEAR_ERRORS = 2040  # clears all errors currently only used by the device internal but later we will make this a legit command
-    SET_DEVICE_STATE = 2050 # used only internally by the device for service mode, wake up mode, ready, broken, ...
+    GO_INTO_DEVICE_STATE = 2050 # used only internally by the device for service mode, wake up mode, ready, broken, ...
 
     # commands that execute something
 

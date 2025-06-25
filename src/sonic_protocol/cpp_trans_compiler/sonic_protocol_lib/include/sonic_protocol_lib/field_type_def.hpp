@@ -23,6 +23,7 @@ enum class DataType {
     E_COMMUNICATION_CHANNEL,
     E_COMMUNICATION_PROTOCOL,
     E_INPUT_SOURCE,
+    E_DEVICE_STATE,
     E_PROCEDURE,
     E_WAVEFORM,
     E_LOG_LEVEL,
@@ -55,6 +56,8 @@ inline std::string_view convert_data_type_to_string(DataType value) {
             return "e_communication_protocol";
         case DataType::E_INPUT_SOURCE:
             return "e_input_source";
+        case DataType::E_DEVICE_STATE:
+            return "e_device_state";
         case DataType::E_PROCEDURE:
             return "e_procedure";
         case DataType::E_WAVEFORM:
