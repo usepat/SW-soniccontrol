@@ -27,6 +27,7 @@ enum class DataType {
     E_WAVEFORM,
     E_LOG_LEVEL,
     E_LOGGER_NAME,
+    E_RESTART_STRATEGY, // TODO ask David how we should handle these? Commanddeseriaizer and Answerserializer need them. Can we define additional stuff?
 
     // Classes
     VERSION,
@@ -67,6 +68,8 @@ inline std::string_view convert_data_type_to_string(DataType value) {
             return "e_log_level";
         case DataType::E_LOGGER_NAME:    
             return "e_logger_name";
+        case DataType::E_RESTART_STRATEGY,
+            return "e_restart_strategy";
         default:
             assert (false);
     }

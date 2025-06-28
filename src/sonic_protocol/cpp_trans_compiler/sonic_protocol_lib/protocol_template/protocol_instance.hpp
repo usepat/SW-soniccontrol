@@ -3,7 +3,7 @@
 #include <array>
 #include <cstdint>
 
-#include "sonic_protocol_lib/protocol.hpp"
+#include "sonic_protocol_lib/base/protocol.hpp"
 #include "etl/array.h"
 
 namespace sonic_protocol_lib {
@@ -39,8 +39,10 @@ inline constexpr std::array<ParamDef, 0> EMPTY_PARAMS{};
 
 } // end anonymous namespace
 
+#define PROTOCOL_INSTANCE_NAME
+
 #define PROTOCOL
-constexpr Protocol PROTOCOL_INSTANCE = /**/PROTOCOL_INSTANCE/**/; // the python script will replace this
+constexpr Protocol /**/PROTOCOL_INSTANCE_NAME/**/ = /**/PROTOCOL_INSTANCE/**/; // the python script will replace this
 #undef PROTOCOL
 
 }

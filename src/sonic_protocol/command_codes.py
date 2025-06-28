@@ -35,12 +35,12 @@ class CommandCode(ICommandCode):
     GET_ATF2 = 102
     GET_ATF3 = 103
     GET_ATF4 = 104
-    GET_ATK2 = 102
-    GET_ATK3 = 103
-    GET_ATK4 = 104
-    GET_ATT2 = 102
-    GET_ATT3 = 103
-    GET_ATT4 = 104
+    GET_ATK2 = 112
+    GET_ATK3 = 113
+    GET_ATK4 = 114
+    GET_ATT2 = 122
+    GET_ATT3 = 123
+    GET_ATT4 = 124
 
     GET_DATETIME = 130
     GET_WAVEFORM = 140

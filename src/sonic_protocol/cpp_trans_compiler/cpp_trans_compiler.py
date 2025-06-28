@@ -1,6 +1,6 @@
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Dict, Generic, List, Tuple, TypeVar
+from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
 
 import attrs
 import numpy as np
@@ -66,6 +66,11 @@ def convert_to_enum_data_type(data_type: type[Any]) -> str:
         enum_member = "E_LOG_LEVEL"
     elif issubclass(data_type, LoggerName):
         enum_member = "E_LOGGER_NAME"
+    elif issubclass(data_type, Enum):
+        import re
+        def camel_to_upper_snake(name):
+            return re.sub(r'(?<!^)(?=[A-Z])', '_', name).upper()
+        enum_member = f"E_{camel_to_upper_snake(data_type.__name__)}"
     else:
         raise ValueError(f"Unknown data type: {data_type}")
 
@@ -151,26 +156,32 @@ class CppTransCompiler:
         self._field_definitions: dict[AnswerFieldDef, str] = {}
         self._allowed_values: dict[Tuple[Any], str] = {}
 
-    def generate_sonic_protocol_lib(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path):
+    def generate_sonic_protocol_lib(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path, protocol_name: str = "default", additional_enums: Optional[Dict[str, type[Enum]]] = None):
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
         shutil.copytree(Path(str(lib_path)), output_dir)
     
-        lib_dir = output_dir / "include" / "sonic_protocol_lib"
+        base_lib_dir = output_dir / "include" / "sonic_protocol_lib" / "base"
+        template_lib_dir = output_dir / "protocol_template"
+        protocol_lib_dir = output_dir / "include" / "sonic_protocol_lib" / protocol_name
 
         field_name_members = convert_to_cpp_enum_members(protocol_list.FieldName)
-        self._inject_code_into_file(
-            lib_dir / "field_names.hpp",
+        self._inject_code_into_template(
+            template_lib_dir / "field_names.hpp",
+            protocol_lib_dir / "field_names.hpp",
             FIELD_NAME_MEMBERS=field_name_members,
-            FIELD_NAME_TO_STR_CONVERSIONS=create_enum_to_string_conversions(protocol_list.FieldName)
+            FIELD_NAME_TO_STR_CONVERSIONS=create_enum_to_string_conversions(protocol_list.FieldName),
+            FIELD_NAME_NAME = protocol_name.capitalize() + "FieldName"
         )
 
         command_code_members = convert_to_cpp_enum_members(protocol_list.CommandCode)
-        self._inject_code_into_file(
-            lib_dir / "command_code.hpp",
+        self._inject_code_into_template(
+            template_lib_dir / "command_code.hpp",
+            protocol_lib_dir / "command_code.hpp",
             COMMAND_CODE_MEMBERS=command_code_members,
-            COMMAND_CODE_SWITCH_CASE=create_enum_cases(protocol_list.CommandCode)
+            COMMAND_CODE_SWITCH_CASE=create_enum_cases(protocol_list.CommandCode),
+            COMMAND_CODE_NAME = protocol_name.capitalize() + "CommandCode"
         )
 
         si_unit_members = convert_to_cpp_enum_members(SIUnit)
@@ -178,7 +189,7 @@ class CppTransCompiler:
         si_unit_to_str_conversions = create_enum_to_string_conversions(SIUnit)
         si_prefix_to_str_conversions = create_enum_to_string_conversions(SIPrefix)
         self._inject_code_into_file(
-            lib_dir / "si_units.hpp",
+            base_lib_dir / "si_units.hpp",
             SI_UNIT_MEMBERS=si_unit_members,
             SI_PREFIX_MEMBERS=si_prefix_members,
             SI_UNIT_TO_STR_CONVERSIONS=si_unit_to_str_conversions,
@@ -202,7 +213,7 @@ class CppTransCompiler:
         procedure_to_str_conversions = create_enum_to_string_conversions(Procedure)
 
         self._inject_code_into_file(
-            lib_dir / "enums.hpp",
+            base_lib_dir / "base_enums.hpp",
             DEVICE_TYPE_MEMBERS=device_type_members,
             COMMUNICATION_CHANNEL_MEMBERS=communication_channel_members,
             COMMUNICATION_PROTOCOL_MEMBERS=communication_protocol_members,
@@ -228,7 +239,32 @@ class CppTransCompiler:
             LOG_LEVEL_TO_STR_CONVERSIONS=create_enum_to_string_conversions(Loglevel),
             LOGGER_NAME_TO_STR_CONVERSIONS=create_enum_to_string_conversions(LoggerName),
 
-        )
+        )   
+        if additional_enums:
+            enum_template_path = template_lib_dir / "additional_enums.hpp"
+            enum_target_path = protocol_lib_dir / "additional_enums.hpp"
+            enums_kwargs = {}
+            if not enum_target_path.parent.exists():
+                enum_target_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(enum_template_path, enum_target_path)
+            for placeholder, enum_cls in additional_enums.items():
+                # Add enum members
+                enums_kwargs[f"{placeholder}_MEMBERS"] = convert_to_cpp_enum_members(enum_cls)
+                # Add to-string conversions
+                enums_kwargs[f"{placeholder}_TO_STR_CONVERSIONS"] = create_enum_to_string_conversions(enum_cls)
+                # Add string-to-enum conversions
+                enums_kwargs[f"STR_TO_{placeholder}_CONVERSIONS"] = create_string_to_enum_conversions(enum_cls)
+                template_code = self._generate_enum_cpp_template(enum_cls)
+                with open(enum_target_path, "a") as source_file:
+                    source_file.write(template_code)
+
+            self._inject_code_into_template(
+                enum_template_path,
+                enum_target_path,
+                copy = False,
+                **enums_kwargs
+            )
+            
 
         
         
@@ -242,8 +278,10 @@ class CppTransCompiler:
         field_defs = self._transpile_field_defs_from_cache()
         field_limits = self._transpile_field_limits_from_cache()
         allowed_values = self._transpile_allowed_values_from_cache()
-        self._inject_code_into_file(
-            lib_dir / "protocol_instance.hpp", 
+        self._inject_code_into_template(
+            template_lib_dir / "protocol_instance.hpp", 
+            protocol_lib_dir / "protocol_instance.hpp",
+            PROTOCOL_INSTANCE_NAME=protocol_name.capitalize() + "ProtocolInstance",
             PROTOCOL_INSTANCE=protocol_instance,
             FIELD_LIMITS=field_limits,
             FIELD_DEFS = field_defs,
@@ -254,12 +292,54 @@ class CppTransCompiler:
         )
 
         consts_defs = self._transpile_consts(self.consts)
-        self._inject_code_into_file(
-            lib_dir / "consts.hpp",
+        self._inject_code_into_template(
+            template_lib_dir / "consts.hpp",
+            protocol_lib_dir / "consts.hpp",
             CONSTS=consts_defs
         )
+
+    def _generate_enum_cpp_template(self, enum_cls) -> str:
+        """
+        Generates a C++ template string for an enum and its conversion functions,
+        using placeholders for code injection.
+        """
+        enum_name = enum_cls.__name__.upper()  # For placeholder keys
+        cpp_enum_name = enum_cls.__name__      # For C++ class/enum name
+
+        return f"""
+    #define {enum_name}_MEMBERS
+    enum class {cpp_enum_name} : int {{
+        /**/{enum_name}_MEMBERS/**/  // the python script will replace this
+    }};
+    #undef {enum_name}_MEMBERS
+
+    #define {enum_name}_TO_STR_CONVERSIONS assert(false);
+    inline std::string_view convert_{cpp_enum_name.lower()}_to_string({cpp_enum_name} value) {{
+        /**/{enum_name}_TO_STR_CONVERSIONS/**/  // the python script will replace this
+    }}
+    #undef {enum_name}_TO_STR_CONVERSIONS
+
+    #define STR_TO_{enum_name}_CONVERSIONS assert(false);
+    inline std::optional<{cpp_enum_name}> convert_string_to_{cpp_enum_name.lower()}(const std::string_view &str) {{
+        /**/STR_TO_{enum_name}_CONVERSIONS/**/  // the python script will replace this
+        return std::nullopt;
+    }}
+    #undef STR_TO_{enum_name}_CONVERSIONS
+    """
          
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
+        with open(file_path, "r") as source_file:
+            content = source_file.read()
+        for key, value in kwargs.items():
+            content = content.replace(f"/**/{key.upper()}/**/", str(value))
+        with open(file_path, "w") as source_file:
+            source_file.write(content)
+            #
+    def _inject_code_into_template(self, template_path: Path, file_path: Path, copy: bool = True, **kwargs) -> None:
+        if copy:
+            if not file_path.parent.exists():
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(template_path, file_path)
         with open(file_path, "r") as source_file:
             content = source_file.read()
         for key, value in kwargs.items():

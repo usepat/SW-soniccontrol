@@ -55,6 +55,7 @@ enum class LoggerName : char {
 };
 #undef LOGGER_NAME_MEMBERS
 
+
 #define STR_TO_INPUT_SOURCE_CONVERSIONS assert(false);
 inline std::optional<InputSource> convert_string_to_input_source(const std::string_view &str) {
     /**/STR_TO_INPUT_SOURCE_CONVERSIONS/**/  // the python script will replace this
