@@ -307,25 +307,25 @@ class CppTransCompiler:
         cpp_enum_name = enum_cls.__name__      # For C++ class/enum name
 
         return f"""
-    #define {enum_name}_MEMBERS
-    enum class {cpp_enum_name} : int {{
-        /**/{enum_name}_MEMBERS/**/  // the python script will replace this
-    }};
-    #undef {enum_name}_MEMBERS
+#define {enum_name}_MEMBERS
+enum class {cpp_enum_name} : int {{
+    /**/{enum_name}_MEMBERS/**/  // the python script will replace this
+}};
+#undef {enum_name}_MEMBERS
 
-    #define {enum_name}_TO_STR_CONVERSIONS assert(false);
-    inline std::string_view convert_{cpp_enum_name.lower()}_to_string({cpp_enum_name} value) {{
-        /**/{enum_name}_TO_STR_CONVERSIONS/**/  // the python script will replace this
-    }}
-    #undef {enum_name}_TO_STR_CONVERSIONS
+#define {enum_name}_TO_STR_CONVERSIONS assert(false);
+inline std::string_view convert_{cpp_enum_name.lower()}_to_string({cpp_enum_name} value) {{
+    /**/{enum_name}_TO_STR_CONVERSIONS/**/  // the python script will replace this
+}}
+#undef {enum_name}_TO_STR_CONVERSIONS
 
-    #define STR_TO_{enum_name}_CONVERSIONS assert(false);
-    inline std::optional<{cpp_enum_name}> convert_string_to_{cpp_enum_name.lower()}(const std::string_view &str) {{
-        /**/STR_TO_{enum_name}_CONVERSIONS/**/  // the python script will replace this
-        return std::nullopt;
-    }}
-    #undef STR_TO_{enum_name}_CONVERSIONS
-    """
+#define STR_TO_{enum_name}_CONVERSIONS assert(false);
+inline std::optional<{cpp_enum_name}> convert_string_to_{cpp_enum_name.lower()}(const std::string_view &str) {{
+    /**/STR_TO_{enum_name}_CONVERSIONS/**/  // the python script will replace this
+    return std::nullopt;
+}}
+#undef STR_TO_{enum_name}_CONVERSIONS
+"""
          
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
         with open(file_path, "r") as source_file:
