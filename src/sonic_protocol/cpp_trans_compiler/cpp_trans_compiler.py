@@ -1,6 +1,6 @@
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
+from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import attrs
 import numpy as np
@@ -156,7 +156,7 @@ class CppTransCompiler:
         self._field_definitions: dict[AnswerFieldDef, str] = {}
         self._allowed_values: dict[Tuple[Any], str] = {}
 
-    def generate_sonic_protocol_lib(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path, protocol_name: str = "default", additional_enums: Optional[Dict[str, type[Enum]]] = None):
+    def generate_sonic_protocol_lib(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path, options: Optional[List[str]] = None, protocol_name: str = "default", additional_enums: Optional[Dict[str, type[Enum]]] = None):
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
@@ -272,7 +272,7 @@ class CppTransCompiler:
         protocol = protocol_list.build_protocol_for(protocol_info)
 
         self.consts = protocol.consts 
-        protocol_instance, command_defs, answer_defs,  = self._transpile_command_contracts(protocol_info, protocol.command_contracts, protocol_cpp_name)
+        protocol_instance, command_defs, answer_defs,  = self._transpile_command_contracts(protocol_info, protocol.command_contracts, protocol_cpp_name, options=options)
 
         param_defs = self._transpile_param_defs_from_cache()
         field_defs = self._transpile_field_defs_from_cache()
@@ -355,7 +355,7 @@ class CppTransCompiler:
         return "\n".join(const_defs)
 
     def _transpile_command_contracts(
-            self, protocol_version: ProtocolType, command_list: Dict[ICommandCode, CommandContract], protocol_name: str) -> Tuple[str, str, str]:
+            self, protocol_version: ProtocolType, command_list: Dict[ICommandCode, CommandContract], protocol_name: str, options: Optional[List[str]] = None) -> Tuple[str, str, str]:
         answer_defs = []
         command_defs = []
         param_defs = []
@@ -392,7 +392,7 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_
         }},
         .device = DeviceType::{protocol_version.device_type.name},
         .isRelease = {str(protocol_version.is_release).lower()},
-        .options = "",
+        .options = "{", ".join(options) if options else ""}",
         .commands = {command_defs_cpp_var_name},
         .answers = {answer_defs_cpp_var_name}
     }}"""
