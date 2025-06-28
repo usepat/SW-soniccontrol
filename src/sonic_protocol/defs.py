@@ -83,7 +83,7 @@ class ConverterType(Enum):
     BUILD_TYPE = auto()
     PRIMITIVE = auto()
     TERMINATION = auto()
-    PROCEDURE_ACTIVATION = auto()
+    ACTIVATION = auto()
     TIMESTAMP = auto()
 
 class InputSource(Enum):

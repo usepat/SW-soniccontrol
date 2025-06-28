@@ -85,7 +85,8 @@ enum class ConverterReference {
     VERSION,
     BUILD_TYPE,
     TERMINATION,
-    TIMESTAMP
+    TIMESTAMP,
+    ACTIVATION
 };
 
 template <typename T>
