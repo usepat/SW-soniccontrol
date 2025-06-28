@@ -1,5 +1,4 @@
 from enum import Enum, IntEnum
-import os
 from pathlib import Path
 from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
 
@@ -161,23 +160,7 @@ class CppTransCompiler:
         # copy protocol definitions to output directory
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
-        print(f"[DEBUG] Copying protocol lib from {lib_path} to {output_dir}")
         shutil.copytree(Path(str(lib_path)), output_dir)
-        print(f"[DEBUG] Contents of lib_path ({lib_path}):")
-        for root, dirs, files in os.walk(str(lib_path)):
-            level = root.replace(str(lib_path), '').count(os.sep)
-            indent = ' ' * 2 * level
-            print(f"{indent}{os.path.basename(root)}/")
-            for f in files:
-                print(f"{indent}  {f}")
-
-        print(f"[DEBUG] Contents of output_dir ({output_dir}):")
-        for root, dirs, files in os.walk(str(output_dir)):
-            level = root.replace(str(output_dir), '').count(os.sep)
-            indent = ' ' * 2 * level
-            print(f"{indent}{os.path.basename(root)}/")
-            for f in files:
-                print(f"{indent}  {f}")
     
         base_lib_dir = output_dir / "include" / "sonic_protocol_lib" / "base"
         template_lib_dir = output_dir / "protocol_template"
