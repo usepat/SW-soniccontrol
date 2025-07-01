@@ -93,7 +93,7 @@ class CommandCode(ICommandCode):
     SET_ATT = 1121
 
     # Those codes are only needed for isValidCode implementation
-    SET_ATF2 = 1102.value
+    SET_ATF2 = 1102
     SET_ATF3 = 1103
     SET_ATF4 = 1104
     SET_ATK2 = 1112
@@ -113,7 +113,7 @@ class CommandCode(ICommandCode):
     SET_OFF = 1040
     SET_ON = 1041
 
-    SET_DUTY_CYCLE_T_OFF = 1301.value
+    SET_DUTY_CYCLE_T_OFF = 1301
     SET_DUTY_CYCLE_T_ON = 1302
     SET_RAMP_F_START = 1311
     SET_RAMP_F_STOP = 1312
