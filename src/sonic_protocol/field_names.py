@@ -3,13 +3,44 @@ from enum import unique
 from sonic_protocol.defs import IEFieldName
 
 @unique
-class EFieldName(IEFieldName):
+class BaseFieldName(IEFieldName):
     UNDEFINED = "undefined"
     UNKNOWN_ANSWER = "unknown_answer"
     COMMAND_CODE = "command_code"
     SUCCESS = "success"
     
     HELP = "help"
+
+    ERROR_CODE = "error_code"
+    ERROR_MESSAGE = "error_message"
+    MESSAGE = "message"
+
+    DEVICE_TYPE = "device_type"
+    PROTOCOL_VERSION = "protocol_version"
+    IS_RELEASE = "is_release"
+    ADDITIONAL_OPTIONS = "additional_options"
+
+    INDEX = "index"
+
+@unique
+class EFieldName(IEFieldName):
+    UNDEFINED = BaseFieldName.UNDEFINED
+    UNKNOWN_ANSWER = BaseFieldName.UNKNOWN_ANSWER
+    COMMAND_CODE = BaseFieldName.COMMAND_CODE
+    SUCCESS = BaseFieldName.SUCCESS
+    
+    HELP = BaseFieldName.HELP
+    
+    ERROR_CODE = BaseFieldName.ERROR_CODE
+    ERROR_MESSAGE = BaseFieldName.ERROR_MESSAGE
+    MESSAGE = BaseFieldName.MESSAGE
+
+    DEVICE_TYPE = BaseFieldName.DEVICE_TYPE
+    PROTOCOL_VERSION = BaseFieldName.PROTOCOL_VERSION
+    IS_RELEASE = BaseFieldName.IS_RELEASE
+    ADDITIONAL_OPTIONS = BaseFieldName.ADDITIONAL_OPTIONS
+
+    INDEX = BaseFieldName.INDEX
 
     TRANSDUCER_ID = "transducer_id"
     FREQUENCY = "freq"
@@ -24,20 +55,13 @@ class EFieldName(IEFieldName):
     TS_FLAG = "ts_flag"
     PROCEDURE = "procedure"
     PROCEDURE_ARG = "procedure_arg"
-    ERROR_CODE = "error_code"
-    ERROR_MESSAGE = "error_message"
+
     TIMING = "timing"
-    MESSAGE = "message"
 
     ATF = "atf"
     ATK = "atk"
     ATT = "att"
     ATON = "aton"
-
-    DEVICE_TYPE = "device_type"
-    PROTOCOL_VERSION = "protocol_version"
-    IS_RELEASE = "is_release"
-    ADDITIONAL_OPTIONS = "additional_options"
 
     BUILD_DATE = "build_date"
     BUILD_HASH = "build_hash"
@@ -52,7 +76,6 @@ class EFieldName(IEFieldName):
     TERMINATION = "termination"
 
     TIMESTAMP = "timestamp"
-    INDEX = "index"
 
     SCAN_F_CENTER = "scan_f_center"
     SCAN_F_RANGE = "scan_f_range"

@@ -2,6 +2,24 @@
 from enum import unique
 from sonic_protocol.defs import ICommandCode
 
+
+@unique
+class BaseCommandCode(ICommandCode):
+    GET_PROTOCOL = 0
+    GET_HELP = 2
+
+    NOTIFY_MESSAGE = 18000
+
+    E_INTERNAL_DEVICE_ERROR = 20000
+    E_COMMAND_NOT_KNOWN = 20001
+    E_COMMAND_NOT_IMPLEMENTED = 20002
+    E_COMMAND_NOT_PERMITTED = 20003
+    E_COMMAND_INVALID = 20004
+    E_SYNTAX_ERROR = 20005
+    E_INVALID_VALUE = 20006
+    E_PARSING_ERROR = 20007 
+
+
 @unique
 class CommandCode(ICommandCode):
     """!
@@ -12,9 +30,9 @@ class CommandCode(ICommandCode):
     from the actual command and answer implementation.
     """
 
-    GET_PROTOCOL = 0
+    GET_PROTOCOL = BaseCommandCode.GET_PROTOCOL
     GET_INFO = 1
-    GET_HELP = 2
+    GET_HELP = BaseCommandCode.GET_HELP
     GET_UPDATE = 3
     GET_PROG_STATE = 4 # readable version of update
     
@@ -151,7 +169,7 @@ class CommandCode(ICommandCode):
 
     # commands from 18000 to 19000 are pure notifications
 
-    NOTIFY_MESSAGE = 18000
+    NOTIFY_MESSAGE = BaseCommandCode.NOTIFY_MESSAGE
     # NOTIFY_TUNE = 18001
     NOTIFY_PROCEDURE_FAILURE = 18100
 
@@ -168,14 +186,14 @@ class CommandCode(ICommandCode):
     # this enum member just functions as a placeholder for the command code
 
     # Error codes
-    E_INTERNAL_DEVICE_ERROR = 20000
-    E_COMMAND_NOT_KNOWN = 20001
-    E_COMMAND_NOT_IMPLEMENTED = 20002
-    E_COMMAND_NOT_PERMITTED = 20003
-    E_COMMAND_INVALID = 20004
-    E_SYNTAX_ERROR = 20005
-    E_INVALID_VALUE = 20006
-    E_PARSING_ERROR = 20007 
+    E_INTERNAL_DEVICE_ERROR = BaseCommandCode.E_INTERNAL_DEVICE_ERROR
+    E_COMMAND_NOT_KNOWN = BaseCommandCode.E_COMMAND_NOT_KNOWN
+    E_COMMAND_NOT_IMPLEMENTED = BaseCommandCode.E_COMMAND_NOT_IMPLEMENTED
+    E_COMMAND_NOT_PERMITTED = BaseCommandCode.E_COMMAND_NOT_PERMITTED
+    E_COMMAND_INVALID = BaseCommandCode.E_COMMAND_INVALID
+    E_SYNTAX_ERROR = BaseCommandCode.E_SYNTAX_ERROR
+    E_INVALID_VALUE = BaseCommandCode.E_INVALID_VALUE
+    E_PARSING_ERROR = BaseCommandCode.E_PARSING_ERROR
 
 
     # Legacy commands. They are not really used for anything but for the device to select the correct command class
