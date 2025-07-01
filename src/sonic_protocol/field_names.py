@@ -24,23 +24,23 @@ class BaseFieldName(IEFieldName):
 
 @unique
 class EFieldName(IEFieldName):
-    UNDEFINED = BaseFieldName.UNDEFINED
-    UNKNOWN_ANSWER = BaseFieldName.UNKNOWN_ANSWER
-    COMMAND_CODE = BaseFieldName.COMMAND_CODE
-    SUCCESS = BaseFieldName.SUCCESS
+    UNDEFINED = BaseFieldName.UNDEFINED.value
+    UNKNOWN_ANSWER = BaseFieldName.UNKNOWN_ANSWER.value
+    COMMAND_CODE = BaseFieldName.COMMAND_CODE.value
+    SUCCESS = BaseFieldName.SUCCESS.value
     
-    HELP = BaseFieldName.HELP
+    HELP = BaseFieldName.HELP.value
     
-    ERROR_CODE = BaseFieldName.ERROR_CODE
-    ERROR_MESSAGE = BaseFieldName.ERROR_MESSAGE
-    MESSAGE = BaseFieldName.MESSAGE
+    ERROR_CODE = BaseFieldName.ERROR_CODE.value
+    ERROR_MESSAGE = BaseFieldName.ERROR_MESSAGE.value
+    MESSAGE = BaseFieldName.MESSAGE.value
 
-    DEVICE_TYPE = BaseFieldName.DEVICE_TYPE
-    PROTOCOL_VERSION = BaseFieldName.PROTOCOL_VERSION
-    IS_RELEASE = BaseFieldName.IS_RELEASE
-    ADDITIONAL_OPTIONS = BaseFieldName.ADDITIONAL_OPTIONS
+    DEVICE_TYPE = BaseFieldName.DEVICE_TYPE.value
+    PROTOCOL_VERSION = BaseFieldName.PROTOCOL_VERSION.value
+    IS_RELEASE = BaseFieldName.IS_RELEASE.value
+    ADDITIONAL_OPTIONS = BaseFieldName.ADDITIONAL_OPTIONS.value
 
-    INDEX = BaseFieldName.INDEX
+    INDEX = BaseFieldName.INDEX.value
 
     TRANSDUCER_ID = "transducer_id"
     FREQUENCY = "freq"

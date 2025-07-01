@@ -30,9 +30,9 @@ class CommandCode(ICommandCode):
     from the actual command and answer implementation.
     """
 
-    GET_PROTOCOL = BaseCommandCode.GET_PROTOCOL
+    GET_PROTOCOL = BaseCommandCode.GET_PROTOCOL.value
     GET_INFO = 1
-    GET_HELP = BaseCommandCode.GET_HELP
+    GET_HELP = BaseCommandCode.GET_HELP.value
     GET_UPDATE = 3
     GET_PROG_STATE = 4 # readable version of update
     
@@ -93,7 +93,7 @@ class CommandCode(ICommandCode):
     SET_ATT = 1121
 
     # Those codes are only needed for isValidCode implementation
-    SET_ATF2 = 1102
+    SET_ATF2 = 1102.value
     SET_ATF3 = 1103
     SET_ATF4 = 1104
     SET_ATK2 = 1112
@@ -113,7 +113,7 @@ class CommandCode(ICommandCode):
     SET_OFF = 1040
     SET_ON = 1041
 
-    SET_DUTY_CYCLE_T_OFF = 1301
+    SET_DUTY_CYCLE_T_OFF = 1301.value
     SET_DUTY_CYCLE_T_ON = 1302
     SET_RAMP_F_START = 1311
     SET_RAMP_F_STOP = 1312
@@ -169,7 +169,7 @@ class CommandCode(ICommandCode):
 
     # commands from 18000 to 19000 are pure notifications
 
-    NOTIFY_MESSAGE = BaseCommandCode.NOTIFY_MESSAGE
+    NOTIFY_MESSAGE = BaseCommandCode.NOTIFY_MESSAGE.value
     # NOTIFY_TUNE = 18001
     NOTIFY_PROCEDURE_FAILURE = 18100
 
@@ -186,14 +186,14 @@ class CommandCode(ICommandCode):
     # this enum member just functions as a placeholder for the command code
 
     # Error codes
-    E_INTERNAL_DEVICE_ERROR = BaseCommandCode.E_INTERNAL_DEVICE_ERROR
-    E_COMMAND_NOT_KNOWN = BaseCommandCode.E_COMMAND_NOT_KNOWN
-    E_COMMAND_NOT_IMPLEMENTED = BaseCommandCode.E_COMMAND_NOT_IMPLEMENTED
-    E_COMMAND_NOT_PERMITTED = BaseCommandCode.E_COMMAND_NOT_PERMITTED
-    E_COMMAND_INVALID = BaseCommandCode.E_COMMAND_INVALID
-    E_SYNTAX_ERROR = BaseCommandCode.E_SYNTAX_ERROR
-    E_INVALID_VALUE = BaseCommandCode.E_INVALID_VALUE
-    E_PARSING_ERROR = BaseCommandCode.E_PARSING_ERROR
+    E_INTERNAL_DEVICE_ERROR = BaseCommandCode.E_INTERNAL_DEVICE_ERROR.value
+    E_COMMAND_NOT_KNOWN = BaseCommandCode.E_COMMAND_NOT_KNOWN.value
+    E_COMMAND_NOT_IMPLEMENTED = BaseCommandCode.E_COMMAND_NOT_IMPLEMENTED.value
+    E_COMMAND_NOT_PERMITTED = BaseCommandCode.E_COMMAND_NOT_PERMITTED.value
+    E_COMMAND_INVALID = BaseCommandCode.E_COMMAND_INVALID.value
+    E_SYNTAX_ERROR = BaseCommandCode.E_SYNTAX_ERROR.value
+    E_INVALID_VALUE = BaseCommandCode.E_INVALID_VALUE.value
+    E_PARSING_ERROR = BaseCommandCode.E_PARSING_ERROR.value
 
 
     # Legacy commands. They are not really used for anything but for the device to select the correct command class
