@@ -3,7 +3,7 @@
 #include <initializer_list>
 #include <cstdint>
 
-#include "si_units.hpp"
+#include "sonic_protocol_lib/base/si_units.hpp"
 #include <span>
 
 namespace sonic_protocol_lib {

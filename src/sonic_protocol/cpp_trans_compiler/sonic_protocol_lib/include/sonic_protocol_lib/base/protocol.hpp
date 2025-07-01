@@ -3,9 +3,9 @@
 #include <string_view>
 #include <span>
 #include <optional>
-#include "answer_def.hpp"
-#include "command_def.hpp"
-#include "enums.hpp"
+#include "sonic_protocol_lib/base/answer_def.hpp"
+#include "sonic_protocol_lib/base/code.hpp"
+#include "sonic_protocol_lib/base/base_enums.hpp"
 
 namespace sonic_protocol_lib {
 

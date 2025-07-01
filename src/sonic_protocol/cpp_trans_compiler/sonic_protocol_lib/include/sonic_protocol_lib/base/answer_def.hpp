@@ -1,13 +1,13 @@
 #pragma once
 #include <initializer_list>
-#include "answer_field_def.hpp"
-#include "command_code.hpp"
+#include "sonic_protocol_lib/base/answer_field_def.hpp"
+#include "sonic_protocol_lib/base/code.hpp"
 #include <span>
 
 namespace sonic_protocol_lib {
 
 struct AnswerDef {
-    CommandCode code{CommandCode::E_COMMAND_INVALID};
+    CommandCode_t code{COMMAND_CODE_E_COMMAND_INVALID};
     std::span<const AnswerFieldDef> fields;
 };
 

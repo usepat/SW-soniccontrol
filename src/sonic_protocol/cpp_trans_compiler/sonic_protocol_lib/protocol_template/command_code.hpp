@@ -1,12 +1,14 @@
 #pragma once
 #include <cstdint>
+#include "sonic_protocol_lib/base/code.hpp"
 
 namespace sonic_protocol_lib {
 
 #define COMMAND_CODE_NAME
 
+
 #define COMMAND_CODE_MEMBERS 
-enum class /**/COMMAND_CODE_NAME/**/ : int16_t  {
+enum class /**/COMMAND_CODE_NAME/**/ :  CommandCode_t {
     /**/COMMAND_CODE_MEMBERS/**/  // the python script will replace this
 };
 #undef COMMAND_CODE_MEMBERS 

@@ -1,4 +1,6 @@
 #pragma once
+
+#include "sonic_protocol_lib/base/code.hpp"
 #include <cstdint>
 #include <etl/string_view.h>
 
@@ -6,8 +8,6 @@ namespace sonic_protocol_lib {
 
 
     
-using FieldName_t = int16_t;
-
 #define FIELD_NAME_MEMBERS 
 
 #define FIELD_NAME_NAME
