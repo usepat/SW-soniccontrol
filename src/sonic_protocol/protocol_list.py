@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Any, Dict
 from sonic_protocol.command_codes import ICommandCode
 from sonic_protocol.defs import DeviceParamConstantType, DeviceType, IEFieldName, ProtocolType, Protocol, Version, CommandContract
@@ -31,6 +30,11 @@ class ProtocolList:
     @property
     @abc.abstractmethod
     def CommandCode(self) -> type[ICommandCode]:
+        ...
+
+    @property
+    @abc.abstractmethod
+    def DataTypes(self) -> Dict[str, type]:
         ...
 
     @abc.abstractmethod

@@ -71,7 +71,7 @@ inline std::string_view convert_data_type_to_string(DataType value) {
             return "e_log_level";
         case DataType::E_LOGGER_NAME:    
             return "e_logger_name";
-        case DataType::E_RESTART_STRATEGY,
+        case DataType::E_RESTART_STRATEGY:
             return "e_restart_strategy";
         default:
             assert (false);
@@ -81,11 +81,13 @@ inline std::string_view convert_data_type_to_string(DataType value) {
 enum class ConverterReference {
     PRIMITIVE,
     ENUM,
-    SIGNAL,
     VERSION,
+    TIMESTAMP,
+
+
+    SIGNAL,
     BUILD_TYPE,
     TERMINATION,
-    TIMESTAMP,
     ACTIVATION
 };
 
