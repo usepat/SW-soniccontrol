@@ -1,15 +1,15 @@
 #pragma once
 
-#include "sonic_protocol_lib/base/code.hpp"
 #include <cstdint>
 #include <etl/string_view.h>
+#include <cassert>
+#include <optional>
 
 namespace sonic_protocol_lib {
 
-
-    
 #define CODE_INJECTION 
-    /**/CODE_INJECTION/**/  // the python script will replace this
+/**/CODE_INJECTION/**/  // the python script will replace this
 #undef CODE_INJECTION 
 
 }
+

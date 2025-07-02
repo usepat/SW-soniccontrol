@@ -3,11 +3,12 @@ from typing import Any, Dict
 import numpy as np
 from sonic_protocol.contract_helper.contract_generators import create_version_field
 from sonic_protocol.defs import (
-    ConverterType, DeviceParamConstantType, FieldType, IEFieldName, 
+    CommunicationChannel, CommunicationProtocol, ConverterType, DeviceParamConstantType, FieldType, IEFieldName, InputSource, LoggerName, Loglevel, Procedure, 
     ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
-    AnswerFieldDef, CommandContract, DeviceType,
+    AnswerFieldDef, CommandContract, DeviceType, Waveform,
 )
 from sonic_protocol.command_codes import CommandCode, ICommandCode
+from sonic_protocol.protocols.protocol_base.protocol_base import Protocol_base
 from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_commands import field_device_type
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_commands import all_proc_commands, duty_cycle_proc_commands
@@ -64,13 +65,16 @@ get_protocol = CommandContract(
 )
 
 class Protocol_v1_0_0(ProtocolList):
+    def __init__(self):
+        self._previous_protocol = Protocol_base()
+
     @property
     def version(self) -> Version:
         return Version(1, 0, 0)
     
     @property
     def previous_protocol(self) -> ProtocolList | None:
-        return None
+        return self._previous_protocol
     
     @property
     def FieldName(self) -> type[IEFieldName]:
@@ -79,6 +83,20 @@ class Protocol_v1_0_0(ProtocolList):
     @property
     def CommandCode(self) -> type[ICommandCode]:
         return CommandCode
+
+    @property
+    def DataTypes(self) -> Dict[str, type]:
+        data_types = {
+            "E_COMMUNICATION_CHANNEL": CommunicationChannel,
+            "E_COMMUNICATION_PROTOCOL": CommunicationProtocol,
+            "E_INPUT_SOURCE": InputSource,
+            "E_PROCEDURE": Procedure,
+            "E_WAVEFORM": Waveform,
+            "E_LOG_LEVEL": Loglevel,
+            "E_LOGGER_NAME": LoggerName
+        }
+        data_types.update(self._previous_protocol.DataTypes)
+        return data_types
 
     def supports_device_type(self, device_type: DeviceType) -> bool:
         return device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.CRYSTAL, DeviceType.UNKNOWN]

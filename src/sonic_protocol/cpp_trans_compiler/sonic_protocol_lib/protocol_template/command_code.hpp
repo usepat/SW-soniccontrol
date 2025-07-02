@@ -1,33 +1,17 @@
 #pragma once
+
 #include <cstdint>
+#include <etl/string_view.h>
 #include "sonic_protocol_lib/base/code.hpp"
 
 namespace sonic_protocol_lib {
 
-#define COMMAND_CODE_NAME
+#define COMMAND_CODE 
+/**/COMMAND_CODE/**/  // the python script will replace this
+#undef COMMAND_CODE 
 
-
-#define COMMAND_CODE_MEMBERS 
-enum class /**/COMMAND_CODE_NAME/**/ :  CommandCode_t {
-    /**/COMMAND_CODE_MEMBERS/**/  // the python script will replace this
-};
-#undef COMMAND_CODE_MEMBERS 
-
-namespace{
-    using CommandCode = /**/COMMAND_CODE_NAME/**/;
-}
-
-#define COMMAND_CODE_SWITCH_CASE
-inline bool isValidCode(std::uint16_t value) {
-    /**/COMMAND_CODE_NAME/**/ code = static_cast</**/COMMAND_CODE_NAME/**/>(value);
-    switch (code) {
-        /**/COMMAND_CODE_SWITCH_CASE/**/
-            return true;
-        default:
-            return false;
-    }
-}
-#undef COMMAND_CODE_SWITCH_CASE
-
+#define IS_VALID_CODE 
+/**/IS_VALID_CODE/**/  // the python script will replace this
+#undef IS_VALID_CODE 
 
 }

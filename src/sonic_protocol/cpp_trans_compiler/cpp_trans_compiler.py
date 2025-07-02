@@ -4,10 +4,11 @@ from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
 
 import attrs
 import numpy as np
-from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, IEFieldName, LoggerName, Loglevel, ProtocolType, Timestamp, Waveform, Procedure, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, CommunicationChannel, DeviceType, FieldType, InputSource, CommunicationProtocol, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, IEFieldName, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 import importlib.resources as rs
 import shutil
 import sonic_protocol.cpp_trans_compiler
+import re
 
 from sonic_protocol.command_codes import ICommandCode
 from sonic_protocol.protocol_list import ProtocolList
@@ -31,95 +32,13 @@ def convert_to_cpp_initializer_list(value: List[Any] | Tuple[Any]) -> str:
     literals = map(convert_to_cpp_literal, value)
     return "{" + ", ".join(literals) + "}"
 
-def convert_to_enum_data_type(data_type: type[Any]) -> str:
-    if data_type is int:
-        enum_member = "UINT32"
-    elif data_type is np.uint32:
-        enum_member = "UINT32"
-    elif data_type is np.uint16:
-        enum_member = "UINT16"
-    elif data_type is np.uint8:
-        enum_member = "UINT8"
-    elif data_type is float:
-        enum_member = "FLOAT"
-    elif data_type is str:
-        enum_member = "STRING"
-    elif data_type is bool:
-        enum_member = "BOOL"
-    elif issubclass(data_type, DeviceType):  # Use issubclass for custom classes
-        enum_member = "E_DEVICE_TYPE"
-    elif issubclass(data_type, CommunicationChannel):
-        enum_member = "E_COMMUNICATION_CHANNEL"
-    elif issubclass(data_type, CommunicationProtocol):
-        enum_member = "E_COMMUNICATION_PROTOCOL"
-    elif issubclass(data_type, InputSource):
-        enum_member = "E_INPUT_SOURCE"
-    elif issubclass(data_type, Version):
-        enum_member = "VERSION"
-    elif issubclass(data_type, Procedure):
-        enum_member = "E_PROCEDURE"
-    elif issubclass(data_type, Waveform):
-        enum_member = "E_WAVEFORM"
-    elif issubclass(data_type, Timestamp):
-        enum_member = "TIMESTAMP"
-    elif issubclass(data_type, Loglevel):
-        enum_member = "E_LOG_LEVEL"
-    elif issubclass(data_type, LoggerName):
-        enum_member = "E_LOGGER_NAME"
-    elif issubclass(data_type, Enum):
-        import re
-        def camel_to_upper_snake(name):
-            return re.sub(r'(?<!^)(?=[A-Z])', '_', name).upper()
-        enum_member = f"E_{camel_to_upper_snake(data_type.__name__)}"
-    else:
-        raise ValueError(f"Unknown data type: {data_type}")
-
-    return f"DataType::{enum_member}"
+def find_value_in_dictionary(dictionary: dict, value):
+    keys = filter(lambda k: dictionary[k] == value, dictionary.keys())
+    return next(keys, None)
 
 def convert_to_cpp_field_name(enum_member: IEFieldName) -> str:
     return f"FieldName::{enum_member.name}"
 
-def convert_to_cpp_enum_members(enum: type[Enum]) -> str: 
-    is_int_enum = issubclass(enum, IntEnum)
-    enum_member_assignments = [
-        f"\t{member.name} = {member.value if is_int_enum else i}" 
-        for i, member in enumerate(enum)
-    ]
-    enum_members = ",\n".join(enum_member_assignments)
-
-    return enum_members
-
-def create_string_to_enum_conversions(enum: type[Enum]) -> str:
-    enum_member_assignments = [
-        f'\tif (str == "{member.value}") return {enum.__name__}::{member.name};'
-        for member in enum
-    ]
-    enum_member_assignments = "\n".join(enum_member_assignments)
-
-    return f"""
-        {enum_member_assignments}
-    """
-
-def create_enum_to_string_conversions(enum: type[Enum]) -> str:
-    enum_member_assignments = [
-        f'\tcase {enum.__name__}::{member.name}: return "{member.value}";'
-        for member in enum
-    ]
-    enum_member_assignments = "\n".join(enum_member_assignments)
-
-    return f"""
-        switch (value) {{
-            {enum_member_assignments}
-        }}
-        assert(false);
-    """
-
-def create_enum_cases(enum: type[Enum]) -> str:
-    cases = [
-        f'\tcase {enum.__name__}::{member.name}:'
-        for member in enum
-    ]
-    return "\n".join(cases)
 
 def py_type_to_cpp_type(data_type: type) -> str:
     if data_type is np.uint32:
@@ -166,107 +85,37 @@ class CppTransCompiler:
         template_lib_dir = output_dir / "protocol_template"
         protocol_lib_dir = output_dir / "include" / "sonic_protocol_lib" / protocol_name
 
-        field_name_members = convert_to_cpp_enum_members(protocol_list.FieldName)
+
+        self._inject_code_into_file(
+            base_lib_dir / "si_units.hpp",
+            SI_UNIT=self._transpile_enum(SIUnit),
+            SI_PREFIX=self._transpile_enum(SIPrefix),
+        )
+
         self._inject_code_into_template(
             template_lib_dir / "field_names.hpp",
             protocol_lib_dir / "field_names.hpp",
-            FIELD_NAME_MEMBERS=field_name_members,
-            FIELD_NAME_TO_STR_CONVERSIONS=create_enum_to_string_conversions(protocol_list.FieldName),
-            FIELD_NAME_NAME = protocol_name.capitalize() + "FieldName"
+            CODE_INJECTION=self._transpile_enum(protocol_list.FieldName, "FieldName_t")
         )
 
-        command_code_members = convert_to_cpp_enum_members(protocol_list.CommandCode)
         self._inject_code_into_template(
             template_lib_dir / "command_code.hpp",
             protocol_lib_dir / "command_code.hpp",
-            COMMAND_CODE_MEMBERS=command_code_members,
-            COMMAND_CODE_SWITCH_CASE=create_enum_cases(protocol_list.CommandCode),
-            COMMAND_CODE_NAME = protocol_name.capitalize() + "CommandCode"
+            COMMAND_CODE=self._transpile_enum(protocol_list.CommandCode, "CommandCode_t"),
+            IS_VALID_CODE=self._generate_is_valid_code_cpp_function(protocol_list.CommandCode)
         )
 
-        si_unit_members = convert_to_cpp_enum_members(SIUnit)
-        si_prefix_members = convert_to_cpp_enum_members(SIPrefix)
-        si_unit_to_str_conversions = create_enum_to_string_conversions(SIUnit)
-        si_prefix_to_str_conversions = create_enum_to_string_conversions(SIPrefix)
-        self._inject_code_into_file(
-            base_lib_dir / "si_units.hpp",
-            SI_UNIT_MEMBERS=si_unit_members,
-            SI_PREFIX_MEMBERS=si_prefix_members,
-            SI_UNIT_TO_STR_CONVERSIONS=si_unit_to_str_conversions,
-            SI_PREFIX_TO_STR_CONVERSIONS=si_prefix_to_str_conversions
+        data_type_defs = ""
+        data_type_defs += self._transpile_data_types_dict_to_enum(protocol_list.DataTypes)
+        for data_type in protocol_list.DataTypes.values():
+            if issubclass(data_type, Enum):
+                data_type_defs += self._transpile_enum(data_type)
+
+        self._inject_code_into_template(
+            template_lib_dir / "data_types.hpp",
+            protocol_lib_dir / "data_types.hpp",
+            CODE_INJECTION=data_type_defs
         )
-
-        device_type_members = convert_to_cpp_enum_members(DeviceType)
-        communication_channel_members = convert_to_cpp_enum_members(CommunicationChannel)
-        communication_protocol_members = convert_to_cpp_enum_members(CommunicationProtocol)
-        input_source_members = convert_to_cpp_enum_members(InputSource)
-        procedure_members = convert_to_cpp_enum_members(Procedure)
-        
-        device_type_to_str_conversions = create_enum_to_string_conversions(DeviceType)
-        communication_channel_to_str_conversions = create_enum_to_string_conversions(CommunicationChannel)
-        communication_protocol_to_str_conversions = create_enum_to_string_conversions(CommunicationProtocol)
-        input_source_to_str_conversions = create_enum_to_string_conversions(InputSource)
-        
-        str_to_communication_channel_conversions = create_string_to_enum_conversions(CommunicationChannel)
-        str_to_communication_protocol_conversions = create_string_to_enum_conversions(CommunicationProtocol)
-        str_to_input_source_conversions = create_string_to_enum_conversions(InputSource)
-        procedure_to_str_conversions = create_enum_to_string_conversions(Procedure)
-
-        self._inject_code_into_file(
-            base_lib_dir / "base_enums.hpp",
-            DEVICE_TYPE_MEMBERS=device_type_members,
-            COMMUNICATION_CHANNEL_MEMBERS=communication_channel_members,
-            COMMUNICATION_PROTOCOL_MEMBERS=communication_protocol_members,
-            INPUT_SOURCE_MEMBERS=input_source_members,
-            PROCEDURE_MEMBERS=procedure_members,
-            WAVEFORM_MEMBERS=convert_to_cpp_enum_members(Waveform),
-            LOG_LEVEL_MEMBERS=convert_to_cpp_enum_members(Loglevel),
-            LOGGER_NAME_MEMBERS=convert_to_cpp_enum_members(LoggerName),
-
-            DEVICE_TYPE_TO_STR_CONVERSIONS=device_type_to_str_conversions,
-            COMMUNICATION_CHANNEL_TO_STR_CONVERSIONS=communication_channel_to_str_conversions,
-            COMMUNICATION_PROTOCOL_TO_STR_CONVERSIONS=communication_protocol_to_str_conversions,
-            INPUT_SOURCE_TO_STR_CONVERSIONS=input_source_to_str_conversions,
-
-            STR_TO_LOGLEVEL_CONVERSIONS=create_string_to_enum_conversions(Loglevel),
-            STR_TO_LOGGER_NAME_CONVERSIONS=create_string_to_enum_conversions(LoggerName),
-            STR_TO_WAVEFORM_CONVERSIONS=create_string_to_enum_conversions(Waveform),
-            STR_TO_COMMUNICATION_CHANNEL_CONVERSIONS=str_to_communication_channel_conversions,
-            STR_TO_COMMUNICATION_PROTOCOL_CONVERSIONS=str_to_communication_protocol_conversions,
-            STR_TO_INPUT_SOURCE_CONVERSIONS=str_to_input_source_conversions,
-            PROCEDURE_TO_STR_CONVERSIONS=procedure_to_str_conversions,
-            WAVEFORM_TO_STR_CONVERSIONS=create_enum_to_string_conversions(Waveform),
-            LOG_LEVEL_TO_STR_CONVERSIONS=create_enum_to_string_conversions(Loglevel),
-            LOGGER_NAME_TO_STR_CONVERSIONS=create_enum_to_string_conversions(LoggerName),
-
-        )   
-        if additional_enums:
-            enum_template_path = template_lib_dir / "additional_enums.hpp"
-            enum_target_path = protocol_lib_dir / "additional_enums.hpp"
-            enums_kwargs = {}
-            if not enum_target_path.parent.exists():
-                enum_target_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(enum_template_path, enum_target_path)
-            for placeholder, enum_cls in additional_enums.items():
-                # Add enum members
-                enums_kwargs[f"{placeholder}_MEMBERS"] = convert_to_cpp_enum_members(enum_cls)
-                # Add to-string conversions
-                enums_kwargs[f"{placeholder}_TO_STR_CONVERSIONS"] = create_enum_to_string_conversions(enum_cls)
-                # Add string-to-enum conversions
-                enums_kwargs[f"STR_TO_{placeholder}_CONVERSIONS"] = create_string_to_enum_conversions(enum_cls)
-                template_code = self._generate_enum_cpp_template(enum_cls)
-                with open(enum_target_path, "a") as source_file:
-                    source_file.write(template_code)
-
-            self._inject_code_into_template(
-                enum_template_path,
-                enum_target_path,
-                copy = False,
-                **enums_kwargs
-            )
-            
-
-        
         
         protocol_cpp_name = f"protocol_{create_protocol_info_cpp_var_name(protocol_info)}"
         protocol = protocol_list.build_protocol_for(protocol_info)
@@ -297,35 +146,6 @@ class CppTransCompiler:
             protocol_lib_dir / "consts.hpp",
             CONSTS=consts_defs
         )
-
-    def _generate_enum_cpp_template(self, enum_cls) -> str:
-        """
-        Generates a C++ template string for an enum and its conversion functions,
-        using placeholders for code injection.
-        """
-        enum_name = enum_cls.__name__.upper()  # For placeholder keys
-        cpp_enum_name = enum_cls.__name__      # For C++ class/enum name
-
-        return f"""
-#define {enum_name}_MEMBERS
-enum class {cpp_enum_name} : int {{
-    /**/{enum_name}_MEMBERS/**/  // the python script will replace this
-}};
-#undef {enum_name}_MEMBERS
-
-#define {enum_name}_TO_STR_CONVERSIONS assert(false);
-inline std::string_view convert_{cpp_enum_name.lower()}_to_string({cpp_enum_name} value) {{
-    /**/{enum_name}_TO_STR_CONVERSIONS/**/  // the python script will replace this
-}}
-#undef {enum_name}_TO_STR_CONVERSIONS
-
-#define STR_TO_{enum_name}_CONVERSIONS assert(false);
-inline std::optional<{cpp_enum_name}> convert_string_to_{cpp_enum_name.lower()}(const std::string_view &str) {{
-    /**/STR_TO_{enum_name}_CONVERSIONS/**/  // the python script will replace this
-    return std::nullopt;
-}}
-#undef STR_TO_{enum_name}_CONVERSIONS
-"""
          
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
         with open(file_path, "r") as source_file:
@@ -518,12 +338,12 @@ inline constexpr AnswerFieldDef {var_name} = {{
             self._field_limits_cache[field_limits] = cpp_limits_var
 
         cpp_field_type_def: str = f"""FieldTypeDef {{
-        .type = {convert_to_enum_data_type(field_type.field_type)},
-        .converter_reference = ConverterReference::{field_type.converter_ref.name},
-        .limits = static_cast<const void *>(&{cpp_limits_var}),
-        .si_unit = {f"SIUnit::{field_type.si_unit.name}" if field_type.si_unit is not None else CPP_NULLOPT},
-        .si_prefix = {f"SIPrefix::{field_type.si_prefix.name}" if field_type.si_prefix is not None else CPP_NULLOPT}
-    }}""" 
+            .type = DataType::{find_value_in_dictionary(prot_list.DataTypes, field_type.field_type)},
+            .converter_reference = ConverterReference::{field_type.converter_ref.name},
+            .limits = static_cast<const void *>(&{cpp_limits_var}),
+            .si_unit = {f"SIUnit::{field_type.si_unit.name}" if field_type.si_unit is not None else CPP_NULLOPT},
+            .si_prefix = {f"SIPrefix::{field_type.si_prefix.name}" if field_type.si_prefix is not None else CPP_NULLOPT}
+        }}""" 
         return cpp_field_type_def
 
     def _transpile_field_limits_from_cache(self) -> str:
@@ -550,6 +370,78 @@ inline constexpr AnswerFieldDef {var_name} = {{
             transpilation_output += f"constexpr std::array<{py_type_to_cpp_type(type(allowed_values))}, {len(allowed_values)}> {var_name} = {convert_to_cpp_initializer_list(allowed_values)};\n"
         return transpilation_output
 
+    def _transpile_enum(self, enum: type[Enum], underlying_type: str = "std::uint16_t") -> str:
+        enum_name = enum.__name__
+
+        NEW_LINE = "\n" #  backslashes are not allowed inside f-strings interpolations
+
+        result_str, _ = re.subn(r"(.)([A-Z][a-z]+)", r"\1_\2", enum_name)
+        snake_case_enum_name = result_str.lower()
+
+        is_int_enum = issubclass(enum, IntEnum)
+        enum_member_assignments = [
+            f"\t{member.name} = {member.value if is_int_enum else i}" 
+            for i, member in enumerate(enum)
+        ]
+        enum_members = ",\n".join(enum_member_assignments)
+
+        enum_class_def_cpp = f"""
+            enum class {enum_name} : {underlying_type} {{
+                {enum_members}
+            }};
+        """
+
+        str_to_enum_cases = [
+            f'\tif (str == "{member.value}") return {enum_name}::{member.name};'
+            for member in enum
+        ]
+        string_to_enum_conversion_function_cpp = f"""
+            inline {enum_name} convert_string_to_{snake_case_enum_name}(const etl::string_view &str) 
+            {{
+                {NEW_LINE.join(str_to_enum_cases)}
+            }}
+        """
+
+        enum_to_str_cases = [
+                f'\tcase {enum_name}::{member.name}: return "{member.value}";'
+                for member in enum
+            ]
+        enum_to_string_conversion_function_cpp = f"""
+            inline etl::string_view convert_{snake_case_enum_name}_to_string(const {enum_name} &val) 
+            {{
+                switch (val) {{
+                    {NEW_LINE.join(enum_to_str_cases)}
+                }}
+                std::unreachable();
+            }}
+        """
+
+        return enum_class_def_cpp + string_to_enum_conversion_function_cpp + enum_to_string_conversion_function_cpp
+
+    def _transpile_data_types_dict_to_enum(self, data_types: Dict[str, type]) -> str:
+        enum_members = ",\n".join(data_types.keys())
+        return f"""
+            enum class DataType : DataType_t {{
+                {enum_members}
+            }};
+        """
+    
+    def _generate_is_valid_code_cpp_function(self, enum: type[IntEnum]) -> str:
+        enum_name = enum.__name__
+        cases = "\n".join([f"case {enum_name}::{enum_member}:" for enum_member in enum])
+        return f"""
+            template<>
+            inline bool isValidCode<{enum_name}>(std::uint16_t value) {{
+                {enum_name} code = static_cast<{enum_name}>(value);
+                switch (code) {{
+                        { cases }
+                        return true;
+                    default:
+                        return false;
+                }}
+            }}
+        """
+
     def _transpile_field_limits(self, field_limits: FieldLimits, var_name: str) -> str:
         if field_limits.allowed_values is None:
             allowed_values_ref = CPP_NULLOPT
@@ -563,12 +455,12 @@ inline constexpr AnswerFieldDef {var_name} = {{
         
 
         cpp_field_limits: str = f"""
-    FieldLimits<{field_limits.cpp_data_type()}> {{
-        .min = {nullopt_if_none(field_limits.minimum)},
-        .max = {nullopt_if_none(field_limits.maximum)},
-        .allowed_values = {allowed_values_ref}
-    }}
-""" 
+            FieldLimits<{field_limits.cpp_data_type()}> {{
+                .min = {nullopt_if_none(field_limits.minimum)},
+                .max = {nullopt_if_none(field_limits.maximum)},
+                .allowed_values = {allowed_values_ref}
+            }}
+        """ 
         return f"inline constexpr auto {var_name} {{ {cpp_field_limits} }};\n"
 
 

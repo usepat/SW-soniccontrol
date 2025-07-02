@@ -69,7 +69,6 @@ class EFieldName(IEFieldName):
     FIRMWARE_VERSION = "firmware_version"
 
     INPUT_SOURCE = "input_source"
-    DEVICE_STATE = "device_state"
     COMM_MODE = "communication_mode"
     COMMUNICATION_CHANNEL = "communication_channel"
     COMMUNICATION_PROTOCOL = "communication_protocol"

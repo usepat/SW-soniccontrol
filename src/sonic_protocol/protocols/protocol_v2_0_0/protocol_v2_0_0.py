@@ -35,6 +35,12 @@ class Protocol_v2_0_0(ProtocolList):
     def CommandCode(self) -> type[ICommandCode]:
         return CommandCode
 
+    @property
+    def DataTypes(self) -> Dict[str, type]:
+        data_types = {}
+        data_types.update(self._previous_protocol.DataTypes)
+        return data_types
+
     def supports_device_type(self, device_type: DeviceType) -> bool:
         return self._previous_protocol.supports_device_type(device_type)
 
