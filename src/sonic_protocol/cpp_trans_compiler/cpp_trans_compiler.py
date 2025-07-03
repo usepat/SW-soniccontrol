@@ -400,7 +400,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
             """
             str_to_enum_conversion_cases += f"""
                 case DataType::{data_type_name}:
-                return static_cast<{data_type.__name__}>(convert_str_to_enum<{data_type.__name__}>(str));
+                return static_cast<std::optional<{data_type.__name__}>>(convert_str_to_enum<{data_type.__name__}>(str));
             """
 
         return f"""
@@ -416,11 +416,11 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 }}
 
                 template<>
-                EnumValue_t data_type_dispatch_convert_str_to_enum<DataType>(const DataType data_type, const etl::string_view& str) {{
+                std::optional<EnumValue_t> data_type_dispatch_convert_str_to_enum<DataType>(const DataType data_type, const etl::string_view& str) {{
                     switch (data_type) {{
                         {str_to_enum_conversion_cases}
                         default:
-                            std::unreachable();
+                            return std::nullopt;
                     }}
                 }}
 
@@ -451,9 +451,10 @@ inline constexpr AnswerFieldDef {var_name} = {{
         ]
         string_to_enum_conversion_function_cpp = f"""
             template<>
-            inline {enum_name} convert_string_to_enum<{enum_name}>(const etl::string_view &str) 
+            inline std::optional<{enum_name}> convert_string_to_enum<{enum_name}>(const etl::string_view &str) 
             {{
                 {NEW_LINE.join(str_to_enum_cases)}
+                return std::nullopt;
             }}
         """
 
