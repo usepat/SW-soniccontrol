@@ -11,11 +11,6 @@
 #include "sonic_protocol_lib/base/code.hpp"
 #include "sonic_protocol_lib/base/command_def.hpp"
 
-#include "sonic_protocol_lib//**/PROTOCOL_NAMESPACE/**//command_code.hpp"
-#include "sonic_protocol_lib//**/PROTOCOL_NAMESPACE/**//consts.hpp"
-#include "sonic_protocol_lib//**/PROTOCOL_NAMESPACE/**//data_types.hpp"
-#include "sonic_protocol_lib//**/PROTOCOL_NAMESPACE/**//field_names.hpp"
-
 namespace sonic_protocol_lib {
 
 

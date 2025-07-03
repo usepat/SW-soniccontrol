@@ -16,8 +16,12 @@
 #include "sonic_protocol_lib//**/PROTOCOL_NAMESPACE/**//field_names.hpp"
 
 #define PROTOCOL_NAMESPACE
+
+namespace sonic_protocol_lib {
+    namespace enum_str_conversions = ::/**/PROTOCOL_NAMESPACE/**/::enum_str_conversions;
+}
+
 namespace sonic_protocol_lib::/**/PROTOCOL_NAMESPACE/**/ {
-#undef PROTOCOL_NAMESPACE
 
 // begin anonymous namespace
 // this namespace hides the elements. so that they are only accessible in this translation unit
@@ -55,3 +59,5 @@ inline constexpr std::array<ParamDef, 0> EMPTY_PARAMS{};
 #undef PROTOCOL_CLASS
 
 }
+
+#undef PROTOCOL_NAMESPACE

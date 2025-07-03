@@ -388,9 +388,6 @@ inline constexpr AnswerFieldDef {var_name} = {{
 
         NEW_LINE = "\n" #  backslashes are not allowed inside f-strings interpolations
 
-        result_str, _ = re.subn(r"(.)([A-Z][a-z]+)", r"\1_\2", enum_name)
-        snake_case_enum_name = result_str.lower()
-
         is_int_enum = issubclass(enum, IntEnum)
         enum_member_assignments = [
             f"\t{member.name} = {member.value if is_int_enum else i}" 
@@ -409,7 +406,8 @@ inline constexpr AnswerFieldDef {var_name} = {{
             for member in enum
         ]
         string_to_enum_conversion_function_cpp = f"""
-            inline {enum_name} convert_string_to_{snake_case_enum_name}(const etl::string_view &str) 
+            template<>
+            inline {enum_name} convert_string_to_enum<{enum_name}>(const etl::string_view &str) 
             {{
                 {NEW_LINE.join(str_to_enum_cases)}
             }}
@@ -420,7 +418,8 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 for member in enum
             ]
         enum_to_string_conversion_function_cpp = f"""
-            inline etl::string_view convert_{snake_case_enum_name}_to_string(const {enum_name} &val) 
+            template<>
+            inline etl::string_view convert_enum_to_string<{enum_name}>(const {enum_name} &val) 
             {{
                 switch (val) {{
                     {NEW_LINE.join(enum_to_str_cases)}
@@ -429,7 +428,15 @@ inline constexpr AnswerFieldDef {var_name} = {{
             }}
         """
 
-        return enum_class_def_cpp + string_to_enum_conversion_function_cpp + enum_to_string_conversion_function_cpp
+        return f"""
+            {enum_class_def_cpp}
+
+            namespace enum_str_conversions {{
+                {string_to_enum_conversion_function_cpp}
+                {enum_to_string_conversion_function_cpp}
+            }}
+        """
+        
 
     def _transpile_data_types_dict_to_enum(self, data_types: Dict[str, type]) -> str:
         enum_members = ",\n".join(data_types.keys())
