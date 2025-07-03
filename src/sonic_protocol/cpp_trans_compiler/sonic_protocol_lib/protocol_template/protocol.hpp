@@ -1,12 +1,23 @@
 #pragma once
-#include <initializer_list>
+
 #include <array>
 #include <cstdint>
+#include <string_view>
+#include <span>
+#include <optional>
 
-#include "sonic_protocol_lib/base/protocol.hpp"
-#include "etl/array.h"
+#include "sonic_protocol_lib/base/answer_def.hpp"
+#include "sonic_protocol_lib/base/code.hpp"
+#include "sonic_protocol_lib/base/command_def.hpp"
 
-namespace sonic_protocol_lib {
+#include "sonic_protocol_lib//**/PROTOCOL_NAMESPACE/**//command_code.hpp"
+#include "sonic_protocol_lib//**/PROTOCOL_NAMESPACE/**//consts.hpp"
+#include "sonic_protocol_lib//**/PROTOCOL_NAMESPACE/**//data_types.hpp"
+#include "sonic_protocol_lib//**/PROTOCOL_NAMESPACE/**//field_names.hpp"
+
+#define PROTOCOL_NAMESPACE
+namespace sonic_protocol_lib::/**/PROTOCOL_NAMESPACE/**/ {
+#undef PROTOCOL_NAMESPACE
 
 // begin anonymous namespace
 // this namespace hides the elements. so that they are only accessible in this translation unit
@@ -39,10 +50,8 @@ inline constexpr std::array<ParamDef, 0> EMPTY_PARAMS{};
 
 } // end anonymous namespace
 
-#define PROTOCOL_INSTANCE_NAME
-
-#define PROTOCOL
-constexpr Protocol /**/PROTOCOL_INSTANCE_NAME/**/ = /**/PROTOCOL_INSTANCE/**/; // the python script will replace this
-#undef PROTOCOL
+#define PROTOCOL_CLASS
+/**/PROTOCOL_CLASS/**/ // the python script will replace this
+#undef PROTOCOL_CLASS
 
 }

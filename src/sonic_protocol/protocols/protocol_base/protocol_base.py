@@ -17,15 +17,15 @@ class Protocol_base(ProtocolList):
         return None
     
     @property
-    def FieldName(self) -> type[IEFieldName]:
+    def field_name_cls(self) -> type[IEFieldName]:
         return IEFieldName
 
     @property
-    def CommandCode(self) -> type[ICommandCode]:
+    def command_code_cls(self) -> type[ICommandCode]:
         return ICommandCode
     
     @property
-    def DataTypes(self) -> Dict[str, type]:
+    def data_types(self) -> Dict[str, type]:
         return {
             "UINT8": np.uint8,
             "UINT16": np.uint16,

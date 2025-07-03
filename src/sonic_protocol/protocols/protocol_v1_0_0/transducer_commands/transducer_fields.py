@@ -1,5 +1,5 @@
 import numpy as np
-from sonic_protocol.defs import CommandParamDef, Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, UserManualAttrs, Version, Waveform
+from sonic_protocol.defs import CommandParamDef, Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, Signal, SonicTextAnswerFieldAttrs, UserManualAttrs, Version, Waveform
 from sonic_protocol.field_names import EFieldName
 
 
@@ -48,7 +48,7 @@ field_gain = AnswerFieldDef(
 
 field_signal = AnswerFieldDef(
     field_name=EFieldName.SIGNAL,
-    field_type=FieldType(field_type=bool, converter_ref=ConverterType.SIGNAL),
+    field_type=FieldType(field_type=Signal, converter_ref=ConverterType.ENUM),
 )
 
 swf_field_type = FieldType(

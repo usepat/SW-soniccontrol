@@ -1,12 +1,12 @@
 from sonic_protocol.defs import (CommunicationProtocol, InputSource,  FieldType, 
-	AnswerFieldDef, CommunicationChannel, ConverterType
+	AnswerFieldDef, CommunicationChannel, ConverterType, Activation
 )
 from sonic_protocol.field_names import EFieldName
 
 
 field_termination = AnswerFieldDef(
     field_name=EFieldName.TERMINATION,
-    field_type=FieldType(field_type=bool, converter_ref=ConverterType.TERMINATION),
+    field_type=FieldType(field_type=Activation, converter_ref=ConverterType.ENUM),
 )
 
 

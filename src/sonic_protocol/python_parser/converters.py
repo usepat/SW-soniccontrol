@@ -20,36 +20,6 @@ class Converter(abc.ABC):
     def convert_str_to_val(self, text: str) -> Any: ...
 
 
-class SignalConverter(Converter):
-    def validate_val(self, value: Any) -> bool:
-        return isinstance(value, bool)
-
-    def convert_val_to_str(self, value: Any) -> str: 
-        assert(self.validate_val(value))
-        return "ON" if value else "OFF"
-
-    def validate_str(self, text: str) -> bool: 
-        return text.lower() in ["false", "true", "on", "off"]
-
-    def convert_str_to_val(self, text: str) -> Any:
-        assert(self.validate_str(text))
-        return text.lower() in ["true", "on"]
-    
-class TerminationConverter(Converter):
-    def validate_val(self, value: Any) -> bool: 
-        return isinstance(value, bool)
-
-    def convert_val_to_str(self, value: Any) -> str: 
-        assert(self.validate_val(value))
-        return "activated" if value else "deactivated"
-    
-    def validate_str(self, text: str) -> bool: 
-        return "activated" in text or "deactivated" in text
-
-    def convert_str_to_val(self, text: str) -> Any:
-        assert(self.validate_str(text))
-        return "activated" in text
-
 class VersionConverter(Converter):
     def validate_val(self, value: Any) -> bool:
         return isinstance(value, Version)
@@ -109,21 +79,6 @@ class EnumConverter(Converter):
         if isinstance(self._target_enum_class, IntEnum):
             return self._target_enum_class(int(text))
         return self._target_enum_class(text)
-
-class BuildTypeConverter(Converter):
-    def validate_val(self, value: Any) -> bool:
-        return isinstance(value, bool)
-
-    def convert_val_to_str(self, value: Any) -> str: 
-        assert(self.validate_val(value))
-        return "RELEASE" if value else "DEBUG"
-
-    def validate_str(self, text: str) -> bool: 
-        return text.lower() in ["release", "debug"]
-
-    def convert_str_to_val(self, text: str) -> Any:
-        assert(self.validate_str(text))
-        return text.lower() == "release"
     
 T = TypeVar("T", int, str, bool, float, np.uint8, np.uint16, np.uint32)
 class PrimitiveTypeConverter(Converter):
@@ -164,17 +119,11 @@ class PrimitiveTypeConverter(Converter):
 
 def get_converter(converter_type: ConverterType, target_class: Any) -> Converter:
     match converter_type:
-        case ConverterType.SIGNAL:
-            return SignalConverter()
-        case ConverterType.TERMINATION:
-            return TerminationConverter()
         case ConverterType.ENUM:
             assert(issubclass(target_class, Enum))
             return EnumConverter(target_class)
         case ConverterType.VERSION:
             return VersionConverter()
-        case ConverterType.BUILD_TYPE:
-            return BuildTypeConverter()
         case ConverterType.PRIMITIVE:
             return PrimitiveTypeConverter(target_class)
         case ConverterType.TIMESTAMP:

@@ -18,7 +18,7 @@ from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_fields im
     param_type_timestamp,
     field_message,
 )
-from sonic_protocol.contract_helper.contract_generators import create_version_field
+from sonic_protocol.protocols.contract_generators import create_version_field
 from sonic_protocol.field_names import EFieldName
 
 get_info = CommandContract(

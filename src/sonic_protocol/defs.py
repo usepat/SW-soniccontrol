@@ -42,8 +42,6 @@ class IEFieldName(Enum):
 
 class ICommandCode(IntEnum):
     ...
-        
-
 
 class DeviceType(Enum):
     UNKNOWN = "unknown"
@@ -77,13 +75,9 @@ class ConverterType(Enum):
     We only reference them in the protocol, instead of supplying the converters,
     because the converters need to be implemented once in the firmware and once in the remote_controller code.
     """
-    SIGNAL = auto()
     VERSION = auto()
     ENUM = auto()
-    BUILD_TYPE = auto()
     PRIMITIVE = auto()
-    TERMINATION = auto()
-    ACTIVATION = auto()
     TIMESTAMP = auto()
 
 class InputSource(Enum):
@@ -130,6 +124,19 @@ class LoggerName(Enum):
     HWFC_LOGGER = "hwfcLogger"
     PROCEDURE_LOGGER = "procedureLogger"
     GLOBAL = "global"
+
+class Signal(Enum):
+    ON = "ON"
+    OFF = "OFF"
+
+class BuildType(Enum):
+    DEBUG = "DEBUG"
+    RELEASE = "RELEASE"
+
+class Activation(Enum):
+    ACTIVATED = "activated"
+    DEACTIVATED = "deactivated"
+
 
 @attrs.define()
 class Timestamp():
@@ -375,6 +382,9 @@ class Protocol:
     for which version and device type the command is valid.
     """
     info: ProtocolType = attrs.field()
+    data_types: Dict[str, type] = attrs.field()
+    command_code_cls: type[IntEnum] = attrs.field()
+    field_name_cls: type[Enum] = attrs.field()
     command_contracts: Dict[ICommandCode, CommandContract] = attrs.field()
     consts: DeviceParamConstants= attrs.field(default=DeviceParamConstants())
     

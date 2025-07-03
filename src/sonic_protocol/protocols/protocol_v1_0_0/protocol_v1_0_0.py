@@ -1,10 +1,10 @@
 from enum import Enum
 from typing import Any, Dict
 import numpy as np
-from sonic_protocol.contract_helper.contract_generators import create_version_field
+from sonic_protocol.protocols.contract_generators import create_version_field
 from sonic_protocol.defs import (
-    CommunicationChannel, CommunicationProtocol, ConverterType, DeviceParamConstantType, FieldType, IEFieldName, InputSource, LoggerName, Loglevel, Procedure, 
-    ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
+    BuildType, CommunicationChannel, CommunicationProtocol, ConverterType, DeviceParamConstantType, FieldType, IEFieldName, InputSource, LoggerName, Loglevel, Procedure, 
+    ProtocolType, Signal, SonicTextCommandAttrs, Activation, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType, Waveform,
 )
 from sonic_protocol.command_codes import CommandCode, ICommandCode
@@ -52,7 +52,7 @@ get_protocol = CommandContract(
             create_version_field(EFieldName.PROTOCOL_VERSION),
             AnswerFieldDef(
                 field_name=EFieldName.IS_RELEASE, 
-                field_type=FieldType(bool, converter_ref=ConverterType.BUILD_TYPE), 
+                field_type=FieldType(BuildType, converter_ref=ConverterType.ENUM), 
             ),
             AnswerFieldDef(
                 EFieldName.ADDITIONAL_OPTIONS,
@@ -77,15 +77,15 @@ class Protocol_v1_0_0(ProtocolList):
         return self._previous_protocol
     
     @property
-    def FieldName(self) -> type[IEFieldName]:
+    def field_name_cls(self) -> type[IEFieldName]:
         return EFieldName
 
     @property
-    def CommandCode(self) -> type[ICommandCode]:
+    def command_code_cls(self) -> type[ICommandCode]:
         return CommandCode
 
     @property
-    def DataTypes(self) -> Dict[str, type]:
+    def data_types(self) -> Dict[str, type]:
         data_types = {
             "E_COMMUNICATION_CHANNEL": CommunicationChannel,
             "E_COMMUNICATION_PROTOCOL": CommunicationProtocol,
@@ -93,9 +93,12 @@ class Protocol_v1_0_0(ProtocolList):
             "E_PROCEDURE": Procedure,
             "E_WAVEFORM": Waveform,
             "E_LOG_LEVEL": Loglevel,
-            "E_LOGGER_NAME": LoggerName
+            "E_LOGGER_NAME": LoggerName,
+            "E_SIGNAL": Signal,
+            "E_BUILD_TYPE": BuildType,
+            "E_ACTIVATION": Activation,
         }
-        data_types.update(self._previous_protocol.DataTypes)
+        data_types.update(self._previous_protocol.data_types)
         return data_types
 
     def supports_device_type(self, device_type: DeviceType) -> bool:

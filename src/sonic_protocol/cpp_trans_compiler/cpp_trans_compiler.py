@@ -4,7 +4,7 @@ from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
 
 import attrs
 import numpy as np
-from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, IEFieldName, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 import importlib.resources as rs
 import shutil
 import sonic_protocol.cpp_trans_compiler
@@ -85,7 +85,6 @@ class CppTransCompiler:
         template_lib_dir = output_dir / "protocol_template"
         protocol_lib_dir = output_dir / "include" / "sonic_protocol_lib" / protocol_name
 
-
         self._inject_code_into_file(
             base_lib_dir / "si_units.hpp",
             SI_UNIT=self._transpile_enum(SIUnit),
@@ -95,43 +94,45 @@ class CppTransCompiler:
         self._inject_code_into_template(
             template_lib_dir / "field_names.hpp",
             protocol_lib_dir / "field_names.hpp",
-            CODE_INJECTION=self._transpile_enum(protocol_list.FieldName, "FieldName_t")
+            PROTOCOL_NAMESPACE=protocol_name,
+            CODE_INJECTION=self._transpile_enum(protocol_list.field_name_cls, "FieldName_t"),
         )
 
         self._inject_code_into_template(
             template_lib_dir / "command_code.hpp",
             protocol_lib_dir / "command_code.hpp",
-            COMMAND_CODE=self._transpile_enum(protocol_list.CommandCode, "CommandCode_t"),
-            IS_VALID_CODE=self._generate_is_valid_code_cpp_function(protocol_list.CommandCode)
+            PROTOCOL_NAMESPACE=protocol_name,
+            COMMAND_CODE=self._transpile_enum(protocol_list.command_code_cls, "CommandCode_t"),
+            IS_VALID_CODE=self._generate_is_valid_code_cpp_function(protocol_list.command_code_cls)
         )
 
         data_type_defs = ""
-        data_type_defs += self._transpile_data_types_dict_to_enum(protocol_list.DataTypes)
-        for data_type in protocol_list.DataTypes.values():
+        data_type_defs += self._transpile_data_types_dict_to_enum(protocol_list.data_types)
+        for data_type in protocol_list.data_types.values():
             if issubclass(data_type, Enum):
                 data_type_defs += self._transpile_enum(data_type)
 
         self._inject_code_into_template(
             template_lib_dir / "data_types.hpp",
             protocol_lib_dir / "data_types.hpp",
+            PROTOCOL_NAMESPACE=protocol_name,
             CODE_INJECTION=data_type_defs
         )
         
-        protocol_cpp_name = f"protocol_{create_protocol_info_cpp_var_name(protocol_info)}"
         protocol = protocol_list.build_protocol_for(protocol_info)
 
         self.consts = protocol.consts 
-        protocol_instance, command_defs, answer_defs,  = self._transpile_command_contracts(protocol_info, protocol.command_contracts, protocol_cpp_name, options=options)
+        protocol_class, command_defs, answer_defs,  = self._transpile_protocol(protocol_info, protocol, options=options)
 
         param_defs = self._transpile_param_defs_from_cache()
         field_defs = self._transpile_field_defs_from_cache()
         field_limits = self._transpile_field_limits_from_cache()
         allowed_values = self._transpile_allowed_values_from_cache()
         self._inject_code_into_template(
-            template_lib_dir / "protocol_instance.hpp", 
-            protocol_lib_dir / "protocol_instance.hpp",
-            PROTOCOL_INSTANCE_NAME=protocol_name.capitalize() + "ProtocolInstance",
-            PROTOCOL_INSTANCE=protocol_instance,
+            template_lib_dir / "protocol.hpp", 
+            protocol_lib_dir / "protocol.hpp",
+            PROTOCOL_NAMESPACE=protocol_name,
+            PROTOCOL_CLASS=protocol_class,
             FIELD_LIMITS=field_limits,
             FIELD_DEFS = field_defs,
             PARAM_DEFS = param_defs,
@@ -144,6 +145,7 @@ class CppTransCompiler:
         self._inject_code_into_template(
             template_lib_dir / "consts.hpp",
             protocol_lib_dir / "consts.hpp",
+            PROTOCOL_NAMESPACE=protocol_name,
             CONSTS=consts_defs
         )
          
@@ -174,8 +176,11 @@ class CppTransCompiler:
             const_defs.append(f"constexpr {py_type_to_cpp_type(const_attr.type)} {const_name.upper()} {{ {getattr(consts, const_name)} }};")
         return "\n".join(const_defs)
 
-    def _transpile_command_contracts(
-            self, protocol_version: ProtocolType, command_list: Dict[ICommandCode, CommandContract], protocol_name: str, options: Optional[List[str]] = None) -> Tuple[str, str, str]:
+    def _transpile_protocol(
+            self, protocol_info: ProtocolType, protocol: Protocol, options: Optional[List[str]] = None) -> Tuple[str, str, str]:
+        command_list = protocol.command_contracts
+        protocol_cpp_name = f"protocol_{create_protocol_info_cpp_var_name(protocol_info)}"
+        
         answer_defs = []
         command_defs = []
         param_defs = []
@@ -183,16 +188,16 @@ class CppTransCompiler:
         field_defs = []
         for code, command_lookup in sorted(command_list.items()):
             # In Transpile Command and answer def add single definition to a set an only return the names of the instances
-            command_param_str_identifier_defs_tuple = self._transpile_command_def(code, command_lookup.command_def, protocol_name)
+            command_param_str_identifier_defs_tuple = self._transpile_command_def(code, command_lookup.command_def, protocol_cpp_name)
             command_defs.append(command_param_str_identifier_defs_tuple[0])
             param_defs.append(command_param_str_identifier_defs_tuple[1])
             string_identifiers.append(command_param_str_identifier_defs_tuple[2])
-            answer_field_defs_tuple = self._transpile_answer_def(code, command_lookup.answer_def, protocol_name)
+            answer_field_defs_tuple = self._transpile_answer_def(code, command_lookup.answer_def, protocol_cpp_name)
             answer_defs.append(answer_field_defs_tuple[0])
             field_defs.append(answer_field_defs_tuple[1])
         
-        command_defs_cpp_var_name = protocol_name + "_command_defs"
-        answer_defs_cpp_var_name = protocol_name + "_answer_defs"
+        command_defs_cpp_var_name = protocol_cpp_name + "_command_defs"
+        answer_defs_cpp_var_name = protocol_cpp_name + "_answer_defs"
         command_defs_array = f"""
 {"".join(param_defs)}
 {"".join(string_identifiers)}
@@ -203,20 +208,28 @@ inline constexpr std::array<std::optional<CommandDef>, {len(command_defs)}> {com
 {"".join(field_defs)}
 inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_name} = {{{", ".join(answer_defs)}
 }};"""
-        version = protocol_version.version
-        protocol_def = f"""    Protocol {{
-        .version = Version {{
-            .major = {version.major},
-            .minor = {version.minor},
-            .patch = {version.patch},
-        }},
-        .device = DeviceType::{protocol_version.device_type.name},
-        .isRelease = {str(protocol_version.is_release).lower()},
-        .options = "{", ".join(options) if options else ""}",
-        .commands = {command_defs_cpp_var_name},
-        .answers = {answer_defs_cpp_var_name}
-    }}"""
-        return (protocol_def, command_defs_array, answer_defs_array)
+        version = protocol_info.version
+
+        protocol_cpp_class = f"""
+            struct Protocol {{
+                using CommandCode = {protocol.command_code_cls.__name__};
+                using FieldName = {protocol.field_name_cls.__name__};
+                using DataType = DataType;
+
+                inline static constexpr auto version = Version {{
+                    .major = {version.major},
+                    .minor = {version.minor},
+                    .patch = {version.patch},
+                }};
+                inline static constexpr auto device = DeviceType::{protocol_info.device_type.name};
+                inline static constexpr auto isRelease = {str(protocol_info.is_release).lower()};
+                inline static constexpr auto options = "{", ".join(options) if options else ""}";
+                inline static constexpr auto commands = {command_defs_cpp_var_name};
+                inline static constexpr auto answers = {answer_defs_cpp_var_name};
+            }};
+        """
+
+        return (protocol_cpp_class, command_defs_array, answer_defs_array)
 
     def _transpile_command_def(self, code: ICommandCode, command_def: CommandDef | None, protocol_name: str) -> Tuple[str, str, str]:
         if command_def is None:
@@ -338,7 +351,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
             self._field_limits_cache[field_limits] = cpp_limits_var
 
         cpp_field_type_def: str = f"""FieldTypeDef {{
-            .type = DataType::{find_value_in_dictionary(prot_list.DataTypes, field_type.field_type)},
+            .type = DataType::{find_value_in_dictionary(prot_list.data_types, field_type.field_type)},
             .converter_reference = ConverterReference::{field_type.converter_ref.name},
             .limits = static_cast<const void *>(&{cpp_limits_var}),
             .si_unit = {f"SIUnit::{field_type.si_unit.name}" if field_type.si_unit is not None else CPP_NULLOPT},
@@ -430,8 +443,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
         enum_name = enum.__name__
         cases = "\n".join([f"case {enum_name}::{enum_member}:" for enum_member in enum])
         return f"""
-            template<>
-            inline bool isValidCode<{enum_name}>(std::uint16_t value) {{
+            inline bool isValidCode(std::uint16_t value) {{
                 {enum_name} code = static_cast<{enum_name}>(value);
                 switch (code) {{
                         { cases }

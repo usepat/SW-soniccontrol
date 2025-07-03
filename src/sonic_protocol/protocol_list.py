@@ -24,17 +24,17 @@ class ProtocolList:
 
     @property
     @abc.abstractmethod
-    def FieldName(self) -> type[IEFieldName]:
+    def field_name_cls(self) -> type[IEFieldName]:
         ...
 
     @property
     @abc.abstractmethod
-    def CommandCode(self) -> type[ICommandCode]:
+    def command_code_cls(self) -> type[ICommandCode]:
         ...
 
     @property
     @abc.abstractmethod
-    def DataTypes(self) -> Dict[str, type]:
+    def data_types(self) -> Dict[str, type]:
         ...
 
     @abc.abstractmethod
@@ -66,7 +66,8 @@ class ProtocolList:
         if self.previous_protocol is not None and self.previous_protocol.supports_device_type(protocol_type.device_type):
             protocol = self.previous_protocol.build_protocol_for(protocol_type)
         else:
-            protocol = Protocol(protocol_type, {})
+            protocol = Protocol(protocol_type, self.data_types, self.command_code_cls,
+                                 self.field_name_cls, command_contracts={})
 
         if self.version <= protocol_type.version:
             # If this version is newer than the protocol wanted, we do not overwrite and add command contracts
@@ -84,6 +85,10 @@ class ProtocolList:
                     protocol.command_contracts[command_code] = command_contract
                 elif command_contract.is_release:
                     protocol.command_contracts[command_code] = command_contract
+
+            protocol.data_types = self.data_types
+            protocol.field_name_cls = self.field_name_cls
+            protocol.command_code_cls = self.command_code_cls
 
         return protocol
 

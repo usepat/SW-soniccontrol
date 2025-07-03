@@ -5,7 +5,9 @@
 #include <cassert>
 #include <optional>
 
-namespace sonic_protocol_lib {
+#define PROTOCOL_NAMESPACE
+namespace sonic_protocol_lib::/**/PROTOCOL_NAMESPACE/**/ {
+#undef PROTOCOL_NAMESPACE
 
 #define CODE_INJECTION 
 /**/CODE_INJECTION/**/  // the python script will replace this

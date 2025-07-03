@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <etl/string_view.h>
 
-namespace sonic_protocol_lib {
+#define PROTOCOL_NAMESPACE
+namespace sonic_protocol_lib::/**/PROTOCOL_NAMESPACE/**/ {
+#undef PROTOCOL_NAMESPACE
 
 
     

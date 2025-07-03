@@ -28,17 +28,17 @@ class Protocol_v2_0_0(ProtocolList):
         return self._previous_protocol
     
     @property
-    def FieldName(self) -> type[IEFieldName]:
+    def field_name_cls(self) -> type[IEFieldName]:
         return EFieldName
 
     @property
-    def CommandCode(self) -> type[ICommandCode]:
+    def command_code_cls(self) -> type[ICommandCode]:
         return CommandCode
 
     @property
-    def DataTypes(self) -> Dict[str, type]:
+    def data_types(self) -> Dict[str, type]:
         data_types = {}
-        data_types.update(self._previous_protocol.DataTypes)
+        data_types.update(self._previous_protocol.data_types)
         return data_types
 
     def supports_device_type(self, device_type: DeviceType) -> bool:

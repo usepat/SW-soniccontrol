@@ -16,11 +16,6 @@ enum class ConverterReference {
     ENUM,
     VERSION,
     TIMESTAMP,
-
-    SIGNAL,
-    BUILD_TYPE,
-    TERMINATION,
-    ACTIVATION
 };
 
 template <typename T>
