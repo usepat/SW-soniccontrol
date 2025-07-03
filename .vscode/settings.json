@@ -70,7 +70,9 @@
         "span": "cpp",
         "sstream": "cpp",
         "stop_token": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "charconv": "cpp",
+        "text_encoding": "cpp"
     },
     "github.copilot.enable": {
         "*": false,
