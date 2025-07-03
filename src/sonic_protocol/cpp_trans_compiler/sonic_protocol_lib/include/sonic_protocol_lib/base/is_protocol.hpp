@@ -25,7 +25,7 @@ concept ContainerOf =
     std::same_as<std::ranges::range_value_t<C>, T>;
 
 template<typename Protocol>
-concept IsProtocol = requires {
+concept ProtocolConcept = requires {
     // Check nested type aliases
     typename Protocol::CommandCode;
     typename Protocol::FieldName;
