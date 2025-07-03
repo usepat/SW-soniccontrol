@@ -10,6 +10,7 @@ namespace sonic_protocol_lib {
 
 
 using DataType_t = uint16_t;
+using EnumValue_t = int32_t;
 
 enum class ConverterReference {
     PRIMITIVE,

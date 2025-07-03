@@ -91,26 +91,31 @@ class CppTransCompiler:
             SI_PREFIX=self._transpile_enum(SIPrefix),
         )
 
+        protocol = protocol_list.build_protocol_for(protocol_info)
+
+
         self._inject_code_into_template(
             template_lib_dir / "field_names.hpp",
             protocol_lib_dir / "field_names.hpp",
             PROTOCOL_NAMESPACE=protocol_name,
-            CODE_INJECTION=self._transpile_enum(protocol_list.field_name_cls, "FieldName_t"),
+            CODE_INJECTION=self._transpile_enum(protocol.field_name_cls, "FieldName_t"),
         )
 
         self._inject_code_into_template(
             template_lib_dir / "command_code.hpp",
             protocol_lib_dir / "command_code.hpp",
             PROTOCOL_NAMESPACE=protocol_name,
-            COMMAND_CODE=self._transpile_enum(protocol_list.command_code_cls, "CommandCode_t"),
-            IS_VALID_CODE=self._generate_is_valid_code_cpp_function(protocol_list.command_code_cls)
+            COMMAND_CODE=self._transpile_enum(protocol.command_code_cls, "CommandCode_t"),
+            IS_VALID_CODE=self._generate_is_valid_code_cpp_function(protocol.command_code_cls)
         )
 
         data_type_defs = ""
-        data_type_defs += self._transpile_data_types_dict_to_enum(protocol_list.data_types)
-        for data_type in protocol_list.data_types.values():
+        data_type_defs += self._transpile_data_types_dict_to_enum(protocol.data_types)
+        for data_type in protocol.data_types.values():
             if issubclass(data_type, Enum):
                 data_type_defs += self._transpile_enum(data_type)
+
+        data_type_defs += self._transpile_dynamic_enum_conversion_func(protocol.data_types)
 
         self._inject_code_into_template(
             template_lib_dir / "data_types.hpp",
@@ -119,8 +124,6 @@ class CppTransCompiler:
             CODE_INJECTION=data_type_defs
         )
         
-        protocol = protocol_list.build_protocol_for(protocol_info)
-
         self.consts = protocol.consts 
         protocol_class, command_defs, answer_defs,  = self._transpile_protocol(protocol_info, protocol, options=options)
 
@@ -382,6 +385,47 @@ inline constexpr AnswerFieldDef {var_name} = {{
         for allowed_values, var_name in self._allowed_values.items():
             transpilation_output += f"constexpr std::array<{py_type_to_cpp_type(type(allowed_values))}, {len(allowed_values)}> {var_name} = {convert_to_cpp_initializer_list(allowed_values)};\n"
         return transpilation_output
+
+    def _transpile_dynamic_enum_conversion_func(self, data_types: Dict[str, type]) -> str:
+        enum_to_str_conversion_cases = ""
+        str_to_enum_conversion_cases = ""
+        
+        for data_type_name, data_type in data_types.items():
+            if not issubclass(data_type, Enum):
+                continue
+
+            enum_to_str_conversion_cases += f"""
+                case DataType::{data_type_name}:
+                return convert_enum_to_str<{data_type.__name__}>(static_cast<{data_type.__name__}>(enum_member));
+            """
+            str_to_enum_conversion_cases += f"""
+                case DataType::{data_type_name}:
+                return static_cast<{data_type.__name__}>(convert_str_to_enum<{data_type.__name__}>(str));
+            """
+
+        return f"""
+            namespace enum_str_conversions {{
+
+                template<>
+                etl::string_view data_type_dispatch_convert_enum_to_str<DataType>(const DataType data_type, const EnumValue_t enum_val) {{
+                    switch (data_type) {{
+                        {enum_to_str_conversion_cases}
+                        default:
+                            std::unreachable();
+                    }}
+                }}
+
+                template<>
+                EnumValue_t data_type_dispatch_convert_str_to_enum<DataType>(const DataType data_type, const etl::string_view& str) {{
+                    switch (data_type) {{
+                        {str_to_enum_conversion_cases}
+                        default:
+                            std::unreachable();
+                    }}
+                }}
+
+            }}
+        """
 
     def _transpile_enum(self, enum: type[Enum], underlying_type: str = "std::uint16_t") -> str:
         enum_name = enum.__name__
