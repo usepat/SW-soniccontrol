@@ -17,8 +17,8 @@
 
 #define PROTOCOL_NAMESPACE
 
-namespace sonic_protocol_lib {
-    namespace enum_str_conversions = ::/**/PROTOCOL_NAMESPACE/**/::enum_str_conversions;
+namespace sonic_protocol_lib::enum_str_conversions {
+    using namespace ::/**/PROTOCOL_NAMESPACE/**/::enum_str_conversions;
 }
 
 namespace sonic_protocol_lib::/**/PROTOCOL_NAMESPACE/**/ {

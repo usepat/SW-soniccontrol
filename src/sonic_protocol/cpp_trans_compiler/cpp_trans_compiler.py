@@ -4,11 +4,11 @@ from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
 
 import attrs
 import numpy as np
-from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.defs import DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 import importlib.resources as rs
 import shutil
+import os
 import sonic_protocol.cpp_trans_compiler
-import re
 
 from sonic_protocol.command_codes import ICommandCode
 from sonic_protocol.protocol_list import ProtocolList
@@ -51,7 +51,6 @@ def py_type_to_cpp_type(data_type: type) -> str:
         return "float"
     else:
         return "uint32_t"
-        #raise ValueError(f"Unknown data type: {data_type}")
 
 def create_protocol_info_cpp_var_name(info: ProtocolType) -> str:
     return f"{info.device_type.name}v{info.version.major}_{info.version.minor}_{info.version.patch}"
@@ -75,15 +74,14 @@ class CppTransCompiler:
         self._field_definitions: dict[AnswerFieldDef, str] = {}
         self._allowed_values: dict[Tuple[Any], str] = {}
 
-    def generate_sonic_protocol_lib(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path, options: Optional[List[str]] = None, protocol_name: str = "default", additional_enums: Optional[Dict[str, type[Enum]]] = None):
-        # copy protocol definitions to output directory
+    def transpile_protocol_base(self, output_dir: Path):
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
-        shutil.copytree(Path(str(lib_path)), output_dir)
-    
+        src_dir = Path(str(lib_path)) / "include" / "sonic_protocol_lib" / "base"
         base_lib_dir = output_dir / "include" / "sonic_protocol_lib" / "base"
-        template_lib_dir = output_dir / "protocol_template"
-        protocol_lib_dir = output_dir / "include" / "sonic_protocol_lib" / protocol_name
+        os.makedirs(base_lib_dir)
+        
+        shutil.copytree(src_dir, base_lib_dir)
 
         self._inject_code_into_file(
             base_lib_dir / "si_units.hpp",
@@ -91,18 +89,26 @@ class CppTransCompiler:
             SI_PREFIX=self._transpile_enum(SIPrefix),
         )
 
+    def transpile_protocol(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path, options: Optional[List[str]] = None, protocol_name: str = "default"):
+        # copy protocol definitions to output directory
+        shutil.rmtree(output_dir, ignore_errors=True)
+        lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
+    
+        src_template_dir = Path(str(lib_path)) / "protocol_template"
+        protocol_lib_dir = output_dir / "include" / "sonic_protocol_lib" / protocol_name
+        os.makedirs(protocol_lib_dir)
+
         protocol = protocol_list.build_protocol_for(protocol_info)
 
-
         self._inject_code_into_template(
-            template_lib_dir / "field_names.hpp",
+            src_template_dir / "field_names.hpp",
             protocol_lib_dir / "field_names.hpp",
             PROTOCOL_NAMESPACE=protocol_name,
             CODE_INJECTION=self._transpile_enum(protocol.field_name_cls, "FieldName_t"),
         )
 
         self._inject_code_into_template(
-            template_lib_dir / "command_code.hpp",
+            src_template_dir / "command_code.hpp",
             protocol_lib_dir / "command_code.hpp",
             PROTOCOL_NAMESPACE=protocol_name,
             COMMAND_CODE=self._transpile_enum(protocol.command_code_cls, "CommandCode_t"),
@@ -118,7 +124,7 @@ class CppTransCompiler:
         data_type_defs += self._transpile_dynamic_enum_conversion_func(protocol.data_types)
 
         self._inject_code_into_template(
-            template_lib_dir / "data_types.hpp",
+            src_template_dir / "data_types.hpp",
             protocol_lib_dir / "data_types.hpp",
             PROTOCOL_NAMESPACE=protocol_name,
             CODE_INJECTION=data_type_defs
@@ -132,7 +138,7 @@ class CppTransCompiler:
         field_limits = self._transpile_field_limits_from_cache()
         allowed_values = self._transpile_allowed_values_from_cache()
         self._inject_code_into_template(
-            template_lib_dir / "protocol.hpp", 
+            src_template_dir / "protocol.hpp", 
             protocol_lib_dir / "protocol.hpp",
             PROTOCOL_NAMESPACE=protocol_name,
             PROTOCOL_CLASS=protocol_class,
@@ -146,7 +152,7 @@ class CppTransCompiler:
 
         consts_defs = self._transpile_consts(self.consts)
         self._inject_code_into_template(
-            template_lib_dir / "consts.hpp",
+            src_template_dir / "consts.hpp",
             protocol_lib_dir / "consts.hpp",
             PROTOCOL_NAMESPACE=protocol_name,
             CONSTS=consts_defs
@@ -532,7 +538,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
 if __name__ == "__main__":
     compiler = CppTransCompiler()
     output_dir=Path("./output/generated")
-    compiler.generate_sonic_protocol_lib(
+    compiler.transpile_protocol(
         protocol_list=prot_list,
         protocol_info=ProtocolType(Version(2, 0, 0), DeviceType.MVP_WORKER),
         output_dir=output_dir
