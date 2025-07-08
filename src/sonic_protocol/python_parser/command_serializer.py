@@ -1,5 +1,5 @@
 from sonic_protocol.python_parser.commands import Command
-from sonic_protocol.defs import Protocol
+from sonic_protocol.schema import Protocol
 
 class CommandSerializer:
     def __init__(self, protocol: Protocol):

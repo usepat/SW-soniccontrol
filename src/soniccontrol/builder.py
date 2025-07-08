@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 
 from sonic_protocol.protocol import protocol_list
-from sonic_protocol.defs import DeviceType, ProtocolType, Version
+from sonic_protocol.schema import DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName
 from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.legacy_communicator import LegacyCommunicator

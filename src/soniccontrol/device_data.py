@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import attrs
 
-from sonic_protocol.defs import DeviceType, Version
+from sonic_protocol.schema import DeviceType, Version
 
 
 

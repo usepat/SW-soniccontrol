@@ -1,6 +1,6 @@
 from typing import Any, Dict
 import attrs
-from sonic_protocol.defs import CommandCode
+from sonic_protocol.schema import CommandCode
 from sonic_protocol.field_names import EFieldName
 
 

@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import numpy as np
 from sonic_protocol.command_codes import BaseCommandCode
-from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceType, ICommandCode, IEFieldName, ProtocolType, Timestamp, Version
+from sonic_protocol.schema import CommandContract, DeviceParamConstantType, DeviceType, ICommandCode, IEFieldName, ProtocolType, Timestamp, Version
 from sonic_protocol.field_names import BaseFieldName
 from sonic_protocol.protocol_list import ProtocolList
 

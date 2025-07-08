@@ -3,7 +3,7 @@ from marshmallow_annotations.ext.attrs import AttrsSchema
 from marshmallow_annotations import registry
 from enum import Enum
 
-from sonic_protocol.defs import DeviceType, Version
+from sonic_protocol.schema import DeviceType, Version
 from soniccontrol.data_capturing.capture_target import CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.device_data import FirmwareInfo

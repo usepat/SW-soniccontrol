@@ -1,5 +1,5 @@
 
-from sonic_protocol.defs import AnswerFieldDef, ConverterType, FieldType, Version
+from sonic_protocol.schema import AnswerFieldDef, ConverterType, FieldType, Version
 from sonic_protocol.field_names import EFieldName
 
 def create_version_field(name: EFieldName) -> AnswerFieldDef:

@@ -2,7 +2,7 @@ import abc
 import argparse
 from enum import Enum
 from pathlib import Path
-from sonic_protocol.defs import AnswerFieldDef, ICommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
+from sonic_protocol.schema import AnswerFieldDef, ICommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
 from sonic_protocol.protocol import protocol_list
 
 

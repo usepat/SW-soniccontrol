@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List
 from sonic_protocol.command_codes import CommandCode, ICommandCode
-from sonic_protocol.defs import CommandContract, DeviceParamConstantType, DeviceType, IEFieldName, ProtocolType, Version
+from sonic_protocol.schema import CommandContract, DeviceParamConstantType, DeviceType, IEFieldName, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocols.protocol_v1_0_0.protocol_v1_0_0 import Protocol_v1_0_0

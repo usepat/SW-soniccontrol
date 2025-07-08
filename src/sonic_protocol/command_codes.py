@@ -1,6 +1,6 @@
 
 from enum import unique
-from sonic_protocol.defs import ICommandCode
+from sonic_protocol.schema import ICommandCode
 
 
 @unique

@@ -2,7 +2,7 @@
 
 from typing import List
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
+from sonic_protocol.schema import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_fields as fields
 

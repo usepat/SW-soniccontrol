@@ -4,7 +4,7 @@ from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
 
 import attrs
 import numpy as np
-from sonic_protocol.defs import DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.schema import DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 import importlib.resources as rs
 import shutil
 import os
@@ -74,17 +74,17 @@ class CppTransCompiler:
         self._field_definitions: dict[AnswerFieldDef, str] = {}
         self._allowed_values: dict[Tuple[Any], str] = {}
 
-    def transpile_protocol_base(self, output_dir: Path):
+    def transpile_protocol_schema(self, output_dir: Path):
         shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
-        src_dir = Path(str(lib_path)) / "include" / "sonic_protocol_lib" / "base"
-        base_lib_dir = output_dir / "include" / "sonic_protocol_lib" / "base"
-        os.makedirs(base_lib_dir)
+        src_dir = Path(str(lib_path)) / "include" / "sonic_protocol_lib" / "schema"
+        schema_lib_dir = output_dir / "include" / "sonic_protocol_lib" / "schema"
+        os.makedirs(schema_lib_dir)
         
-        shutil.copytree(src_dir, base_lib_dir)
+        shutil.copytree(src_dir, schema_lib_dir)
 
         self._inject_code_into_file(
-            base_lib_dir / "si_units.hpp",
+            schema_lib_dir / "si_units.hpp",
             SI_UNIT=self._transpile_enum(SIUnit),
             SI_PREFIX=self._transpile_enum(SIPrefix),
         )

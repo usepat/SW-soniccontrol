@@ -1,9 +1,9 @@
 from typing import Any
 from typing_extensions import Dict
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.defs import SonicTextCommandAttrs
+from sonic_protocol.schema import SonicTextCommandAttrs
 from sonic_protocol.python_parser.commands import Command
-from sonic_protocol.defs import Protocol
+from sonic_protocol.schema import Protocol
 import re
 
 class DeserializedCommand(Command):

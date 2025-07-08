@@ -1,6 +1,6 @@
 from typing import Any
 from sonic_protocol.python_parser.converters import get_converter
-from sonic_protocol.defs import AnswerFieldDef, ConverterType
+from sonic_protocol.schema import AnswerFieldDef, ConverterType
 
 
 class AnswerFieldToStringConverter:

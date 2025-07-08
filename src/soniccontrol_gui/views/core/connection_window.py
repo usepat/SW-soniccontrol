@@ -6,7 +6,7 @@ import serial.tools.list_ports as list_ports
 import ttkbootstrap as ttk
 import tkinter as tk
 
-from sonic_protocol.defs import Version
+from sonic_protocol.schema import Version
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View

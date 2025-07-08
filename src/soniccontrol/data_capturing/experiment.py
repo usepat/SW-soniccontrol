@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 import attrs
 import datetime
 
-from sonic_protocol.defs import Version
+from sonic_protocol.schema import Version
 from sonic_protocol.field_names import EFieldName
 from soniccontrol.data_capturing.capture_target import CaptureTargets
 from soniccontrol.device_data import FirmwareInfo

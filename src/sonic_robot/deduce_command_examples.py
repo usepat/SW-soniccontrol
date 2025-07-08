@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List
-from sonic_protocol.defs import CommandParamDef, DeviceParamConstantType, DeviceParamConstants, DeviceType, ProtocolType, Version
+from sonic_protocol.schema import CommandParamDef, DeviceParamConstantType, DeviceParamConstants, DeviceType, ProtocolType, Version
 from sonic_protocol.protocol import protocol_list
 
 # TODO: we could from max and min values also deduce commands that should fail

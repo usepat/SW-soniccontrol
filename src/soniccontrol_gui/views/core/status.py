@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Tuple
 import ttkbootstrap as ttk
-from sonic_protocol.defs import AnswerFieldDef
+from sonic_protocol.schema import AnswerFieldDef
 from sonic_protocol.python_parser.answer_field_converter import AnswerFieldToStringConverter
 from sonic_protocol.field_names import EFieldName
 from soniccontrol_gui.ui_component import UIComponent

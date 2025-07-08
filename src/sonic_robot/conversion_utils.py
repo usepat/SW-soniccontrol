@@ -1,4 +1,4 @@
-from sonic_protocol.defs import Procedure, InputSource
+from sonic_protocol.schema import Procedure, InputSource
 from robot.api.deco import keyword
 
 

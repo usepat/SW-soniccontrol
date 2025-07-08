@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import sys
 from typing import Final
-from sonic_protocol.defs import Version
+from sonic_protocol.schema import Version
 from importlib.metadata import version
 import re
 

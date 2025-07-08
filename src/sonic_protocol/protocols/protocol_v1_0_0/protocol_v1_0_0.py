@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Any, Dict
 import numpy as np
 from sonic_protocol.protocols.contract_generators import create_version_field
-from sonic_protocol.defs import (
+from sonic_protocol.schema import (
     BuildType, CommunicationChannel, CommunicationProtocol, ConverterType, DeviceParamConstantType, FieldType, IEFieldName, InputSource, LoggerName, Loglevel, Procedure, 
     ProtocolType, Signal, SonicTextCommandAttrs, Activation, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType, Waveform,

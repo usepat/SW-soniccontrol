@@ -1,5 +1,5 @@
 from typing import List
-from sonic_protocol.defs import (
+from sonic_protocol.schema import (
 	SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandContract
 )
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import (

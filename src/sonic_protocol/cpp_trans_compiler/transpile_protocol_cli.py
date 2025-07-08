@@ -1,8 +1,9 @@
 import argparse
 from pathlib import Path
-from sonic_protocol.defs import Version, DeviceType, ProtocolType
+from sonic_protocol.schema import Version, DeviceType, ProtocolType
 from sonic_protocol.cpp_trans_compiler.cpp_trans_compiler import CppTransCompiler
 from sonic_protocol.protocol_list import ProtocolList
+from sonic_protocol.protocols.protocol_base.protocol_base import Protocol_base
 from typing import List
 
 def transpile_protocol_base_cli():
@@ -10,10 +11,18 @@ def transpile_protocol_base_cli():
     parser.add_argument("--out_lib_path", type=Path, required=True)
     args = parser.parse_args()
 
-    print("Transpile protocol base classes")
+    print("Transpile protocol definition classes")
         
-    CppTransCompiler().transpile_protocol_base(args.out_lib_path)
-    print("Transpiled protocol base classes at ", args.out_lib_path)
+    CppTransCompiler().transpile_protocol_schema(args.out_lib_path)
+    print("Transpiled protocol definition classes at ", args.out_lib_path)
+
+    print("Transpile base protocol")
+    CppTransCompiler().transpile_protocol(
+        protocol_list=Protocol_base(),
+        protocol_info=ProtocolType(Version(0, 0, 0), DeviceType.UNKNOWN),
+        output_dir=args.out_lib_path,
+        protocol_name="base"
+    )
 
 
 def transpile_protocol_cli(protocol_list: ProtocolList, protocol_name: str, options: List[str] = []):

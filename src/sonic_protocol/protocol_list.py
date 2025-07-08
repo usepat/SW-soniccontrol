@@ -1,6 +1,6 @@
 from typing import Any, Dict
 from sonic_protocol.command_codes import ICommandCode
-from sonic_protocol.defs import DeviceParamConstantType, DeviceType, IEFieldName, ProtocolType, Protocol, Version, CommandContract
+from sonic_protocol.schema import DeviceParamConstantType, DeviceType, IEFieldName, ProtocolType, Protocol, Version, CommandContract
 import abc
 import attrs
 

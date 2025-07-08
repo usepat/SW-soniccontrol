@@ -1,5 +1,5 @@
 from typing import List
-from sonic_protocol.defs import (
+from sonic_protocol.schema import (
     ConverterType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, 
     AnswerDef, CommandParamDef, AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, LoggerName, Loglevel
 )

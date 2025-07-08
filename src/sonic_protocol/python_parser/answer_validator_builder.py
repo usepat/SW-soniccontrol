@@ -1,7 +1,7 @@
 from typing import Dict, List
 from sonic_protocol.python_parser.answer import AfterConverter, AnswerValidator
 from sonic_protocol.python_parser.converters import Converter, get_converter
-from sonic_protocol.defs import AnswerDef, AnswerFieldDef, ConverterType, EFieldName
+from sonic_protocol.schema import AnswerDef, AnswerFieldDef, ConverterType, EFieldName
 import numpy as np
 
 

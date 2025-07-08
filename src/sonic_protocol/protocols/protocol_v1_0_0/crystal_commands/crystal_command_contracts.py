@@ -1,6 +1,6 @@
 from typing import List
 import numpy as np
-from sonic_protocol.defs import (
+from sonic_protocol.schema import (
     CommandParamDef, DeviceParamConstantType, FieldType,
     SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, SonicTextAnswerAttrs

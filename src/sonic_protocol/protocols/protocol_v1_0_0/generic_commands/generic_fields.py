@@ -1,5 +1,5 @@
 import numpy as np
-from sonic_protocol.defs import Procedure, DeviceType, FieldType, AnswerFieldDef, ConverterType, Timestamp
+from sonic_protocol.schema import Procedure, DeviceType, FieldType, AnswerFieldDef, ConverterType, Timestamp
 from sonic_protocol.field_names import EFieldName
 
 

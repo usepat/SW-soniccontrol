@@ -7,7 +7,7 @@ from sonic_protocol.python_parser.answer_validator_builder import AnswerValidato
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
-from sonic_protocol.defs import Protocol
+from sonic_protocol.schema import Protocol
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.communication.serial_communicator import Communicator

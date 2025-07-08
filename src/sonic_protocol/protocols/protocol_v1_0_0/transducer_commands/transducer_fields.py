@@ -1,5 +1,5 @@
 import numpy as np
-from sonic_protocol.defs import CommandParamDef, Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, Signal, SonicTextAnswerFieldAttrs, UserManualAttrs, Version, Waveform
+from sonic_protocol.schema import CommandParamDef, Procedure, DeviceParamConstantType, DeviceType, FieldType, AnswerFieldDef, CommunicationChannel, ConverterType, SIPrefix, SIUnit, Signal, SonicTextAnswerFieldAttrs, UserManualAttrs, Version, Waveform
 from sonic_protocol.field_names import EFieldName
 
 

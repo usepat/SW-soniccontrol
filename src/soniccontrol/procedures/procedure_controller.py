@@ -3,7 +3,7 @@ from typing import Any, Dict, Literal, Optional, Type
 import asyncio
 
 from sonic_protocol.field_names import EFieldName
-import sonic_protocol.defs as protocol_defs
+import sonic_protocol.schema as protocol_defs
 import sonic_protocol.python_parser.commands as cmds
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, ProcedureType
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator

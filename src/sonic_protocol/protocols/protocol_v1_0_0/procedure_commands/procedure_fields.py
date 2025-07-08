@@ -1,5 +1,5 @@
 import numpy as np
-from sonic_protocol.defs import (
+from sonic_protocol.schema import (
     Procedure, DeviceParamConstantType, FieldType, AnswerFieldDef, ConverterType, SIPrefix, SIUnit, 
     SonicTextAnswerFieldAttrs
 )

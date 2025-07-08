@@ -3,7 +3,7 @@ from enum import Enum, IntEnum
 from typing import Any, TypeVar
 import numpy as np
 
-from sonic_protocol.defs import ConverterType, Timestamp, Version
+from sonic_protocol.schema import ConverterType, Timestamp, Version
 
 
 class Converter(abc.ABC):

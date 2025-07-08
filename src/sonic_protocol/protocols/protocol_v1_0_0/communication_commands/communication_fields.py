@@ -1,4 +1,4 @@
-from sonic_protocol.defs import (CommunicationProtocol, InputSource,  FieldType, 
+from sonic_protocol.schema import (CommunicationProtocol, InputSource,  FieldType, 
 	AnswerFieldDef, CommunicationChannel, ConverterType, Activation
 )
 from sonic_protocol.field_names import EFieldName

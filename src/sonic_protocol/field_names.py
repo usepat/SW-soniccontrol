@@ -1,6 +1,6 @@
 
 from enum import unique
-from sonic_protocol.defs import IEFieldName
+from sonic_protocol.schema import IEFieldName
 
 @unique
 class BaseFieldName(IEFieldName):
