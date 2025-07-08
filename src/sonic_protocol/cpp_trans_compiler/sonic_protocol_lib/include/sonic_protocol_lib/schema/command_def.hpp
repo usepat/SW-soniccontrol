@@ -2,8 +2,8 @@
 #include <initializer_list>
 #include <string_view>
 #include <span>
-#include "sonic_protocol_lib/base/param_def.hpp"
-#include "sonic_protocol_lib/base/code.hpp"
+#include "sonic_protocol_lib/schema/param_def.hpp"
+#include "sonic_protocol_lib/schema/code.hpp"
 
 namespace sonic_protocol_lib {
 

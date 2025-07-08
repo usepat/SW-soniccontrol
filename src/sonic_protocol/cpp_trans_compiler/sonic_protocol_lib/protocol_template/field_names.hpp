@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sonic_protocol_lib/base/code.hpp"
+#include "sonic_protocol_lib/schema/code.hpp"
 #include <cstdint>
 #include <etl/string_view.h>
 

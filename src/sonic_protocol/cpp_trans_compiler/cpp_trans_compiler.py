@@ -75,12 +75,11 @@ class CppTransCompiler:
         self._allowed_values: dict[Tuple[Any], str] = {}
 
     def transpile_protocol_schema(self, output_dir: Path):
-        shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
         src_dir = Path(str(lib_path)) / "include" / "sonic_protocol_lib" / "schema"
         schema_lib_dir = output_dir / "include" / "sonic_protocol_lib" / "schema"
-        os.makedirs(schema_lib_dir)
         
+        shutil.rmtree(schema_lib_dir, ignore_errors=True)
         shutil.copytree(src_dir, schema_lib_dir)
 
         self._inject_code_into_file(
@@ -91,11 +90,12 @@ class CppTransCompiler:
 
     def transpile_protocol(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path, options: Optional[List[str]] = None, protocol_name: str = "default"):
         # copy protocol definitions to output directory
-        shutil.rmtree(output_dir, ignore_errors=True)
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
     
         src_template_dir = Path(str(lib_path)) / "protocol_template"
         protocol_lib_dir = output_dir / "include" / "sonic_protocol_lib" / protocol_name
+        
+        shutil.rmtree(protocol_lib_dir, ignore_errors=True)
         os.makedirs(protocol_lib_dir)
 
         protocol = protocol_list.build_protocol_for(protocol_info)
@@ -538,6 +538,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
 if __name__ == "__main__":
     compiler = CppTransCompiler()
     output_dir=Path("./output/generated")
+    compiler.transpile_protocol_schema(output_dir)
     compiler.transpile_protocol(
         protocol_list=prot_list,
         protocol_info=ProtocolType(Version(2, 0, 0), DeviceType.MVP_WORKER),

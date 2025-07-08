@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <etl/string_view.h>
-#include "sonic_protocol_lib/base/code.hpp"
+#include "sonic_protocol_lib/schema/code.hpp"
 
 #define PROTOCOL_NAMESPACE
 namespace sonic_protocol_lib::/**/PROTOCOL_NAMESPACE/**/ {

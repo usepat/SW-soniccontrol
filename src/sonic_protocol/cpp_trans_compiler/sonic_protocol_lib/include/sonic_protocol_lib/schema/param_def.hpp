@@ -1,6 +1,6 @@
 #pragma once
-#include "sonic_protocol_lib/base/field_type_def.hpp"
-#include "sonic_protocol_lib/base/code.hpp"
+#include "sonic_protocol_lib/schema/field_type_def.hpp"
+#include "sonic_protocol_lib/schema/code.hpp"
 #include <string_view>
 
 namespace sonic_protocol_lib {

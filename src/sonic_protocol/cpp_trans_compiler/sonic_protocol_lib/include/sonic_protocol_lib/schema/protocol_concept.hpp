@@ -7,9 +7,9 @@
 #include <optional>
 #include <concepts>
 
-#include "sonic_protocol_lib/base/answer_def.hpp"
-#include "sonic_protocol_lib/base/code.hpp"
-#include "sonic_protocol_lib/base/command_def.hpp"
+#include "sonic_protocol_lib/schema/answer_def.hpp"
+#include "sonic_protocol_lib/schema/code.hpp"
+#include "sonic_protocol_lib/schema/command_def.hpp"
 
 namespace sonic_protocol_lib {
 
