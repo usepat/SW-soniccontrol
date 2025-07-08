@@ -5,15 +5,24 @@ from sonic_protocol.defs import IEFieldName
 @unique
 class BaseFieldName(IEFieldName):
     UNDEFINED = "undefined"
-    UNKNOWN_ANSWER = "unknown_answer"
     COMMAND_CODE = "command_code"
-    SUCCESS = "success"
     
-    HELP = "help"
-
-    ERROR_CODE = "error_code"
     ERROR_MESSAGE = "error_message"
     MESSAGE = "message"
+
+
+@unique
+class EFieldName(IEFieldName):
+    UNDEFINED = BaseFieldName.UNDEFINED.value
+    COMMAND_CODE = BaseFieldName.COMMAND_CODE.value
+    
+    ERROR_MESSAGE = BaseFieldName.ERROR_MESSAGE.value
+    MESSAGE = BaseFieldName.MESSAGE.value
+
+    SUCCESS = "success"
+    UNKNOWN_ANSWER = "unknown_answer"
+
+    HELP = "help"
 
     DEVICE_TYPE = "device_type"
     PROTOCOL_VERSION = "protocol_version"
@@ -21,26 +30,6 @@ class BaseFieldName(IEFieldName):
     ADDITIONAL_OPTIONS = "additional_options"
 
     INDEX = "index"
-
-@unique
-class EFieldName(IEFieldName):
-    UNDEFINED = BaseFieldName.UNDEFINED.value
-    UNKNOWN_ANSWER = BaseFieldName.UNKNOWN_ANSWER.value
-    COMMAND_CODE = BaseFieldName.COMMAND_CODE.value
-    SUCCESS = BaseFieldName.SUCCESS.value
-    
-    HELP = BaseFieldName.HELP.value
-    
-    ERROR_CODE = BaseFieldName.ERROR_CODE.value
-    ERROR_MESSAGE = BaseFieldName.ERROR_MESSAGE.value
-    MESSAGE = BaseFieldName.MESSAGE.value
-
-    DEVICE_TYPE = BaseFieldName.DEVICE_TYPE.value
-    PROTOCOL_VERSION = BaseFieldName.PROTOCOL_VERSION.value
-    IS_RELEASE = BaseFieldName.IS_RELEASE.value
-    ADDITIONAL_OPTIONS = BaseFieldName.ADDITIONAL_OPTIONS.value
-
-    INDEX = BaseFieldName.INDEX.value
 
     TRANSDUCER_ID = "transducer_id"
     FREQUENCY = "freq"
@@ -55,6 +44,7 @@ class EFieldName(IEFieldName):
     TS_FLAG = "ts_flag"
     PROCEDURE = "procedure"
     PROCEDURE_ARG = "procedure_arg"
+    ERROR_CODE = "error_code"
 
     TIMING = "timing"
 

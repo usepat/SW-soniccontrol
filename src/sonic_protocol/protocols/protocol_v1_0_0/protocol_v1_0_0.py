@@ -87,6 +87,9 @@ class Protocol_v1_0_0(ProtocolList):
     @property
     def data_types(self) -> Dict[str, type]:
         data_types = {
+            "E_DEVICE_TYPE": DeviceType,
+            "E_BUILD_TYPE": BuildType,
+            "E_SIGNAL": Signal,
             "E_COMMUNICATION_CHANNEL": CommunicationChannel,
             "E_COMMUNICATION_PROTOCOL": CommunicationProtocol,
             "E_INPUT_SOURCE": InputSource,
@@ -94,8 +97,6 @@ class Protocol_v1_0_0(ProtocolList):
             "E_WAVEFORM": Waveform,
             "E_LOG_LEVEL": Loglevel,
             "E_LOGGER_NAME": LoggerName,
-            "E_SIGNAL": Signal,
-            "E_BUILD_TYPE": BuildType,
             "E_ACTIVATION": Activation,
         }
         data_types.update(self._previous_protocol.data_types)

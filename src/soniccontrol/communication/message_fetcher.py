@@ -68,6 +68,7 @@ class MessageFetcher:
                 return logging.DEBUG
 
     async def _worker(self) -> None:
+        # TODO: use the command_code_dash from the protocol directly or inject it
         COMMAND_CODE_DASH = "20"
 
         response = ""

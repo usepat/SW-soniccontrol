@@ -5,9 +5,6 @@ from sonic_protocol.defs import ICommandCode
 
 @unique
 class BaseCommandCode(ICommandCode):
-    GET_PROTOCOL = 0
-    GET_HELP = 2
-
     NOTIFY_MESSAGE = 18000
 
     E_INTERNAL_DEVICE_ERROR = 20000
@@ -30,9 +27,9 @@ class CommandCode(ICommandCode):
     from the actual command and answer implementation.
     """
 
-    GET_PROTOCOL = BaseCommandCode.GET_PROTOCOL.value
+    GET_PROTOCOL = 0
     GET_INFO = 1
-    GET_HELP = BaseCommandCode.GET_HELP.value
+    GET_HELP = 2
     GET_UPDATE = 3
     GET_PROG_STATE = 4 # readable version of update
     
