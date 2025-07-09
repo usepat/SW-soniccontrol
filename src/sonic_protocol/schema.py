@@ -382,7 +382,7 @@ class Protocol:
     for which version and device type the command is valid.
     """
     info: ProtocolType = attrs.field()
-    data_types: Dict[str, type] = attrs.field()
+    custom_data_types: Dict[str, type] = attrs.field()
     command_code_cls: type[IntEnum] = attrs.field()
     field_name_cls: type[Enum] = attrs.field()
     command_contracts: Dict[ICommandCode, CommandContract] = attrs.field()

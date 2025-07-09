@@ -29,16 +29,8 @@ class Protocol_base(ProtocolList):
         return BaseCommandCode
     
     @property
-    def data_types(self) -> Dict[str, type]:
+    def custom_data_types(self) -> Dict[str, type]:
         return {
-            "UINT8": np.uint8,
-            "UINT16": np.uint16,
-            "UINT32": np.uint32,
-            "FLOAT": float,
-            "STRING": str,
-            "BOOL": bool,
-            "TIMESTAMP": Timestamp,
-            "VERSION": Version,
             "E_DEVICE_TYPE": DeviceType,
             "E_BUILD_TYPE": BuildType,
         }

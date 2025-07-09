@@ -36,9 +36,9 @@ class Protocol_v2_0_0(ProtocolList):
         return CommandCode
 
     @property
-    def data_types(self) -> Dict[str, type]:
+    def custom_data_types(self) -> Dict[str, type]:
         data_types = {}
-        data_types.update(self._previous_protocol.data_types)
+        data_types.update(self._previous_protocol.custom_data_types)
         return data_types
 
     def supports_device_type(self, device_type: DeviceType) -> bool:

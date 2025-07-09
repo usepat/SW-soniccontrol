@@ -34,7 +34,7 @@ class ProtocolList:
 
     @property
     @abc.abstractmethod
-    def data_types(self) -> Dict[str, type]:
+    def custom_data_types(self) -> Dict[str, type]:
         ...
 
     @abc.abstractmethod
@@ -66,7 +66,7 @@ class ProtocolList:
         if self.previous_protocol is not None and self.previous_protocol.supports_device_type(protocol_type.device_type):
             protocol = self.previous_protocol.build_protocol_for(protocol_type)
         else:
-            protocol = Protocol(protocol_type, self.data_types, self.command_code_cls,
+            protocol = Protocol(protocol_type, self.custom_data_types, self.command_code_cls,
                                  self.field_name_cls, command_contracts={})
 
         if self.version <= protocol_type.version:
@@ -86,7 +86,7 @@ class ProtocolList:
                 elif command_contract.is_release:
                     protocol.command_contracts[command_code] = command_contract
 
-            protocol.data_types = self.data_types
+            protocol.custom_data_types = self.custom_data_types
             protocol.field_name_cls = self.field_name_cls
             protocol.command_code_cls = self.command_code_cls
 

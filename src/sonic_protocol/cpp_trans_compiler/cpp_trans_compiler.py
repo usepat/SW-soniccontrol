@@ -1,21 +1,21 @@
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
+from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import attrs
 import numpy as np
+from sonic_protocol.protocol import protocol_list
 from sonic_protocol.protocols.protocol_base.protocol_base import Protocol_base
-from sonic_protocol.schema import BuildType, CommandContract, DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.schema import BuildType, DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Timestamp, Version
 import importlib.resources as rs
 import shutil
 import os
 import sonic_protocol.cpp_trans_compiler
 
 from sonic_protocol.command_codes import ICommandCode
-from sonic_protocol.protocol_list import ProtocolList
-from sonic_protocol.protocol import protocol_list as prot_list
 
 CPP_NULLOPT = "std::nullopt"
+
 
 def nullopt_if_none(value):
     return CPP_NULLOPT if value is None else value
@@ -83,10 +83,23 @@ class FieldLimits(Generic[T]):
     maximum: T | None = attrs.field()
     allowed_values: Tuple[T] | None = attrs.field()
     data_type: type[T] = attrs.field()
+    
     def cpp_data_type(self) -> str:
         return py_type_to_cpp_type(self.data_type)
 
 class CppTransCompiler:
+    _DATA_TYPES = {
+        "UINT8": np.uint8,
+        "UINT16": np.uint16,
+        "UINT32": np.uint32,
+        "FLOAT": float,
+        "BOOL": bool,
+        "STRING": str,
+        "ENUM": Enum,
+        "TIMESTAMP": Timestamp,
+        "VERSION": Version,
+    }
+        
     def __init__(self):
         self._field_limits_id_counter: int = 0
         self._allowed_values_id_counter: int = 0
@@ -98,15 +111,20 @@ class CppTransCompiler:
     def transpile_base(self, output_dir: Path):
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
         
-        correspondence_src_dir = Path(str(lib_path)) / "include" / "correspondence" / "schema"
-        correspondence_lib_dir = output_dir / "include" / "correspondence" / "schema"
-        shutil.rmtree(correspondence_lib_dir, ignore_errors=True)
-        shutil.copytree(correspondence_src_dir, correspondence_lib_dir)
-        
         schema_src_dir = Path(str(lib_path)) / "include" / "sonic_protocol_lib" / "schema"
         schema_lib_dir = output_dir / "include" / "sonic_protocol_lib" / "schema"
         shutil.rmtree(schema_lib_dir, ignore_errors=True)
         shutil.copytree(schema_src_dir, schema_lib_dir)
+
+        correspondence_src_dir = Path(str(lib_path)) / "include" / "correspondence" / "schema"
+        correspondence_lib_dir = output_dir / "include" / "correspondence" / "schema"
+        shutil.rmtree(correspondence_lib_dir, ignore_errors=True)
+        shutil.copytree(correspondence_src_dir, correspondence_lib_dir)
+
+        base_correspondence_src_dir = Path(str(lib_path)) / "include" / "correspondence" / "base"
+        base_correspondence_lib_dir = output_dir / "include" / "correspondence" / "base"
+        shutil.rmtree(base_correspondence_lib_dir, ignore_errors=True)
+        shutil.copytree(base_correspondence_src_dir, base_correspondence_lib_dir)
 
         self._inject_code_into_file(
             schema_lib_dir / "si_units.hpp",
@@ -120,6 +138,11 @@ class CppTransCompiler:
             BUILD_TYPE=self._transpile_enum(BuildType),
         )
 
+        self._inject_code_into_file(
+            schema_lib_dir / "field_type_def.hpp",
+            BASE_DATA_TYPE=self._transpile_data_types_dict_to_enum("BaseDataType", CppTransCompiler._DATA_TYPES),
+        )
+
         protocol_descriptor = ProtocolType(Version(0, 0, 0), DeviceType.UNKNOWN)
         protocol = Protocol_base().build_protocol_for(protocol_descriptor)
 
@@ -130,6 +153,10 @@ class CppTransCompiler:
     def transpile_protocol(self, protocol: Protocol, output_dir: Path, protocol_name: str = "default"):
         # copy protocol definitions to output directory
         assert protocol_name != "schema", "The name 'schema' is not allowed for a protocol"
+
+        # Uff, I really do not want to pass this down to _transpile_field.
+        # Think of refactoring this a bit to use state.
+        self._protocol_custom_data_types = protocol.custom_data_types
         
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
     
@@ -155,13 +182,14 @@ class CppTransCompiler:
         )
 
         data_type_defs = ""
-        data_type_defs += self._transpile_data_types_dict_to_enum(protocol.data_types)
+        data_type_defs += self._transpile_data_types_dict_to_enum("TypeDefRef", protocol.custom_data_types)
 
-        for data_type in protocol.data_types.values():
+        for data_type in protocol.custom_data_types.values():
+            # ignore DeviceType and BuildType, because they are defined in the protocol schema hpp file
             if issubclass(data_type, Enum) and not issubclass(data_type, (DeviceType, BuildType)):
                 data_type_defs += self._transpile_enum(data_type)
 
-        data_type_defs += self._transpile_dynamic_enum_conversion_func(protocol.data_types)
+        data_type_defs += self._transpile_dynamic_enum_conversion_func(protocol.custom_data_types)
 
         self._inject_code_into_template(
             src_template_dir / "data_types.hpp",
@@ -284,7 +312,7 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_
             struct Protocol {{
                 using CommandCode = {protocol.command_code_cls.__name__};
                 using FieldName = {protocol.field_name_cls.__name__};
-                using DataType = DataType;
+                using TypeDefRef = TypeDefRef;
 
                 inline static constexpr auto version = Version {{
                     .major = {version.major},
@@ -420,9 +448,20 @@ inline constexpr AnswerFieldDef {var_name} = {{
             cpp_limits_var: str = f"limits_{self._field_limits_id_counter}"
             self._field_limits_cache[field_limits] = cpp_limits_var
 
+        base_type = field_type.field_type
+        if issubclass(base_type, Enum):
+            base_type = Enum
+
+        base_type_name = find_value_in_dictionary(CppTransCompiler._DATA_TYPES, base_type)
+        sub_type_name = find_value_in_dictionary(self._protocol_custom_data_types, field_type.field_type)
+        if sub_type_name:
+            type_def_ref = f"static_cast<TypeDefinitionRef_t>(TypeDefRef::{sub_type_name})"
+        else:
+            type_def_ref = CPP_NULLOPT
+
         cpp_field_type_def: str = f"""FieldTypeDef {{
-            .type = DataType::{find_value_in_dictionary(prot_list.data_types, field_type.field_type)},
-            .converter_reference = ConverterReference::{field_type.converter_ref.name},
+            .data_type = BaseDataType::{base_type_name},
+            .type_def_ref = {type_def_ref},
             .limits = static_cast<const void *>(&{cpp_limits_var}),
             .si_unit = {f"SIUnit::{field_type.si_unit.name}" if field_type.si_unit is not None else CPP_NULLOPT},
             .si_prefix = {f"SIPrefix::{field_type.si_prefix.name}" if field_type.si_prefix is not None else CPP_NULLOPT}
@@ -462,11 +501,11 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 continue
 
             enum_to_str_conversion_cases += f"""
-                case DataType::{data_type_name}:
+                case TypeDefRef::{data_type_name}:
                 return convert_enum_to_str<{data_type.__name__}>(static_cast<{data_type.__name__}>(enum_member));
             """
             str_to_enum_conversion_cases += f"""
-                case DataType::{data_type_name}:
+                case TypeDefRef::{data_type_name}:
                 return static_cast<std::optional<{data_type.__name__}>>(convert_str_to_enum<{data_type.__name__}>(str));
             """
 
@@ -474,7 +513,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
             namespace enum_str_conversions {{
 
                 template<>
-                etl::string_view data_type_dispatch_convert_enum_to_str<DataType>(const DataType data_type, const EnumValue_t enum_val) {{
+                etl::string_view data_type_dispatch_convert_enum_to_str<TypeDefRef>(const TypeDefRef data_type, const EnumValue_t enum_val) {{
                     switch (data_type) {{
                         {enum_to_str_conversion_cases}
                         default:
@@ -483,7 +522,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 }}
 
                 template<>
-                std::optional<EnumValue_t> data_type_dispatch_convert_str_to_enum<DataType>(const DataType data_type, const etl::string_view& str) {{
+                std::optional<EnumValue_t> data_type_dispatch_convert_str_to_enum<TypeDefRef>(const TypeDefRef data_type, const etl::string_view& str) {{
                     switch (data_type) {{
                         {str_to_enum_conversion_cases}
                         default:
@@ -550,10 +589,10 @@ inline constexpr AnswerFieldDef {var_name} = {{
         """
         
 
-    def _transpile_data_types_dict_to_enum(self, data_types: Dict[str, type]) -> str:
+    def _transpile_data_types_dict_to_enum(self, enum_name: str, data_types: Dict[str, type]) -> str:
         enum_members = ",\n".join(data_types.keys())
         return f"""
-            enum class DataType : DataType_t {{
+            enum class {enum_name} : EnumValue_t {{
                 {enum_members}
             }};
         """
@@ -606,20 +645,22 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 if arguments != "":
                     arguments += ", "
 
-                param_name = answer_field.field_name.value
+                field_name = answer_field.field_name.value
                 field_type = answer_field.field_type.field_type
                 ir_value_type = py_type_to_ir_value_type(field_type)
 
                 if not issubclass(field_type, Enum):
-                    arguments += f"const {ir_value_type}& {param_name}"
-                    var_name = param_name
+                    arguments += f"const {ir_value_type}& {field_name}"
+                    var_name = field_name
+                    type_ref = CPP_NULLOPT
                 else:
-                    arguments += f"const {field_type.__name__}& {param_name}"
-                    var_name = "irenum_" + param_name
-                    temp_variables += f"const IREnum {var_name} {{ .enum_member=static_cast<EnumValue_t>({param_name}) }};\n"
-                data_type = f"DataType::{find_value_in_dictionary(protocol.data_types, field_type)}"
+                    arguments += f"const {field_type.__name__}& {field_name}"
+                    var_name = "irenum_" + field_name
+                    temp_variables += f"const IREnum {var_name} {{ .enum_member=static_cast<EnumValue_t>({field_name}) }};\n"
+                    type_ref = f"TypeDefRef::{find_value_in_dictionary(protocol.custom_data_types, field_type)}"
+                    
                 field_name_code = list(protocol.field_name_cls).index(answer_field.field_name)
-                irvalue_list += f"{{ {field_name_code}, {var_name}, static_cast<DataType_t>({data_type}) }},\n"
+                irvalue_list += f"{{ {field_name_code}, {var_name}, {type_ref} }},\n"
             irvalue_list += "}"
 
             transpiled_code += f"""
@@ -654,13 +695,15 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 if not issubclass(field_type, Enum):
                     arguments += f"const {ir_value_type}& {param_name}"
                     var_name = param_name
+                    type_ref = CPP_NULLOPT
                 else:
                     arguments += f"const {field_type.__name__}& {param_name}"
                     var_name = "irenum_" + param_name
                     temp_variables += f"const IREnum {var_name} {{ .enum_member=static_cast<EnumValue_t>({param_name}) }};\n"
-                data_type = f"DataType::{find_value_in_dictionary(protocol.data_types, param.param_type.field_type)}"
+                    type_ref = f"TypeDefRef::{find_value_in_dictionary(protocol.custom_data_types, field_type)}"
+                    
                 field_name_code = list(protocol.field_name_cls).index(param.name)
-                irvalue_list += f"{{ {field_name_code}, {var_name}, static_cast<DataType_t>({data_type}) }},\n"
+                irvalue_list += f"{{ {field_name_code}, {var_name}, {type_ref} }},\n"
             irvalue_list += "}"
 
             transpiled_code += f"""
@@ -674,10 +717,17 @@ inline constexpr AnswerFieldDef {var_name} = {{
 
 if __name__ == "__main__":
     compiler = CppTransCompiler()
+
     output_dir=Path("./output/generated")
     compiler.transpile_base(output_dir)
+
+    protocol_descriptor = ProtocolType(Version(2, 0, 0), DeviceType.MVP_WORKER)
+    protocol = protocol_list.build_protocol_for(protocol_descriptor)
     compiler.transpile_protocol(
-        protocol_list=prot_list,
-        protocol_info=ProtocolType(Version(2, 0, 0), DeviceType.MVP_WORKER),
+        protocol=protocol,
+        output_dir=output_dir
+    )
+    compiler.transpile_correspondence(
+        protocol=protocol,
         output_dir=output_dir
     )
