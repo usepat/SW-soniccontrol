@@ -4,7 +4,7 @@ from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
 
 import attrs
 import numpy as np
-from sonic_protocol.schema import DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
+from sonic_protocol.schema import BuildType, CommandContract, DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 import importlib.resources as rs
 import shutil
 import os
@@ -39,7 +39,6 @@ def find_value_in_dictionary(dictionary: dict, value):
 def convert_to_cpp_field_name(enum_member: IEFieldName) -> str:
     return f"FieldName::{enum_member.name}"
 
-
 def py_type_to_cpp_type(data_type: type) -> str:
     if data_type is np.uint32:
         return "uint32_t"
@@ -51,6 +50,27 @@ def py_type_to_cpp_type(data_type: type) -> str:
         return "float"
     else:
         return "uint32_t"
+    
+def py_type_to_ir_value_type(data_type: type) -> str:
+    if data_type is np.uint32:
+        return "uint32_t"
+    elif data_type is np.uint16:
+        return "uint16_t"
+    elif data_type is np.uint8:
+        return "uint8_t"
+    elif data_type is float:
+        return "float"
+    elif data_type is bool:
+        return "bool"
+    elif data_type is str:
+        return "std::string_view"
+    elif issubclass(data_type, Enum):
+        return "IREnum"
+    elif data_type is Version:
+        return "Version"
+    else:
+        return "uint32_t"
+
 
 def create_protocol_info_cpp_var_name(info: ProtocolType) -> str:
     return f"{info.device_type.name}v{info.version.major}_{info.version.minor}_{info.version.patch}"
@@ -76,11 +96,16 @@ class CppTransCompiler:
 
     def transpile_protocol_schema(self, output_dir: Path):
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
-        src_dir = Path(str(lib_path)) / "include" / "sonic_protocol_lib" / "schema"
-        schema_lib_dir = output_dir / "include" / "sonic_protocol_lib" / "schema"
         
+        correspondence_src_dir = Path(str(lib_path)) / "include" / "correspondence" / "schema"
+        correspondence_lib_dir = output_dir / "include" / "correspondence" / "schema"
+        shutil.rmtree(correspondence_lib_dir, ignore_errors=True)
+        shutil.copytree(correspondence_src_dir, correspondence_lib_dir)
+        
+        schema_src_dir = Path(str(lib_path)) / "include" / "sonic_protocol_lib" / "schema"
+        schema_lib_dir = output_dir / "include" / "sonic_protocol_lib" / "schema"
         shutil.rmtree(schema_lib_dir, ignore_errors=True)
-        shutil.copytree(src_dir, schema_lib_dir)
+        shutil.copytree(schema_src_dir, schema_lib_dir)
 
         self._inject_code_into_file(
             schema_lib_dir / "si_units.hpp",
@@ -88,8 +113,16 @@ class CppTransCompiler:
             SI_PREFIX=self._transpile_enum(SIPrefix),
         )
 
+        self._inject_code_into_file(
+            schema_lib_dir / "protocol_def.hpp",
+            DEVICE_TYPE=self._transpile_enum(DeviceType),
+            BUILD_TYPE=self._transpile_enum(BuildType),
+        )
+
     def transpile_protocol(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path, options: Optional[List[str]] = None, protocol_name: str = "default"):
         # copy protocol definitions to output directory
+        assert protocol_name != "schema", "The name 'schema' is not allowed for a protocol"
+        
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
     
         src_template_dir = Path(str(lib_path)) / "protocol_template"
@@ -117,8 +150,9 @@ class CppTransCompiler:
 
         data_type_defs = ""
         data_type_defs += self._transpile_data_types_dict_to_enum(protocol.data_types)
+
         for data_type in protocol.data_types.values():
-            if issubclass(data_type, Enum):
+            if issubclass(data_type, Enum) and not issubclass(data_type, (DeviceType, BuildType)):
                 data_type_defs += self._transpile_enum(data_type)
 
         data_type_defs += self._transpile_dynamic_enum_conversion_func(protocol.data_types)
@@ -156,6 +190,16 @@ class CppTransCompiler:
             protocol_lib_dir / "consts.hpp",
             PROTOCOL_NAMESPACE=protocol_name,
             CONSTS=consts_defs
+        )
+
+        api_template_dir = Path(str(lib_path)) / "api_template"
+        api_lib_dir = output_dir / "include" / "correspondence" / protocol_name
+
+        self._inject_code_into_template(
+            api_template_dir / "command_calls.hpp",
+            api_lib_dir / "command_calls.hpp",
+            PROTOCOL_NAMESPACE=protocol_name,
+            COMMAND_CALLS=self._transpile_command_calls_api(protocol)
         )
          
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
@@ -433,7 +477,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
             }}
         """
 
-    def _transpile_enum(self, enum: type[Enum], underlying_type: str = "std::uint16_t") -> str:
+    def _transpile_enum(self, enum: type[Enum], underlying_type: str = "EnumValue_t") -> str:
         enum_name = enum.__name__
 
         NEW_LINE = "\n" #  backslashes are not allowed inside f-strings interpolations
@@ -533,7 +577,45 @@ inline constexpr AnswerFieldDef {var_name} = {{
         """ 
         return f"inline constexpr auto {var_name} {{ {cpp_field_limits} }};\n"
 
+    def _transpile_answer_message_api_func(self, command_contracts: Dict[ICommandCode, CommandContract]) -> str:
+        transpiled_code = ""
+        for command_code, command_contract in command_contracts.items():
+            name_command_call = command_code.name.lower()
 
+        
+        return transpiled_code
+
+    def _transpile_command_calls_api(self, protocol: Protocol) -> str:
+        transpiled_code = ""
+        for command_code, command_contract in protocol.command_contracts.items():
+            if command_contract.command_def is None:
+                continue
+
+            params_: List[CommandParamDef | None] = [command_contract.command_def.index_param, command_contract.command_def.setter_param]
+            params: List[CommandParamDef] =  [p for p in params_ if p is not None]
+
+            arguments = ""
+            irvalue_list = "{\n"
+            for param in params:
+                if arguments != "":
+                    arguments += ", "
+
+                param_name = param.name.value
+                cpp_type = py_type_to_ir_value_type(param.param_type.field_type)
+                arguments += f"const {cpp_type}& {param_name}"
+
+                data_type = f"DataType::{find_value_in_dictionary(protocol.data_types, param.param_type.field_type)}"
+                field_name_code = list(protocol.field_name_cls).index(param.name)
+                irvalue_list += f"{{ {field_name_code}, {param_name}, static_cast<DataType_t>({data_type}) }},\n"
+            irvalue_list += "}"
+
+            transpiled_code += f"""
+                inline IRCommandCall create_cc_{command_code.name.lower()}({arguments}) {{
+                    return IRCommandCall({command_code.value}, IRObjectCommandCall({irvalue_list}));
+                }}
+            """
+        
+        return transpiled_code
 
 if __name__ == "__main__":
     compiler = CppTransCompiler()

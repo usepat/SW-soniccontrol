@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import numpy as np
 from sonic_protocol.command_codes import BaseCommandCode
-from sonic_protocol.schema import CommandContract, DeviceParamConstantType, DeviceType, ICommandCode, IEFieldName, ProtocolType, Timestamp, Version
+from sonic_protocol.schema import BuildType, CommandContract, DeviceParamConstantType, DeviceType, ICommandCode, IEFieldName, ProtocolType, Timestamp, Version
 from sonic_protocol.field_names import BaseFieldName
 from sonic_protocol.protocol_list import ProtocolList
 
@@ -39,6 +39,8 @@ class Protocol_base(ProtocolList):
             "BOOL": bool,
             "TIMESTAMP": Timestamp,
             "VERSION": Version,
+            "E_DEVICE_TYPE": DeviceType,
+            "E_BUILD_TYPE": BuildType,
         }
 
     def supports_device_type(self, device_type: DeviceType) -> bool:

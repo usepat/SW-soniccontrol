@@ -43,6 +43,10 @@ class IEFieldName(Enum):
 class ICommandCode(IntEnum):
     ...
 
+class BuildType(Enum):
+    DEBUG = "DEBUG"
+    RELEASE = "RELEASE"
+
 class DeviceType(Enum):
     UNKNOWN = "unknown"
     DESCALE = "descale"
@@ -128,10 +132,6 @@ class LoggerName(Enum):
 class Signal(Enum):
     ON = "ON"
     OFF = "OFF"
-
-class BuildType(Enum):
-    DEBUG = "DEBUG"
-    RELEASE = "RELEASE"
 
 class Activation(Enum):
     ACTIVATED = "activated"
