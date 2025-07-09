@@ -2,7 +2,7 @@
 
 #include <array>
 #include <optional>
-#include <string_view>
+#include <etl/string_view.h>
 #include <etl/vector.h>
 #include <variant>
 #include <functional> // for reference_wrapper
@@ -14,17 +14,8 @@
 
 namespace sonic_protocol_lib {
 
-/**
- * @brief Variant used for procedure args
- * Less messy, if we put not all possible types into a single variant.
- */
-
 constexpr size_t MAX_STR_LEN = 50;
 
-
-
-// reexport enums. Maybe we want later to create own enums, instead on depending on the enums from sonic_protocol_lib
-// TODO: map hwi enums to sonic_protocol_lib enums. Probably the best to do it in the parsers before making the internal representation or the answers / command constructors.
 
 size_t constexpr MAX_MESSAGE_STRING_LEN = 4096;
 using MessageString = etl::string<MAX_MESSAGE_STRING_LEN>;
@@ -36,8 +27,8 @@ struct IREnum {
 };
 
 using IRValue = std::variant<
-        uint8_t, uint16_t, uint32_t, float, bool, std::string_view, IREnum,
-        Version, MessageStringRef>; // TODO: add DateTime, 
+        uint8_t, uint16_t, uint32_t, float, bool, etl::string_view, IREnum,
+        Version, MessageStringRef>; // TODO: add DateTime, delete MessageStringRef
 
 struct IRField {
     const FieldName_t name;

@@ -4,6 +4,7 @@ from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
 
 import attrs
 import numpy as np
+from sonic_protocol.protocols.protocol_base.protocol_base import Protocol_base
 from sonic_protocol.schema import BuildType, CommandContract, DeviceParamConstantType, DeviceParamConstants, IEFieldName, Protocol, ProtocolType, AnswerDef, AnswerFieldDef, CommandDef, CommandParamDef, DeviceType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, Version
 import importlib.resources as rs
 import shutil
@@ -94,7 +95,7 @@ class CppTransCompiler:
         self._field_definitions: dict[AnswerFieldDef, str] = {}
         self._allowed_values: dict[Tuple[Any], str] = {}
 
-    def transpile_protocol_schema(self, output_dir: Path):
+    def transpile_base(self, output_dir: Path):
         lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
         
         correspondence_src_dir = Path(str(lib_path)) / "include" / "correspondence" / "schema"
@@ -119,7 +120,14 @@ class CppTransCompiler:
             BUILD_TYPE=self._transpile_enum(BuildType),
         )
 
-    def transpile_protocol(self, protocol_list: ProtocolList, protocol_info: ProtocolType, output_dir: Path, options: Optional[List[str]] = None, protocol_name: str = "default"):
+        protocol_descriptor = ProtocolType(Version(0, 0, 0), DeviceType.UNKNOWN)
+        protocol = Protocol_base().build_protocol_for(protocol_descriptor)
+
+        self.transpile_protocol(protocol, output_dir, "base")
+
+        
+
+    def transpile_protocol(self, protocol: Protocol, output_dir: Path, protocol_name: str = "default"):
         # copy protocol definitions to output directory
         assert protocol_name != "schema", "The name 'schema' is not allowed for a protocol"
         
@@ -130,8 +138,6 @@ class CppTransCompiler:
         
         shutil.rmtree(protocol_lib_dir, ignore_errors=True)
         os.makedirs(protocol_lib_dir)
-
-        protocol = protocol_list.build_protocol_for(protocol_info)
 
         self._inject_code_into_template(
             src_template_dir / "field_names.hpp",
@@ -165,7 +171,7 @@ class CppTransCompiler:
         )
         
         self.consts = protocol.consts 
-        protocol_class, command_defs, answer_defs,  = self._transpile_protocol(protocol_info, protocol, options=options)
+        protocol_class, command_defs, answer_defs,  = self._transpile_protocol(protocol)
 
         param_defs = self._transpile_param_defs_from_cache()
         field_defs = self._transpile_field_defs_from_cache()
@@ -192,6 +198,9 @@ class CppTransCompiler:
             CONSTS=consts_defs
         )
 
+    def transpile_correspondence(self, protocol: Protocol, output_dir: Path, protocol_name: str = "default"):
+        lib_path = rs.files(sonic_protocol.cpp_trans_compiler).joinpath("sonic_protocol_lib")
+        
         api_template_dir = Path(str(lib_path)) / "api_template"
         api_lib_dir = output_dir / "include" / "correspondence" / protocol_name
 
@@ -200,6 +209,13 @@ class CppTransCompiler:
             api_lib_dir / "command_calls.hpp",
             PROTOCOL_NAMESPACE=protocol_name,
             COMMAND_CALLS=self._transpile_command_calls_api(protocol)
+        )
+
+        self._inject_code_into_template(
+            api_template_dir / "answers.hpp",
+            api_lib_dir / "answers.hpp",
+            PROTOCOL_NAMESPACE=protocol_name,
+            ANSWERS=self._transpile_answers_api(protocol)
         )
          
     def _inject_code_into_file(self, file_path: Path, **kwargs) -> None:
@@ -230,7 +246,8 @@ class CppTransCompiler:
         return "\n".join(const_defs)
 
     def _transpile_protocol(
-            self, protocol_info: ProtocolType, protocol: Protocol, options: Optional[List[str]] = None) -> Tuple[str, str, str]:
+            self, protocol: Protocol) -> Tuple[str, str, str]:
+        protocol_info = protocol.info
         command_list = protocol.command_contracts
         protocol_cpp_name = f"protocol_{create_protocol_info_cpp_var_name(protocol_info)}"
         
@@ -276,7 +293,7 @@ inline constexpr std::array<AnswerDef, {len(answer_defs)}> {answer_defs_cpp_var_
                 }};
                 inline static constexpr auto device = DeviceType::{protocol_info.device_type.name};
                 inline static constexpr auto isRelease = {str(protocol_info.is_release).lower()};
-                inline static constexpr auto options = "{", ".join(options) if options else ""}";
+                inline static constexpr auto options = "{protocol_info.additional_opts}";
                 inline static constexpr auto commands = {command_defs_cpp_var_name};
                 inline static constexpr auto answers = {answer_defs_cpp_var_name};
             }};
@@ -577,11 +594,40 @@ inline constexpr AnswerFieldDef {var_name} = {{
         """ 
         return f"inline constexpr auto {var_name} {{ {cpp_field_limits} }};\n"
 
-    def _transpile_answer_message_api_func(self, command_contracts: Dict[ICommandCode, CommandContract]) -> str:
+    def _transpile_answers_api(self, protocol: Protocol) -> str:
         transpiled_code = ""
-        for command_code, command_contract in command_contracts.items():
-            name_command_call = command_code.name.lower()
+        for command_code, command_contract in protocol.command_contracts.items():
+            answer_fields: List[AnswerFieldDef] =  command_contract.answer_def.fields
 
+            arguments = ""
+            temp_variables = ""
+            irvalue_list = "{\n"
+            for answer_field in answer_fields:
+                if arguments != "":
+                    arguments += ", "
+
+                param_name = answer_field.field_name.value
+                field_type = answer_field.field_type.field_type
+                ir_value_type = py_type_to_ir_value_type(field_type)
+
+                if not issubclass(field_type, Enum):
+                    arguments += f"const {ir_value_type}& {param_name}"
+                    var_name = param_name
+                else:
+                    arguments += f"const {field_type.__name__}& {param_name}"
+                    var_name = "irenum_" + param_name
+                    temp_variables += f"const IREnum {var_name} {{ .enum_member=static_cast<EnumValue_t>({param_name}) }};\n"
+                data_type = f"DataType::{find_value_in_dictionary(protocol.data_types, field_type)}"
+                field_name_code = list(protocol.field_name_cls).index(answer_field.field_name)
+                irvalue_list += f"{{ {field_name_code}, {var_name}, static_cast<DataType_t>({data_type}) }},\n"
+            irvalue_list += "}"
+
+            transpiled_code += f"""
+                inline Answer create_{command_code.name.lower()}({arguments}) {{
+                    {temp_variables}
+                    return Answer({command_code.value}, IRObjectAnswer({irvalue_list}));
+                }}
+            """
         
         return transpiled_code
 
@@ -595,23 +641,32 @@ inline constexpr AnswerFieldDef {var_name} = {{
             params: List[CommandParamDef] =  [p for p in params_ if p is not None]
 
             arguments = ""
+            temp_variables = ""
             irvalue_list = "{\n"
             for param in params:
                 if arguments != "":
                     arguments += ", "
 
                 param_name = param.name.value
-                cpp_type = py_type_to_ir_value_type(param.param_type.field_type)
-                arguments += f"const {cpp_type}& {param_name}"
+                field_type = param.param_type.field_type
+                ir_value_type = py_type_to_ir_value_type(field_type)
 
+                if not issubclass(field_type, Enum):
+                    arguments += f"const {ir_value_type}& {param_name}"
+                    var_name = param_name
+                else:
+                    arguments += f"const {field_type.__name__}& {param_name}"
+                    var_name = "irenum_" + param_name
+                    temp_variables += f"const IREnum {var_name} {{ .enum_member=static_cast<EnumValue_t>({param_name}) }};\n"
                 data_type = f"DataType::{find_value_in_dictionary(protocol.data_types, param.param_type.field_type)}"
                 field_name_code = list(protocol.field_name_cls).index(param.name)
-                irvalue_list += f"{{ {field_name_code}, {param_name}, static_cast<DataType_t>({data_type}) }},\n"
+                irvalue_list += f"{{ {field_name_code}, {var_name}, static_cast<DataType_t>({data_type}) }},\n"
             irvalue_list += "}"
 
             transpiled_code += f"""
-                inline IRCommandCall create_cc_{command_code.name.lower()}({arguments}) {{
-                    return IRCommandCall({command_code.value}, IRObjectCommandCall({irvalue_list}));
+                inline CommandCall create_{command_code.name.lower()}({arguments}) {{
+                    {temp_variables}
+                    return CommandCall({command_code.value}, IRObjectCommandCall({irvalue_list}));
                 }}
             """
         
@@ -620,7 +675,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
 if __name__ == "__main__":
     compiler = CppTransCompiler()
     output_dir=Path("./output/generated")
-    compiler.transpile_protocol_schema(output_dir)
+    compiler.transpile_base(output_dir)
     compiler.transpile_protocol(
         protocol_list=prot_list,
         protocol_info=ProtocolType(Version(2, 0, 0), DeviceType.MVP_WORKER),

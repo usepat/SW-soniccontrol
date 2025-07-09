@@ -3,8 +3,8 @@ from pathlib import Path
 from sonic_protocol.schema import Version, DeviceType, ProtocolType
 from sonic_protocol.cpp_trans_compiler.cpp_trans_compiler import CppTransCompiler
 from sonic_protocol.protocol_list import ProtocolList
-from sonic_protocol.protocols.protocol_base.protocol_base import Protocol_base
 from typing import List
+
 
 def transpile_protocol_base_cli():
     parser = argparse.ArgumentParser()
@@ -13,16 +13,9 @@ def transpile_protocol_base_cli():
 
     print("Transpile protocol definition classes")
         
-    CppTransCompiler().transpile_protocol_schema(args.out_lib_path)
+    CppTransCompiler().transpile_base(args.out_lib_path)
     print("Transpiled protocol definition classes at ", args.out_lib_path)
 
-    print("Transpile base protocol")
-    CppTransCompiler().transpile_protocol(
-        protocol_list=Protocol_base(),
-        protocol_info=ProtocolType(Version(0, 0, 0), DeviceType.UNKNOWN),
-        output_dir=args.out_lib_path,
-        protocol_name="base"
-    )
 
 
 def transpile_protocol_cli(protocol_list: ProtocolList, protocol_name: str, options: List[str] = []):
@@ -41,12 +34,20 @@ def transpile_protocol_cli(protocol_list: ProtocolList, protocol_name: str, opti
     protocol_version = Version.to_version(args.protocol_version)
     device_type = DeviceType(args.device_type)
     release = args.release
+    additional_options = ", ".join(options) if len(options) > 0 else ""
 
-    CppTransCompiler().transpile_protocol(
-        protocol_list=protocol_list,
-        protocol_info=ProtocolType(protocol_version, device_type, release),
+    protocol_descriptor = ProtocolType(protocol_version, device_type, release, additional_options)
+    protocol = protocol_list.build_protocol_for(protocol_descriptor)
+
+    compiler = CppTransCompiler()
+    compiler.transpile_protocol(
+        protocol=protocol,
         output_dir=args.out_lib_path,
-        options=options,
+        protocol_name=protocol_name
+    )
+    compiler.transpile_correspondence(
+        protocol=protocol,
+        output_dir=args.out_lib_path,
         protocol_name=protocol_name
     )
     print("Transpiled protocol library at ", args.out_lib_path)
