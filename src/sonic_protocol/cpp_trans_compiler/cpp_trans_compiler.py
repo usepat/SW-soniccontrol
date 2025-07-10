@@ -506,7 +506,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
             """
             str_to_enum_conversion_cases += f"""
                 case TypeDefRef::{data_type_name}:
-                return static_cast<std::optional<{data_type.__name__}>>(convert_str_to_enum<{data_type.__name__}>(str));
+                return convert_str_to_enum_value<{data_type.__name__}>(str);
             """
 
         return f"""
@@ -522,7 +522,7 @@ inline constexpr AnswerFieldDef {var_name} = {{
                 }}
 
                 template<>
-                std::optional<EnumValue_t> data_type_dispatch_convert_str_to_enum<TypeDefRef>(const TypeDefRef data_type, const etl::string_view& str) {{
+                std::optional<EnumValue_t> data_type_dispatch_convert_str_to_enum_value<TypeDefRef>(const TypeDefRef data_type, const etl::string_view& str) {{
                     switch (data_type) {{
                         {str_to_enum_conversion_cases}
                         default:
@@ -552,12 +552,12 @@ inline constexpr AnswerFieldDef {var_name} = {{
         """
 
         str_to_enum_cases = [
-            f'\tif (str == "{member.value}") return {enum_name}::{member.name};'
+            f'\tif (str == "{member.value}") return static_cast<EnumValue_t>({enum_name}::{member.name});'
             for member in enum
         ]
         string_to_enum_conversion_function_cpp = f"""
             template<>
-            inline std::optional<{enum_name}> convert_string_to_enum<{enum_name}>(const etl::string_view &str) 
+            inline std::optional<EnumValue_t> convert_str_to_enum_value<{enum_name}>(const etl::string_view &str) 
             {{
                 {NEW_LINE.join(str_to_enum_cases)}
                 return std::nullopt;

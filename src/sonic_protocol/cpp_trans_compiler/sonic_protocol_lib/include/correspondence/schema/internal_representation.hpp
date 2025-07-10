@@ -10,6 +10,7 @@
 #include "sonic_protocol_lib/schema/code.hpp"
 #include "sonic_protocol_lib/schema/field_type_def.hpp"
 #include "sonic_protocol_lib/schema/protocol_def.hpp"
+#include "general/types.hpp"
 
 
 namespace sonic_protocol_lib {
