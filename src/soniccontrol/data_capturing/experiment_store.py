@@ -57,13 +57,13 @@ class HDF5ExperimentStore(ExperimentStore):
     def _create_data_table(self):
         # Timestamp gets stored as string, because for a user it is more readable
         cols = {
-            EFieldName.TIMESTAMP.value: tb.StringCol(32), #type: ignore
-            EFieldName.FREQUENCY.value: tb.UInt32Col(), #type: ignore
-            EFieldName.GAIN.value: tb.UInt8Col(), #type: ignore
-            EFieldName.URMS.value: tb.UInt32Col(), #type: ignore
-            EFieldName.IRMS.value: tb.UInt32Col(), #type: ignore
-            EFieldName.PHASE.value: tb.UInt32Col(), #type: ignore
-            EFieldName.TEMPERATURE.value: tb.UInt32Col() #type: ignore
+            EFieldName.TIMESTAMP.name: tb.StringCol(32), #type: ignore
+            EFieldName.FREQUENCY.name: tb.UInt32Col(), #type: ignore
+            EFieldName.GAIN.name: tb.UInt8Col(), #type: ignore
+            EFieldName.URMS.name: tb.UInt32Col(), #type: ignore
+            EFieldName.IRMS.name: tb.UInt32Col(), #type: ignore
+            EFieldName.PHASE.name: tb.UInt32Col(), #type: ignore
+            EFieldName.TEMPERATURE.name: tb.UInt32Col() #type: ignore
         }
         DataTable = type("DataTable", (tb.IsDescription, ), cols)
         self._data_table = self._file.create_table("/", "data", DataTable)
@@ -85,7 +85,7 @@ class HDF5ExperimentStore(ExperimentStore):
         
     def add_row(self, data: Dict[str, Any]) -> None:
         data = data.copy() # make a copy, so that we do not transform the original data
-        timestamp_col = EFieldName.TIMESTAMP.value
+        timestamp_col = EFieldName.TIMESTAMP.name
         data[timestamp_col] = data[timestamp_col].isoformat()  # convert the time to a string for direct readability in storage
         # filter data, so that it only contains the columns of the table
         filtered_data = { k: v for k, v in data.items() if k in self._data_table.colnames }

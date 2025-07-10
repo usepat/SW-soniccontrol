@@ -37,7 +37,7 @@ class Version:
             raise TypeError("The type cannot be converted into a version")
         
         
-class IEFieldName(Enum):
+class IEFieldName(IntEnum):
     ...
 
 class ICommandCode(IntEnum):

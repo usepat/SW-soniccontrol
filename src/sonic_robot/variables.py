@@ -52,7 +52,7 @@ EDITOR_STOP_BUTTON = 'editor.stop_button'
 
 # Status Bar constants
 STATUS_BAR_MODE_LABEL = 'status_bar.mode_label'
-STATUS_BAR_FREQ_LABEL = 'status_bar.freq_label'
+STATUS_BAR_FREQ_LABEL = 'status_bar.frequency_label'
 STATUS_BAR_GAIN_LABEL = 'status_bar.gain_label'
 STATUS_BAR_PROCEDURE_LABEL = 'status_bar.procedure_label'
 STATUS_BAR_TEMPERATURE_LABEL = 'status_bar.temperature_label'

@@ -49,10 +49,10 @@ class ProcedureArgs:
             else:
 
                 enum = field.metadata.get("enum", None)
-                # Check if the enum value (str) is in the provided data
+                # Check if the enum name (str) is in the provided data
                 if enum:
                     assert (isinstance(enum, EFieldName))
-                    key = enum.value
+                    key = enum.name
                 else:
                     key = field.name  # fallback
 
@@ -88,10 +88,10 @@ class ProcedureArgs:
                 args_dict.update(_dict)
             else:
                 enum = field.metadata.get("enum", None)
-                # Check if the enum value (str) is in the provided data
+                # Check if the enum name (str) is in the provided data
                 if enum:
                     assert (isinstance(enum, EFieldName))
-                    key = enum.value
+                    key = enum.name
                 else:
                     key = field.name  # fallback
                 args_dict[key] = args[index]
@@ -122,7 +122,7 @@ class ProcedureArgs:
             if issubclass(field.type, ProcedureArgs):
                 result.update(field.type.fields_dict_with_alias())
             else:
-                alias = field.metadata.get("enum", field.name).value
+                alias = field.metadata.get("enum", field.name).name
                 result[alias] = field
         return result
     
@@ -150,7 +150,7 @@ class ProcedureArgs:
                         value = HolderArgs(float(value), "ms") 
 
                     # Set the new key with the alias
-                    arg_dict[enum.value] = value
+                    arg_dict[enum.name] = value
         return arg_dict
     
 class Procedure(abc.ABC):

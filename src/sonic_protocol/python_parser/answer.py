@@ -86,7 +86,7 @@ class AnswerValidator:
         self.pattern = pattern
         self._converters = workers
         self._after_converters = after_workers
-        field_names = [field_name.value for field_name in self._converters.keys()]
+        field_names = [field_name.name for field_name in self._converters.keys()]
             
         self._named_pattern = self.generate_named_pattern(
             pattern=self.pattern, keywords=field_names

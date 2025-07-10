@@ -2,8 +2,6 @@ import json
 import attrs
 import click
 
-from sonic_protocol.field_names import EFieldName
-from soniccontrol.data_capturing.experiment import ExperimentMetaData
 from soniccontrol.data_capturing.experiment_schema import ExperimentMetaDataSchema
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs
 from soniccontrol.remote_controller import RemoteController

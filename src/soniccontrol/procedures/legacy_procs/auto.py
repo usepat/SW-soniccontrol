@@ -8,7 +8,6 @@ from sonic_protocol.python_parser import commands
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
-from sonic_protocol.command_codes import CommandCode
 
 
 @attrs.define(auto_attribs=True, init=False)

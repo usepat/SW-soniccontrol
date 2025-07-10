@@ -37,7 +37,7 @@ class RobotRemoteController:
         return self._controller.is_connected()
 
     def _convert_answer(self, answer: Tuple[str, Dict[EFieldName, Any], bool]) -> Tuple[str, dict, bool]:
-        return answer[0], { k.value: v for k, v in answer[1].items() }, answer[2]
+        return answer[0], { k.name: v for k, v in answer[1].items() }, answer[2]
 
     @keyword('Send Command ')
     def send_command(self, command_str: str) -> Tuple[str, dict, bool]:

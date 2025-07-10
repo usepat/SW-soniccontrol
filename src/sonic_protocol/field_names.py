@@ -1,14 +1,14 @@
 
-from enum import unique
+from enum import unique, auto
 from sonic_protocol.schema import IEFieldName
 
 @unique
 class BaseFieldName(IEFieldName):
-    UNDEFINED = "undefined"
-    COMMAND_CODE = "command_code"
+    UNDEFINED = 0
+    COMMAND_CODE = 1
     
-    ERROR_MESSAGE = "error_message"
-    MESSAGE = "message"
+    ERROR_MESSAGE = 2
+    MESSAGE = 3
 
 
 @unique
@@ -19,90 +19,90 @@ class EFieldName(IEFieldName):
     ERROR_MESSAGE = BaseFieldName.ERROR_MESSAGE.value
     MESSAGE = BaseFieldName.MESSAGE.value
 
-    SUCCESS = "success"
-    UNKNOWN_ANSWER = "unknown_answer"
+    SUCCESS = auto()
+    UNKNOWN_ANSWER = auto()
 
-    HELP = "help"
+    HELP = auto()
 
-    DEVICE_TYPE = "device_type"
-    PROTOCOL_VERSION = "protocol_version"
-    IS_RELEASE = "is_release"
-    ADDITIONAL_OPTIONS = "additional_options"
+    DEVICE_TYPE = auto()
+    PROTOCOL_VERSION = auto()
+    IS_RELEASE = auto()
+    ADDITIONAL_OPTIONS = auto()
 
-    INDEX = "index"
+    INDEX = auto()
 
-    TRANSDUCER_ID = "transducer_id"
-    FREQUENCY = "freq"
-    SWF = "swf"
-    GAIN = "gain"
-    TEMPERATURE = "temp"
-    SIGNAL = "signal"
-    WAVEFORM = "waveform"
-    URMS = "urms"
-    IRMS = "irms"
-    PHASE = "phase"
-    TS_FLAG = "ts_flag"
-    PROCEDURE = "procedure"
-    PROCEDURE_ARG = "procedure_arg"
-    ERROR_CODE = "error_code"
+    TRANSDUCER_ID = auto()
+    FREQUENCY = auto()
+    SWF = auto()
+    GAIN = auto()
+    TEMPERATURE = auto()
+    SIGNAL = auto()
+    WAVEFORM = auto()
+    URMS = auto()
+    IRMS = auto()
+    PHASE = auto()
+    TS_FLAG = auto()
+    PROCEDURE = auto()
+    PROCEDURE_ARG = auto()
+    ERROR_CODE = auto()
 
-    TIMING = "timing"
+    TIMING = auto()
 
-    ATF = "atf"
-    ATK = "atk"
-    ATT = "att"
-    ATON = "aton"
+    ATF = auto()
+    ATK = auto()
+    ATT = auto()
+    ATON = auto()
 
-    BUILD_DATE = "build_date"
-    BUILD_HASH = "build_hash"
-    HARDWARE_VERSION = "hardware_version"
-    FIRMWARE_VERSION = "firmware_version"
+    BUILD_DATE = auto()
+    BUILD_HASH = auto()
+    HARDWARE_VERSION = auto()
+    FIRMWARE_VERSION = auto()
 
-    INPUT_SOURCE = "input_source"
-    COMM_MODE = "communication_mode"
-    COMMUNICATION_CHANNEL = "communication_channel"
-    COMMUNICATION_PROTOCOL = "communication_protocol"
-    TERMINATION = "termination"
+    INPUT_SOURCE = auto()
+    COMM_MODE = auto()
+    COMMUNICATION_CHANNEL = auto()
+    COMMUNICATION_PROTOCOL = auto()
+    TERMINATION = auto()
 
-    TIMESTAMP = "timestamp"
+    TIMESTAMP = auto()
 
-    SCAN_F_CENTER = "scan_f_center"
-    SCAN_F_RANGE = "scan_f_range"
-    SCAN_F_STEP = "scan_f_step"
-    SCAN_F_SHIFT = "scan_f_shift"
-    SCAN_T_STEP = "scan_t_step"
-    SCAN_GAIN = "scan_gain"
-    TUNE_F_STEP = "tune_f_step"
-    TUNE_F_SHIFT = "tune_f_shift"
-    TUNE_T_TIME = "tune_t_time"
-    TUNE_T_STEP = "tune_t_step"
-    TUNE_N_STEPS = "tune_n_steps"
-    TUNE_GAIN = "tune_gain"
-    WIPE_F_RANGE = "wipe_f_range"
-    WIPE_F_STEP = "wipe_f_step"
-    WIPE_T_ON = "wipe_t_on"
-    WIPE_T_OFF = "wipe_t_off"
-    WIPE_T_PAUSE = "wipe_t_pause"
-    RAMP_F_START = "ramp_f_start"
-    RAMP_F_STOP = "ramp_f_stop"
-    RAMP_F_STEP = "ramp_f_step"
-    RAMP_T_ON = "ramp_t_on"
-    RAMP_T_OFF = "ramp_t_off"
-    DUTY_CYCLE_T_OFF = "duty_cycle_t_off"
-    DUTY_CYCLE_T_ON = "duty_cycle_t_on"
+    SCAN_F_CENTER = auto()
+    SCAN_F_RANGE = auto()
+    SCAN_F_STEP = auto()
+    SCAN_F_SHIFT = auto()
+    SCAN_T_STEP = auto()
+    SCAN_GAIN = auto()
+    TUNE_F_STEP = auto()
+    TUNE_F_SHIFT = auto()
+    TUNE_T_TIME = auto()
+    TUNE_T_STEP = auto()
+    TUNE_N_STEPS = auto()
+    TUNE_GAIN = auto()
+    WIPE_F_RANGE = auto()
+    WIPE_F_STEP = auto()
+    WIPE_T_ON = auto()
+    WIPE_T_OFF = auto()
+    WIPE_T_PAUSE = auto()
+    RAMP_F_START = auto()
+    RAMP_F_STOP = auto()
+    RAMP_F_STEP = auto()
+    RAMP_T_ON = auto()
+    RAMP_T_OFF = auto()
+    DUTY_CYCLE_T_OFF = auto()
+    DUTY_CYCLE_T_ON = auto()
 
-    LOG_LEVEL = "log_level"
-    LOGGER_NAME = "logger_name"
+    LOG_LEVEL = auto()
+    LOGGER_NAME = auto()
 
     # Legacy Fields
-    LEGACY_RANG = "rang"
-    LEGACY_STEP = "step"
-    LEGACY_SING = "sing"
-    LEGACY_PAUS = "paus"
-    LEGACY_TUST = "tust"
-    LEGACY_TUTM = "tutm"
-    LEGACY_SCST = "scst"
-    LEGACY_F_CENTER = "f_center"
-    LEGACY_POLL = "polling_time"
+    LEGACY_RANG = auto()
+    LEGACY_STEP = auto()
+    LEGACY_SING = auto()
+    LEGACY_PAUS = auto()
+    LEGACY_TUST = auto()
+    LEGACY_TUTM = auto()
+    LEGACY_SCST = auto()
+    LEGACY_F_CENTER = auto()
+    LEGACY_POLL = auto()
 
 

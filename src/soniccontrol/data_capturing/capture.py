@@ -94,10 +94,10 @@ class Capture(EventManager):
         if not self._completed_capturing.is_set():
             assert self._store
 
-            attrs: Dict[str, Any] = { k.value: v for k, v in status.items() }
+            attrs: Dict[str, Any] = { k.name: v for k, v in status.items() }
             
             # TODO: Maybe it would be better to move this into updater?
-            timestamp_col = EFieldName.TIMESTAMP.value
+            timestamp_col = EFieldName.TIMESTAMP.name
             if EFieldName.TIMESTAMP not in status.keys():
                 attrs[timestamp_col] = datetime.datetime.now()
             

@@ -136,7 +136,7 @@ class StatusBarView(View):
             )
             label.pack(side=ttk.LEFT, padx=5)
             self._status_field_labels[status_field] = label
-            WidgetRegistry.register_widget(label, status_field.value + "_label", tab_name)
+            WidgetRegistry.register_widget(label, status_field.name.lower() + "_label", tab_name)
 
         self._signal_frame: ttk.Frame = ttk.Frame(self._status_bar_frame)
         ICON_LABEL_PADDING: tuple[int, int, int, int] = (8, 0, 0, 0)
