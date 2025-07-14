@@ -273,22 +273,6 @@ class CommandParamDef():
     def __hash__(self):
         return hash((self.name, self.param_type.field_type, self.param_type.converter_ref, self.param_type.si_unit, self.param_type.si_prefix, self.param_type.max_value, self.param_type.min_value))
 
-    def to_cpp_var_name(self):
-        # TODO: move this into cpp trans compiler
-        si_unit_name = self.param_type.si_unit.name.lower() if self.param_type.si_unit else "none"
-        si_prefix_name = self.param_type.si_prefix.name.lower() if self.param_type.si_prefix else "none"
-        if isinstance(self.param_type.min_value, DeviceParamConstantType):
-            min_value_name = self.param_type.min_value.name.lower()
-        else:
-            min_value_name = str(self.param_type.min_value) if self.param_type.min_value else "none"
-        if isinstance(self.param_type.max_value, DeviceParamConstantType):
-            max_value_name = self.param_type.max_value.name.lower()
-        else:
-            max_value_name = str(self.param_type.max_value) if self.param_type.max_value else "none"
-        var_name = f"{self.name.value.lower()}_{self.param_type.field_type.__name__.lower()}_{si_unit_name}_{si_prefix_name}_{min_value_name}_{max_value_name}"
-        var_name = var_name.replace("-", "minus") # fix for negative numbers
-        var_name = var_name.replace(".", "_") # fix for floats
-        return var_name
 
 @attrs.define(auto_attribs=True)
 class CommandDef():
@@ -312,31 +296,9 @@ class AnswerFieldDef():
     field_type: FieldType = attrs.field(converter=to_field_type)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
     sonic_text_attrs: SonicTextAnswerFieldAttrs = attrs.field(default=SonicTextAnswerFieldAttrs())
+
     def __hash__(self):
         return hash((self.field_name, self.field_type.field_type, self.field_type.converter_ref, self.field_type.si_unit, self.field_type.si_prefix, self.field_type.max_value, self.field_type.min_value))
-    def to_cpp_var_name(self):
-        # TODO: move this function out to transcompiler
-        si_unit_name = self.field_type.si_unit.name.lower() if self.field_type.si_unit else "none"
-        si_prefix_name = self.field_type.si_prefix.name.lower() if self.field_type.si_prefix else "none"
-        if isinstance(self.field_type.min_value, DeviceParamConstantType):
-            min_value_name = self.field_type.min_value.name.lower()
-        else:
-            min_value_name = str(self.field_type.min_value) if self.field_type.min_value else "none"
-        if isinstance(self.field_type.max_value, DeviceParamConstantType):
-            max_value_name = self.field_type.max_value.name.lower()
-        else:
-            max_value_name = str(self.field_type.max_value) if self.field_type.max_value else "none"
-        if isinstance(self.sonic_text_attrs, SonicTextAnswerFieldAttrs):
-            # Remove characters that are not allowed in cpp variable names
-            prefix = ''.join(e for e in self.sonic_text_attrs.prefix if e.isalnum())
-            postfix = ''.join(e for e in self.sonic_text_attrs.postfix if e.isalnum())
-        else:
-            prefix = "none"
-            postfix = "none"
-        var_name = f"{self.field_name.value.lower()}_{self.field_type.field_type.__name__.lower()}_{si_unit_name}_{si_prefix_name}_{min_value_name}_{max_value_name}_{prefix}_{postfix}"
-        var_name = var_name.replace("-", "minus") # fix for negative numbers
-        var_name = var_name.replace(".", "_") # fix for floats
-        return var_name
 
 
 
