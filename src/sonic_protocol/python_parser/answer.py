@@ -6,7 +6,8 @@ from typing import Any, Callable, Dict, List,  Optional
 import attrs
 
 from sonic_protocol.python_parser.converters import Converter
-from sonic_protocol.schema import CommandCode, EFieldName
+from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.field_names import EFieldName
 
 
 @attrs.define()    
