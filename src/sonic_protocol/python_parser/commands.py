@@ -1,21 +1,23 @@
 from typing import Any, Dict
 import attrs
-from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.field_names import EFieldName
 
 
 class Command:
-    def __init__(self, code: CommandCode):
+    def __init__(self, code: ICommandCode):
         self._code = code
 
     @property
-    def code(self) -> CommandCode:
+    def code(self) -> ICommandCode:
         return self._code
 
     @property
     def args(self) -> Dict[str, Any]:
         return attrs.asdict(self)
 
+
+# Commands used for the operator
 
 @attrs.define()
 class GetProtocol(Command):

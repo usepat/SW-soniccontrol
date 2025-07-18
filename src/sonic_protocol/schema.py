@@ -346,8 +346,8 @@ class Protocol:
     """
     info: ProtocolType = attrs.field()
     custom_data_types: Dict[str, type] = attrs.field()
-    command_code_cls: type[IntEnum] = attrs.field()
-    field_name_cls: type[Enum] = attrs.field()
+    command_code_cls: type[ICommandCode] = attrs.field()
+    field_name_cls: type[IEFieldName] = attrs.field()
     command_contracts: Dict[ICommandCode, CommandContract] = attrs.field()
     consts: DeviceParamConstants= attrs.field(default=DeviceParamConstants())
     

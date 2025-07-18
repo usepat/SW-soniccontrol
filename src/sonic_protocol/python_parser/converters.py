@@ -72,13 +72,13 @@ class EnumConverter(Converter):
         return str(value.name)
 
     def validate_str(self, text: str) -> bool: 
-        return text in [ str(enum_member.name) for enum_member in self._target_enum_class]
+        return text.upper() in [ enum_member.name for enum_member in self._target_enum_class]
 
     def convert_str_to_val(self, text: str) -> Any: 
         assert(self.validate_str(text))
         if isinstance(self._target_enum_class, IntEnum):
             return self._target_enum_class(int(text))
-        return self._target_enum_class(text)
+        return self._target_enum_class[text.upper()]
     
 T = TypeVar("T", int, str, bool, float, np.uint8, np.uint16, np.uint32)
 class PrimitiveTypeConverter(Converter):

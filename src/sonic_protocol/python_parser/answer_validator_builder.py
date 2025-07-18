@@ -2,21 +2,21 @@ from typing import Dict, List
 from sonic_protocol.python_parser.answer import AfterConverter, AnswerValidator
 from sonic_protocol.python_parser.converters import Converter, get_converter
 from sonic_protocol.schema import AnswerDef, AnswerFieldDef, ConverterType
-from sonic_protocol.field_names import EFieldName
+from sonic_protocol.field_names import IEFieldName
 import numpy as np
 
 
 class AnswerValidatorBuilder:
     @staticmethod
-    def create_answer_validator(answer_def: AnswerDef) -> AnswerValidator: 
-        value_dict: Dict[EFieldName, Converter | AfterConverter] = {}
+    def create_answer_validator(answer_def: AnswerDef, field_enum: type[IEFieldName]) -> AnswerValidator: 
+        value_dict: Dict[IEFieldName, Converter | AfterConverter] = {}
         for field in answer_def.fields:
             field_type = field.field_type.field_type
             value_dict[field.field_name] = get_converter(field.field_type.converter_ref, field_type)
 
         regex = AnswerValidatorBuilder._create_regex_for_answer(answer_def)
         
-        return AnswerValidator(regex, value_dict)
+        return AnswerValidator(regex, field_enum, value_dict)
 
     @staticmethod
     def _create_regex_for_answer(answer_def: AnswerDef) -> str:

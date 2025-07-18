@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from sonic_protocol.protocol import protocol_list
 from sonic_protocol.schema import DeviceType, ProtocolType, Version
-from sonic_protocol.field_names import EFieldName
+from sonic_protocol.field_names import EFieldName, IEFieldName
 from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
@@ -33,7 +33,7 @@ class DeviceBuilder:
             # await comm.open_communication(connection)
             
             # FIXME: Delete this
-            comm = LegacyCommunicator(logger=logger)
+            comm = LegacyCommunicator(_logger=logger)
             await comm.open_communication(connection)
         
         else:
@@ -88,7 +88,7 @@ class DeviceBuilder:
         
 
         # update info
-        result_dict: Dict[EFieldName, Any] = {}
+        result_dict: Dict[IEFieldName, Any] = {}
         if device.has_command(cmds.GetInfo()):
             answer = await device.execute_command(cmds.GetInfo(), should_log=False)
             result_dict.update(answer.field_value_dict)

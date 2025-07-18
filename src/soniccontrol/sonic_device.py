@@ -26,7 +26,7 @@ class SonicDevice(Scriptable):
         self._logger = logging.getLogger(logger.name + "." + SonicDevice.__name__)
         self.communicator = communicator
         self.protocol = protocol
-        self._answer_validators = { code: AnswerValidatorBuilder.create_answer_validator(command_contract.answer_def) 
+        self._answer_validators = { code: AnswerValidatorBuilder.create_answer_validator(command_contract.answer_def, protocol.field_name_cls) 
                                    for code, command_contract in self.protocol.command_contracts.items() }
         self._command_deserializer = CommandDeserializer(self.protocol)
         self._command_serializer = CommandSerializer(self.protocol)

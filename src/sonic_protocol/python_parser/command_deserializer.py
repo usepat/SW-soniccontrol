@@ -1,13 +1,13 @@
 from typing import Any
 from typing_extensions import Dict
-from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.command_codes import ICommandCode
 from sonic_protocol.schema import SonicTextCommandAttrs
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import Protocol
 import re
 
 class DeserializedCommand(Command):
-    def __init__(self, code: CommandCode, args: Dict[str, Any]):
+    def __init__(self, code: ICommandCode, args: Dict[str, Any]):
         super().__init__(code)
         self._args = args
 
@@ -21,7 +21,7 @@ class CommandDeserializer:
         self._command_contracts = protocol.command_contracts
         self._compiled_command_regex = self._compile_command_regex()
 
-    def _find_command_contract_for_identifier(self, command_identifier: str) -> CommandCode | None:
+    def _find_command_contract_for_identifier(self, command_identifier: str) -> ICommandCode | None:
         for command_code, command_contract in self._command_contracts.items():
             # We need this because of notify command contract
             if command_contract.command_def is None:
@@ -40,7 +40,7 @@ class CommandDeserializer:
         compiled_pattern = re.compile(command_regex)
         return compiled_pattern
 
-    def get_deserialized_command_code(self, command_str: str) -> CommandCode | None:
+    def get_deserialized_command_code(self, command_str: str) -> ICommandCode | None:
         match_result = re.match(self._compiled_command_regex, command_str)
         
         if match_result is None:
