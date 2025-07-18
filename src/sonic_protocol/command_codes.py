@@ -7,6 +7,10 @@ from sonic_protocol.schema import ICommandCode
 class BaseCommandCode(ICommandCode):
     NOTIFY_MESSAGE = 18000
 
+    # This allows to nest apis inside each other. 
+    # Useful for using the command architecture also for internal commands that should not be exposed in the protocol
+    INTERNAL_COMMAND = 19030 
+
     E_INTERNAL_DEVICE_ERROR = 20000
     E_COMMAND_NOT_KNOWN = 20001
     E_COMMAND_NOT_IMPLEMENTED = 20002
@@ -139,7 +143,6 @@ class CommandCode(ICommandCode):
     SET_PHYS_COM_CHANNEL = 2020 
     SET_TERMINATION = 2030
     CLEAR_ERRORS = 2040  # clears all errors currently only used by the device internal but later we will make this a legit command
-    GO_INTO_DEVICE_STATE = 2050 # used only internally by the device for service mode, wake up mode, ready, broken, ...
 
     # commands that execute something
 
@@ -160,10 +163,6 @@ class CommandCode(ICommandCode):
     SET_SETTINGS = 8000
 
 
-
-    
-   
-
     # commands from 18000 to 19000 are pure notifications
 
     NOTIFY_MESSAGE = BaseCommandCode.NOTIFY_MESSAGE.value
@@ -173,9 +172,8 @@ class CommandCode(ICommandCode):
     # commands from 19000 are for debugging
     GET_DATETIME_PICO = 19000 
     RESTART_DEVICE = 19010
-    SHUT_DOWN = 19020 # needed for simulation. Because we need to leave the simulation trough a command
 
-    INTERNAL_COMMAND = 19030
+    INTERNAL_COMMAND = BaseCommandCode.INTERNAL_COMMAND.value
     SONIC_FORCE = 19040
 
     # internal command of the device, that is not part of the protocol

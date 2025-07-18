@@ -47,7 +47,6 @@ class EFieldName(IEFieldName):
     PROCEDURE = auto()
     PROCEDURE_ARG = auto()
     ERROR_CODE = auto()
-    DEVICE_STATE = auto() # only used internally
 
     TIMING = auto()
 
