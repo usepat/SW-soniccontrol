@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 
 from sonic_protocol.protocol import protocol_list
-from sonic_protocol.schema import DeviceType, ProtocolType, Version
+from sonic_protocol.schema import BuildType, DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName, IEFieldName
 from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.legacy_communicator import LegacyCommunicator
@@ -63,7 +63,7 @@ class DeviceBuilder:
                     assert(EFieldName.IS_RELEASE in answer.field_value_dict)
                     device_type = answer.field_value_dict[EFieldName.DEVICE_TYPE]
                     protocol_version = answer.field_value_dict[EFieldName.PROTOCOL_VERSION]
-                    is_release = answer.field_value_dict[EFieldName.IS_RELEASE]
+                    is_release = answer.field_value_dict[EFieldName.IS_RELEASE] == BuildType.RELEASE.name
                 else:
                     builder_logger.debug("Device does not understand ?protocol command")
             else:

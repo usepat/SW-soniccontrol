@@ -75,7 +75,7 @@ class ProtocolList:
             device_consts = self._get_device_constants_for(protocol_type)
             # map DeviceParamConstantType to str (name of device param constant)
             device_consts_mapped = { key.value: val for key, val in device_consts.items() }
-            protocol.consts = attrs.evolve(protocol.consts, ** device_consts_mapped)
+            protocol.consts = attrs.evolve(protocol.consts, **device_consts_mapped)
 
             command_contracts = self._get_command_contracts_for(protocol_type)
             for command_code, command_contract in command_contracts.items():

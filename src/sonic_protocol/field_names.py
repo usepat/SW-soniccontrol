@@ -10,6 +10,8 @@ class BaseFieldName(IEFieldName):
     ERROR_MESSAGE = 2
     MESSAGE = 3
 
+    UNKNOWN_ANSWER = 4
+
 
 @unique
 class EFieldName(IEFieldName):
@@ -18,9 +20,9 @@ class EFieldName(IEFieldName):
     
     ERROR_MESSAGE = BaseFieldName.ERROR_MESSAGE.value
     MESSAGE = BaseFieldName.MESSAGE.value
+    UNKNOWN_ANSWER = BaseFieldName.UNKNOWN_ANSWER.value
 
     SUCCESS = auto()
-    UNKNOWN_ANSWER = auto()
 
     HELP = auto()
 

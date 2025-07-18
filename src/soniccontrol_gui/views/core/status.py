@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Tuple
 import ttkbootstrap as ttk
-from sonic_protocol.schema import AnswerFieldDef
+from sonic_protocol.schema import AnswerFieldDef, IEFieldName, Signal
 from sonic_protocol.python_parser.answer_field_converter import AnswerFieldToStringConverter
 from sonic_protocol.field_names import EFieldName
 from soniccontrol_gui.ui_component import UIComponent
@@ -36,8 +36,8 @@ class StatusBar(UIComponent):
         self._status_panel_expanded = not self._status_panel_expanded
         self._view.expand_panel_frame(self._status_panel_expanded)
 
-    def on_update_status(self, status: Dict[EFieldName, Any]):
-        field_labels = {
+    def on_update_status(self, status: Dict[IEFieldName, Any]):
+        field_labels: Dict[IEFieldName, str] = {
             EFieldName.FREQUENCY: "Frequency",
             EFieldName.SWF: "Switching Freq",
             EFieldName.GAIN: "Gain",
@@ -73,7 +73,7 @@ class StatusPanel(UIComponent):
         self._view = StatusPanelView(parent_slot)
         super().__init__(parent, self._view)
 
-    def on_update_status(self, status: Dict[EFieldName, Any]):
+    def on_update_status(self, status: Dict[IEFieldName, Any]):
         status_field_text_representations = {
             field: converter.convert(status[field])
             for field, converter in  self._field_converters.items()
@@ -87,6 +87,7 @@ class StatusPanel(UIComponent):
             freq = 0
 
         temp = status[EFieldName.TEMPERATURE] if EFieldName.TEMPERATURE in self._field_names else 0
+        is_signal_on = status[EFieldName.SIGNAL] == Signal.ON.name
 
         self._view.update_stats(
             freq=freq / 1000,
@@ -95,11 +96,11 @@ class StatusPanel(UIComponent):
             urms=status_field_text_representations[EFieldName.URMS],
             irms=status_field_text_representations[EFieldName.IRMS],
             phase=status_field_text_representations[EFieldName.PHASE],
-            signal=ui_labels.SIGNAL_ON if status[EFieldName.SIGNAL] else ui_labels.SIGNAL_OFF
+            signal=ui_labels.SIGNAL_ON if is_signal_on else ui_labels.SIGNAL_OFF
         )
 
         self._view.set_signal_image(
-            images.LED_ICON_GREEN if status[EFieldName.SIGNAL] else images.LED_ICON_RED, 
+            images.LED_ICON_GREEN if is_signal_on else images.LED_ICON_RED, 
             sizes.LARGE_BUTTON_ICON_SIZE
         )
 
@@ -107,12 +108,12 @@ class StatusBarView(View):
     def __init__(
         self,
         master: ttk.Frame,
-        status_fields: Iterable[EFieldName],
+        status_fields: Iterable[IEFieldName],
         *args,
         **kwargs
     ) -> None:
         self._status_field_names = status_fields
-        self._status_field_labels: Dict[EFieldName, ttk.Label] = {}
+        self._status_field_labels: Dict[IEFieldName, ttk.Label] = {}
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
@@ -177,7 +178,7 @@ class StatusBarView(View):
         for label in self._status_field_labels.values():
             label.bind(events.CLICKED_EVENT, lambda _e: command())
 
-    def update_labels(self, field_texts: Dict[EFieldName, str]):
+    def update_labels(self, field_texts: Dict[IEFieldName, str]):
         for status_field, text in field_texts.items():
             label = self._status_field_labels[status_field]
             label.configure(text=text)
