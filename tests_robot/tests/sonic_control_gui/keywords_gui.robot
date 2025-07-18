@@ -25,7 +25,8 @@ Connect via url "${URL}"
 
 
 Delete simulation memory file
-    Remove File    ./fakeDataFram.bin
+    ${file_exists}=  Run Keyword and Return Status    File Should Exist    ./fakeDataFram.bin
+    Run Keyword If    ${file_exists}    Remove File    ./fakeDataFram.bin
 
 
 Open device window
