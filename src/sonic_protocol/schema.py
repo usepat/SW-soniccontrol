@@ -52,6 +52,7 @@ class DeviceType(Enum):
     DESCALE = "descale"
     MVP_WORKER = "mvp_worker"
     CRYSTAL = "crystal"
+    CONFIGURATOR = "configurator"
 
 class SIUnit(Enum):
     METER = "m"
