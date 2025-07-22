@@ -42,7 +42,7 @@ class Flashing(UIComponent):
         super().__init__(self, self._view)
         self._logger = logging.getLogger(logger.name + "." + Flashing.__name__)
         if self._app_state:
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._on_execution_state_changed)
 
         self._view.set_submit_button_command(self._flash)
 

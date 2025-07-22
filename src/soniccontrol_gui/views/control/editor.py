@@ -18,7 +18,7 @@ from soniccontrol_gui.constants import (sizes, scripting_cards_data,
                                                      ui_labels)
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
-from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
+from soniccontrol_gui.views.core.app_state import AppExecutionContext, AppState, ExecutionState
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.pushbutton import PushButtonView
 from soniccontrol_gui.views.control.scriptingguide import ScriptingGuide
@@ -59,6 +59,8 @@ class ScriptFile(CaptureScriptArgs):
 
 
 class Editor(UIComponent):
+    NAME_SCRIPT_EXECUTION_TASK = "executing script"
+
     def __init__(self, parent: UIComponent, scripting: ScriptingFacade, script_file: ScriptFile, interpreter: InterpreterEngine, app_state: AppState):
         self._logger = logging.getLogger(parent.logger.name + "." + Editor.__name__)
 
@@ -84,7 +86,7 @@ class Editor(UIComponent):
         self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, lambda e: self._handle_script_error(e.data["exception"]))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_INTERPRETER_STATE, lambda e: self._set_interpreter_state(e.new_value))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda e: self._set_current_target(e.new_value))
-        self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self.on_execution_state_changed)
+        self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self.on_execution_state_changed)
 
 
         self.init_example_scripts()
@@ -113,8 +115,10 @@ class Editor(UIComponent):
             file.write(script.content)
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
-        execution_state: ExecutionState = e.new_value
-        if execution_state == ExecutionState.BUSY_EXECUTING_SCRIPT:
+        execution_state: ExecutionState = e.new_value.execution_state
+        running_task: str | None = e.new_value.running_task
+        is_executing_script = execution_state == ExecutionState.BUSY and running_task == Editor.NAME_SCRIPT_EXECUTION_TASK 
+        if is_executing_script:
             return
         elif execution_state == ExecutionState.IDLE:
             self._set_interpreter_state(self._interpreter.interpreter_state)
@@ -152,7 +156,7 @@ class Editor(UIComponent):
                     enabled=False
                 )
                 self._view.editor_enabled = True
-                self._app_state.execution_state = ExecutionState.IDLE
+                self._app_state.app_execution_context = AppExecutionContext(ExecutionState.IDLE, None)
 
             case InterpreterState.RUNNING:
                 self._view.start_pause_continue_button.configure(
@@ -168,7 +172,7 @@ class Editor(UIComponent):
                     enabled=True
                 )
                 self._view.editor_enabled = False
-                self._app_state.execution_state = ExecutionState.BUSY_EXECUTING_SCRIPT
+                self._app_state.app_execution_context = AppExecutionContext(ExecutionState.BUSY, Editor.NAME_SCRIPT_EXECUTION_TASK)
 
             case InterpreterState.PAUSED:
                 self._view.start_pause_continue_button.configure(
@@ -184,7 +188,7 @@ class Editor(UIComponent):
                     enabled=True
                 )
                 self._view.editor_enabled = False
-                self._app_state.execution_state = ExecutionState.IDLE
+                self._app_state.app_execution_context = AppExecutionContext(ExecutionState.IDLE, None)
 
     def _on_load_script(self):
         filename: str = filedialog.askopenfilename(

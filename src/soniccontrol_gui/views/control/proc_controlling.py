@@ -15,7 +15,7 @@ import ttkbootstrap as ttk
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol.events import Event, PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
-from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
+from soniccontrol_gui.views.core.app_state import AppExecutionContext, AppState, ExecutionState
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.form_widget import FormWidget
 from soniccontrol_gui.resources import images
@@ -37,6 +37,8 @@ class ProcControllingModel(CaptureProcedureArgs):
 
 
 class ProcControlling(UIComponent):
+    NAME_EXECUTING_PROC_TASK = "executing procedure"
+    
     def __init__(self, parent: UIComponent, proc_controller: ProcedureController, model: ProcControllingModel, app_state: AppState):
         self._logger = logging.getLogger(parent.logger.name + "." + ProcControlling.__name__)
 
@@ -55,7 +57,7 @@ class ProcControlling(UIComponent):
         self._view.set_guide_button_command(self._on_guide_pressed)
         self._proc_controller.subscribe(ProcedureController.PROCEDURE_RUNNING, self.on_procedure_running)
         self._proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, self.on_procedure_stopped)
-        self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._on_execution_state_changed)
+        self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._on_execution_state_changed)
         
         # setup view to have ramp as default 
         self._view.selected_procedure = ProcedureType.RAMP.value 
@@ -63,8 +65,12 @@ class ProcControlling(UIComponent):
         self.on_procedure_stopped(None) # type: ignore
 
     def _on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
-        execution_state: ExecutionState = e.new_value
-        if execution_state == ExecutionState.BUSY_EXECUTING_PROCEDURE:
+        execution_state: ExecutionState = e.new_value.execution_state
+        execution_state: ExecutionState = e.new_value.execution_state
+        running_task: str | None = e.new_value.running_task
+        is_executing_procedure = execution_state == ExecutionState.BUSY and running_task == ProcControlling.NAME_EXECUTING_PROC_TASK 
+        
+        if is_executing_procedure:
             return
         elif execution_state == ExecutionState.IDLE:
             self._view.set_start_button_enabled(True) 
@@ -132,13 +138,14 @@ class ProcControlling(UIComponent):
         self._view.set_running_proc_label(ui_labels.PROC_RUNNING.format(proc_type.value))
         self._view.set_start_button_enabled(False)
         self._view.set_stop_button_enabled(True)
-        self._app_state.execution_state = ExecutionState.BUSY_EXECUTING_PROCEDURE
+        self._app_state.app_execution_context = AppExecutionContext(ExecutionState.BUSY, ProcControlling.NAME_EXECUTING_PROC_TASK)
+
 
     def on_procedure_stopped(self, _e: Event):
         self._view.set_running_proc_label(ui_labels.PROC_NOT_RUNNING)
         self._view.set_start_button_enabled(True)
         self._view.set_stop_button_enabled(False)
-        self._app_state.execution_state = ExecutionState.IDLE
+        self._app_state.app_execution_context = AppExecutionContext(ExecutionState.IDLE, None)
 
 class ProcControllingView(TabView):
     def __init__(self, master: ttk.Frame | View, *args, **kwargs):

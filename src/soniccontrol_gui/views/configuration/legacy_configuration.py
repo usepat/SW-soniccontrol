@@ -147,6 +147,8 @@ class ATConfigFrameView(View):
 #####
 
 class LegacyConfiguration(UIComponent):
+    NAME_CONFIGURATION_TASK = "configuring"
+
     def __init__(self, parent: UIComponent, device: SonicDevice, procedure_controller: ProcedureController):
         self._logger = logging.getLogger(parent.logger.name + "." + LegacyConfiguration.__name__)
         
@@ -352,8 +354,10 @@ class LegacyConfiguration(UIComponent):
 
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
-        execution_state: ExecutionState = e.new_value
-        enabled = execution_state not in [ExecutionState.NOT_RESPONSIVE, ExecutionState.BUSY_FLASHING, ExecutionState.BUSY_EXECUTING_PROCEDURE]
+        execution_state: ExecutionState = e.new_value.execution_state
+        running_task: str | None = e.new_value.running_task
+        is_executing_configuration_task = execution_state == ExecutionState.BUSY and running_task == LegacyConfiguration.NAME_CONFIGURATION_TASK 
+        enabled = execution_state == ExecutionState.IDLE or is_executing_configuration_task
         self._view.set_submit_config_button_enabled(enabled)
 
 

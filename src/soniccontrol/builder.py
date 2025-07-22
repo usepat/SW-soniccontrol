@@ -76,15 +76,16 @@ class DeviceBuilder:
         device = SonicDevice(comm, protocol, info, 
                              is_in_rescue_mode=open_in_rescue_mode, logger=logger)
         
-        # some devices are automatically in default routine.
-        # To force them out of that, send the !sonic_force command
-        if device.has_command(cmds.SetStop()):
-            await device.execute_command(cmds.SetStop())
-        # We cant use SetOff for the crystal+ device because it is not ready yet
-        if device.has_command(cmds.SetOff()) and not is_legacy_device:
-            await device.execute_command(cmds.SetOff())
-        if device.has_command(cmds.SonicForce()):
-            await device.execute_command(cmds.SonicForce())
+        if device_type not in [DeviceType.CONFIGURATOR]:
+            # some devices are automatically in default routine.
+            # To force them out of that, send the !sonic_force command
+            if device.has_command(cmds.SetStop()):
+                await device.execute_command(cmds.SetStop())
+            # We cant use SetOff for the crystal+ device because it is not ready yet
+            if device.has_command(cmds.SetOff()) and not is_legacy_device:
+                await device.execute_command(cmds.SetOff())
+            if device.has_command(cmds.SonicForce()):
+                await device.execute_command(cmds.SonicForce())
         
 
         # update info

@@ -23,7 +23,7 @@ from soniccontrol.events import Event, EventManager
 from soniccontrol_gui.views.configuration.configuration import Configuration
 from soniccontrol_gui.views.configuration.legacy_configuration import LegacyConfiguration
 from soniccontrol_gui.views.configuration.flashing import Flashing
-from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
+from soniccontrol_gui.views.core.app_state import AppExecutionContext, AppState, ExecutionState
 from soniccontrol_gui.views.home import Home
 from soniccontrol_gui.views.info import Info
 from soniccontrol_gui.views.control.logging import Logging, LoggingTab
@@ -52,7 +52,7 @@ class DeviceWindow(UIComponent):
 
         self._view.add_close_callback(self.close)
     
-        self._app_state.execution_state = ExecutionState.IDLE
+        self._app_state.app_execution_context = AppExecutionContext(ExecutionState.IDLE, None)
 
         self._communicator.subscribe(Communicator.DISCONNECTED_EVENT, lambda _e: self.on_disconnect())
         # This needs to be here, for the edge case, that the communicator got disconnected, before it could be subscribed
@@ -64,7 +64,7 @@ class DeviceWindow(UIComponent):
         if not self._view.is_open:
             return # Window was closed already
         
-        self._app_state.execution_state = ExecutionState.NOT_RESPONSIVE
+        self._app_state.app_execution_context = AppExecutionContext(ExecutionState.NOT_RESPONSIVE, None)
         
         # Window is open, Ask User if he wants to close it
         message_box = MessageBox.show_ok_cancel(self._view.root, ui_labels.DEVICE_DISCONNECTED_MSG, ui_labels.DEVICE_DISCONNECTED_TITLE)
@@ -73,16 +73,6 @@ class DeviceWindow(UIComponent):
             return
         else:
             self.close()
-
-    @async_handler
-    async def on_reconnect(self, success : bool) -> None:
-        if success:
-            message = ui_labels.DEVICE_FLASHED_SUCCESS_MSG
-        else:
-            message = ui_labels.DEVICE_FLASHED_FAILED_MSG
-        message_box = MessageBox.show_ok(self._view.root, message, ui_labels.DEVICE_FLASHED_TITLE)
-        await message_box.wait_for_answer()
-        self.reconnect()
 
     @async_handler
     async def close(self) -> None:
@@ -97,7 +87,7 @@ class DeviceWindow(UIComponent):
         await self._communicator.close_communication(True)
         self.emit(Event(DeviceWindow.RECONNECT_EVENT))
         self._view.close()
-        
+
 
 class RescueWindow(DeviceWindow):
     def __init__(self, device: SonicDevice, root, connection_name: str):
@@ -106,11 +96,6 @@ class RescueWindow(DeviceWindow):
             self._device = device
             self._view = DeviceWindowView(root, title=f"Rescue Window - {connection_name}")
             super().__init__(self._logger, self._view, self._device.communicator)
-
-            self._flashing = Flashing(self, self._logger, self._device, self._app_state)
-            self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
-            self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
-
 
             self._logger.debug("Create logStorage for storing logs")
             self._logStorage = LogStorage()
@@ -138,7 +123,6 @@ class RescueWindow(DeviceWindow):
                 self._home.view,
                 self._scripting.view,
                 self._serialmonitor.view, 
-                self._flashing.view,
             ], right_one=False)
             self._view.add_tab_views([
                 self._logging.view, 
@@ -146,8 +130,8 @@ class RescueWindow(DeviceWindow):
 
             self._logger.debug("add callbacks and listeners to event emitters")
 
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._serialmonitor.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._home.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
         
         except Exception as e:
             self._logger.error(e)
@@ -199,10 +183,11 @@ class KnownDeviceWindow(DeviceWindow):
             self._sonicmeasure = Measuring(self, self._capture , self._capture_targets, self._device.info)
             self._home = Home(self, self._device)
             flashing_view = None
+            
             if is_legacy_device:
                 self._flashing = Flashing(self, self._logger, self._app_state, self._updater, connection_name, self._device)
-                self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
-                self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
+                self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.reconnect_after_flashing(True))
+                self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.reconnect_after_flashing(False))
                 flashing_view = self._flashing.view
 
 
@@ -229,13 +214,23 @@ class KnownDeviceWindow(DeviceWindow):
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
             self._updater.start()
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._serialmonitor.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._configuration.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._home.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
         except Exception as e:
             self._logger.error(e)
             MessageBox.show_error(root, str(e))
             raise
+
+    @async_handler
+    async def reconnect_after_flashing(self, success: bool):
+        if success:
+            message = ui_labels.DEVICE_FLASHED_SUCCESS_MSG
+        else:
+            message = ui_labels.DEVICE_FLASHED_FAILED_MSG
+        message_box = MessageBox.show_ok(self.view.root, message, ui_labels.DEVICE_FLASHED_TITLE)
+        await message_box.wait_for_answer()
+        self.reconnect()
 
 
 class DeviceWindowView(tk.Toplevel, View):
