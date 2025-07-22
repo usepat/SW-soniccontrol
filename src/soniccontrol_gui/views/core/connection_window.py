@@ -7,6 +7,7 @@ import ttkbootstrap as ttk
 import tkinter as tk
 
 from sonic_protocol.schema import Version
+from soniccontrol_gui.plugins.DevicePlugin import PluginRegistry
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
@@ -17,7 +18,7 @@ from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
 from soniccontrol_gui.constants import sizes, style, ui_labels, files
 from soniccontrol_gui.utils.image_loader import ImageLoader
-from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow, RescueWindow
+from soniccontrol_gui.views.core.device_window import DeviceWindow, RescueWindow
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 
@@ -38,11 +39,6 @@ class DeviceWindowManager:
         device_window = RescueWindow(sonicamp, self._root, connection.connection_name)
         self._open_device_window(device_window, connection)
         
-        return device_window
-
-    def open_known_device_window(self, sonicamp: SonicDevice, connection : Connection, is_legacy_device: bool = False) -> DeviceWindow:
-        device_window = KnownDeviceWindow(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
-        self._open_device_window(device_window, connection)
         return device_window
     
     def _open_device_window(self, device_window: DeviceWindow, connection : Connection, is_legacy_device: bool = False):
@@ -77,7 +73,12 @@ class DeviceWindowManager:
         else:
             logger.info("Created device successfully, open device window")
             if sonicamp.info.protocol_version >= Version(1, 0, 0):
-                self.open_known_device_window(sonicamp, connection, is_legacy_device)
+                device_type = sonicamp.info.device_type
+                device_plugin = next((plugin for plugin in PluginRegistry.get_device_plugins() if plugin.device_type != device_type), None)
+                assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
+
+                device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
+                self._open_device_window(device_window, connection)
             else:
                 self.open_rescue_window(sonicamp, connection)
 
