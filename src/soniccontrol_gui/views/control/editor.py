@@ -116,8 +116,8 @@ class Editor(UIComponent):
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state
-        executing_task: str | None = e.new_value.executing_task
-        is_executing_script = execution_state == ExecutionState.BUSY and executing_task == Editor.NAME_SCRIPT_EXECUTION_TASK 
+        running_task: str | None = e.new_value.running_task
+        is_executing_script = execution_state == ExecutionState.BUSY and running_task == Editor.NAME_SCRIPT_EXECUTION_TASK 
         if is_executing_script:
             return
         elif execution_state == ExecutionState.IDLE:

@@ -11,14 +11,10 @@ class ExecutionState(Enum):
     BUSY = 2
 
 
-attrs.define(init=True)
+@attrs.define
 class AppExecutionContext:
     execution_state: ExecutionState
     running_task: str | None
-
-    def __init__(self, execution_state: ExecutionState, running_task: str | None):
-        self.execution_state = execution_state
-        self.running_task = running_task
 
 
 class AppState(EventManager):

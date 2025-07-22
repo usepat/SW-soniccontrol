@@ -355,8 +355,8 @@ class LegacyConfiguration(UIComponent):
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state
-        executing_task: str | None = e.new_value.executing_task
-        is_executing_configuration_task = execution_state == ExecutionState.BUSY and executing_task == LegacyConfiguration.NAME_CONFIGURATION_TASK 
+        running_task: str | None = e.new_value.running_task
+        is_executing_configuration_task = execution_state == ExecutionState.BUSY and running_task == LegacyConfiguration.NAME_CONFIGURATION_TASK 
         enabled = execution_state == ExecutionState.IDLE or is_executing_configuration_task
         self._view.set_submit_config_button_enabled(enabled)
 
