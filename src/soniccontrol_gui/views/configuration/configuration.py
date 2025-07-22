@@ -31,6 +31,8 @@ from soniccontrol_gui.widgets.message_box import MessageBox
     
 
 class Configuration(UIComponent):
+    CONFIGURATION_TASK_NAME = "configuring"
+
     def __init__(self, parent: UIComponent, device: SonicDevice, updater: Updater):
         self._logger = logging.getLogger(parent.logger.name + "." + Configuration.__name__)
         
@@ -253,8 +255,10 @@ class Configuration(UIComponent):
 
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
-        execution_state: ExecutionState = e.new_value
-        enabled = execution_state not in [ExecutionState.NOT_RESPONSIVE, ExecutionState.BUSY_FLASHING, ExecutionState.BUSY_EXECUTING_PROCEDURE]
+        execution_state: ExecutionState = e.new_value.execution_state
+        executing_task: str | None = e.new_value.executing_task
+        is_executing_configuration_task = execution_state == ExecutionState.BUSY and executing_task == Configuration.CONFIGURATION_TASK_NAME 
+        enabled = execution_state == ExecutionState.IDLE or is_executing_configuration_task
         self._view.set_submit_config_button_enabled(enabled)
 
 

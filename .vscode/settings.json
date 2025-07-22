@@ -79,5 +79,6 @@
         "plaintext": false,
         "markdown": false,
         "scminput": false
-    }
+    },
+    "cmake.ignoreCMakeListsMissing": true
 }

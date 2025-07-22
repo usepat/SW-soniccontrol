@@ -55,7 +55,7 @@ class Home(UIComponent):
             await self._device.set_signal_off()
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
-        execution_state: ExecutionState = e.new_value
+        execution_state: ExecutionState = e.new_value.execution_state
         self._view.set_disconnect_button_enabled(execution_state != ExecutionState.NOT_RESPONSIVE)
         self._view.set_send_button_enabled(execution_state == ExecutionState.IDLE)
 

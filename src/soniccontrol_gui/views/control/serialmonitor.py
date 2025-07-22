@@ -123,8 +123,8 @@ class SerialMonitor(UIComponent):
         MessageBox(self.view.root, description, "Guide", [])
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
-        execution_state: ExecutionState = e.new_value
-        enabled = execution_state not in [ExecutionState.NOT_RESPONSIVE, ExecutionState.BUSY_FLASHING]
+        execution_state: ExecutionState = e.new_value.execution_state
+        enabled = execution_state != ExecutionState.NOT_RESPONSIVE
         self._view.set_send_command_button_enabled(enabled)
         self._view.set_command_line_input_enabled(enabled)
 

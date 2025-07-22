@@ -23,7 +23,7 @@ from soniccontrol.events import Event, EventManager
 from soniccontrol_gui.views.configuration.configuration import Configuration
 from soniccontrol_gui.views.configuration.legacy_configuration import LegacyConfiguration
 from soniccontrol_gui.views.configuration.flashing import Flashing
-from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
+from soniccontrol_gui.views.core.app_state import AppExecutionContext, AppState, ExecutionState
 from soniccontrol_gui.views.home import Home
 from soniccontrol_gui.views.info import Info
 from soniccontrol_gui.views.control.logging import Logging, LoggingTab
@@ -52,7 +52,7 @@ class DeviceWindow(UIComponent):
 
         self._view.add_close_callback(self.close)
     
-        self._app_state.execution_state = ExecutionState.IDLE
+        self._app_state.app_execution_context = AppExecutionContext(ExecutionState.IDLE, None)
 
         self._communicator.subscribe(Communicator.DISCONNECTED_EVENT, lambda _e: self.on_disconnect())
         # This needs to be here, for the edge case, that the communicator got disconnected, before it could be subscribed
@@ -64,7 +64,7 @@ class DeviceWindow(UIComponent):
         if not self._view.is_open:
             return # Window was closed already
         
-        self._app_state.execution_state = ExecutionState.NOT_RESPONSIVE
+        self._app_state.app_execution_context = AppExecutionContext(ExecutionState.NOT_RESPONSIVE, None)
         
         # Window is open, Ask User if he wants to close it
         message_box = MessageBox.show_ok_cancel(self._view.root, ui_labels.DEVICE_DISCONNECTED_MSG, ui_labels.DEVICE_DISCONNECTED_TITLE)
@@ -146,8 +146,8 @@ class RescueWindow(DeviceWindow):
 
             self._logger.debug("add callbacks and listeners to event emitters")
 
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._serialmonitor.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._home.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
         
         except Exception as e:
             self._logger.error(e)
@@ -229,9 +229,9 @@ class KnownDeviceWindow(DeviceWindow):
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
             self._updater.start()
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._serialmonitor.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._configuration.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._home.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
         except Exception as e:
             self._logger.error(e)
             MessageBox.show_error(root, str(e))
