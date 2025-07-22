@@ -1,6 +1,5 @@
 import abc
 import asyncio
-import os
 from pathlib import Path
 import attrs
 from typing import Tuple
@@ -20,7 +19,7 @@ class Connection(abc.ABC):
         ...
 
 
-class StreamWriterWrapper(asyncio.StreamWriter):
+class StreamWriterWrapper():
     """
     This class is a quick fix. 
     We have the problem, that the cli only buffers lines terminated by '\n'.
@@ -47,6 +46,8 @@ class StreamWriterWrapper(asyncio.StreamWriter):
     
     def is_closing(self) -> bool:
         return self._writer.is_closing()
+    
+    
 
 @attrs.define()
 class CLIConnection(Connection):
