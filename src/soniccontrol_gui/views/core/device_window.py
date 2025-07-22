@@ -75,16 +75,6 @@ class DeviceWindow(UIComponent):
             self.close()
 
     @async_handler
-    async def on_reconnect(self, success : bool) -> None:
-        if success:
-            message = ui_labels.DEVICE_FLASHED_SUCCESS_MSG
-        else:
-            message = ui_labels.DEVICE_FLASHED_FAILED_MSG
-        message_box = MessageBox.show_ok(self._view.root, message, ui_labels.DEVICE_FLASHED_TITLE)
-        await message_box.wait_for_answer()
-        self.reconnect()
-
-    @async_handler
     async def close(self) -> None:
         self._logger.info("Close window")
         self.emit(Event(DeviceWindow.CLOSE_EVENT))
@@ -97,7 +87,7 @@ class DeviceWindow(UIComponent):
         await self._communicator.close_communication(True)
         self.emit(Event(DeviceWindow.RECONNECT_EVENT))
         self._view.close()
-        
+
 
 class RescueWindow(DeviceWindow):
     def __init__(self, device: SonicDevice, root, connection_name: str):
@@ -106,11 +96,6 @@ class RescueWindow(DeviceWindow):
             self._device = device
             self._view = DeviceWindowView(root, title=f"Rescue Window - {connection_name}")
             super().__init__(self._logger, self._view, self._device.communicator)
-
-            self._flashing = Flashing(self, self._logger, self._device, self._app_state)
-            self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
-            self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
-
 
             self._logger.debug("Create logStorage for storing logs")
             self._logStorage = LogStorage()
@@ -138,7 +123,6 @@ class RescueWindow(DeviceWindow):
                 self._home.view,
                 self._scripting.view,
                 self._serialmonitor.view, 
-                self._flashing.view,
             ], right_one=False)
             self._view.add_tab_views([
                 self._logging.view, 
@@ -199,10 +183,11 @@ class KnownDeviceWindow(DeviceWindow):
             self._sonicmeasure = Measuring(self, self._capture , self._capture_targets, self._device.info)
             self._home = Home(self, self._device)
             flashing_view = None
+            
             if is_legacy_device:
                 self._flashing = Flashing(self, self._logger, self._app_state, self._updater, connection_name, self._device)
-                self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.on_reconnect(True))
-                self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.on_reconnect(False))
+                self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.reconnect_after_flashing(True))
+                self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.reconnect_after_flashing(False))
                 flashing_view = self._flashing.view
 
 
@@ -236,6 +221,16 @@ class KnownDeviceWindow(DeviceWindow):
             self._logger.error(e)
             MessageBox.show_error(root, str(e))
             raise
+
+    @async_handler
+    async def reconnect_after_flashing(self, success: bool):
+        if success:
+            message = ui_labels.DEVICE_FLASHED_SUCCESS_MSG
+        else:
+            message = ui_labels.DEVICE_FLASHED_FAILED_MSG
+        message_box = MessageBox.show_ok(self.view.root, message, ui_labels.DEVICE_FLASHED_TITLE)
+        await message_box.wait_for_answer()
+        self.reconnect()
 
 
 class DeviceWindowView(tk.Toplevel, View):
