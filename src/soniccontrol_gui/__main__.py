@@ -8,7 +8,7 @@ from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 if __name__ == "__main__":
     in_dev_env = False
     simulation_exe_path = None
-    if "SIMULATION_EXE_PATH" in os.environ:
+    if "FIRMWARE_BUILD_DIR_PATH" in os.environ:
         in_dev_env= True
         simulation_exe_path = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/mvp_simulation/src/simulation/cli_simulation_mvp/cli_simulation_mvp")
 
