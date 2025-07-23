@@ -143,6 +143,7 @@ class KnownDeviceWindow(DeviceWindow):
         self._logger: logging.Logger = logging.getLogger(connection_name + ".ui")
         try:
             self._device = device
+            
             self._view = DeviceWindowView(root, title=f"Device Window - {connection_name}")
             super().__init__(self._logger, self._view, self._device.communicator)
 

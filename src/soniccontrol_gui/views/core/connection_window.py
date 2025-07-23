@@ -6,7 +6,7 @@ import serial.tools.list_ports as list_ports
 import ttkbootstrap as ttk
 import tkinter as tk
 
-from sonic_protocol.schema import Version
+from sonic_protocol.schema import DeviceType, Version
 from soniccontrol_gui.plugins.DevicePlugin import PluginRegistry
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -21,6 +21,7 @@ from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.device_window import DeviceWindow, RescueWindow
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
+from sonic_protocol.python_parser import commands as cmds
 
 class DeviceConnectionClasses:
     def __init__(self, deviceWindow : DeviceWindow, connection : Connection):
@@ -57,9 +58,16 @@ class DeviceWindowManager:
         logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
         logger.debug("Established serial connection")
 
+        protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in PluginRegistry.get_device_plugins() }
+        device_builder = DeviceBuilder(protocol_factories=protocol_factories, logger=logger)
+
         try:
             logger.debug("Build SonicDevice for device")
-            sonicamp = await DeviceBuilder().build_amp(connection, logger=logger, is_legacy_device=is_legacy_device)
+            if is_legacy_device:
+                sonicamp = await device_builder.build_legacy_crystal(connection)
+            else:
+                sonicamp = await device_builder.build_amp(connection, try_deduce_protocol_used=True)
+        
         except Exception as e:
             logger.error(e)
             message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
@@ -68,19 +76,32 @@ class DeviceWindowManager:
             if user_answer is None or user_answer == DialogOptions.NO: 
                 return
             
-            sonicamp = await DeviceBuilder().build_amp(connection, logger=logger, open_in_rescue_mode=True)
-            self.open_rescue_window(sonicamp, connection)
-        else:
-            logger.info("Created device successfully, open device window")
-            if sonicamp.info.protocol_version >= Version(1, 0, 0):
-                device_type = sonicamp.info.device_type
-                device_plugin = next((plugin for plugin in PluginRegistry.get_device_plugins() if plugin.device_type != device_type), None)
-                assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
+            sonicamp = await device_builder.build_amp(connection, try_deduce_protocol_used=False)
 
-                device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
-                self._open_device_window(device_window, connection)
-            else:
-                self.open_rescue_window(sonicamp, connection)
+        # TODO: Maybe we should move this into a plugin
+        device_type = sonicamp.info.device_type
+        if device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.CRYSTAL, DeviceType.UNKNOWN]:
+            # some devices are automatically in default routine.
+            # To force them out of that, send the !sonic_force command
+            if sonicamp.has_command(cmds.SetStop()):
+                await sonicamp.execute_command(cmds.SetStop())
+            # We cant use SetOff for the crystal+ device because it is not ready yet
+            if sonicamp.has_command(cmds.SetOff()) and not is_legacy_device:
+                await sonicamp.execute_command(cmds.SetOff())
+            if sonicamp.has_command(cmds.SonicForce()):
+                await sonicamp.execute_command(cmds.SonicForce())
+        
+        if sonicamp.info.device_type != DeviceType.UNKNOWN:
+            logger.info("Created device successfully, open device window")
+
+            device_plugin = next((plugin for plugin in PluginRegistry.get_device_plugins() if plugin.device_type != device_type), None)
+            assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
+
+            device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
+            self._open_device_window(device_window, connection)
+        else:
+            self.open_rescue_window(sonicamp, connection)
+
 
     def set_attempt_connection_callback(self, callback: Callable[[Connection], Awaitable[None]]):
         self._attempt_connection_callback = callback

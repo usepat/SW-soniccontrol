@@ -2,7 +2,8 @@ import logging
 from typing import Any, Dict
 
 
-from sonic_protocol.protocol import protocol_list
+from sonic_protocol.protocol import protocol_list as operator_protocol_factory
+from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.schema import BuildType, DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName, IEFieldName
 from soniccontrol.communication.connection import Connection
@@ -13,96 +14,102 @@ import sonic_protocol.python_parser.commands as cmds
 
 
 class DeviceBuilder:
-
-    async def build_amp(self, connection: Connection, logger: logging.Logger = logging.getLogger(), open_in_rescue_mode: bool = False, is_legacy_device: bool = False) -> SonicDevice:
-        """!
-        @param open_in_rescue_mode This param can be set to False, so that it does not try to deduce which protocol to use. Used for the rescue window
-        """
-        
-        builder_logger = logging.getLogger(logger.name + "." + DeviceBuilder.__name__)
-        
-        info = FirmwareInfo()
-
-        if is_legacy_device:
-            protocol_version: Version = Version(1, 0, 0)
-            device_type: DeviceType = DeviceType.CRYSTAL
-            is_release: bool = True
-
-            # FIXME: adapt changes for legacy_protocol
-            # comm = LegacyCommunicator(logger=logger, protocol=legacy_protocol.legacy_protocol) #type: ignore
-            # await comm.open_communication(connection)
-            
-            # FIXME: Delete this
-            comm = LegacyCommunicator(_logger=logger)
-            await comm.open_communication(connection)
-        
-        else:
-            protocol_version: Version = Version(0, 0, 0)
-            device_type: DeviceType = DeviceType.UNKNOWN
-            is_release: bool = True
-
-            comm = SerialCommunicator(logger=logger) #type: ignore
-            await comm.open_communication(connection)
+    def __init__(self, protocol_factories: Dict[DeviceType, ProtocolList] = {}, logger: logging.Logger = logging.getLogger()):
+        self._logger = logger
+        self._builder_logger = logging.getLogger(logger.name + "." + DeviceBuilder.__name__)
+        self._protocol_factories = protocol_factories
 
 
-            builder_logger.debug("Serial connection is open, start building device")
-
-
-            # deduce the right protocol version, device_type and build_type
-            if not open_in_rescue_mode:
-                builder_logger.debug("Try to figure out which protocol to use with ?protocol")
-
-                protocol_version: Version = Version(1, 0, 0)
-                protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
-
-                device = SonicDevice(comm, protocol, info, logger=logger)
-                answer = await device.execute_command(cmds.GetProtocol())
-                if answer.valid:
-                    assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
-                    assert(EFieldName.PROTOCOL_VERSION in answer.field_value_dict)
-                    assert(EFieldName.IS_RELEASE in answer.field_value_dict)
-                    device_type = answer.field_value_dict[EFieldName.DEVICE_TYPE]
-                    protocol_version = answer.field_value_dict[EFieldName.PROTOCOL_VERSION]
-                    is_release = answer.field_value_dict[EFieldName.IS_RELEASE] == BuildType.RELEASE.name
-                else:
-                    builder_logger.debug("Device does not understand ?protocol command")
-            else:
-                builder_logger.warning("Device uses unknown protocol")
-
-        # create device
-        builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release" if is_release else "build", str(protocol_version))
-        protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
-            
-        device = SonicDevice(comm, protocol, info, 
-                             is_in_rescue_mode=open_in_rescue_mode, logger=logger)
-        
-        if device_type not in [DeviceType.CONFIGURATOR]:
-            # some devices are automatically in default routine.
-            # To force them out of that, send the !sonic_force command
-            if device.has_command(cmds.SetStop()):
-                await device.execute_command(cmds.SetStop())
-            # We cant use SetOff for the crystal+ device because it is not ready yet
-            if device.has_command(cmds.SetOff()) and not is_legacy_device:
-                await device.execute_command(cmds.SetOff())
-            if device.has_command(cmds.SonicForce()):
-                await device.execute_command(cmds.SonicForce())
-        
-
-        # update info
+    async def _update_info(self, device: SonicDevice) -> None:
+        info = device.info
         result_dict: Dict[IEFieldName, Any] = {}
         if device.has_command(cmds.GetInfo()):
             answer = await device.execute_command(cmds.GetInfo(), should_log=False)
             result_dict.update(answer.field_value_dict)
         
-        info.device_type = device_type
-        info.protocol_version = protocol_version
-        info.is_release = is_release
         info.firmware_version = result_dict.get(EFieldName.FIRMWARE_VERSION, Version(0, 0, 0))
         info.hardware_version = result_dict.get(EFieldName.HARDWARE_VERSION, Version(0, 0, 0))
 
-        builder_logger.info("Device type: %s", info.device_type)
-        builder_logger.info("Firmware version: %s", info.firmware_version)
-        builder_logger.info("Firmware info: %s", info.firmware_info)
-        builder_logger.info("Protocol version: %s", info.protocol_version)
+        self._builder_logger.info("Device type: %s", info.device_type)
+        self._builder_logger.info("Firmware version: %s", info.firmware_version)
+        self._builder_logger.info("Firmware info: %s", info.firmware_info)
+        self._builder_logger.info("Protocol version: %s", info.protocol_version)
+
+
+    async def build_legacy_crystal(self, connection: Connection) -> SonicDevice:
+        protocol_version: Version = Version(1, 0, 0)
+        device_type: DeviceType = DeviceType.CRYSTAL
+        is_release: bool = True
+
+        comm = LegacyCommunicator(_logger=self._logger)
+        await comm.open_communication(connection)
+        
+        # create device
+        self._builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release", str(protocol_version))
+        protocol = operator_protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
+            
+        info = FirmwareInfo()
+        device = SonicDevice(comm, protocol, info, logger=self._logger)
+    
+        # update info
+        info.device_type = device_type
+        info.protocol_version = protocol_version
+        info.is_release = is_release
+        await self._update_info(device)
+
+        return device
+
+
+    async def build_amp(self, connection: Connection, try_deduce_protocol_used: bool = True) -> SonicDevice:
+        """!
+        @param open_in_rescue_mode This param can be set to False, so that it does not try to deduce which protocol to use. Used for the rescue window
+        """
+        
+        protocol_version: Version = Version(0, 0, 0)
+        device_type: DeviceType = DeviceType.UNKNOWN
+        is_release: bool = True
+
+        comm = SerialCommunicator(logger=self._logger) #type: ignore
+        await comm.open_communication(connection)
+
+        self._builder_logger.debug("Serial connection is open, start building device")
+
+        info = FirmwareInfo()
+        # deduce the right protocol version, device_type and build_type
+        if try_deduce_protocol_used:
+            self._builder_logger.debug("Try to figure out which protocol to use with ?protocol")
+
+            protocol_version: Version = Version(1, 0, 0)
+            protocol = operator_protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
+
+            device = SonicDevice(comm, protocol, info, logger=self._logger)
+            answer = await device.execute_command(cmds.GetProtocol())
+            if answer.valid:
+                assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
+                assert(EFieldName.PROTOCOL_VERSION in answer.field_value_dict)
+                assert(EFieldName.IS_RELEASE in answer.field_value_dict)
+                device_type = answer.field_value_dict[EFieldName.DEVICE_TYPE]
+                protocol_version = answer.field_value_dict[EFieldName.PROTOCOL_VERSION]
+                is_release = answer.field_value_dict[EFieldName.IS_RELEASE] == BuildType.RELEASE.name
+            else:
+                self._builder_logger.debug("Device does not understand ?protocol command")
+        else:
+            self._builder_logger.warning("Device uses unknown protocol")
+
+        # create device
+        self._builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release" if is_release else "build", str(protocol_version))
+        
+        protocol_factory = self._protocol_factories.get(device_type, operator_protocol_factory)
+        protocol = protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
+            
+        # If we did not deduce the protocol then we should also not try to validate the answers, because we do not know how they look like
+        device = SonicDevice(comm, protocol, info, 
+                             should_validate_answers=try_deduce_protocol_used, logger=self._logger)
+    
+        # update info
+        info.device_type = device_type
+        info.protocol_version = protocol_version
+        info.is_release = is_release
+        await self._update_info(device)
 
         return device
