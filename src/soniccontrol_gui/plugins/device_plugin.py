@@ -9,6 +9,7 @@ from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow
+from importlib.metadata import entry_points
 
 
 class WindowFactoryBase(abc.ABC):
@@ -39,7 +40,6 @@ class PluginRegistry:
         return list(PluginRegistry._registered_plugins)
 
 
-
 _operator_protocol_factory = LatestProtocol()
 
 PluginRegistry.register_device_plugin(
@@ -54,3 +54,9 @@ PluginRegistry.register_device_plugin(
 PluginRegistry.register_device_plugin(
     DevicePlugin(DeviceType.CRYSTAL, KnownDeviceWindowFactory(), _operator_protocol_factory)
 )
+
+def register_device_plugins():
+    eps = entry_points()
+    for ep in eps.select(group="soniccontrol_gui.plugins"):
+        device_plugin = ep.load()
+        PluginRegistry.register_device_plugin(device_plugin)

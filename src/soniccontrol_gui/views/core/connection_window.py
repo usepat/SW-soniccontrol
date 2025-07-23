@@ -7,7 +7,7 @@ import ttkbootstrap as ttk
 import tkinter as tk
 
 from sonic_protocol.schema import DeviceType, Version
-from soniccontrol_gui.plugins.DevicePlugin import PluginRegistry
+from soniccontrol_gui.plugins.device_plugin import PluginRegistry
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
@@ -158,20 +158,19 @@ class ConnectionWindow(UIComponent):
         baudrate = 9600
 
         connection = SerialConnection(url=url, baudrate=baudrate, connection_name=Path(url).name)
-        await self._attempt_connection(connection, self._view._is_legacy_device.get())
+        await self._attempt_connection(connection, self._view.is_legacy_device)
         self._is_connecting = False
 
     @async_handler 
     async def _on_connect_to_simulation(self):
         assert (not self.is_connecting)
         assert self._simulation_exe_path is not None
-
         self._is_connecting = True
 
         bin_file = self._simulation_exe_path 
+        args = ["--start-configurator"] if self._view.should_start_configurator else []
 
-        connection = CLIConnection(bin_file=bin_file, connection_name = "simulation")
-
+        connection = CLIConnection(bin_file=bin_file, connection_name = "simulation", cmd_args=args)
         await self._attempt_connection(connection)
         self._is_connecting = False
 
@@ -219,12 +218,25 @@ class ConnectionWindowView(ttk.Window, View):
         )
         WidgetRegistry.register_widget(self._connect_via_url_button, "connect_via_url_button", window_name)
 
+        self._simulation_frame: ttk.Frame = ttk.Frame(self)
+
         self._connect_to_simulation_button: ttk.Button = ttk.Button(
-            self,
+            self._simulation_frame,
             style=ttk.SUCCESS,
             text=ui_labels.CONNECT_TO_SIMULATION_LABEL,
         )
         WidgetRegistry.register_widget(self._connect_to_simulation_button, "connect_to_simulation_button", window_name)
+
+        self._should_start_configurator = tk.BooleanVar()
+        self._start_configurator_box = tk.Checkbutton(
+            self._simulation_frame, 
+            text=ui_labels.START_CONFIGURATOR,
+            variable=self._should_start_configurator, 
+            onvalue=1, 
+            offvalue=0
+        )
+        WidgetRegistry.register_widget(self._start_configurator_box, "start_configurator_box", window_name)
+
 
         self._loading_text: ttk.StringVar = ttk.StringVar()
         self._loading_label: ttk.Label = ttk.Label(
@@ -240,13 +252,23 @@ class ConnectionWindowView(ttk.Window, View):
         self._connect_via_url_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._is_legacy_device_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         if show_simulation_button:
-            self._connect_to_simulation_button.pack(side=ttk.BOTTOM, fill=ttk.X, padx=sizes.SMALL_PADDING, pady=sizes.MEDIUM_PADDING)
+            self._simulation_frame.pack(side=ttk.BOTTOM, fill=ttk.X, padx=sizes.SMALL_PADDING, pady=sizes.MEDIUM_PADDING)
+            self._connect_to_simulation_button.pack(side=ttk.LEFT, fill=ttk.X, expand=True, padx=sizes.SMALL_PADDING)
+            self._start_configurator_box.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
 
         self._loading_label.pack(side=ttk.TOP, pady=sizes.MEDIUM_PADDING)
 
     @property
     def loading_text(self) -> str:
         return self._loading_text.get()
+    
+    @property
+    def is_legacy_device(self) -> bool:
+        return self._is_legacy_device.get()
+    
+    @property
+    def should_start_configurator(self) -> bool:
+        return self._should_start_configurator.get()
     
     @loading_text.setter
     def loading_text(self, value: str) -> None:

@@ -2,7 +2,7 @@ import abc
 import asyncio
 from pathlib import Path
 import attrs
-from typing import Tuple
+from typing import List, Tuple
 
 from serial_asyncio import open_serial_connection
 
@@ -52,11 +52,13 @@ class StreamWriterWrapper():
 @attrs.define()
 class CLIConnection(Connection):
     bin_file: Path | str = attrs.field(init=True)
+    cmd_args: List[str] = attrs.field(factory=list) 
     process: asyncio.subprocess.Process = attrs.field(init=False)     
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        command = " ".join([str(self.bin_file), *self.cmd_args])
         self.process = await asyncio.create_subprocess_shell(
-            str(self.bin_file),
+            command,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,

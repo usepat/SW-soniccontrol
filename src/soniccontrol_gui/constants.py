@@ -257,6 +257,7 @@ class _UIStringsEN:
     FORM_ADD_ENTRY: Final[str] = "Add Entry"
     CONFIGURING_LABEL: Final[str] = "configuring device"
     WAITING_FOR_ANSWER: Final[str] = "Waiting for answer"
+    START_CONFIGURATOR: Final[str] = "--start-configurator"
 
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()

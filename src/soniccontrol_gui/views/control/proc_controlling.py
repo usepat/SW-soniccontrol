@@ -57,7 +57,7 @@ class ProcControlling(UIComponent):
         self._view.set_guide_button_command(self._on_guide_pressed)
         self._proc_controller.subscribe(ProcedureController.PROCEDURE_RUNNING, self.on_procedure_running)
         self._proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, self.on_procedure_stopped)
-        self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._on_execution_state_changed)
+        self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._on_execution_state_changed)
         
         # setup view to have ramp as default 
         self._view.selected_procedure = ProcedureType.RAMP.value 
