@@ -13,13 +13,13 @@ Test Setup    Reconnect if disconnected
 Test if device save parameters like freq and gain
     [Documentation]    After restarting parameters should be saved
     [Tags]    expensive_to_run
-    [Setup]    RemoteController.Send Command     !sonic_force    
-    RemoteController.Send Command     !stop
-    [Teardown]    RemoteController.Send Command     !log[global]=ERROR
+    [Setup]    Send Command     !sonic_force    
+    Send Command     !stop
+    [Teardown]    Send Command     !log[global]=ERROR
     Send command and check response    !freq\=1000000   should_be_valid=${True}    ${FIELD_FREQUENCY}=${1000000}
     Send command and check response    !gain\=100   should_be_valid=${True}    ${FIELD_GAIN}=${100}
-    RemoteController.Send Command     !restart
-    Sleep for 20000 ms
+    Send Command     !restart
+    Sleep for 5000 ms
     Reconnect if disconnected
     Send command and check response    ?freq   should_be_valid=${True}    ${FIELD_FREQUENCY}=${1000000}
     Send command and check response    ?gain  should_be_valid=${True}    ${FIELD_GAIN}=${100}  

@@ -81,8 +81,13 @@ class MessageFetcher:
                 self._logger.info("Message fetcher was stopped")
                 return
             except asyncio.IncompleteReadError as e:
-                #self._logger.warning("Encountered EOF or reached max length before reading separator:\n%s", e.partial)
-                continue # ignore eof. happens if empty strings get send
+                self._logger.warning("EOF or incomplete read: %s", e)
+                # If EOF, stop the worker
+                if e.partial == b'':
+                    # We need this so that the robot test do not stop running when trying to restart
+                    self._logger.info("EOF detected, stopping worker.")
+                    return
+                continue
             except SyntaxError as e:
                 self._logger.error(e)
                 continue

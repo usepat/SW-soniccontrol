@@ -41,7 +41,11 @@ class RobotRemoteController:
 
     @keyword('Send Command ')
     def send_command(self, command_str: str) -> Tuple[str, dict, bool]:
+        if command_str == "!restart":
+            self._loop.run_until_complete(self._controller.stop_updater())
         answer = self._loop.run_until_complete(self._controller.send_command(command_str))
+        if command_str == "!restart":
+            self._loop.run_until_complete(self._controller.disconnect())
         return self._convert_answer(answer)
 
     @keyword('Deduce list of command examples')
@@ -82,15 +86,26 @@ class RobotRemoteController:
 
 def main():
     robotController = RobotRemoteController()
-    robotController.connect_via_serial("/dev/ttyUSB0")
-    firmware_dir = environ.get('FIRMWARE_BUILD_DIR_PATH')
+    # robotController.connect_via_serial("/dev/ttyUSB0")
+    firmware_dir = environ.get("FIRMWARE_BUILD_DIR_PATH")
     if not firmware_dir:
         raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
-    # path = firmware_dir + '/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp'
-    # robotController.connect_via_process(path)
+    path = (
+        firmware_dir
+        + "/linux/mvp_simulation/src/simulation/cli_simulation_mvp/cli_simulation_mvp"
+    )
+    robotController.connect_via_process(path)
     print(f"Connected: {robotController.is_connected()}")
-    print(robotController.send_command("!stop"))
-    robotController.deduce_command_examples()
+    robotController.send_command("!ramp_f_start=100000")
+    robotController.send_command("!ramp_f_stop=150000")
+    robotController.send_command("!ramp_f_step=10000")
+    robotController.send_command("!ramp_t_on=2000")
+    robotController.send_command("!ramp_t_off=0")
+    robotController.send_command("!ramp")
+    # robotController.deduce_command_examples()
+    # print(robotController.send_command("!restart"))
+    robotController.sleep(10000)
+    robotController.send_command("!stop")
     robotController.disconnect()
 
 if __name__ == "__main__":
