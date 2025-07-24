@@ -34,7 +34,7 @@ soniccontrol_gui = "soniccontrol_gui:start_gui"
 
 [build-system]
 requires = [
-    "setuptools>=42", 
+    "setuptools>=61.0", 
     "wheel", 
     "setuptools-git-versioning>=2.0,<3"
 ]

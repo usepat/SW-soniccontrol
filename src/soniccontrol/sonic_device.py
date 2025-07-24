@@ -21,7 +21,7 @@ class SonicDevice(Scriptable):
     protocol: Protocol = attrs.field(on_setattr=attrs.setters.NO_OP)
 
     def __init__(self, communicator: Communicator, protocol: Protocol, info: FirmwareInfo, 
-                 is_in_rescue_mode: bool = False, logger: logging.Logger=logging.getLogger()) -> None:
+                 should_validate_answers: bool = True, logger: logging.Logger=logging.getLogger()) -> None:
         self.info = info
         self._logger = logging.getLogger(logger.name + "." + SonicDevice.__name__)
         self.communicator = communicator
@@ -30,7 +30,7 @@ class SonicDevice(Scriptable):
                                    for code, command_contract in self.protocol.command_contracts.items() }
         self._command_deserializer = CommandDeserializer(self.protocol)
         self._command_serializer = CommandSerializer(self.protocol)
-        self._is_in_rescue_mode = is_in_rescue_mode
+        self._should_validate_answers = should_validate_answers
 
     def has_command(self, command: CommandCode | Command) -> bool:
         command_code = command.code if isinstance(command, Command) else command
@@ -71,7 +71,7 @@ class SonicDevice(Scriptable):
             if command_code:
                 answer_validator = self._answer_validators[command_code]
         
-        if answer_validator is None or self._is_in_rescue_mode:
+        if answer_validator is None or not self._should_validate_answers:
             # In open rescue mode, if we cannot understand the answers of the device.
             # So in rescue mode, we skip the validation of the answers
             answer = Answer(response_str, False, was_validated=False)

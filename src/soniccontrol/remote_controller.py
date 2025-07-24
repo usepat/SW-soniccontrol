@@ -43,7 +43,7 @@ class RemoteController:
         else:
             self._logger = create_logger_for_connection(connection_name)
 
-        self._device = await DeviceBuilder().build_amp(connection, logger=self._logger)
+        self._device = await DeviceBuilder(logger=self._logger).build_amp(connection)
         self._updater = Updater(self._device)
         self._updater.start()
         self._proc_controller = ProcedureController(self._device, updater=self._updater)

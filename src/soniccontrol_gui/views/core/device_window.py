@@ -130,8 +130,8 @@ class RescueWindow(DeviceWindow):
 
             self._logger.debug("add callbacks and listeners to event emitters")
 
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._serialmonitor.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._home.on_execution_state_changed)
         
         except Exception as e:
             self._logger.error(e)
@@ -143,6 +143,7 @@ class KnownDeviceWindow(DeviceWindow):
         self._logger: logging.Logger = logging.getLogger(connection_name + ".ui")
         try:
             self._device = device
+            
             self._view = DeviceWindowView(root, title=f"Device Window - {connection_name}")
             super().__init__(self._logger, self._view, self._device.communicator)
 
@@ -214,9 +215,9 @@ class KnownDeviceWindow(DeviceWindow):
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
             self._updater.start()
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._serialmonitor.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._configuration.on_execution_state_changed)
+            self._app_state.subscribe_property_listener(AppState.EXECUTION_STATE_PROP_NAME, self._home.on_execution_state_changed)
         except Exception as e:
             self._logger.error(e)
             MessageBox.show_error(root, str(e))

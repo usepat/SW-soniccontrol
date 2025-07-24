@@ -3,9 +3,12 @@ from soniccontrol_gui import start_gui
 import os
 from pathlib import Path
 
+from soniccontrol_gui.plugins.device_plugin import register_device_plugins
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 
 if __name__ == "__main__":
+    register_device_plugins()
+
     in_dev_env = False
     simulation_exe_path = None
     if "FIRMWARE_BUILD_DIR_PATH" in os.environ:

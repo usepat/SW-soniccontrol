@@ -81,13 +81,13 @@ class MessageFetcher:
                 self._logger.info("Message fetcher was stopped")
                 return
             except asyncio.IncompleteReadError as e:
-                self._logger.warning("EOF or incomplete read: %s", e)
-                # If EOF, stop the worker
-                if e.partial == b'':
-                    # We need this so that the robot test do not stop running when trying to restart
-                    self._logger.info("EOF detected, stopping worker.")
-                    return
-                continue
+                #self._logger.warning("Encountered EOF or reached max length before reading separator:\n%s", e.partial)
+                if len(e.partial) > 0:
+                    decoded_trash_read = e.partial.decode(ENCODING)
+                    self._logger.error(f"Read undefined expected bytes: {decoded_trash_read}")
+                    raise e
+                # I dont think we can ignore because when the simulation exits how else do we detect that something is wrong?
+                return # ignore eof. happens if empty strings get send
             except SyntaxError as e:
                 self._logger.error(e)
                 continue

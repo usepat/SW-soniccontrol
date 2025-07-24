@@ -6,8 +6,8 @@ import serial.tools.list_ports as list_ports
 import ttkbootstrap as ttk
 import tkinter as tk
 
-from sonic_protocol.schema import Version
-from soniccontrol_gui.plugins.DevicePlugin import PluginRegistry
+from sonic_protocol.schema import DeviceType, Version
+from soniccontrol_gui.plugins.device_plugin import PluginRegistry
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
@@ -21,6 +21,7 @@ from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.device_window import DeviceWindow, RescueWindow
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
+from sonic_protocol.python_parser import commands as cmds
 
 class DeviceConnectionClasses:
     def __init__(self, deviceWindow : DeviceWindow, connection : Connection):
@@ -57,9 +58,16 @@ class DeviceWindowManager:
         logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
         logger.debug("Established serial connection")
 
+        protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in PluginRegistry.get_device_plugins() }
+        device_builder = DeviceBuilder(protocol_factories=protocol_factories, logger=logger)
+
         try:
             logger.debug("Build SonicDevice for device")
-            sonicamp = await DeviceBuilder().build_amp(connection, logger=logger, is_legacy_device=is_legacy_device)
+            if is_legacy_device:
+                sonicamp = await device_builder.build_legacy_crystal(connection)
+            else:
+                sonicamp = await device_builder.build_amp(connection, try_deduce_protocol_used=True)
+        
         except Exception as e:
             logger.error(e)
             message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
@@ -68,19 +76,32 @@ class DeviceWindowManager:
             if user_answer is None or user_answer == DialogOptions.NO: 
                 return
             
-            sonicamp = await DeviceBuilder().build_amp(connection, logger=logger, open_in_rescue_mode=True)
-            self.open_rescue_window(sonicamp, connection)
-        else:
-            logger.info("Created device successfully, open device window")
-            if sonicamp.info.protocol_version >= Version(1, 0, 0):
-                device_type = sonicamp.info.device_type
-                device_plugin = next((plugin for plugin in PluginRegistry.get_device_plugins() if plugin.device_type != device_type), None)
-                assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
+            sonicamp = await device_builder.build_amp(connection, try_deduce_protocol_used=False)
 
-                device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
-                self._open_device_window(device_window, connection)
-            else:
-                self.open_rescue_window(sonicamp, connection)
+        # TODO: Maybe we should move this into a plugin
+        device_type = sonicamp.info.device_type
+        if device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.CRYSTAL, DeviceType.UNKNOWN]:
+            # some devices are automatically in default routine.
+            # To force them out of that, send the !sonic_force command
+            if sonicamp.has_command(cmds.SetStop()):
+                await sonicamp.execute_command(cmds.SetStop())
+            # We cant use SetOff for the crystal+ device because it is not ready yet
+            if sonicamp.has_command(cmds.SetOff()) and not is_legacy_device:
+                await sonicamp.execute_command(cmds.SetOff())
+            if sonicamp.has_command(cmds.SonicForce()):
+                await sonicamp.execute_command(cmds.SonicForce())
+        
+        if device_type != DeviceType.UNKNOWN:
+            logger.info("Created device successfully, open device window")
+
+            device_plugin = next((plugin for plugin in PluginRegistry.get_device_plugins() if plugin.device_type == device_type), None)
+            assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
+
+            device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
+            self._open_device_window(device_window, connection)
+        else:
+            self.open_rescue_window(sonicamp, connection)
+
 
     def set_attempt_connection_callback(self, callback: Callable[[Connection], Awaitable[None]]):
         self._attempt_connection_callback = callback
@@ -137,20 +158,19 @@ class ConnectionWindow(UIComponent):
         baudrate = 9600
 
         connection = SerialConnection(url=url, baudrate=baudrate, connection_name=Path(url).name)
-        await self._attempt_connection(connection, self._view._is_legacy_device.get())
+        await self._attempt_connection(connection, self._view.is_legacy_device)
         self._is_connecting = False
 
     @async_handler 
     async def _on_connect_to_simulation(self):
         assert (not self.is_connecting)
         assert self._simulation_exe_path is not None
-
         self._is_connecting = True
 
         bin_file = self._simulation_exe_path 
+        args = ["--start-configurator"] if self._view.should_start_configurator else []
 
-        connection = CLIConnection(bin_file=bin_file, connection_name = "simulation")
-
+        connection = CLIConnection(bin_file=bin_file, connection_name = "simulation", cmd_args=args)
         await self._attempt_connection(connection)
         self._is_connecting = False
 
@@ -198,12 +218,25 @@ class ConnectionWindowView(ttk.Window, View):
         )
         WidgetRegistry.register_widget(self._connect_via_url_button, "connect_via_url_button", window_name)
 
+        self._simulation_frame: ttk.Frame = ttk.Frame(self)
+
         self._connect_to_simulation_button: ttk.Button = ttk.Button(
-            self,
+            self._simulation_frame,
             style=ttk.SUCCESS,
             text=ui_labels.CONNECT_TO_SIMULATION_LABEL,
         )
         WidgetRegistry.register_widget(self._connect_to_simulation_button, "connect_to_simulation_button", window_name)
+
+        self._should_start_configurator = tk.BooleanVar()
+        self._start_configurator_box = tk.Checkbutton(
+            self._simulation_frame, 
+            text=ui_labels.START_CONFIGURATOR,
+            variable=self._should_start_configurator, 
+            onvalue=1, 
+            offvalue=0
+        )
+        WidgetRegistry.register_widget(self._start_configurator_box, "start_configurator_box", window_name)
+
 
         self._loading_text: ttk.StringVar = ttk.StringVar()
         self._loading_label: ttk.Label = ttk.Label(
@@ -219,13 +252,23 @@ class ConnectionWindowView(ttk.Window, View):
         self._connect_via_url_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._is_legacy_device_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         if show_simulation_button:
-            self._connect_to_simulation_button.pack(side=ttk.BOTTOM, fill=ttk.X, padx=sizes.SMALL_PADDING, pady=sizes.MEDIUM_PADDING)
+            self._simulation_frame.pack(side=ttk.BOTTOM, fill=ttk.X, padx=sizes.SMALL_PADDING, pady=sizes.MEDIUM_PADDING)
+            self._connect_to_simulation_button.pack(side=ttk.LEFT, fill=ttk.X, expand=True, padx=sizes.SMALL_PADDING)
+            self._start_configurator_box.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
 
         self._loading_label.pack(side=ttk.TOP, pady=sizes.MEDIUM_PADDING)
 
     @property
     def loading_text(self) -> str:
         return self._loading_text.get()
+    
+    @property
+    def is_legacy_device(self) -> bool:
+        return self._is_legacy_device.get()
+    
+    @property
+    def should_start_configurator(self) -> bool:
+        return self._should_start_configurator.get()
     
     @loading_text.setter
     def loading_text(self, value: str) -> None:
