@@ -82,6 +82,10 @@ class MessageFetcher:
                 return
             except asyncio.IncompleteReadError as e:
                 #self._logger.warning("Encountered EOF or reached max length before reading separator:\n%s", e.partial)
+                if len(e.partial) > 0:
+                    decoded_trash_read = e.partial.decode(ENCODING)
+                    self._logger.error(f"Read undefined expected bytes: {decoded_trash_read}")
+                    raise e
                 continue # ignore eof. happens if empty strings get send
             except SyntaxError as e:
                 self._logger.error(e)

@@ -91,10 +91,10 @@ class DeviceWindowManager:
             if sonicamp.has_command(cmds.SonicForce()):
                 await sonicamp.execute_command(cmds.SonicForce())
         
-        if sonicamp.info.device_type != DeviceType.UNKNOWN:
+        if device_type != DeviceType.UNKNOWN:
             logger.info("Created device successfully, open device window")
 
-            device_plugin = next((plugin for plugin in PluginRegistry.get_device_plugins() if plugin.device_type != device_type), None)
+            device_plugin = next((plugin for plugin in PluginRegistry.get_device_plugins() if plugin.device_type == device_type), None)
             assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
 
             device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
