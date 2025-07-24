@@ -86,7 +86,7 @@ class RobotRemoteController:
 
 def main():
     robotController = RobotRemoteController()
-    # robotController.connect_via_serial("/dev/ttyUSB0")
+    #robotController.connect_via_serial("/dev/ttyUSB0")
     firmware_dir = environ.get("FIRMWARE_BUILD_DIR_PATH")
     if not firmware_dir:
         raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
@@ -96,16 +96,16 @@ def main():
     )
     robotController.connect_via_process(path)
     print(f"Connected: {robotController.is_connected()}")
-    robotController.send_command("!ramp_f_start=100000")
-    robotController.send_command("!ramp_f_stop=150000")
-    robotController.send_command("!ramp_f_step=10000")
-    robotController.send_command("!ramp_t_on=2000")
-    robotController.send_command("!ramp_t_off=0")
-    robotController.send_command("!ramp")
+    # robotController.send_command("!ramp_f_start=100000")
+    # robotController.send_command("!ramp_f_stop=150000")
+    # robotController.send_command("!ramp_f_step=10000")
+    # robotController.send_command("!ramp_t_on=2000")
+    # robotController.send_command("!ramp_t_off=0")
+    # robotController.send_command("!ramp")
     # robotController.deduce_command_examples()
-    # print(robotController.send_command("!restart"))
+    print(robotController.send_command("!restart"))
     robotController.sleep(10000)
-    robotController.send_command("!stop")
+    #robotController.send_command("!stop")
     robotController.disconnect()
 
 if __name__ == "__main__":

@@ -87,7 +87,7 @@ class MessageFetcher:
                     self._logger.error(f"Read undefined expected bytes: {decoded_trash_read}")
                     raise e
                 # I dont think we can ignore because when the simulation exits how else do we detect that something is wrong?
-                return # ignore eof. happens if empty strings get send
+                continue # ignore eof. happens if empty strings get send
             except SyntaxError as e:
                 self._logger.error(e)
                 continue
