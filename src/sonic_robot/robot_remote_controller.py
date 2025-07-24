@@ -6,6 +6,8 @@ from typing_extensions import List
 from robot.api.deco import keyword, library
 import robot.api.logger as logger
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.protocol_list import ProtocolList
+from sonic_protocol.schema import DeviceType
 from sonic_robot.deduce_command_examples import deduce_command_examples
 from soniccontrol.procedures.procedure_controller import ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
@@ -16,8 +18,8 @@ from soniccontrol.remote_controller import RemoteController
 # This is done to reduce time needed for tests, because to build up a connection takes quite long.
 @library(auto_keywords=False, scope="SUITE")
 class RobotRemoteController:
-    def __init__(self, log_path: Optional[str] = None):
-        self._controller = RemoteController(log_path=Path(log_path) if log_path else None)
+    def __init__(self, log_path: Optional[str] = None, protocol_factories: Dict[DeviceType, ProtocolList] = {}):
+        self._controller = RemoteController(log_path=Path(log_path) if log_path else None, protocol_factories=protocol_factories)
         # Because our RemoteController is async, but robot is sync, 
         # we have to embed all the calls to the RemoteController functions into an asyncio event loop.
         self._loop = asyncio.get_event_loop()

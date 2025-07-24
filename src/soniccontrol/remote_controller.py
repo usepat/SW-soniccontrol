@@ -5,7 +5,9 @@ from typing import Any, Callable, Dict, Optional, Tuple
 import attrs
 
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.python_parser.commands import Command
+from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
@@ -29,12 +31,13 @@ class SpectrumArgsAdapter(CaptureSpectrumArgs):
 class RemoteController:
     NOT_CONNECTED = "Controller is not connected to a device"
 
-    def __init__(self, log_path: Optional[Path]=None):
+    def __init__(self, log_path: Optional[Path]=None, protocol_factories: Dict[DeviceType, ProtocolList] = {}):
         self._device: Optional[SonicDevice] = None
         self._scripting: Optional[ScriptingFacade] = None
         self._proc_controller: Optional[ProcedureController] = None
         self._log_path: Optional[Path] = log_path
         self._updater: Optional[Updater] = None
+        self._protocol_factories = protocol_factories
 
     # TODO: make the connect functions classmethods and they give back a RemoteController
     async def _connect(self, connection: Connection, connection_name: str):
@@ -43,7 +46,7 @@ class RemoteController:
         else:
             self._logger = create_logger_for_connection(connection_name)
 
-        self._device = await DeviceBuilder(logger=self._logger).build_amp(connection)
+        self._device = await DeviceBuilder(logger=self._logger, protocol_factories=self._protocol_factories).build_amp(connection)
         self._updater = Updater(self._device)
         self._updater.start()
         self._proc_controller = ProcedureController(self._device, updater=self._updater)
