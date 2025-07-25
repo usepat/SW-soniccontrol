@@ -107,9 +107,13 @@ def main():
     # robotController.send_command("!ramp_t_on=2000")
     # robotController.send_command("!ramp_t_off=0")
     # robotController.send_command("!ramp")
-    robotController.deduce_command_examples()
-    robotController.send_command("!ramp=activated")
-    robotController.send_command("!ramp=deactivated")
+    
+    for cmd in robotController.deduce_command_examples():
+        robotController.send_command(cmd)
+    # robotController.send_command("!ramp=activated")
+    # robotController.send_command("!ramp=deactivated")
+    # robotController.send_command("!temperature=activated")
+    # robotController.send_command("!temperature=deactivated")
     robotController.disconnect()
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from sonic_protocol.python_parser.answer_validator_builder import AnswerValidato
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
-from sonic_protocol.schema import Protocol
+from sonic_protocol.schema import ICommandCode, Protocol
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.communication.serial_communicator import Communicator
@@ -69,10 +69,10 @@ class SonicDevice(Scriptable):
     async def _send_message(self, message: str, answer_validator: AnswerValidator| None = None, try_deduce_answer_validator: bool = False, **kwargs) -> Answer:
         response_str = await self.communicator.send_and_wait_for_response(message, **kwargs)
         
-        code: CommandCode | None = None
+        code: ICommandCode | None = None
         if "#" in response_str:
             code_str, response_str  = response_str.split(sep="#", maxsplit=1)
-            code = CommandCode(int(code_str))
+            code = self.protocol.command_code_cls(int(code_str))
 
         ERROR_CODES_START = 20000
         if code is not None and code.value >= ERROR_CODES_START:
