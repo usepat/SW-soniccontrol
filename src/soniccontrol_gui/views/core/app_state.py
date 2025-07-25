@@ -18,7 +18,7 @@ class AppExecutionContext:
 
 
 class AppState(EventManager):
-    EXECUTION_STATE_PROP_NAME = "app_execution_context"
+    APP_EXECUTION_CONTEXT_PROP_NAME = "app_execution_context"
 
     def __init__(self, logger: logging.Logger):
         super().__init__()
@@ -43,5 +43,5 @@ class AppState(EventManager):
         self._app_execution_context = val
         if old_val != val:
             self._logger.debug("Execution state changed to: %s",self.execution_state.name)
-            self.emit(PropertyChangeEvent(AppState.EXECUTION_STATE_PROP_NAME, old_val, val))
+            self.emit(PropertyChangeEvent(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, old_val, val))
 

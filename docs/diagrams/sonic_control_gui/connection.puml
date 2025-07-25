@@ -39,7 +39,7 @@ class "Updater" as soniccontrol.updater.Updater {
 }
 
 class "AppState" as soniccontrol_gui.views.core.app_state.AppState {
-  EXECUTION_STATE_PROP_NAME : str
+  APP_EXECUTION_CONTEXT_PROP_NAME : str
   execution_state
 }
 class "RescueWindow" as soniccontrol_gui.views.core.device_window.RescueWindow {

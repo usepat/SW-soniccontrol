@@ -49,11 +49,13 @@ class MessageFetcher:
         self._logger.debug("Stop message fetcher")
 
         if self._task is not None:
-            self._task.cancel()
             try:
+                self._task.cancel()
                 await self._task
             except asyncio.CancelledError:
                 pass
+            except Exception as e:
+                self._logger.error(str(e))
             self._task = None
 
     def _convert_log_levels(self, log_level: DeviceLogLevel) -> int:
