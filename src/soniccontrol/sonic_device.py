@@ -2,6 +2,7 @@ import logging
 
 import attrs
 from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.field_names import BaseFieldName
 from sonic_protocol.python_parser.answer import Answer, AnswerValidator
 from sonic_protocol.python_parser.answer_validator_builder import AnswerValidatorBuilder
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
@@ -12,6 +13,17 @@ from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.interfaces import Scriptable
 from soniccontrol.communication.serial_communicator import Communicator
 
+class CommandValidationError(Exception):
+    """Raised when a command's response fails validation."""
+    def __init__(self, message: str):
+        super().__init__(f"Validation failed: {message}")
+        self.message = message
+
+class CommandExecutionError(Exception):
+    """Raised when the device returns an error message."""
+    def __init__(self, error_message: str):
+        super().__init__(f"Device error: {error_message}")
+        self.error_message = error_message
 
 @attrs.define(kw_only=True)
 class SonicDevice(Scriptable):
@@ -92,6 +104,7 @@ class SonicDevice(Scriptable):
         command: Command | str,
         should_log: bool = True,
         try_deduce_command_if_str: bool = True,
+        raise_exception: bool = False,
         **kwargs
     ) -> Answer:
         """
@@ -133,8 +146,17 @@ class SonicDevice(Scriptable):
         except Exception as e:
             self._logger.error(e)
             await self.disconnect()
+
+            if raise_exception:
+                raise e
             return Answer(str(e), False, True)
 
+        if raise_exception and answer.was_validated and not answer.valid:
+            raise CommandValidationError(answer.message)
+        
+        if raise_exception and answer.is_error_msg:
+            raise CommandExecutionError(answer.field_value_dict[BaseFieldName.ERROR_MESSAGE])
+        
         return answer
 
 

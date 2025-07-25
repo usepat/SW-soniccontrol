@@ -1,10 +1,9 @@
 import logging
-from typing import Any, Callable, Dict, Iterable
+from typing import Callable, Dict, Iterable
 
 from async_tkinter_loop import async_handler
 import attrs
 from soniccontrol.data_capturing.capture_target import CaptureProcedureArgs
-from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -65,7 +64,6 @@ class ProcControlling(UIComponent):
         self.on_procedure_stopped(None) # type: ignore
 
     def _on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
-        execution_state: ExecutionState = e.new_value.execution_state
         execution_state: ExecutionState = e.new_value.execution_state
         running_task: str | None = e.new_value.running_task
         is_executing_procedure = execution_state == ExecutionState.BUSY and running_task == ProcControlling.NAME_EXECUTING_PROC_TASK 

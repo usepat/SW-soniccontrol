@@ -59,6 +59,10 @@ class DeviceWindow(UIComponent):
         if not self._communicator.connection_opened.is_set():
             self.on_disconnect()
 
+    @property
+    def app_state(self) -> AppState:
+        return self._app_state
+
     @async_handler
     async def on_disconnect(self) -> None:
         if not self._view.is_open:
@@ -110,11 +114,10 @@ class RescueWindow(DeviceWindow):
             self._scripting = NewScriptingFacade()
             self._script_file = ScriptFile(logger=self._logger)
             self._interpreter = InterpreterEngine(self._device, EventManager(), self._logger) # type: ignore
-            self._app_state = AppState(self._logger)
 
             self._logger.debug("Create views")
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
-            self._scripting = Editor(self, self._scripting, self._script_file, self._interpreter, self._app_state)
+            self._scripting = Editor(self, self._scripting, self._script_file, self._interpreter, self.app_state)
             self._logging = LoggingTab(self, self._logStorage.logs)
             self._home = Home(self, self._device)
 
@@ -130,8 +133,8 @@ class RescueWindow(DeviceWindow):
 
             self._logger.debug("add callbacks and listeners to event emitters")
 
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
+            self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
+            self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
         
         except Exception as e:
             self._logger.error(e)
@@ -171,7 +174,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
             self._spectrum_measure = SpectrumMeasureTab(self, self._spectrum_measure_model)
             self._logging = Logging(self, connection_name)
-            self._editor = Editor(self, self._scripting, self._script_file, self._interpreter, self._app_state)
+            self._editor = Editor(self, self._scripting, self._script_file, self._interpreter, self.app_state)
             self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
             self._info = Info(self)
             if is_legacy_device:
@@ -180,13 +183,13 @@ class KnownDeviceWindow(DeviceWindow):
                 self._configuration = Configuration(self, self._device, self._updater)
             self._settings = Settings(self, self._device, self._updater)
             
-            self._proc_controlling = ProcControlling(self, self._proc_controller, self._proc_controlling_model, self._app_state)
+            self._proc_controlling = ProcControlling(self, self._proc_controller, self._proc_controlling_model, self.app_state)
             self._sonicmeasure = Measuring(self, self._capture , self._capture_targets, self._device.info)
             self._home = Home(self, self._device)
             flashing_view = None
             
             if is_legacy_device:
-                self._flashing = Flashing(self, self._logger, self._app_state, self._updater, connection_name, self._device)
+                self._flashing = Flashing(self, self._logger, self.app_state, self._updater, connection_name, self._device)
                 self._flashing.subscribe(Flashing.RECONNECT_EVENT, lambda _e: self.reconnect_after_flashing(True))
                 self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.reconnect_after_flashing(False))
                 flashing_view = self._flashing.view
@@ -215,9 +218,9 @@ class KnownDeviceWindow(DeviceWindow):
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
             self._updater.start()
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
-            self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
+            self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
+            self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
+            self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
         except Exception as e:
             self._logger.error(e)
             MessageBox.show_error(root, str(e))
