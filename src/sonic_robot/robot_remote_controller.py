@@ -6,6 +6,8 @@ from typing_extensions import List
 from robot.api.deco import keyword, library
 import robot.api.logger as logger
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.protocol_list import ProtocolList
+from sonic_protocol.schema import DeviceType
 from sonic_robot.deduce_command_examples import deduce_command_examples
 from soniccontrol.procedures.procedure_controller import ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
@@ -16,8 +18,8 @@ from soniccontrol.remote_controller import RemoteController
 # This is done to reduce time needed for tests, because to build up a connection takes quite long.
 @library(auto_keywords=False, scope="SUITE")
 class RobotRemoteController:
-    def __init__(self, log_path: Optional[str] = None):
-        self._controller = RemoteController(log_path=Path(log_path) if log_path else None)
+    def __init__(self, log_path: Optional[str] = None, protocol_factories: Dict[DeviceType, ProtocolList] = {}):
+        self._controller = RemoteController(log_path=Path(log_path) if log_path else None, protocol_factories=protocol_factories)
         # Because our RemoteController is async, but robot is sync, 
         # we have to embed all the calls to the RemoteController functions into an asyncio event loop.
         self._loop = asyncio.get_event_loop()
@@ -41,7 +43,11 @@ class RobotRemoteController:
 
     @keyword('Send Command ')
     def send_command(self, command_str: str) -> Tuple[str, dict, bool]:
+        if command_str == "!restart":
+            self._loop.run_until_complete(self._controller.stop_updater())
         answer = self._loop.run_until_complete(self._controller.send_command(command_str))
+        if command_str == "!restart":
+            self._loop.run_until_complete(self._controller.disconnect())
         return self._convert_answer(answer)
 
     @keyword('Deduce list of command examples')
@@ -82,15 +88,26 @@ class RobotRemoteController:
 
 def main():
     robotController = RobotRemoteController()
-    robotController.connect_via_serial("/dev/ttyUSB0")
-    firmware_dir = environ.get('FIRMWARE_BUILD_DIR_PATH')
+    #robotController.connect_via_serial("/dev/ttyUSB0")
+    firmware_dir = environ.get("FIRMWARE_BUILD_DIR_PATH")
     if not firmware_dir:
         raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
-    # path = firmware_dir + '/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp'
-    # robotController.connect_via_process(path)
+    path = (
+        firmware_dir
+        + "/linux/mvp_simulation/src/simulation/cli_simulation_mvp/cli_simulation_mvp"
+    )
+    robotController.connect_via_process(path)
     print(f"Connected: {robotController.is_connected()}")
-    print(robotController.send_command("!stop"))
-    robotController.deduce_command_examples()
+    # robotController.send_command("!ramp_f_start=100000")
+    # robotController.send_command("!ramp_f_stop=150000")
+    # robotController.send_command("!ramp_f_step=10000")
+    # robotController.send_command("!ramp_t_on=2000")
+    # robotController.send_command("!ramp_t_off=0")
+    # robotController.send_command("!ramp")
+    # robotController.deduce_command_examples()
+    print(robotController.send_command("!restart"))
+    robotController.sleep(10000)
+    #robotController.send_command("!stop")
     robotController.disconnect()
 
 if __name__ == "__main__":

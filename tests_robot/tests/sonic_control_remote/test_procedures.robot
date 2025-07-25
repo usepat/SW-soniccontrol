@@ -40,17 +40,19 @@ Test Stop turns off procedure
     Send command and check response    !stop    ${True}    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
 
 Test if ramp does not crash
-    [Setup]    RemoteController.Send Command     !log[procedureLogger]=DEBUG
+    # We should disable procedureLogger only in Simulation
+    [Setup]    RemoteController.Send Command     !log[procedureLogger]=DISABLED 
     [Teardown]    RemoteController.Send Command     !log[procedureLogger]=ERROR
-    RemoteController.Send Command     !ramp
+    Set Ramp Args
+    Send command and check if the device crashes    !ramp
     Sleep for 10000 ms
     Send command and check if the device crashes    !stop
 
 Test if after ramp signal is off
-    [Setup]    RemoteController.Send Command     !log[procedureLogger]=DEBUG
+    [Setup]    RemoteController.Send Command     !log[procedureLogger]=DISABLED
     [Teardown]    RemoteController.Send Command     !log[procedureLogger]=ERROR
     Set Ramp Args
-    RemoteController.Send Command     !ramp
+    Send command and check if the device crashes     !ramp
     Sleep for 15000 ms
     ${EXPECTED_PROCEDURE}=    Convert to procedure    NO_PROC
     Send command and check response    -    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
