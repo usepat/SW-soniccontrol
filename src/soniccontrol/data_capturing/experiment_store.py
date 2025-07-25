@@ -33,7 +33,6 @@ class HDF5SerializationHelper:
                 HDF5SerializationHelper.serialize_attribute_tree(file_, sub_group, value)
             else:
                 group._v_attrs[name] = value
-        file_.flush()
 
     @staticmethod
     def add_rows_to_table(file: tb.File, table: tb.Table, rows: List[Dict[str, Any]]):
@@ -82,6 +81,8 @@ class HDF5ExperimentStore(ExperimentStore):
 
         group = self._file.create_group("/", "metadata")
         HDF5SerializationHelper.serialize_attribute_tree(self._file, group, data)
+        self._file.flush()
+        
         
     def add_row(self, data: Dict[str, Any]) -> None:
         data = data.copy() # make a copy, so that we do not transform the original data

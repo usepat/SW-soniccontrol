@@ -36,9 +36,13 @@ class Updater(EventManager):
     async def update(self) -> None:
         # HINT: If ever needed to update different device attributes, we can do that, by checking what components the device has
         # and then additionally call other commands to get this information
-        answer = await self._device.execute_command(commands.GetUpdate(), should_log=False)
-        if answer.valid:
-            self.emit(Event("update", status=answer.field_value_dict))
+        if self._device.has_command(commands.GetUpdate()):
+            # Configurator does not have update but uses Device so for now I fix it like this
+            answer = await self._device.execute_command(commands.GetUpdate(), should_log=False)
+            if answer.valid:
+                self.emit(Event("update", status=answer.field_value_dict))
+        else:
+            self._running.clear()
 
     async def _loop(self) -> None:
         try:

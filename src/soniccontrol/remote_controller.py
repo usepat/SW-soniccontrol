@@ -1,7 +1,7 @@
 import asyncio
 from os import environ
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 import attrs
 
 from sonic_protocol.field_names import EFieldName
@@ -59,10 +59,10 @@ class RemoteController:
         await self._connect(connection, connection_name)
         assert self._device is not None
 
-    async def connect_via_process(self, process_file: Path) -> None:
+    async def connect_via_process(self, process_file: Path, cmd_args: List[str] = []) -> None:
         assert self._device is None
         connection_name = process_file.name
-        connection = CLIConnection(connection_name=connection_name, bin_file=process_file)
+        connection = CLIConnection(connection_name=connection_name, bin_file=process_file, cmd_args=cmd_args)
         await self._connect(connection, connection_name)
         assert self._device is not None
 

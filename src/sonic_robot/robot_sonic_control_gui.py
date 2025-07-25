@@ -7,6 +7,7 @@ import ttkbootstrap as ttk
 from robot.api.deco import keyword, library
 import robot.api.logger as logger
 from ttkbootstrap.utility import enable_high_dpi_awareness
+from soniccontrol_gui.plugins.device_plugin import register_device_plugins
 from soniccontrol_gui.view import TabView
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
 from soniccontrol.app_config import PLATFORM, System
@@ -19,6 +20,7 @@ from soniccontrol_gui.widgets.notebook import Notebook
 @library(auto_keywords=False, scope="SUITE")
 class RobotSonicControlGui:
     def __init__(self):
+        register_device_plugins()
         self._root: Optional[tk.Tk | tk.Toplevel] = None
         # Because robot is sync and the gui async, 
         # we have to embed the gui calls in the asyncio event loop

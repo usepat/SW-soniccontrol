@@ -12,13 +12,16 @@ from sonic_robot.deduce_command_examples import deduce_command_examples
 from soniccontrol.procedures.procedure_controller import ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.remote_controller import RemoteController
+from soniccontrol_gui.plugins.device_plugin import PluginRegistry, register_device_plugins
 
 
 # Scope is set to suite, so that the same remote controller can be used across tests.
 # This is done to reduce time needed for tests, because to build up a connection takes quite long.
 @library(auto_keywords=False, scope="SUITE")
 class RobotRemoteController:
-    def __init__(self, log_path: Optional[str] = None, protocol_factories: Dict[DeviceType, ProtocolList] = {}):
+    def __init__(self, log_path: Optional[str] = None):
+        register_device_plugins()
+        protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in PluginRegistry.get_device_plugins() }
         self._controller = RemoteController(log_path=Path(log_path) if log_path else None, protocol_factories=protocol_factories)
         # Because our RemoteController is async, but robot is sync, 
         # we have to embed all the calls to the RemoteController functions into an asyncio event loop.
@@ -30,8 +33,8 @@ class RobotRemoteController:
         logger.info(f"Connected via serial to ${url}")
 
     @keyword('Connect via process to')
-    def connect_via_process(self, process_file: str) -> None:
-        self._loop.run_until_complete(self._controller.connect_via_process(Path(process_file)))
+    def connect_via_process(self, process_file: str, cmd_args: List[str] = []) -> None:
+        self._loop.run_until_complete(self._controller.connect_via_process(Path(process_file), cmd_args=cmd_args))
         logger.info(f"Connected via process to ${process_file}")
 
     @keyword('Is connected to device')
@@ -96,7 +99,7 @@ def main():
         firmware_dir
         + "/linux/mvp_simulation/src/simulation/cli_simulation_mvp/cli_simulation_mvp"
     )
-    robotController.connect_via_process(path)
+    robotController.connect_via_process(path, ["--start-configurator"])
     print(f"Connected: {robotController.is_connected()}")
     # robotController.send_command("!ramp_f_start=100000")
     # robotController.send_command("!ramp_f_stop=150000")
@@ -104,10 +107,9 @@ def main():
     # robotController.send_command("!ramp_t_on=2000")
     # robotController.send_command("!ramp_t_off=0")
     # robotController.send_command("!ramp")
-    # robotController.deduce_command_examples()
-    print(robotController.send_command("!restart"))
-    robotController.sleep(10000)
-    #robotController.send_command("!stop")
+    robotController.deduce_command_examples()
+    robotController.send_command("!ramp=activated")
+    robotController.send_command("!ramp=deactivated")
     robotController.disconnect()
 
 if __name__ == "__main__":
