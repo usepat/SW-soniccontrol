@@ -63,23 +63,8 @@ flash_uart115200 = CommandContract(
 )
 
 
-saveSettings = CommandContract(
-    code=CommandCode.SET_SETTINGS,
-    command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!saveSettings", "!commission"]
-        )
-    ),
-    answer_def=AnswerDef(
-        fields=[field_success]
-    ),
-    is_release=True,
-    tags=["Settings", "Commissioning"]
-)
-
 flashing_command_contracts: List[CommandContract] = [
     flash_usb, 
     flash_uart9600, 
-    flash_uart115200,
-    saveSettings
+    flash_uart115200
 ]

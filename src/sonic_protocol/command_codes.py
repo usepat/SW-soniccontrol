@@ -160,7 +160,7 @@ class CommandCode(ICommandCode):
     SET_FLASH_USB = 7001
     SET_FLASH_9600 = 7002
     SET_FLASH_115200 = 7003
-    SET_SETTINGS = 8000
+    START_CONFIGURATOR = 8000
 
 
     # commands from 18000 to 19000 are pure notifications

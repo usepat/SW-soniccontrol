@@ -6,7 +6,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocols.protocol_v1_0_0.protocol_v1_0_0 import Protocol_v1_0_0
 from sonic_protocol.protocols.protocol_v2_0_0.commands import (
-    clear_errors, restart_device, get_adc
+    clear_errors, restart_device, get_adc, start_configurator
 )
 
 
@@ -49,7 +49,7 @@ class Protocol_v2_0_0(ProtocolList):
         return self._previous_protocol.supports_device_type(device_type)
 
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
-        command_contract_list: List[CommandContract] = [clear_errors, restart_device]
+        command_contract_list: List[CommandContract] = [clear_errors, restart_device, start_configurator]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_adc])
 

@@ -1,4 +1,5 @@
 from typing import List
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import (
     CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract
@@ -55,5 +56,28 @@ get_adc = CommandContract(
         description="Command to retrieve 40 adc samples"
     ),
     is_release=False,
+    tags=["debug"]
+)
+
+password_hashed_param = CommandParamDef(
+    name=EFieldName.PASSWORD_HASHED,
+    param_type=FieldType(str)
+)
+
+start_configurator = CommandContract(
+    code=CommandCode.START_CONFIGURATOR,
+    command_def=CommandDef(
+        setter_param=password_hashed_param,
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!config", "start_configurator"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[field_success]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to start the configurator"
+    ),
+    is_release=True,
     tags=["debug"]
 )
