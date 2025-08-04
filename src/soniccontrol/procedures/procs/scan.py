@@ -82,7 +82,7 @@ class ScanProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: ScanArgs, start: bool = True) -> None:
+    async def execute(self, device: Scriptable, args: ScanArgs, configure_only: bool = False) -> None:
         await device.execute_command(commands.SetFrequency(args.f_center))
         await device.execute_command(commands.SetScanFShift(args.f_shift))
         await device.execute_command(commands.SetScanGain(args.gain))
@@ -90,7 +90,7 @@ class ScanProc(Procedure):
         await device.execute_command(commands.SetScanFStep(args.f_step))
         t_step = int(args.t_step.duration_in_ms) if isinstance(args.t_step, HolderArgs) else int(args.t_step[0])
         await device.execute_command(commands.SetScanTStep(t_step))
-        if start:
+        if not configure_only:
             await device.execute_command(commands.SetScan())
 
     async def fetch_args(self, device: Scriptable) -> dict[str, Any]:

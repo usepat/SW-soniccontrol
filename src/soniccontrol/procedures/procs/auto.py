@@ -37,14 +37,16 @@ class AutoProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: AutoArgs) -> None:
+    async def execute(self, device: Scriptable, args: AutoArgs, configure_only: bool = False) -> None:
         scan = ScanProc()
         # With False we only execute the arg setter
         await scan.execute(device, args.scan_arg, False)
 
         tune = TuneProc()
         await tune.execute(device, args.tune_arg, False)
-        await device.execute_command(commands.SetAuto())
+        
+        if not configure_only:
+            await device.execute_command(commands.SetAuto())
 
     async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
         # TODO ensure GetAuto returns a answer where all FieldName of both scan and tune are returned

@@ -35,6 +35,11 @@ class GetUpdate(Command):
         super().__init__(code=CommandCode.GET_UPDATE)
 
 @attrs.define()
+class RestartDevice(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.RESTART_DEVICE)
+
+@attrs.define()
 class GetGain(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.GET_GAIN)

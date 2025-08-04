@@ -81,7 +81,7 @@ class TuneProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: TuneArgs, start: bool = True) -> None:
+    async def execute(self, device: Scriptable, args: TuneArgs, configure_only: bool = False) -> None:
         # TODO enable in next procotol
         # await device.execute_command(commands.SetTuneGain(args.gain))
         await device.execute_command(commands.SetTuneFShift(args.f_shift))
@@ -92,7 +92,8 @@ class TuneProc(Procedure):
 
         await device.execute_command(commands.SetTuneTTime(t_time_duration))
         await device.execute_command(commands.SetTuneTStep(t_step_duration))
-        if start:
+        
+        if not configure_only:
             await device.execute_command(commands.SetTune())
 
 

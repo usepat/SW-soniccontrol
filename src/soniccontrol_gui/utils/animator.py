@@ -1,6 +1,7 @@
 from typing import Any, Callable, Coroutine, Generic, Iterable, Optional, TypeVar
 import asyncio
 import itertools
+from async_tkinter_loop import async_handler
 
 class DotAnimationSequence:
     def __init__(self, label="", num_dots=3):
@@ -64,6 +65,7 @@ class Animator(Generic[AnimationFrame]):
     def run_as_load_animation_for_task(self, task: asyncio.Task, **kwargs) -> None:
         self.run(**kwargs)
 
+        @async_handler
         async def _stop_animation_callback(_task) -> None:
             await self.stop()
 

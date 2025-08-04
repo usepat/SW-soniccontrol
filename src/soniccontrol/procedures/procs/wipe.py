@@ -63,7 +63,7 @@ class WipeProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: WipeArgs) -> None:
+    async def execute(self, device: Scriptable, args: WipeArgs, configure_only: bool = False) -> None:
         await device.execute_command(commands.SetWipeFRange(args.f_range))
         await device.execute_command(commands.SetWipeFStep(args.f_step))
         t_on_duration = int(args.t_on.duration_in_ms) if isinstance(args.t_on, HolderArgs) else int(args.t_on[0])
@@ -73,7 +73,9 @@ class WipeProc(Procedure):
         await device.execute_command(commands.SetWipeTOn(t_on_duration))
         await device.execute_command(commands.SetWipeTOff(t_off_duration))
         await device.execute_command(commands.SetWipeTPause(t_pause_duration))
-        await device.execute_command(commands.SetWipe())
+
+        if not configure_only:
+            await device.execute_command(commands.SetWipe())
 
     async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
         answer = await device.execute_command(commands.GetWipe())

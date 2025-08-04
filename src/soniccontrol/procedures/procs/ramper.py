@@ -131,7 +131,8 @@ class RamperRemote(Ramper):
     async def execute(
         self,
         device: Scriptable,
-        args: RamperArgs
+        args: RamperArgs,
+        configure_only: bool = False,
     ) -> None:
         await device.execute_command(commands.SetRampFStart(args.f_start))
         await device.execute_command(commands.SetRampFStop(args.f_stop))
@@ -142,7 +143,9 @@ class RamperRemote(Ramper):
 
         await device.execute_command(commands.SetRampTOn(t_on_duration))
         await device.execute_command(commands.SetRampTOff(t_off_duration))
-        await device.execute_command(commands.SetRamp())
+
+        if not configure_only:
+            await device.execute_command(commands.SetRamp())
 
     async def fetch_args(self, device: Scriptable) -> Dict[str, Any]:
         answer = await device.execute_command(commands.GetRamp())
