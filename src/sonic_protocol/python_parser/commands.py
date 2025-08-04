@@ -261,6 +261,17 @@ class SetRampTOn(Command):
         super().__init__(code=CommandCode.SET_RAMP_T_ON)
     value: int = attrs.field(alias=EFieldName.RAMP_T_ON.name)
 
+@attrs.define()
+class SetDutyCycleTOn(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_DUTY_CYCLE_T_ON)
+    value: int = attrs.field(alias=EFieldName.DUTY_CYCLE_T_ON.name)
+
+@attrs.define()
+class SetDutyCycleTOff(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_DUTY_CYCLE_T_OFF)
+    value: int = attrs.field(alias=EFieldName.DUTY_CYCLE_T_OFF.name)
 
 @attrs.define()
 class SonicForce(Command):
