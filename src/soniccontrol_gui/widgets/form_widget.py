@@ -112,6 +112,66 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
     def bind_value_change(self, command: Callable[[PrimitiveT], None]):
         self._callback = command
 
+class EnumFieldView(FieldViewBase[Enum]):
+    def __init__(self, master: ttk.Frame | View, field_name: str, enum_class: type[Enum], *args, default_value: Enum | None = None, **kwargs):
+        self._enum_class = enum_class
+        self._field_name = field_name
+        self._default_value = default_value or list(enum_class)[0]
+        self._value = self._default_value
+        self._selected_enum_member = ttk.StringVar(value=self._value.name)
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._widget_name = parent_widget_name + "." + self._field_name
+
+        super().__init__(master, *args, **kwargs)
+
+        self._callback: Callable[[Enum], None] = lambda _: None
+        self._selected_enum_member.trace_add("write", self._combo_box_selection_changed)
+
+
+    def _initialize_children(self) -> None:
+        self.label = ttk.Label(self, text=self._field_name)
+
+        self._config_entry = ttk.Combobox(
+            self,
+            textvariable=self._selected_enum_member,
+            values=[e.name for e in self._enum_class],
+            state="readonly"
+        )
+
+        WidgetRegistry.register_widget(self._selected_enum_member, "entry_enum", self._widget_name)
+
+    def _initialize_publish(self) -> None:
+        self.grid_columnconfigure(0, weight=1, uniform="col")
+        self.grid_columnconfigure(1, weight=1, uniform="col")
+
+        self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
+        self._config_entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W) 
+
+    @property
+    def field_name(self) -> str:
+        return self._field_name
+
+    @property
+    def default(self) -> Enum: 
+        return self._default_value
+
+    @property
+    def value(self) -> Enum:
+        return self._value 
+    
+    @value.setter
+    def value(self, v: Enum) -> None:
+        self._value = v
+        self._selected_enum_member.set(str(v))
+
+    def _combo_box_selection_changed(self, *_):
+        selected_name = self._selected_enum_member.get()
+        self._value = self._enum_class[selected_name]
+        self._callback(self._value)
+
+    def bind_value_change(self, command: Callable[[Enum], None]) -> None: 
+        self._callback = command
+
 
 class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
     def __init__(self, master: ttk.Frame | View, factory: Callable[..., Optional[PrimitiveT]], 
@@ -345,6 +405,9 @@ class FieldViewFactoryType(Protocol):
 
 FormFieldAttributes = Dict[str, "attrs.Attribute[Any] | FieldViewFactoryType"]
 
+
+class ObjectFieldView(FieldViewBase):
+    pass # TODO
 
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
