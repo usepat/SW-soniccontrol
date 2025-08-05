@@ -10,7 +10,6 @@ from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
 from sonic_protocol.schema import ICommandCode, Protocol
 from soniccontrol.device_data import FirmwareInfo
-from soniccontrol.interfaces import Scriptable
 from soniccontrol.communication.serial_communicator import Communicator
 
 class CommandValidationError(Exception):
@@ -25,31 +24,38 @@ class CommandExecutionError(Exception):
         super().__init__(f"Device error: {error_message}")
         self.error_message = error_message
 
-@attrs.define(kw_only=True)
-class SonicDevice(Scriptable):
-    communicator: Communicator = attrs.field(on_setattr=attrs.setters.NO_OP)
-    _logger: logging.Logger = attrs.field()
-    info: FirmwareInfo = attrs.field(on_setattr=attrs.setters.NO_OP)
-    protocol: Protocol = attrs.field(on_setattr=attrs.setters.NO_OP)
-
+class SonicDevice:
     def __init__(self, communicator: Communicator, protocol: Protocol, info: FirmwareInfo, 
                  should_validate_answers: bool = True, logger: logging.Logger=logging.getLogger()) -> None:
-        self.info = info
+        self._info = info
         self._logger = logging.getLogger(logger.name + "." + SonicDevice.__name__)
-        self.communicator = communicator
-        self.protocol = protocol
-        self._answer_validators = { code: AnswerValidatorBuilder.create_answer_validator(command_contract.answer_def, protocol.field_name_cls) 
-                                   for code, command_contract in self.protocol.command_contracts.items() }
-        self._command_deserializer = CommandDeserializer(self.protocol)
-        self._command_serializer = CommandSerializer(self.protocol)
+        self._communicator = communicator
+        self._protocol = protocol
+        answer_validators = { code: AnswerValidatorBuilder.create_answer_validator(command_contract.answer_def, protocol.field_name_cls) 
+                                   for code, command_contract in self._protocol.command_contracts.items() }
+        self._answer_validators = answer_validators
+        self._command_deserializer = CommandDeserializer(self._protocol)
+        self._command_serializer = CommandSerializer(self._protocol)
         self._should_validate_answers = should_validate_answers
+
+    @property
+    def info(self) -> FirmwareInfo:
+        return self._info
+    
+    @property
+    def communicator(self) -> Communicator:
+        return self._communicator
+    
+    @property
+    def protocol(self) -> Protocol:
+        return self._protocol
 
     def has_command(self, command: CommandCode | Command) -> bool:
         command_code = command.code if isinstance(command, Command) else command
-        return command_code in self.protocol.command_contracts and self.protocol.command_contracts[command_code].command_def is not None
+        return command_code in self._protocol.command_contracts and self._protocol.command_contracts[command_code].command_def is not None
 
     async def _send_command(self, command: Command) -> Answer:
-        command_contract = self.protocol.command_contracts.get(command.code)
+        command_contract = self._protocol.command_contracts.get(command.code)
         assert command_contract is not None, f"The command {command} is not known for the protocol" # throw error?
         assert command_contract.command_def is not None, f"For the command_code of {command} exists a message (notify or error), but there exists no command" 
         assert not isinstance(command_contract.command_def.sonic_text_attrs, list)
@@ -67,12 +73,12 @@ class SonicDevice(Scriptable):
         return answer
 
     async def _send_message(self, message: str, answer_validator: AnswerValidator| None = None, try_deduce_answer_validator: bool = False, **kwargs) -> Answer:
-        response_str = await self.communicator.send_and_wait_for_response(message, **kwargs)
+        response_str = await self._communicator.send_and_wait_for_response(message, **kwargs)
         
         code: ICommandCode | None = None
         if "#" in response_str:
             code_str, response_str  = response_str.split(sep="#", maxsplit=1)
-            code = self.protocol.command_code_cls(int(code_str))
+            code = self._protocol.command_code_cls(int(code_str))
 
         ERROR_CODES_START = 20000
         if code is not None and code.value >= ERROR_CODES_START:
@@ -95,16 +101,16 @@ class SonicDevice(Scriptable):
 
 
     async def disconnect(self) -> None:
-        if self.communicator.connection_opened.is_set():
+        if self._communicator.connection_opened.is_set():
             self._logger.info("Disconnect")
-            await self.communicator.close_communication()
+            await self._communicator.close_communication()
 
     async def execute_command(
         self,
         command: Command | str,
         should_log: bool = True,
         try_deduce_command_if_str: bool = True,
-        raise_exception: bool = False,
+        raise_exception: bool = True,
         **kwargs
     ) -> Answer:
         """
@@ -128,7 +134,7 @@ class SonicDevice(Scriptable):
 
         Example:
             >>> sonicamp = SonicDevice()
-            >>> await sonicamp.execute_command("power_on")
+            >>> await sonicamp.execute_command("!ON", raise_exception=True)
             "Device powered on."
         """
         if should_log:
@@ -162,16 +168,16 @@ class SonicDevice(Scriptable):
 
     async def set_signal_off(self) -> Answer:
         if self.has_command(SetOff()):
-            return await self.execute_command(SetOff()) # We need this for legacy device
+            return await self.execute_command(SetOff(), raise_exception=False) # We need this for legacy device
         else:
-            return await self.execute_command("!OFF")
+            return await self.execute_command("!OFF", raise_exception=False)
 
     async def set_signal_on(self) -> Answer:
         if self.has_command(SetOn()):
-            return await self.execute_command(SetOn()) # We need this for legacy device
+            return await self.execute_command(SetOn(), raise_exception=False) # We need this for legacy device
         else:
-            return await self.execute_command("!ON")
+            return await self.execute_command("!ON", raise_exception=False)
 
     async def get_overview(self) -> Answer:
-        return await self.execute_command("?")
+        return await self.execute_command("?", raise_exception=False)
 

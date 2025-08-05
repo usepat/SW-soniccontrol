@@ -6,10 +6,11 @@ from attrs import fields, validators
 
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
-from soniccontrol.interfaces import Scriptable
+from sonic_protocol.schema import Version
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from sonic_protocol.command_codes import CommandCode
+from soniccontrol.sonic_device import SonicDevice
 
 
 @attrs.define(auto_attribs=True)
@@ -82,7 +83,7 @@ class ScanProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: ScanArgs, configure_only: bool = False) -> None:
+    async def execute(self, device: SonicDevice, args: ScanArgs, configure_only: bool = False) -> None:
         await device.execute_command(commands.SetFrequency(args.f_center))
         await device.execute_command(commands.SetScanFShift(args.f_shift))
         await device.execute_command(commands.SetScanGain(args.gain))
@@ -93,13 +94,14 @@ class ScanProc(Procedure):
         if not configure_only:
             await device.execute_command(commands.SetScan())
 
-    async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
-        answer = await device.execute_command(commands.GetScan())
-        answer_freq = await device.execute_command(commands.GetFreq())
+    async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
+        answer = await device.execute_command(commands.GetScan(), raise_exception=False)
+        answer_freq = await device.execute_command(commands.GetFreq(), raise_exception=False)
 
         arg_dict = {}
         if answer.was_validated and answer.valid:
             # TODO in next protocol version return scan_f_center and scan_gain in getScan
-            arg_dict[EFieldName.SCAN_F_CENTER.value] = answer_freq.field_value_dict.get(EFieldName.FREQUENCY)
             arg_dict.update(ScanArgs.to_dict_with_holder_args(answer))
+            if device._info.protocol_version < Version(2, 0, 0):
+                arg_dict[EFieldName.SCAN_F_CENTER] = answer_freq.field_value_dict.get(EFieldName.FREQUENCY)
         return arg_dict

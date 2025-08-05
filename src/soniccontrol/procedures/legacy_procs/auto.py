@@ -5,9 +5,9 @@ from attrs import validators
 
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
-from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
+from soniccontrol.sonic_device import SonicDevice
 
 
 @attrs.define(auto_attribs=True, init=False)
@@ -65,7 +65,7 @@ class AutoLegacyProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: AutoLegacyArgs) -> None:
+    async def execute(self, device: SonicDevice, args: AutoLegacyArgs) -> None:
         await device.execute_command(commands.SetTustLegacy(args.tust))
         await device.execute_command(commands.SetScstLegacy(args.scst))
         tutm_duration = int(args.tutm.duration_in_ms) if isinstance(args.tutm, HolderArgs) else int(args.tutm[0])
@@ -74,7 +74,7 @@ class AutoLegacyProc(Procedure):
 
         await device.execute_command(commands.SetAutoLegacy())
 
-    async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
+    async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
         # answer = await device.execute_command(commands.GetPvalLegacy())
         # if answer.was_validated and answer.valid:
         #     return AutoLegacyArgs.to_dict_with_holder_args(answer)

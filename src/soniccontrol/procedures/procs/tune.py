@@ -7,9 +7,9 @@ from attrs import validators
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
-from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
+from soniccontrol.sonic_device import SonicDevice
 
 
 @attrs.define(auto_attribs=True)
@@ -81,7 +81,7 @@ class TuneProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: TuneArgs, configure_only: bool = False) -> None:
+    async def execute(self, device: SonicDevice, args: TuneArgs, configure_only: bool = False) -> None:
         # TODO enable in next procotol
         # await device.execute_command(commands.SetTuneGain(args.gain))
         await device.execute_command(commands.SetTuneFShift(args.f_shift))
@@ -97,8 +97,8 @@ class TuneProc(Procedure):
             await device.execute_command(commands.SetTune())
 
 
-    async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
-        answer = await device.execute_command(commands.GetTune())
+    async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
+        answer = await device.execute_command(commands.GetTune(), raise_exception=False)
         if answer.was_validated and answer.valid:
             return TuneArgs.to_dict_with_holder_args(answer)
         return {}

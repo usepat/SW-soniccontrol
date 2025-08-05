@@ -19,7 +19,7 @@ class "ProcedureType" as soniccontrol.procedures.procedure_controller.ProcedureT
 
 class "Procedure" as soniccontrol.procedures.procedure.Procedure {
   is_remote
-  {abstract}execute(device: Scriptable, args: Any) -> None
+  {abstract}execute(device: SonicDevice, args: Any) -> None
   {abstract}get_args_class() -> Type
 }
 
@@ -49,11 +49,11 @@ class "RamperArgs" as soniccontrol.procedures.procs.ramper.RamperArgs {
 }
 
 class "RamperLocal" as soniccontrol.procedures.procs.ramper.RamperLocal {
-  execute(device: Scriptable, args: RamperArgs) -> None
+  execute(device: SonicDevice, args: RamperArgs) -> None
 }
 
 class "RamperRemote" as soniccontrol.procedures.procs.ramper.RamperRemote {
-  execute(device: Scriptable, args: RamperArgs) -> None
+  execute(device: SonicDevice, args: RamperArgs) -> None
 }
 
 

@@ -4,10 +4,10 @@ import attrs
 from attrs import validators
 
 from sonic_protocol.field_names import EFieldName
-from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from sonic_protocol.python_parser import commands
+from soniccontrol.sonic_device import SonicDevice
 
 
 @attrs.define(auto_attribs=True)
@@ -75,7 +75,7 @@ class RamperLocal(Ramper):
 
     async def execute(
         self,
-        device: Scriptable,
+        device: SonicDevice,
         args: RamperArgs
     ) -> None:
         values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step) + 1) ]
@@ -95,7 +95,7 @@ class RamperLocal(Ramper):
 
     async def _ramp(
         self,
-        device: Scriptable,
+        device: SonicDevice,
         values: List[Union[int, float]],
         hold_on: HolderArgs,
         hold_off: HolderArgs,
@@ -116,7 +116,7 @@ class RamperLocal(Ramper):
 
             i += 1
 
-    async def fetch_args(self, device: Scriptable) -> Dict[str, Any]:
+    async def fetch_args(self, device: SonicDevice) -> Dict[str, Any]:
         return {}
 
 
@@ -130,7 +130,7 @@ class RamperRemote(Ramper):
 
     async def execute(
         self,
-        device: Scriptable,
+        device: SonicDevice,
         args: RamperArgs,
         configure_only: bool = False,
     ) -> None:
@@ -147,8 +147,8 @@ class RamperRemote(Ramper):
         if not configure_only:
             await device.execute_command(commands.SetRamp())
 
-    async def fetch_args(self, device: Scriptable) -> Dict[str, Any]:
-        answer = await device.execute_command(commands.GetRamp())
+    async def fetch_args(self, device: SonicDevice) -> Dict[str, Any]:
+        answer = await device.execute_command(commands.GetRamp(), raise_exception=False)
         if answer.was_validated and answer.valid:
             return RamperArgs.to_dict_with_holder_args(answer)
         return {}

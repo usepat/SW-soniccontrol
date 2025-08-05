@@ -5,10 +5,10 @@ from attrs import validators
 
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
-from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from sonic_protocol.command_codes import CommandCode
+from soniccontrol.sonic_device import SonicDevice
 
 
 @attrs.define(auto_attribs=True)
@@ -63,7 +63,7 @@ class WipeProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: WipeArgs, configure_only: bool = False) -> None:
+    async def execute(self, device: SonicDevice, args: WipeArgs, configure_only: bool = False) -> None:
         await device.execute_command(commands.SetWipeFRange(args.f_range))
         await device.execute_command(commands.SetWipeFStep(args.f_step))
         t_on_duration = int(args.t_on.duration_in_ms) if isinstance(args.t_on, HolderArgs) else int(args.t_on[0])
@@ -77,8 +77,8 @@ class WipeProc(Procedure):
         if not configure_only:
             await device.execute_command(commands.SetWipe())
 
-    async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
-        answer = await device.execute_command(commands.GetWipe())
+    async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
+        answer = await device.execute_command(commands.GetWipe(), raise_exception=False)
         if answer.was_validated and answer.valid:
             return WipeArgs.to_dict_with_holder_args(answer)
         return {}

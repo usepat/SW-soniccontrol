@@ -7,10 +7,10 @@ from attrs import validators
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
-from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from soniccontrol.procedures.procs.scan import ScanArgs, ScanProc
 from soniccontrol.procedures.procs.tune import TuneArgs, TuneProc
+from soniccontrol.sonic_device import SonicDevice
 
 
 @attrs.define(auto_attribs=True)
@@ -37,7 +37,7 @@ class AutoProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: AutoArgs, configure_only: bool = False) -> None:
+    async def execute(self, device: SonicDevice, args: AutoArgs, configure_only: bool = False) -> None:
         scan = ScanProc()
         # With False we only execute the arg setter
         await scan.execute(device, args.scan_arg, False)
@@ -48,9 +48,9 @@ class AutoProc(Procedure):
         if not configure_only:
             await device.execute_command(commands.SetAuto())
 
-    async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
+    async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
         # TODO ensure GetAuto returns a answer where all FieldName of both scan and tune are returned
-        answer = await device.execute_command(commands.GetAuto())
+        answer = await device.execute_command(commands.GetAuto(), raise_exception=False)
         if answer.was_validated and answer.valid:
             return AutoArgs.to_dict_with_holder_args(answer)
         return {}

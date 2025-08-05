@@ -118,6 +118,8 @@ class ProcedureCommand(Function):
             except asyncio.CancelledError:
                 await _proc_controller.stop_proc()
                 raise
+            except Exception:
+                raise
         
         description = f"Executing {self._proc_type.value} { ' '.join([f'{k}={v}' for k, v in attrs.asdict(args).items() ]) }"
         return description, command

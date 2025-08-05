@@ -5,8 +5,8 @@ from typing import Any, Dict, Tuple, Type
 import attrs
 
 from sonic_protocol.field_names import EFieldName
-from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import HolderArgs
+from soniccontrol.sonic_device import SonicDevice
 
 
 class ProcedureType(Enum):
@@ -163,7 +163,7 @@ class Procedure(abc.ABC):
     def is_remote(self) -> bool: ...
 
     @abc.abstractmethod
-    async def execute(self, device: Scriptable, args: Any) -> None: ...
+    async def execute(self, device: SonicDevice, args: Any) -> None: ...
 
     @abc.abstractmethod
-    async def fetch_args(self, device: Scriptable) -> Dict[str, Any]: ...
+    async def fetch_args(self, device: SonicDevice) -> Dict[str, Any]: ...

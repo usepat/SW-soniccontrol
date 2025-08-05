@@ -73,9 +73,9 @@ class ProcedureController(EventManager):
             except Exception as e:
                 if procedure.is_remote:
                     if self._device.has_command(cmds.SetStop()):
-                        await self._device.execute_command(cmds.SetStop())
+                        await self._device.execute_command(cmds.SetStop(), raise_exception=False)
                     else:
-                        await self._device.execute_command(cmds.SetOff())
+                        await self._device.execute_command(cmds.SetOff(), raise_exception=False)
                 await self._device.set_signal_off()
                 if not isinstance(e, asyncio.CancelledError):
                     raise e # if task was not cancelled, then some internal unexpected exception occurred

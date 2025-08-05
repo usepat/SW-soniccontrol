@@ -5,8 +5,8 @@ import attrs
 from attrs import validators
 
 from sonic_protocol.python_parser import commands
+from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
-from soniccontrol.interfaces import Scriptable
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure
 
@@ -76,7 +76,7 @@ class SpectrumMeasure(Procedure):
 
     async def execute(
         self,
-        device: Scriptable,
+        device: SonicDevice,
         args: SpectrumMeasureArgs
     ) -> None:
         values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step)) ]
@@ -91,7 +91,7 @@ class SpectrumMeasure(Procedure):
 
     async def _ramp(
         self,
-        device: Scriptable,
+        device: SonicDevice,
         values: List[Union[int, float]],
         hold_on: HolderArgs,
         hold_off: HolderArgs,
@@ -110,7 +110,7 @@ class SpectrumMeasure(Procedure):
                 await device.set_signal_off()
                 await Holder.execute(hold_off)
 
-    async def fetch_args(self, device: Scriptable) -> dict[str, Any]:
+    async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
         return {}
 
 

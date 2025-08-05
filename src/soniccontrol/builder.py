@@ -24,7 +24,7 @@ class DeviceBuilder:
         info = device.info
         result_dict: Dict[IEFieldName, Any] = {}
         if device.has_command(cmds.GetInfo()):
-            answer = await device.execute_command(cmds.GetInfo(), should_log=False)
+            answer = await device.execute_command(cmds.GetInfo(), raise_exception=False, should_log=False)
             result_dict.update(answer.field_value_dict)
         
         info.firmware_version = result_dict.get(EFieldName.FIRMWARE_VERSION, Version(0, 0, 0))
@@ -83,7 +83,7 @@ class DeviceBuilder:
             protocol = operator_protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
 
             device = SonicDevice(comm, protocol, info, logger=self._logger)
-            answer = await device.execute_command(cmds.GetProtocol())
+            answer = await device.execute_command(cmds.GetProtocol(), raise_exception=False)
             if answer.valid:
                 assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
                 assert(EFieldName.PROTOCOL_VERSION in answer.field_value_dict)
