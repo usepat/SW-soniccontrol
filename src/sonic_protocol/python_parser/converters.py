@@ -72,13 +72,17 @@ class EnumConverter(Converter):
         return str(value.name)
 
     def validate_str(self, text: str) -> bool: 
-        return text in [ enum_member.value for enum_member in self._target_enum_class]
+        return text.lower() in [ enum_member.value.lower() for enum_member in self._target_enum_class]
 
     def convert_str_to_val(self, text: str) -> Any: 
         assert(self.validate_str(text))
         if isinstance(self._target_enum_class, IntEnum):
             return self._target_enum_class(int(text))
-        return self._target_enum_class(text)
+        # Return the corresponding enum member, case-insensitive match on value or name
+        for enum_member in self._target_enum_class:
+            if text.lower() == str(enum_member.value).lower() or text.lower() == enum_member.name.lower():
+                return enum_member
+        raise ValueError(f"No matching enum member found for '{text}' in {self._target_enum_class}")
     
 T = TypeVar("T", int, str, bool, float, np.uint8, np.uint16, np.uint32)
 class PrimitiveTypeConverter(Converter):
