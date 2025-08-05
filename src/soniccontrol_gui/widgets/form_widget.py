@@ -1,7 +1,7 @@
 import abc
 from enum import Enum
 import inspect
-from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, Tuple, Type, TypeVar, Union, get_args
+from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, Tuple, Type, TypeVar, Union, get_args, get_origin
 
 import copy
 import attrs
@@ -125,8 +125,52 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self._callback = command
 
 
-class BoolFieldView(FieldViewBase[bool]):
-    pass
+class BooleanFieldView(FieldViewBase[bool]):
+    def __init__(self, master: TkinterView, field_name: str, *args, default_value: bool = False, **kwargs):
+        self._field_name = field_name
+        self._default_value = default_value
+        self._var = ttk.BooleanVar(value=self._default_value)
+        self._callback: Callable[[bool], None] = lambda _: None
+
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._widget_name = parent_widget_name + "." + self._field_name
+
+        super().__init__(master, *args, **kwargs)
+        self._var.trace_add("write", self._on_change)
+
+    def _initialize_children(self) -> None:
+        self._checkbutton = ttk.Checkbutton(
+            self,
+            text=self._field_name,
+            variable=self._var
+        )
+        WidgetRegistry.register_widget(self._checkbutton, "checkbutton", self._widget_name)
+
+    def _initialize_publish(self) -> None:
+        self._checkbutton.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
+
+    @property
+    def field_name(self) -> str:
+        return self._field_name
+
+    @property
+    def default(self) -> bool:
+        return self._default_value
+
+    @property
+    def value(self) -> bool:
+        return self._var.get()
+
+    @value.setter
+    def value(self, v: bool) -> None:
+        self._var.set(v)
+
+    def _on_change(self, *_):
+        self._callback(self._var.get())
+
+    def bind_value_change(self, command: Callable[[bool], None]) -> None:
+        self._callback = command
+
 
 class EnumFieldView(FieldViewBase[Enum]):
     def __init__(self, master: TkinterView, field_name: str, enum_class: type[Enum], *args, default_value: Enum | None = None, **kwargs):
@@ -424,6 +468,8 @@ def _create_field_view_for_type(field_name, field_type: type, slot: TkinterView,
         field_view = BasicTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, **kwargs)
     elif field_type is float:
         field_view = BasicTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, **kwargs)
+    elif field_type is bool:
+        field_view = BooleanFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
     elif field_type is str:
         field_view = BasicTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, **kwargs)
     elif field_type == Optional[int] or field_type is Optional[int]:
@@ -439,11 +485,12 @@ def _create_field_view_for_type(field_name, field_type: type, slot: TkinterView,
     elif inspect.isclass(field_type) and issubclass(field_type, Enum): 
         # for enums we have to check if they are subclasses of the Enum base class
         field_view = EnumFieldView(slot, field_name, field_type, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type is Tuple or field_type is tuple:
+    elif get_origin(field_type) is tuple or field_type is tuple:
         field_view = TupleFieldView(slot, field_name, field_type, parent_widget_name=parent_widget_name, **kwargs)
     elif field_type and attrs.has(field_type):
         # for the case that the type is a nested attrs class.
         attributes: FormFieldAttributes = attrs.fields_dict(field_type) #type: ignore
+        kwargs.pop("default_value", None) # We do not use default values here. We deduce them later through attrs.Attribute
         field_view = ObjectFieldView(slot, field_name, attributes, parent_widget_name=parent_widget_name, **kwargs)
     else:
         raise TypeError(f"The field with name {field_name} has the type {field_type}, which is not supported")
@@ -460,11 +507,13 @@ def _create_field_view_for_attr(field_name: str, field: attrs.Attribute, slot: T
 
     return _create_field_view_for_type(field_name, field.type, slot, parent_widget_name, **kwargs)
 
-_REGISTERED_ATTRS_CLASSES: List[type] = [HolderArgs]
 
+ # We need to register HolderArgs, because all attrs classes get unnested and mapped onto ObjectFieldViews per default
+_REGISTERED_ATTRS_CLASSES: List[type] = [HolderArgs]
 
 def _is_registered_class(class_type: type) -> bool:
     return any([ class_type is registered_class for registered_class in _REGISTERED_ATTRS_CLASSES ])
+
 
 class TupleFieldView(FieldViewBase[tuple]):
     def __init__(self,  master: TkinterView, field_name: str, tuple_type: type[tuple], *args, default_value: tuple | None = None, **kwargs):
@@ -544,19 +593,18 @@ class TupleFieldView(FieldViewBase[tuple]):
 
 
 class ObjectFieldView(FieldViewBase[dict]):
-    # We need to register HolderArgs, because all attrs classes get unnested and mapped onto ObjectFieldViews per default
-
     def __init__(self, master: TkinterView, field_name: str, obj_attrs: FormFieldAttributes, *args, **kwargs):
         self._field_name = field_name
         self._obj_attrs = obj_attrs
         self._callback: Callable[[dict], None] = lambda _: None
         self._value: dict = {}
 
+        # TODO: handle default values
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
         self._fields: Dict[str, FieldViewBase] = {}
         super().__init__(master, *args, **kwargs)
-    
+            
 
     def _initialize_children(self) -> None:
         self._frame = ttk.LabelFrame(self, text=self._field_name)
