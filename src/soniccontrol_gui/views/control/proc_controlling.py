@@ -161,6 +161,7 @@ class ProcControllingView(TabView):
         tab_name = "proc_controlling"
         self._selected_procedure_var = ttk.StringVar()
         self._procedure_combobox = ttk.Combobox(self, textvariable=self._selected_procedure_var)
+        self._procedure_combobox["state"] = "readonly" # prevent typing a value
 
         # Procedure widget placeholder
         self._procedure_widget_frame = ttk.Frame(self)
