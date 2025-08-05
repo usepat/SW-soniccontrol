@@ -1,3 +1,4 @@
+import copy
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Tuple
@@ -5,6 +6,7 @@ import ttkbootstrap as ttk
 from sonic_protocol.schema import AnswerFieldDef, IEFieldName, Signal
 from sonic_protocol.python_parser.answer_field_converter import AnswerFieldToStringConverter
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import field_temperature_celsius
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import View
 from soniccontrol_gui.constants import (color, events, fonts, sizes,
@@ -22,6 +24,9 @@ class StatusBar(UIComponent):
             answer_field.field_name : AnswerFieldToStringConverter(answer_field)
             for answer_field in answer_field_defs
         }
+        if EFieldName.TEMPERATURE in self._field_converters:
+            # Convert mK to °C
+            self._field_converters[EFieldName.TEMPERATURE] = AnswerFieldToStringConverter(field_temperature_celsius)
 
         self._logger.debug("Create Statusbar")
         self._view = StatusBarView(parent_slot, self._field_converters.keys())
@@ -37,6 +42,9 @@ class StatusBar(UIComponent):
         self._view.expand_panel_frame(self._status_panel_expanded)
 
     def on_update_status(self, status: Dict[IEFieldName, Any]):
+        if EFieldName.TEMPERATURE in status:
+            # Convert mK to °C
+            status[EFieldName.TEMPERATURE] = (status[EFieldName.TEMPERATURE] - 273150) / 1000
         field_labels: Dict[IEFieldName, str] = {
             EFieldName.FREQUENCY: "Frequency",
             EFieldName.SWF: "Switching Freq",
@@ -68,6 +76,9 @@ class StatusPanel(UIComponent):
             answer_field.field_name : AnswerFieldToStringConverter(answer_field)
             for answer_field in answer_field_defs
         }
+        if EFieldName.TEMPERATURE in self._field_converters:
+            # Convert mK to °C
+            self._field_converters[EFieldName.TEMPERATURE] = AnswerFieldToStringConverter(field_temperature_celsius)
         self._field_names = self._field_converters.keys()
 
         self._view = StatusPanelView(parent_slot)
