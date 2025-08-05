@@ -21,8 +21,8 @@ class DataProvider(EventManager):
     def add_row(self, row: dict):
         self._dataqueue.append(row)      
         self._data = pd.DataFrame(list(self._dataqueue), columns=row.keys())
-        self._data["timestamp"] = pd.to_datetime(self._data["timestamp"], format="%Y-%m-%d %H:%M:%S")
-        if self._data["timestamp"].dtype == "object":
+        self._data["TIMESTAMP"] = pd.to_datetime(self._data["TIMESTAMP"], format="%Y-%m-%d %H:%M:%S")
+        if self._data["TIMESTAMP"].dtype == "object":
             self._logger.error("Timestamp column is of type object instead of type datetime64[ns]")
             raise TypeError("Timestamp column is of type object instead of type datetime64[ns]")
         # The column timestamp is in datetime64[ns] format and the timeplot needs it that way, however

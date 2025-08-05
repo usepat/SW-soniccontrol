@@ -42,7 +42,9 @@ class StatusBar(UIComponent):
         self._view.expand_panel_frame(self._status_panel_expanded)
 
     def on_update_status(self, status: Dict[IEFieldName, Any]):
-        if EFieldName.TEMPERATURE in status:
+        if EFieldName.TEMPERATURE in status and status[EFieldName.TEMPERATURE] == 404:
+            status[EFieldName.TEMPERATURE] = float("nan")
+        elif EFieldName.TEMPERATURE in status:
             # Convert mK to °C
             status[EFieldName.TEMPERATURE] = (status[EFieldName.TEMPERATURE] - 273150) / 1000
         field_labels: Dict[IEFieldName, str] = {
