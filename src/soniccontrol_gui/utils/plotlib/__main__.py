@@ -16,7 +16,7 @@ def main():
 
     filepath = "./logs/status_log.csv"
     data = pd.read_csv(filepath)
-    data["timestamp"] = pd.to_datetime(data["timestamp"])
+    data["TIMESTAMP"] = pd.to_datetime(data["TIMESTAMP"])
     plot.update_data(data)
 
     root = tk.Tk()
