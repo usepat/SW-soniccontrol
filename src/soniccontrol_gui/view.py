@@ -3,7 +3,7 @@ import abc
 import ttkbootstrap as ttk
 
 
-TkinterView = ttk.tk.Widget | ttk.Window
+TkinterView = ttk.tk.Widget | ttk.Window | ttk.Frame | ttk.LabelFrame
 
 class View(ttk.Frame):
     def __init__(self, master: TkinterView, *args, **kwargs) -> None:
