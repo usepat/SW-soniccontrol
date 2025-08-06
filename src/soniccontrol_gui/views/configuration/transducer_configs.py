@@ -12,9 +12,9 @@ from marshmallow_annotations.ext.attrs import AttrsSchema
 
 @attrs.define(auto_attribs=True)
 class ATConfig:
-    atk: int = attrs.field(default=0)
+    atk: float = attrs.field(default=0)
     atf: int = attrs.field(default=0)
-    att: int = attrs.field(default=0)
+    att: float = attrs.field(default=0)
 
 @attrs.define(auto_attribs=True)
 class TransducerConfig():
@@ -59,9 +59,9 @@ class ATConfigFrame(UIComponent):
     @property
     def value(self) -> ATConfig:
         return ATConfig(
-            atk = int(self._view.atk),
+            atk = float(self._view.atk),
             atf = int(self._view.atf),
-            att = int(self._view.att),
+            att = float(self._view.att),
         )
     
     @value.setter
@@ -80,8 +80,8 @@ class ATConfigFrameView(View):
 
     def _initialize_children(self) -> None:
         self._atf_var = ttk.IntVar()
-        self._atk_var = ttk.IntVar()
-        self._att_var = ttk.IntVar()
+        self._atk_var = ttk.DoubleVar()
+        self._att_var = ttk.DoubleVar()
     
         self._atf_label = ttk.Label(self, text=f"ATF {self._index}")
         self._atk_label = ttk.Label(self, text=f"ATK {self._index}")
