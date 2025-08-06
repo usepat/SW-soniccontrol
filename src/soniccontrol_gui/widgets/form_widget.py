@@ -5,7 +5,9 @@ from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, Tuple
 
 import copy
 import attrs
+import cattrs
 from soniccontrol.procedures.procedure import ProcedureArgs
+from soniccontrol.procedures.holder import convert_to_holder_args
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TkinterView, View
@@ -15,6 +17,40 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from soniccontrol.procedures.holder import HoldTuple, HolderArgs
+
+
+
+def _create_converter():
+    # We do not want to convert enums and holder args.
+
+    def enum_structure_hook(value: Any, t: type) -> Enum:
+        if not isinstance(value, Enum):
+            raise ValueError("Not a HolderArgs")
+        return value
+
+    def enum_unstructure_hook(value: Enum) -> Enum:
+        return value
+    
+    def is_enum(cls: Any) -> bool:
+        # here is instance is used to check if cls is a type (Needed because of generic types that are instantiated as objects)
+        return isinstance(cls, type) and issubclass(cls, Enum)
+
+    def holder_args_structure_hook(value: Any, t: type) -> HolderArgs:
+        return convert_to_holder_args(value)
+
+    def holder_args_unstructure_hook(value: HolderArgs) -> HolderArgs:
+        return value
+    
+    converter = cattrs.Converter()
+    converter.register_structure_hook_func(is_enum, enum_structure_hook)
+    converter.register_unstructure_hook_func(is_enum, enum_unstructure_hook)
+    converter.register_structure_hook(HolderArgs, holder_args_structure_hook)
+    converter.register_unstructure_hook(HolderArgs, holder_args_unstructure_hook)
+
+    return converter
+
+converter = _create_converter()
+
 
 class EntryStyle(Enum):
     PRIMARY = "primary.TEntry"
@@ -508,13 +544,6 @@ def _create_field_view_for_attr(field_name: str, field: attrs.Attribute, slot: T
     return _create_field_view_for_type(field_name, field.type, slot, parent_widget_name, **kwargs)
 
 
- # We need to register HolderArgs, because all attrs classes get unnested and mapped onto ObjectFieldViews per default
-_REGISTERED_ATTRS_CLASSES: List[type] = [HolderArgs]
-
-def _is_registered_class(class_type: type) -> bool:
-    return any([ class_type is registered_class for registered_class in _REGISTERED_ATTRS_CLASSES ])
-
-
 class TupleFieldView(FieldViewBase[tuple]):
     def __init__(self,  master: TkinterView, field_name: str, tuple_type: type[tuple], *args, default_value: tuple | None = None, **kwargs):
         self._field_name = field_name
@@ -522,9 +551,10 @@ class TupleFieldView(FieldViewBase[tuple]):
         self._tuple_elements = get_args(tuple_type)
         self._callback: Callable[[tuple], None] = lambda _: None
         if default_value is not None:
-            self._value = default_value
-        else:
-            self._value = tuple(t() for t in self._tuple_elements) 
+            default_value = tuple(t() for t in self._tuple_elements) 
+
+        # We need to unstructure the tuple sub types. Else we get problems if we want to structure it back.
+        self._value = converter.unstructure(default_value, self._tuple_type)
 
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
@@ -547,15 +577,10 @@ class TupleFieldView(FieldViewBase[tuple]):
             self._fields.append(field_view)
 
             def bind_index(index):
-                def _update(val):
-                    class_type = self._tuple_elements[index]
-                    if isinstance(val, dict) and attrs.has(class_type):
-                        # convert value to attribute type, if it is a attrs class    
-                        val = class_type(**val)
-                    
+                def _update(val):  
                     # tuples are immutable, so we have to do it like this
                     lst = list(self._value)
-                    lst[i] = val
+                    lst[index] = val
                     self._value = tuple(lst)
 
                     self._callback(self._value) 
@@ -581,12 +606,7 @@ class TupleFieldView(FieldViewBase[tuple]):
             raise ValueError("Tuple length mismatch.")
         
         for i, field in enumerate(self._fields):
-            val_class = v[i].__class__
-            if attrs.has(val_class) and not _is_registered_class(val_class):
-                # unnest to dict, if it is an attrs class
-                field.value = attrs.asdict(v[i]) 
-            else:
-                field.value = v[i]
+            field.value = v[i]
 
     def bind_value_change(self, command: Callable[[tuple], None]) -> None:
         self._callback = command
@@ -634,11 +654,6 @@ class ObjectFieldView(FieldViewBase[dict]):
             # subsequent runs
             def set_dict_value(key):
                 def _set_dict_value(val):
-                    attr = self._obj_attrs[key]
-                    if isinstance(val, dict) and isinstance(attr, attrs.Attribute) and attr.type is not None and attrs.has(attr.type):
-                        # convert value to attribute type, if it is a nested attrs class    
-                        val = attr.type(**val)
-                    
                     self._value[key] = val
                     self._callback({ key: val }) # we only return the attributes to update. More performant
                 return _set_dict_value
@@ -653,15 +668,7 @@ class ObjectFieldView(FieldViewBase[dict]):
     def default(self) -> dict:
         default_fields =  {}
         for field_name, field in self._fields.items():
-            attr = self._obj_attrs[field_name]
-            if isinstance(attr, attrs.Attribute) and attr.type is not None and attrs.has(attr.type) \
-                    and not _is_registered_class(attr.type):
-                # needed for correct unnesting/nesting
-                default_value = attr.type(**field.default)
-            else:
-                default_value = field.default
-
-            default_fields[field_name] = default_value
+            default_fields[field_name] = field.default
         return default_fields
 
     @property
@@ -671,10 +678,6 @@ class ObjectFieldView(FieldViewBase[dict]):
     @value.setter
     def value(self, v: dict) -> None: 
         for field_name, value in v.items():
-            if attrs.has(value.__class__) and not _is_registered_class(value.__class__):
-                # unnest to dict, if it is an attrs class
-                value = attrs.asdict(value) 
-
             # This updates also automatically the self._value of this class
             self._fields[field_name].value = value
         self._callback(copy.deepcopy(self._value)) # We use deepcopy to avoid reference issues
@@ -684,7 +687,6 @@ class ObjectFieldView(FieldViewBase[dict]):
         self._callback = command
 
 
-
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
                  title: str, form_attrs: Type | FormFieldAttributes | ProcedureArgs, model_dict: dict | None = None):
@@ -692,6 +694,9 @@ class FormWidget(UIComponent):
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
         """
+        is_attrs_class = isinstance(form_attrs, type) and attrs.has(form_attrs)
+        self._attrs_class: type | None = form_attrs if is_attrs_class else None # type: ignore
+
         if isinstance(form_attrs, type) and issubclass(form_attrs, ProcedureArgs):
             self._form_attrs: FormFieldAttributes = form_attrs.fields_dict_with_alias()
         else:
@@ -711,7 +716,34 @@ class FormWidget(UIComponent):
         self._attr_view.bind_value_change(lambda value: self._model_dict.update(**value))
 
     @property
+    def attrs_object(self) -> Any:
+        """
+        With this getter you can get the form data as a finished attr object.
+        But for that you have to initialize FormWidget with an attrs class for form_attrs
+        """
+        assert self._attrs_class is not None
+        try:
+            return converter.structure(self._attr_view.value, self._attrs_class)
+        except cattrs.ClassValidationError as e:
+            raise e
+    
+    @attrs_object.setter
+    def attrs_object(self, value: Any):
+        """
+        With this setter you can set the form data by an attr object.
+        But for that you have to initialize FormWidget with an attrs class for form_attrs
+        """
+        assert self._attrs_class is not None
+        assert isinstance(value, self._attrs_class), f"The value provided is of class {value.__class__} but expected {self._attrs_class}"
+        data = converter.unstructure(value, self._attrs_class)
+        self._attr_view.value = data
+        pass
+
+    @property
     def form_data(self) -> Dict[str, Any]:
+        """
+        Gets the form data. Consists of nested dicts
+        """
         return self._model_dict
 
     @form_data.setter

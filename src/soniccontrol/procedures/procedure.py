@@ -1,10 +1,11 @@
 import abc
 from enum import Enum
-from typing import Any, Dict, Tuple, Type
+from typing import Any, Dict, Self, Tuple, Type
 
 import attrs
 
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.python_parser.answer import Answer
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.sonic_device import SonicDevice
 
@@ -35,6 +36,12 @@ class ProcedureArgs:
         This field should reference a corresponding EFieldName enum value.
         TODO check if the sonic_text_attributes for the ProcedureArgs command definition also use this enum
     """
+
+    @classmethod
+    def from_answer(cls, answer: Answer) -> Self:
+        # This can probably done more effectively. Ask Thomas about help
+        proc_dict = cls.to_dict_with_holder_args(answer)
+        return cls.from_dict(**proc_dict)
 
     @classmethod
     def from_dict(cls, **kwargs: dict[str, Any]):

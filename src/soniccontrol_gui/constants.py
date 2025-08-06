@@ -255,7 +255,8 @@ class _UIStringsEN:
     OPEN_LOGS: Final[str] = "Open Logs"
     GO_TO_MEASUREMENTS: Final[str] = "Go to Measurements"
     FORM_ADD_ENTRY: Final[str] = "Add Entry"
-    CONFIGURING_LABEL: Final[str] = "configuring device"
+    CONFIGURING_LABEL: Final[str] = "configure device"
+    FETCH_CONFIG_LABEL: Final[str] = "fetch configuration"
     WAITING_FOR_ANSWER: Final[str] = "Waiting for answer"
     START_CONFIGURATOR: Final[str] = "--start-configurator"
 

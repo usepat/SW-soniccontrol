@@ -39,8 +39,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
         default=3,
         validator=[
             validators.instance_of(int),
-            validators.ge(0),
-            validators.le(20)
+            validators.ge(0)
         ],
         metadata={"enum": EFieldName.TUNE_N_STEPS}
     )
