@@ -224,7 +224,7 @@ class StatusPanelView(View):
             metersize=sizes.METERSIZE,
             #Use DeviceParamConstants in kHz
             amountmin=100,
-            amountmax=10000
+            amountmax=10000,
 
         )
         WidgetRegistry.register_widget(self._freq_meter, "freq_meter", tab_name)
@@ -247,9 +247,21 @@ class StatusPanelView(View):
             subtext=ui_labels.TEMPERATURE,
             metersize=sizes.METERSIZE,
             amountmin=-20,
-            amountmax=80
+            amountmax=80,
         )
         WidgetRegistry.register_widget(self._temp_meter, "temp_meter", tab_name)
+
+        # # --- TEST BUTTONS FOR TEMP METER STEP ---
+        # self._temp_step_down_btn = ttk.Button(
+        #     self._meter_frame,
+        #     text="Temp -",
+        #     command=lambda: self._temp_meter.step(-1)
+        # )
+        # self._temp_step_up_btn = ttk.Button(
+        #     self._meter_frame,
+        #     text="Temp +",
+        #     command=lambda: self._temp_meter.step(1)
+        # )
 
         self._urms_label: ttk.Label = ttk.Label(
             self._sonicmeasure_values_frame,
@@ -320,6 +332,14 @@ class StatusPanelView(View):
             padx=sizes.MEDIUM_PADDING,
             pady=sizes.MEDIUM_PADDING,
         )
+
+        # Place test buttons below the temp meter
+        # self._temp_step_down_btn.grid(
+        #     row=1, column=2, padx=sizes.SMALL_PADDING, pady=(0, sizes.SMALL_PADDING), sticky=ttk.EW
+        # )
+        # self._temp_step_up_btn.grid(
+        #     row=2, column=2, padx=sizes.SMALL_PADDING, pady=(0, sizes.SMALL_PADDING), sticky=ttk.EW
+        # )
 
         self._sonicmeasure_values_frame.rowconfigure(0, weight=sizes.EXPAND)
         self._sonicmeasure_values_frame.columnconfigure(0, weight=sizes.EXPAND)
