@@ -82,7 +82,10 @@ class WipeProc(Procedure):
         await device.execute_command(commands.SetWipeTOn(t_on_duration))
         await device.execute_command(commands.SetWipeTOff(t_off_duration))
         await device.execute_command(commands.SetWipeTPause(t_pause_duration))
-        await device.execute_command(commands.SetWipeGain(args.gain))
+        if device.has_command(commands.SetWipeGain(args.gain)):
+            await device.execute_command(commands.SetWipeGain(args.gain))
+        else:
+            await device.execute_command(commands.SetGain(args.gain))
 
         if not configure_only:
             await device.execute_command(commands.SetWipe())

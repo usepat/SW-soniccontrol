@@ -61,16 +61,15 @@ It is helpful when certain parameters are expected to change significantly, e.g.
         metadata={"enum": EFieldName.TUNE_T_STEP}
     )
 
-    # TODO Enable for the next procotol version
-    # gain: int = attrs.field(
-    #     default=80,
-    #     validator=[
-    #         validators.instance_of(int),
-    #         validators.ge(0),
-    #         validators.le(150)
-    #     ],
-    #     metadata={"enum": EFieldName.TUNE_GAIN}
-    # )
+    gain: int = attrs.field(
+        default=80,
+        validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(150)
+        ],
+        metadata={"enum": EFieldName.TUNE_GAIN}
+    )
 
 class TuneProc(Procedure):
     @classmethod
@@ -92,6 +91,10 @@ class TuneProc(Procedure):
 
         await device.execute_command(commands.SetTuneTTime(t_time_duration))
         await device.execute_command(commands.SetTuneTStep(t_step_duration))
+        if device.has_command(commands.SetTuneGain(args.gain)):
+            await device.execute_command(commands.SetTuneGain(args.gain))
+        else:
+            await device.execute_command(commands.SetGain(args.gain))
         
         if not configure_only:
             await device.execute_command(commands.SetTune())
