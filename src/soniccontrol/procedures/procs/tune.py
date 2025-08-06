@@ -39,8 +39,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
         default=3,
         validator=[
             validators.instance_of(int),
-            validators.ge(0),
-            validators.le(20)
+            validators.ge(0)
         ],
         metadata={"enum": EFieldName.TUNE_N_STEPS}
     )
@@ -61,16 +60,15 @@ It is helpful when certain parameters are expected to change significantly, e.g.
         metadata={"enum": EFieldName.TUNE_T_STEP}
     )
 
-    # TODO Enable for the next procotol version
-    # gain: int = attrs.field(
-    #     default=80,
-    #     validator=[
-    #         validators.instance_of(int),
-    #         validators.ge(0),
-    #         validators.le(150)
-    #     ],
-    #     metadata={"enum": EFieldName.TUNE_GAIN}
-    # )
+    gain: int = attrs.field(
+        default=80,
+        validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(150)
+        ],
+        metadata={"enum": EFieldName.TUNE_GAIN}
+    )
 
 class TuneProc(Procedure):
     @classmethod

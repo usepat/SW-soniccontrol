@@ -90,6 +90,9 @@ class PrimitiveTypeConverter(Converter):
         self._target_class = target_class
 
     def validate_val(self, value: Any) -> bool: 
+        if self._target_class in (np.uint8, np.uint16, np.uint32):
+            return isinstance(value, (int, self._target_class))
+        
         return isinstance(value, self._target_class)
 
     def convert_val_to_str(self, value: Any) -> str: 
@@ -117,6 +120,11 @@ class PrimitiveTypeConverter(Converter):
                 return True
             else:
                 return False
+        
+        # To make life easier we convert numpy stuff directly into int. Makes it easier to integrate it with forms and procedure args
+        if self._target_class in (np.uint8, np.uint16, np.uint32):
+            return int(text)
+        
         return self._target_class(text)
 
 

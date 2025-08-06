@@ -55,6 +55,33 @@ class GetFreq(Command):
         super().__init__(code=CommandCode.GET_FREQ)
 
 @attrs.define()
+class GetSignal(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_SIGNAL)
+
+
+@attrs.define()
+class GetAtf(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_ATF)
+
+    index: int = attrs.field()
+
+@attrs.define()
+class GetAtk(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_ATK)
+
+    index: int = attrs.field()
+
+@attrs.define()
+class GetAtt(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_ATT)
+
+    index: int = attrs.field()
+
+@attrs.define()
 class SetFrequency(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_FREQ)
