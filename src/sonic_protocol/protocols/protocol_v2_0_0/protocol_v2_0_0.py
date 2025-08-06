@@ -8,6 +8,7 @@ from sonic_protocol.protocols.protocol_v1_0_0.protocol_v1_0_0 import Protocol_v1
 from sonic_protocol.protocols.protocol_v2_0_0.commands import (
     clear_errors, restart_device, get_adc, start_configurator
 )
+from sonic_protocol.protocols.protocol_v2_0_0.procedure_commands.procedure_commands import all_proc_commands
 
 
 class Protocol_v2_0_0(ProtocolList):
@@ -52,7 +53,8 @@ class Protocol_v2_0_0(ProtocolList):
         command_contract_list: List[CommandContract] = [clear_errors, restart_device, start_configurator]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_adc])
-
+        if protocol_type.device_type == DeviceType.MVP_WORKER:
+            command_contract_list.extend(all_proc_commands)
         command_contract_dict: Dict[ICommandCode, CommandContract | None] = {
             command_contract.code: command_contract for command_contract in command_contract_list 
         } 

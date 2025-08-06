@@ -232,6 +232,12 @@ class SetWipeTPause(Command):
     value: int = attrs.field(alias=EFieldName.WIPE_T_PAUSE.name)
 
 @attrs.define()
+class SetWipeGain(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_WIPE_GAIN)
+    value: int = attrs.field(alias=EFieldName.WIPE_GAIN.name)
+
+@attrs.define()
 class SetRampFStart(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_RAMP_F_START)
