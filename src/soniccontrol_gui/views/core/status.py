@@ -15,6 +15,7 @@ from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.widgets.xyscrolled_frame import XYScrolledFrame
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
+from soniccontrol_gui.views.core.custom_meter import CustomMeter
 
 class StatusBar(UIComponent):
     def __init__(self, parent: UIComponent, parent_slot: View, answer_field_defs: List[AnswerFieldDef]):
@@ -42,11 +43,12 @@ class StatusBar(UIComponent):
         self._view.expand_panel_frame(self._status_panel_expanded)
 
     def on_update_status(self, status: Dict[IEFieldName, Any]):
-        if EFieldName.TEMPERATURE in status and status[EFieldName.TEMPERATURE] == 404:
+        if EFieldName.TEMPERATURE in status and (status[EFieldName.TEMPERATURE] == 404 or status[EFieldName.TEMPERATURE] == 0):
             status[EFieldName.TEMPERATURE] = float("nan")
         elif EFieldName.TEMPERATURE in status:
             # Convert mK to °C
-            status[EFieldName.TEMPERATURE] = (status[EFieldName.TEMPERATURE] - 273150) / 1000
+            temp_mC = status[EFieldName.TEMPERATURE] - 273150.0
+            status[EFieldName.TEMPERATURE] = temp_mC / 1000
         field_labels: Dict[IEFieldName, str] = {
             EFieldName.FREQUENCY: "Frequency",
             EFieldName.SWF: "Switching Freq",
@@ -100,10 +102,10 @@ class StatusPanel(UIComponent):
             freq = 0
 
         temp = status[EFieldName.TEMPERATURE] if EFieldName.TEMPERATURE in self._field_names else 0
-        is_signal_on = status[EFieldName.SIGNAL] == Signal.ON.name
+        is_signal_on = status[EFieldName.SIGNAL] == Signal.ON
 
         self._view.update_stats(
-            freq=freq / 1000,
+            freq=freq,
             gain=status[EFieldName.GAIN],
             temp=temp,
             urms=status_field_text_representations[EFieldName.URMS],
@@ -214,30 +216,38 @@ class StatusPanelView(View):
             self._main_frame, background=color.STATUS_MEDIUM_GREY
         )
 
-        self._freq_meter: ttk.Meter = ttk.Meter(
+        self._freq_meter: CustomMeter = CustomMeter(
             self._meter_frame,
             bootstyle=ttk.DARK,
             textright=ui_labels.KHZ,
             subtext=ui_labels.FREQUENCY,
             metersize=sizes.METERSIZE,
+            #Use DeviceParamConstants in kHz
+            amountmin=100,
+            amountmax=10000
+
         )
         WidgetRegistry.register_widget(self._freq_meter, "freq_meter", tab_name)
 
-        self._gain_meter: ttk.Meter = ttk.Meter(
+        self._gain_meter: CustomMeter = CustomMeter(
             self._meter_frame,
             bootstyle=ttk.SUCCESS,
             textright=ui_labels.PERCENT,
             subtext=ui_labels.GAIN,
             metersize=sizes.METERSIZE,
+            amountmax=150
         )
         WidgetRegistry.register_widget(self._gain_meter, "gain_meter", tab_name)
 
-        self._temp_meter: ttk.Meter = ttk.Meter(
+        self._temp_meter: CustomMeter = CustomMeter(
             self._meter_frame,
             bootstyle=ttk.WARNING,
+            bootstyleneg=ttk.PRIMARY,
             textright=ui_labels.DEGREE_CELSIUS,
             subtext=ui_labels.TEMPERATURE,
             metersize=sizes.METERSIZE,
+            amountmin=-20,
+            amountmax=80
         )
         WidgetRegistry.register_widget(self._temp_meter, "temp_meter", tab_name)
 
@@ -351,11 +361,15 @@ class StatusPanelView(View):
         )
 
     def update_stats(self, freq: float, gain: float, temp: float, urms: str, irms: str, phase: str, signal: str):
-        self._freq_meter.configure(amountused=freq)
+        self._freq_meter.configure(amountused=round(freq, 1))
         self._gain_meter.configure(amountused=gain)
-        self._temp_meter.configure(amountused=temp)
+        if temp != temp:  # Check for NaN
+            self._temp_meter.configure(amountused=temp)  # Use a string placeholder
+        else:
+            self._temp_meter.configure(amountused=round(temp, 1))
         self._urms_label.configure(text=urms)
         self._irms_label.configure(text=irms)
         self._phase_label.configure(text=phase)
         self._signal_label.configure(text=signal)
         self.update()
+

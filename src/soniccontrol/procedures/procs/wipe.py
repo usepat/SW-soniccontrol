@@ -53,6 +53,15 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
         metadata={"enum": EFieldName.WIPE_T_PAUSE},
         converter=convert_to_holder_args
     )
+    gain: int = attrs.field(
+        default=100,
+        validator=[
+            validators.instance_of(int),
+            validators.ge(0),
+            validators.le(150)
+        ],
+        metadata={"enum": EFieldName.WIPE_GAIN}
+    )
 
 class WipeProc(Procedure):    
     @classmethod
@@ -73,6 +82,10 @@ class WipeProc(Procedure):
         await device.execute_command(commands.SetWipeTOn(t_on_duration))
         await device.execute_command(commands.SetWipeTOff(t_off_duration))
         await device.execute_command(commands.SetWipeTPause(t_pause_duration))
+        if device.has_command(commands.SetWipeGain(args.gain)):
+            await device.execute_command(commands.SetWipeGain(args.gain))
+        else:
+            await device.execute_command(commands.SetGain(args.gain))
 
         if not configure_only:
             await device.execute_command(commands.SetWipe())

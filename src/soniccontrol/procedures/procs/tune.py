@@ -90,6 +90,10 @@ class TuneProc(Procedure):
 
         await device.execute_command(commands.SetTuneTTime(t_time_duration))
         await device.execute_command(commands.SetTuneTStep(t_step_duration))
+        if device.has_command(commands.SetTuneGain(args.gain)):
+            await device.execute_command(commands.SetTuneGain(args.gain))
+        else:
+            await device.execute_command(commands.SetGain(args.gain))
         
         if not configure_only:
             await device.execute_command(commands.SetTune())

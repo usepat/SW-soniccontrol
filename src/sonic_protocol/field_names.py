@@ -86,6 +86,7 @@ class EFieldName(IEFieldName):
     WIPE_T_ON = auto()
     WIPE_T_OFF = auto()
     WIPE_T_PAUSE = auto()
+    WIPE_GAIN = auto()
     RAMP_F_START = auto()
     RAMP_F_STOP = auto()
     RAMP_F_STEP = auto()

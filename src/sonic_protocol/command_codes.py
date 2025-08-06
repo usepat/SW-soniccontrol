@@ -137,6 +137,7 @@ class CommandCode(ICommandCode):
     SET_WIPE_T_ON = 1343
     SET_WIPE_T_OFF = 1344
     SET_WIPE_T_PAUSE = 1345
+    SET_WIPE_GAIN = 1346
     
     SET_INPUT_SOURCE = 2000
     SET_COM_PROT = 2010

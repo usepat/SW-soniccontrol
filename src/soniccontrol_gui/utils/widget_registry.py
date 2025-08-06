@@ -6,6 +6,7 @@ from ttkbootstrap.scrolled import ScrolledText
 import datetime
 
 from soniccontrol_gui.view import TabView
+from soniccontrol_gui.views.core.custom_meter import CustomMeter
 
 
 def get_text_of_widget(widget: tk.Widget | tk.Variable) -> str:
@@ -19,7 +20,7 @@ def get_text_of_widget(widget: tk.Widget | tk.Variable) -> str:
         return widget.get("1.0", "end")
     elif isinstance(widget, (tk.Label, ttk.Label, tk.Button, tk.Checkbutton, ttk.Button, ttk.Checkbutton)):
         return str(widget.cget("text"))
-    elif isinstance(widget, ttk.Meter):
+    elif isinstance(widget, CustomMeter):
         return str(widget.amountusedvar.get())
     elif isinstance(widget, (ttk.Notebook)) or widget.__class__.__name__ == "Notebook":
         return "" # has no text
@@ -43,7 +44,7 @@ def set_text_of_widget(widget: tk.Widget | tk.Variable, text: str) -> None:
     elif isinstance(widget, ScrolledText):
         widget.text.delete(1.0, ttk.END)
         widget.text.insert(ttk.INSERT, text)
-    elif isinstance(widget, ttk.Meter):
+    elif isinstance(widget, CustomMeter):
         widget.configure(amountused=int(text))
     elif isinstance(widget, (tk.Label, ttk.Label, tk.Button, ttk.Button, ttk.Checkbutton)):
         widget.config(text=text)
