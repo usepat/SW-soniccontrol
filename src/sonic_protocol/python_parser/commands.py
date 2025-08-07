@@ -126,7 +126,7 @@ class SetAtk(Command):
         super().__init__(code=CommandCode.SET_ATK)
 
     index: int = attrs.field()
-    value: int = attrs.field(alias=EFieldName.ATK.name)
+    value: float = attrs.field(alias=EFieldName.ATK.name)
 
 @attrs.define()
 class SetAtt(Command):
@@ -134,7 +134,7 @@ class SetAtt(Command):
         super().__init__(code=CommandCode.SET_ATT)
 
     index: int = attrs.field()
-    value: int = attrs.field(alias=EFieldName.ATT.name)
+    value: float = attrs.field(alias=EFieldName.ATT.name)
 
 
 @attrs.define()

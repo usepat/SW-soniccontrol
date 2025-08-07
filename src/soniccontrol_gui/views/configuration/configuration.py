@@ -3,9 +3,8 @@ import asyncio
 import logging
 from pathlib import Path
 from tkinter import filedialog
-from typing import Callable, List, Iterable, Optional
+from typing import Callable, List, Iterable, Optional, Tuple
 import ttkbootstrap as ttk
-from ttkbootstrap.scrolled import ScrolledFrame
 import json
 from sonic_protocol.python_parser import commands
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine
@@ -19,16 +18,34 @@ from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol.events import PropertyChangeEvent
-from soniccontrol_gui.views.configuration.transducer_configs import ATConfig, ATConfigFrame, TransducerConfig, TransducerConfigSchema
 from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
-from soniccontrol_gui.widgets.file_browse_button import FileBrowseButtonView
 from soniccontrol_gui.constants import files
 from async_tkinter_loop import async_handler
 
+from soniccontrol_gui.widgets.form_widget import FormWidget
 from soniccontrol_gui.widgets.message_box import MessageBox
     
+import attrs
+import cattrs
+
+
+FILE_DIALOG_OPTS_FOR_JSON = {"defaultextension": ".json", "filetypes": [("JSON files", "*.json")]} 
+
+@attrs.define(auto_attribs=True)
+class ATConfig:
+    atf: int = attrs.field(default=0)
+    atk: float = attrs.field(default=0)
+    att: float = attrs.field(default=0)
+
+@attrs.define(auto_attribs=True)
+class TransducerConfig():
+    atconfigs: Tuple[ATConfig, ATConfig, ATConfig, ATConfig] = attrs.field(factory=lambda: tuple(ATConfig() for _ in range(4))) #type: ignore
+    init_script_path: Optional[Path] = attrs.field(default=None, metadata={"field_view_kwargs": FILE_DIALOG_OPTS_FOR_JSON})
+    # the name should not be stored inside the json file, but should be retrieved from the file name
+    name: str = attrs.field(default="template")
+
 
 class Configuration(UIComponent):
     CONFIGURATION_TASK_NAME = "configuring"
@@ -36,14 +53,21 @@ class Configuration(UIComponent):
     def __init__(self, parent: UIComponent, device: SonicDevice, updater: Updater):
         self._logger = logging.getLogger(parent.logger.name + "." + Configuration.__name__)
         
+        self._converter = cattrs.Converter()
+        # ensure that the name of the config does not get written into the json file
+        omit_name_hook = cattrs.gen.make_dict_unstructure_fn(TransducerConfig, self._converter, name=cattrs.gen.override(omit=True))
+        self._converter.register_unstructure_hook(TransducerConfig, omit_name_hook)
+
         self._logger.debug("Create Configuration Component")
         self._count_atk_atf = 4
         self._configs: List[TransducerConfig] = []
-        self._config_schema = TransducerConfigSchema()
-        self._view = ConfigurationView(parent.view, self, self._count_atk_atf)
         self._current_transducer_config: Optional[int] = None
         self._device = device
         self._interpreter = InterpreterEngine(device, updater)
+        
+        
+        self._view = ConfigurationView(parent.view, self, self._count_atk_atf)
+        self._form = FormWidget(self, self._view.form_slot, "Transducer Config", TransducerConfig)
         super().__init__(parent, self._view, self._logger)
 
 
@@ -74,7 +98,7 @@ class Configuration(UIComponent):
         self._logger.info("Create empty configuration file at %s", files.TRANSDUCER_CONFIG_JSON)
         with open(files.TRANSDUCER_CONFIG_JSON, "w") as file:
             # Create 4 ATConfig objects with default values
-            data_dict = self._config_schema.dump(TransducerConfig(atconfigs=[ATConfig() for _ in range(self._count_atk_atf)])).data
+            data_dict = self._converter.unstructure(TransducerConfig())
             json.dump(data_dict, file)
 
     def _load_config(self):
@@ -92,7 +116,7 @@ class Configuration(UIComponent):
             with open(json_file, "r") as file:
                 try:
                     data_dict = json.load(file)
-                    config = self._config_schema.load(data_dict).data
+                    config = self._converter.structure(data_dict, TransducerConfig)
                     config.name = json_file.stem
                     self._configs.append(config)
                 except Exception as e:
@@ -102,8 +126,7 @@ class Configuration(UIComponent):
         self.current_transducer_config = 0 if len(self._configs) > 0 else None
 
     def _import_transducer_config(self):
-        kwargs = {"defaultextension": ".json", "filetypes": [("JSON files", "*.json")]} 
-        filename: str = filedialog.askopenfilename(**kwargs)
+        filename: str = filedialog.askopenfilename(**FILE_DIALOG_OPTS_FOR_JSON)
         if filename == "." or filename == "" or isinstance(filename, (tuple)):
             return
         path = Path(filename)
@@ -114,7 +137,7 @@ class Configuration(UIComponent):
         with open(path, "r") as file:
             try:
                 data_dict = json.load(file)
-                config = self._config_schema.load(data_dict).data
+                config = self._converter.structure(data_dict, TransducerConfig)
                 config.name = path.stem
                 self._configs.append(config)
                 self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
@@ -122,11 +145,7 @@ class Configuration(UIComponent):
                 self._logger.error("Failed to load config from %s: %s", path, e)
 
     def _save_config(self):
-        transducer_config = TransducerConfig(
-            name=self._view.transducer_config_name, 
-            atconfigs=self._view.atconfigs, 
-            init_script_path= self._view.init_script_path
-        )
+        transducer_config = self._form.attrs_object
         if not self._validate_transducer_config_data(transducer_config):
             return
 
@@ -145,7 +164,7 @@ class Configuration(UIComponent):
         path = files.TRANSDUCER_CONFIG_FOLDER / f"{transducer_config.name}.json"
         self._logger.info("Save configuration to %s", path)
         with open(path, "w") as file:
-            data_dict = self._config_schema.dump(transducer_config).data
+            data_dict = self._converter.unstructure(transducer_config)
             json.dump(data_dict, file)
 
     def _validate_transducer_config_data(self, transducer_config: TransducerConfig) -> bool:            
@@ -166,9 +185,7 @@ class Configuration(UIComponent):
         else:
             current_config = self._configs[self.current_transducer_config]
             self._view.selected_transducer_config = current_config.name
-            self._view.transducer_config_name = current_config.name
-            self._view.atconfigs = current_config.atconfigs
-            self._view.init_script_path = current_config.init_script_path
+            self._form.attrs_object = current_config
 
     def _on_transducer_config_selected(self):
          for i, transducer_config in enumerate(self._configs):
@@ -177,9 +194,7 @@ class Configuration(UIComponent):
                 break
 
     def _add_transducer_config_template(self):
-        self._view.atconfigs = [ATConfig()] * self._count_atk_atf
-        self._view.transducer_config_name = "no name"
-        self._view.init_script_path = None
+        self._form.attrs_object = TransducerConfig(name="no name")
         self._view._selected_config.set("no name")
         self.current_transducer_config = None
 
@@ -209,27 +224,20 @@ class Configuration(UIComponent):
         animation.run(num_repeats=-1)
         
         # Send data
-        for i, atconfig in enumerate(self._view.atconfigs):
+        config: TransducerConfig = self._form.attrs_object
+        for i, atconfig in enumerate(config.atconfigs):
             # i+1 because atfs start at 1 and not 0.
             await self._device.execute_command(commands.SetAtf(i+1, atconfig.atf))
             await self._device.execute_command(commands.SetAtk(i+1, atconfig.atk))
             await self._device.execute_command(commands.SetAtt(i+1, atconfig.att))
 
-        task = asyncio.create_task(self._execute_init_script())
+        if config.init_script_path is not None:
+            await self._execute_init_script(config.init_script_path)
+        
+        await animation.stop()
+    
 
-        # add stop animation callback
-        @async_handler
-        async def stop_animation(_task):
-            await animation.stop()
-        task.add_done_callback(stop_animation)
-
-    async def _execute_init_script(self):
-        assert(self._current_transducer_config is not None)
-
-        script_file_path = self._view.init_script_path
-        if script_file_path is None:
-            return
-
+    async def _execute_init_script(self, script_file_path: Path):
         with script_file_path.open(mode="r") as f:
             script = f.read()
 
@@ -323,22 +331,7 @@ class ConfigurationView(TabView):
         self._transducer_config_frame: ttk.Frame = ttk.Frame(
             self._config_frame
         )
-        self._config_name: ttk.StringVar = ttk.StringVar()
-        self._config_name_textbox: ttk.Entry = ttk.Entry(
-            self._transducer_config_frame, textvariable=self._config_name
-        )
-        self._atconfigs_frame: ScrolledFrame = ScrolledFrame(self._transducer_config_frame)
-        self._atconfig_frames: List[ATConfigFrame] = []
-        for i in range(0, self._count_atk_atf):
-            at_config_frame = ATConfigFrame(self._presenter, self._atconfigs_frame, i+1, parent_widget_name=tab_name)
-            self._atconfig_frames.append(at_config_frame)
-            
-        self._browse_script_init_button: FileBrowseButtonView = FileBrowseButtonView(
-            self._transducer_config_frame, 
-            tab_name,
-            text=ui_labels.SPECIFY_PATH_LABEL, 
-            style=ttk.DARK,
-        )
+        
 
     def _initialize_publish(self) -> None:
         self._config_frame.pack(expand=True, fill=ttk.BOTH)
@@ -395,34 +388,6 @@ class ConfigurationView(TabView):
         )
 
         self._transducer_config_frame.grid(row=2, column=0, columnspan=6, sticky=ttk.NSEW)
-        self._transducer_config_frame.columnconfigure(0, weight=sizes.EXPAND)
-        self._transducer_config_frame.rowconfigure(0, weight=sizes.DONT_EXPAND)
-        self._transducer_config_frame.rowconfigure(1, weight=sizes.EXPAND)
-        self._transducer_config_frame.rowconfigure(2, weight=sizes.DONT_EXPAND)
-        self._config_name_textbox.grid(
-            row=0,
-            column=0,
-            padx=sizes.MEDIUM_PADDING,
-            pady=sizes.MEDIUM_PADDING,
-            sticky=ttk.EW,
-        )
-        self._atconfigs_frame.grid(
-            row=1,
-            column=0,
-            padx=sizes.MEDIUM_PADDING,
-            pady=sizes.MEDIUM_PADDING,
-            sticky=ttk.NSEW,
-        )
-        for i, atconfig_frame in enumerate(self._atconfig_frames):
-            atconfig_frame.view.grid(row=i, column=0, padx=sizes.MEDIUM_PADDING, pady=sizes.MEDIUM_PADDING, sticky=ttk.EW)
-
-        self._browse_script_init_button.grid(
-            row=2,
-            column=0,
-            padx=sizes.MEDIUM_PADDING,
-            pady=sizes.MEDIUM_PADDING,
-            sticky=ttk.EW,
-        )
 
     def set_save_config_command(self, command: Callable[[], None]) -> None:
         self._save_config_button.configure(command=command)
@@ -448,23 +413,6 @@ class ConfigurationView(TabView):
     def set_loading_label(self, text: str) -> None:
         self._loading_label.configure(text=text)
 
-    @property 
-    def atconfigs(self) -> List[ATConfig]:
-        return list(map(lambda x: x.value, self._atconfig_frames))
-
-    @atconfigs.setter
-    def atconfigs(self, values: Iterable[ATConfig]) -> None:
-        for i, atconfig in enumerate(values):
-            self._atconfig_frames[i].value = atconfig
-
-    @property
-    def init_script_path(self) -> Optional[Path]:
-        return self._browse_script_init_button.path
-
-    @init_script_path.setter
-    def init_script_path(self, value: Optional[Path]) -> None:
-        self._browse_script_init_button.path = value
-
     @property
     def selected_transducer_config(self) -> str:
         return self._selected_config.get()
@@ -475,11 +423,9 @@ class ConfigurationView(TabView):
 
     def set_transducer_config_menu_items(self, items: Iterable[str]) -> None:
         self._config_entry["values"] = list(items)
-    
-    @property
-    def transducer_config_name(self) -> str:
-        return self._config_name.get()
 
-    @transducer_config_name.setter
-    def transducer_config_name(self, value: str) -> None:
-        self._config_name.set(value)
+    @property
+    def form_slot(self) -> ttk.Frame:
+        return self._transducer_config_frame
+    
+

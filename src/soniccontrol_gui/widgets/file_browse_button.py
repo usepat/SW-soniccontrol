@@ -1,6 +1,6 @@
 from pathlib import Path
 from tkinter import filedialog
-from typing import Any, Optional
+from typing import Any, Optional, Callable
 import ttkbootstrap as ttk
 
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -8,11 +8,12 @@ from soniccontrol_gui.view import View
 
 
 class FileBrowseButtonView(View):
-    def __init__(self, master: Any, parent_widget_name: str, *args, **kwargs):
+    def __init__(self, master: Any, parent_widget_name: str, *args, 
+                 text: str = "", defaultextension: str | None = None, filetypes = None, **kwargs):
         self._parent_widget_name = parent_widget_name
-        self._text = kwargs.pop("text", "")
-        self._default_extension = kwargs.pop("default_extension", None)
-        self._filetypes = kwargs.pop("filetypes", None)
+        self._text = text
+        self._defaultextension = defaultextension
+        self._filetypes = filetypes
         super().__init__(master, *args, **kwargs)
         
     def _initialize_children(self) -> None:
@@ -49,8 +50,8 @@ class FileBrowseButtonView(View):
         # I do not know why I have to do it this way and cant just pass None for the single keyword args.
         # Danke Merkel.. Sorry, I meant Tkinter
         kwargs = {} 
-        if self._default_extension is not None:
-            kwargs["defaultextension"] = self._default_extension
+        if self._defaultextension is not None:
+            kwargs["defaultextension"] = self._defaultextension
         if self._filetypes is not None:
             kwargs["filetypes"] = self._filetypes
         filename: str = filedialog.askopenfilename(**kwargs)
@@ -60,3 +61,6 @@ class FileBrowseButtonView(View):
 
         path = Path(filename)
         self._path_str.set(path.as_posix())
+
+    def set_path_changed_callback(self, callback: Callable[[Path | None], None]):            
+        self._path_str.trace_add("write", lambda *_: callback(self.path))

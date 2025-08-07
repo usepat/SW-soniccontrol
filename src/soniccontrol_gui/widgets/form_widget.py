@@ -6,12 +6,14 @@ from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, Tuple
 import copy
 import attrs
 import cattrs
+from pathlib import Path
 from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol.procedures.holder import convert_to_holder_args
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TkinterView, View
 from soniccontrol_gui.constants import ui_labels
+from soniccontrol_gui.widgets.file_browse_button import FileBrowseButtonView
 
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
@@ -21,7 +23,7 @@ from soniccontrol.procedures.holder import HoldTuple, HolderArgs
 
 
 def _create_converter():
-    # We do not want to convert enums and holder args.
+    # We do not want to convert enums and holder args and pathlib.Path
 
     def enum_structure_hook(value: Any, t: type) -> Enum:
         if not isinstance(value, Enum):
@@ -41,11 +43,19 @@ def _create_converter():
     def holder_args_unstructure_hook(value: HolderArgs) -> HolderArgs:
         return value
     
+    def path_structure_hook(value: Any, t: type) -> Path:
+        return value
+
+    def path_unstructure_hook(value: Path) -> Path:
+        return value
+    
     converter = cattrs.Converter()
     converter.register_structure_hook_func(is_enum, enum_structure_hook)
     converter.register_unstructure_hook_func(is_enum, enum_unstructure_hook)
     converter.register_structure_hook(HolderArgs, holder_args_structure_hook)
     converter.register_unstructure_hook(HolderArgs, holder_args_unstructure_hook)
+    converter.register_structure_hook(Path, path_structure_hook)
+    converter.register_unstructure_hook(Path, path_unstructure_hook)
 
     return converter
 
@@ -331,6 +341,45 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
         self._callback = command
 
 
+class PathFieldView(FieldViewBase[Optional[Path]]):
+    """
+    Adapter for FileBrowseButton to use it inside a FormWidget
+    """
+    def __init__(self, master: TkinterView, field_name: str, *args, 
+                default_value: Path | None = None, field_view_kwargs: Dict[str, Any] = {}, **kwargs):
+        self._field_name = field_name
+        self._default_value: Path | None = default_value 
+        
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._widget_name = parent_widget_name + "." + self._field_name
+
+        self._browse_button = FileBrowseButtonView(self, self._widget_name, text=self._field_name, **field_view_kwargs)
+        super().__init__(master, *args, **kwargs)
+
+    def _initialize_children(self) -> None: ...
+
+    def _initialize_publish(self) -> None: ...
+
+    @property
+    def field_name(self) -> str:
+        return self._field_name
+
+    @property
+    def default(self) -> Path | None: 
+        return self._default_value
+
+    @property
+    def value(self) -> Path | None:
+        return self._browse_button.path
+    
+    @value.setter
+    def value(self, v: Path | None) -> None:
+        self._browse_button.path = v
+ 
+    def bind_value_change(self, command: Callable[[Path | None], None]):
+        self._browse_button.set_path_changed_callback(command)
+
+
 class TimeFieldView(FieldViewBase[HoldTuple]):
     def __init__(self, master: TkinterView, field_name: str, *args, default_value: HoldTuple | HolderArgs = (100, "ms"), **kwargs):
         self._field_name = field_name
@@ -518,6 +567,8 @@ def _create_field_view_for_type(field_name, field_type: type, slot: TkinterView,
         field_view = DictFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
     elif field_type is HolderArgs:
         field_view = TimeFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+    elif field_type is Path:
+        field_view = PathFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
     elif inspect.isclass(field_type) and issubclass(field_type, Enum): 
         # for enums we have to check if they are subclasses of the Enum base class
         field_view = EnumFieldView(slot, field_name, field_type, parent_widget_name=parent_widget_name, **kwargs)
@@ -540,6 +591,10 @@ def _create_field_view_for_attr(field_name: str, field: attrs.Attribute, slot: T
     kwargs = {}
     if field.default is not None and field.default != attrs.NOTHING:
         kwargs["default_value"] = field.default.factory() if hasattr(field.default, "factory") else field.default
+
+    field_view_kwargs_name = "field_view_kwargs"
+    if field_view_kwargs_name in field.metadata:
+        kwargs[field_view_kwargs_name] = field.metadata.get(field_view_kwargs_name) 
 
     return _create_field_view_for_type(field_name, field.type, slot, parent_widget_name, **kwargs)
 
