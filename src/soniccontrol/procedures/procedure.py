@@ -23,6 +23,21 @@ class ProcedureType(Enum):
 
 @attrs.define(init=False)
 class ProcedureArgs:
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Recursively convert this ProcedureArgs instance to a nested dictionary,
+        using attribute names as keys for nested ProcedureArgs fields.
+        """
+        result = {}
+        for field in attrs.fields(self.__class__):
+            value = getattr(self, field.name)
+            if issubclass(field.type, ProcedureArgs):
+                result[field.name] = value.to_dict() if value is not None else None
+            else:
+                result[field.name] = value
+        return result
+        
+
     """
         @brief Method used for getting a description of what the procedure does. Used for manuals
     """
@@ -57,8 +72,14 @@ class ProcedureArgs:
                 else:
                     prefix_str = ""
 
-                # Collect keys that start with prefix_
-                nested_kwargs = {k[len(prefix_str):]: v for k, v in kwargs.items() if k.startswith(prefix_str)}
+                # Only treat as flattened if all values are not dicts
+                is_flat = all(not isinstance(v, dict) for v in kwargs.values())
+                if prefix and is_flat:
+                    nested_kwargs = {k[len(prefix_str):]: v for k, v in kwargs.items() if k.startswith(prefix_str)}
+                else:
+                    # Use all keys that match the nested class's fields
+                    nested_field_names = {f.name for f in attrs.fields(field.type)}
+                    nested_kwargs = {k: v for k, v in kwargs.items() if k in nested_field_names}
                 nested_instance = field.type(**nested_kwargs)
                 fields_dict[field.name] = nested_instance
             else:
@@ -173,6 +194,8 @@ class ProcedureArgs:
                     # Set the new key with the alias
                     arg_dict[prefix + field.name] = value
         return arg_dict
+    
+
     
 class Procedure(abc.ABC):
     @classmethod

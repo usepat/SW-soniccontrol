@@ -52,10 +52,6 @@ class AutoProc(Procedure):
             answer = await device.execute_command(commands.GetAuto())
         except (CommandValidationError, CommandExecutionError) as _:
             return {}
-    
-        # This is just a workaround at the moment
-        # TODO: refactor the procedure convert functions for dicts and tuples.
-        scan_args = ScanArgs.to_dict_with_holder_args(answer)
-        tune_args = TuneArgs.to_dict_with_holder_args(answer)
-
-        return {"scan_arg": scan_args, "tune_arg": tune_args}
+        args = AutoArgs.from_answer(answer)
+        # Returns nested dicts for the form widget
+        return args.to_dict()
