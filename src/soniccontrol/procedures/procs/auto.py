@@ -37,11 +37,11 @@ class AutoProc(Procedure):
 
     async def execute(self, device: SonicDevice, args: AutoArgs, configure_only: bool = False) -> None:
         scan = ScanProc()
-        # With False we only execute the arg setter
-        await scan.execute(device, args.scan_arg, configure_only)
+        # With True we only execute the arg setter
+        await scan.execute(device, args.scan_arg, True)
 
         tune = TuneProc()
-        await tune.execute(device, args.tune_arg, configure_only)
+        await tune.execute(device, args.tune_arg, True)
         
         if not configure_only:
             await device.execute_command(commands.SetAuto())
