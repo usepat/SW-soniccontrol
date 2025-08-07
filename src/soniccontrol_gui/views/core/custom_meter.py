@@ -1,5 +1,6 @@
+import math
 import tkinter as tk
-from tkinter import ttk
+from tkinter import EventType, ttk
 from ttkbootstrap.constants import *
 
 # meter imports
@@ -103,6 +104,7 @@ class CustomMeter(ttk.Frame):
         subtextstyle=DEFAULT,
         subtextfont="-size 10",
         stepsize=1,
+        step_full_range=True,
         **kwargs,
     ):
         """
@@ -190,7 +192,7 @@ class CustomMeter(ttk.Frame):
         super().__init__(master=master, **kwargs)
 
         # widget variables
-        self.amountusedvar = tk.IntVar(value=amountused)
+        self.amountusedvar = tk.DoubleVar(value=amountused)
         self.amountusedvar.trace_add("write", self._draw_meter)
         if (amountmin or amountmax) and amounttotal:
             raise DeprecationWarning("Using old and new code is not allowed")
@@ -222,6 +224,7 @@ class CustomMeter(ttk.Frame):
         self._bootstyle = bootstyle
         self._boostyleneg = bootstyleneg if bootstyleneg  else bootstyle
         self._interactive = interactive
+        self._step_full_range = step_full_range
         self._bindids = {}
 
         self._setup_widget()
@@ -355,6 +358,7 @@ class CustomMeter(ttk.Frame):
 
     def _draw_meter(self, *_):
         """Draw a meter"""
+        self._set_widget_colors()
         img = self._base_image.copy()
         draw = ImageDraw.Draw(img)
         if self._stripethickness > 0:
@@ -416,8 +420,9 @@ class CustomMeter(ttk.Frame):
             )
         else:
             meter_value = self._meter_value()
-            start=self._arcoffset if self["amountused"] >= 0 else meter_value
-            end=meter_value if self["amountused"] >= 0 else self._arcoffset
+            correction_factor = -90 if self["metertype"] == "semi" else 0
+            start=self._arcoffset if self["amountused"] >= 0 else meter_value + correction_factor
+            end=meter_value if self["amountused"] >= 0 else self._arcoffset + correction_factor
             draw.arc(
                 xy=(0, 0, x1, y1),
                 start=start,
@@ -482,38 +487,77 @@ class CustomMeter(ttk.Frame):
         self._draw_base_image()
         self._draw_meter()
 
+    def _angle_from_mouse(self, x, y):
+        """Convert mouse (x, y) position to an angle in degrees from center."""
+        center = self._metersize // 2
+        dx = x - center
+        dy = y - center
+        angle = (math.degrees(math.atan2(dy, dx)) + 360) % 360
+        return angle
+
+    
+    def _angle_to_partial_value(self, angle, range_start, range_size, value_min, value_max):
+        """Maps an angle between [range_start, range_start + range_size] to a value between [value_min, value_max]."""
+        rel_angle = (angle - range_start + 360) % 360
+        clamped = min(max(rel_angle, 0), range_size)
+        return value_min + (clamped / range_size) * (value_max - value_min)
+
+
+
+
     def _on_dial_interact(self, e: tk.Event):
-        """Callback for mouse drag motion on meter indicator"""
-        dx = e.x - self._metersize // 2
-        dy = e.y - self._metersize // 2
-        rads = math.atan2(dy, dx)
-        degs = math.degrees(rads)
+        angle = self._angle_from_mouse(e.x, e.y)
+        min_val = self.amountminvar.get()
+        max_val = self.amountmaxvar.get()
+        arc_offset = self._arcoffset
+        arc_range = self._arcrange
 
-        if degs > self._arcoffset:
-            factor = degs - self._arcoffset
-        else:
-            factor = 360 + degs - self._arcoffset
+        if min_val < 0:
+            # Two independent scenarios: negative (left) and positive (right)
+            # Compute rel_angle within arc_range only
+            rel_angle = (angle - arc_offset + 360) % 360
+            rel_angle = min(max(rel_angle, 0), arc_range)
+            rel_angle_norm = rel_angle / arc_range if arc_range else 0
 
-        # clamp the value between 0 and `amounttotal`
-        amounttotal = self.amounttotalvar.get() 
-        lastused = self.amountusedvar.get()
-        amountused = (amounttotal / self._arcrange * factor)
+            if e.type == EventType.ButtonPress:
+                # Dynamically split arc: negative is left half, positive is right half, regardless of arc_offset/arcrange
+                # rel_angle_norm in [0, 1): 0 is arc start, 0.5 is arc middle, 1 is arc end
+                using_negative = rel_angle_norm >= 0.5
+                self._last_dial_negative = using_negative
+            else:
+                # For drag, use last value's sign, but do not switch meter if value crosses zero
+                using_negative = getattr(self, '_last_dial_negative', self.amountusedvar.get() < 0)
 
-        # calculate amount used given stepsize
-        if amountused > self._stepsize//2:
-            amountused = amountused // self._stepsize * self._stepsize + self._stepsize
+
+            if using_negative:
+                # Negative meter: range is abs(min_val), from arc_offset+90 to arc_offset+270
+                neg_start = (arc_offset) % 360
+                value = self._angle_to_partial_value(
+                    angle, neg_start, arc_range, min_val, 0
+                )
+            else:
+                # Positive meter: range is max_val, from arc_offset+270 to arc_offset+90 (wraps around)
+                pos_start = (arc_offset) % 360
+                value = self._angle_to_partial_value(
+                    angle, pos_start, arc_range, 0, max_val
+                )
         else:
-            amountused = 0
-        # if the number is the name, then do not redraw
-        if lastused == amountused:
-            return
-        # set the amount used variable
-        if amountused < 0:
-            self.amountusedvar.set(0)
-        elif amountused > amounttotal:
-            self.amountusedvar.set(amounttotal)
-        else:
-            self.amountusedvar.set(amountused)
+            # No negative range; treat as single meter
+            value = self._angle_to_partial_value(
+                angle, arc_offset, arc_range, min_val, max_val
+            )
+
+        # Snap to stepsize
+        step = self._stepsize
+        value = round(value / step) * step
+
+        # Clamp value
+        value = min(max(value, min_val), max_val)
+
+        # Apply if changed
+        if value != self.amountusedvar.get():
+            self.amountusedvar.set(value)
+            self._set_widget_colors()
 
     def _lookup_style_option(self, style: str, option: str):
         """Wrapper around the tcl style lookup command"""
@@ -688,26 +732,119 @@ class CustomMeter(ttk.Frame):
         else:
             self._configure_set(**kwargs)
 
-    def step(self, delta=1):
-        """Increase the indicator value by `delta`
-
-        The indicator will reverse direction and count down once it
-        reaches the maximum value.
-
-        Parameters:
-
-            delta (int):
-                The amount to change the indicator.
+    def step(self, delta: float = 1.0):
         """
-        amountused = self.amountusedvar.get()
-        amounttotal = self.amounttotalvar.get()
-        if amountused >= amounttotal:
-            self._towardsmaximum = True
-            self.amountusedvar.set(amountused - delta)
-        elif amountused <= 0:
-            self._towardsmaximum = False
-            self.amountusedvar.set(amountused + delta)
-        elif self._towardsmaximum:
-            self.amountusedvar.set(amountused - delta)
+        Advance the indicator by *delta* and bounce at the correct limits.
+
+        ────────────────────────────────────────────────────────────────
+        MODE                       ACTIVE SPAN          BOUNCE LIMITS
+        ────────────────────────────────────────────────────────────────
+        full_range True  OR
+        amountmin ≥ 0          [amountmin … amountmax]   amountmin / amountmax
+        ────────────────────────────────────────────────────────────────
+        split range
+        current value > 0     [0 … amountmax]          0 / amountmax
+        current value < 0     [amountmin … 0]          amountmin / 0
+        current value == 0    span chosen from sign(delta)
+        ────────────────────────────────────────────────────────────────
+        Bounces never carry the needle across 0, but an explicit *delta*
+        pointing through 0 can switch sides.
+        """
+
+        if delta == 0:
+            return
+
+        # ─── current values & config ─────────────────────────────────────
+        val   = self.amountusedvar.get()
+        vmin  = self.amountminvar.get()
+        vmax  = self.amountmaxvar.get()
+        full  = self._step_full_range or vmin >= 0
+
+        # ----------------------------------------------------------------
+        # 1.  Handle user-requested direction
+        # ----------------------------------------------------------------
+        user_sign = 1 if delta > 0 else -1
+        if not hasattr(self, '_dir_user') or self._dir_user != user_sign:
+            self._dir_user = user_sign             # remember caller’s wish
+            self._dir      = user_sign             # start moving that way
+        step_mag = abs(delta)
+        step_val = step_mag * self._dir            # signed step for this call
+
+        # ----------------------------------------------------------------
+        # 2.  Decide which half-span is active
+        # ----------------------------------------------------------------
+        if full:
+            low, high = vmin, vmax
         else:
-            self.amountusedvar.set(amountused + delta)
+            # Have we already chosen a half-span?
+            if not hasattr(self, '_span_positive'):
+                self._span_positive = val >= 0
+            # If we are away from 0, lock the span to the current sign
+            if val > 0:
+                self._span_positive = True
+            elif val < 0:
+                self._span_positive = False
+            # If val == 0, use the caller’s delta sign to pick the span
+            if val == 0:
+                self._span_positive = (user_sign > 0)
+
+            low, high = (0, vmax) if self._span_positive else (vmin, 0)
+
+        # ----------------------------------------------------------------
+        # 3.  First advance and bounce at the *outer* limit only
+        # ----------------------------------------------------------------
+        new_val = val + step_val
+        bounced = False
+
+        if new_val > high:                 # hit the upper bound
+            overs     = new_val - high
+            new_val   = high - overs       # reflect inside
+            self._dir = -1                 # now heading downward
+            bounced   = True
+        elif new_val < low:                # hit the lower bound
+            overs     = low - new_val
+            new_val   = low + overs        # reflect inside
+            self._dir = 1                  # now heading upward
+            bounced   = True
+
+        # ----------------------------------------------------------------
+        # 4.  Handle possible crossing of 0 in split-range mode
+        #     • allowed  → if the caller’s delta sign points through 0
+        #     • blocked → if it happened only because of a bounce
+        # ----------------------------------------------------------------
+        if not full and (( self._span_positive and new_val < 0 )
+                        or (not self._span_positive and new_val > 0 )):
+            intent_cross = ( self._span_positive and user_sign < 0 ) or \
+                        ((not self._span_positive) and user_sign > 0)
+
+            if intent_cross and not bounced:
+                # user explicitly moved across 0 → switch span
+                self._span_positive = not self._span_positive
+                low, high = (0, vmax) if self._span_positive else (vmin, 0)
+                # If the new value overshoots its new outer limit, bounce once
+                if new_val > high:
+                    new_val = high - (new_val - high)
+                    self._dir = -1
+                elif new_val < low:
+                    new_val = low + (low - new_val)
+                    self._dir = 1
+            else:
+                # crossing is from a bounce – reflect at 0
+                new_val = -new_val           # mirror in place
+                self._dir = -self._dir       # reverse again
+
+        # ----------------------------------------------------------------
+        # 5.  Clamp to span and apply
+        # ----------------------------------------------------------------
+        new_val = min(max(new_val, low), high)
+        self._towardsmaximum = (self._dir > 0)     # backward-compat flag
+
+        if new_val != val:
+            self.amountusedvar.set(new_val)
+
+
+
+
+
+
+

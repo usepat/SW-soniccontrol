@@ -80,8 +80,6 @@ class TuneProc(Procedure):
         return True
 
     async def execute(self, device: SonicDevice, args: TuneArgs, configure_only: bool = False) -> None:
-        # TODO enable in next procotol
-        # await device.execute_command(commands.SetTuneGain(args.gain))
         await device.execute_command(commands.SetTuneFShift(args.f_shift))
         await device.execute_command(commands.SetTuneNSteps(args.n_steps))
         await device.execute_command(commands.SetTuneFStep(args.f_step))
