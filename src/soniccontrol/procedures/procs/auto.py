@@ -1,16 +1,12 @@
-import asyncio
 from typing import Any, Type
 
 import attrs
-from attrs import validators
 
-from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from soniccontrol.procedures.procs.scan import ScanArgs, ScanProc
 from soniccontrol.procedures.procs.tune import TuneArgs, TuneProc
-from soniccontrol.sonic_device import SonicDevice
+from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
 
 
 @attrs.define(auto_attribs=True)
@@ -49,8 +45,15 @@ class AutoProc(Procedure):
             await device.execute_command(commands.SetAuto())
 
     async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
-        # TODO ensure GetAuto returns a answer where all FieldName of both scan and tune are returned
-        answer = await device.execute_command(commands.GetAuto(), raise_exception=False)
-        if answer.was_validated and answer.valid:
-            return AutoArgs.to_dict_with_holder_args(answer)
-        return {}
+        try:
+            # TODO ensure GetAuto returns a answer where all FieldName of both scan and tune are returned
+            answer = await device.execute_command(commands.GetAuto())
+        except (CommandValidationError, CommandExecutionError) as _:
+            return {}
+    
+        # This is just a workaround at the moment
+        # TODO: refactor the procedure convert functions for dicts and tuples.
+        scan_args = ScanArgs.to_dict_with_holder_args(answer)
+        tune_args = TuneArgs.to_dict_with_holder_args(answer)
+
+        return {"scan_arg": scan_args, "tune_arg": tune_args}

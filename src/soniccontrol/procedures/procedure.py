@@ -41,10 +41,10 @@ class ProcedureArgs:
     def from_answer(cls, answer: Answer) -> Self:
         # This can probably done more effectively. Ask Thomas about help
         proc_dict = cls.to_dict_with_holder_args(answer)
-        return cls.from_dict(**proc_dict)
+        return cls.from_dict(use_enum_names=False, **proc_dict)
 
     @classmethod
-    def from_dict(cls, **kwargs: dict[str, Any]):
+    def from_dict(cls, use_enum_names: bool = True, **kwargs: dict[str, Any]):
         fields_dict = {}
 
         for field in attrs.fields(cls):
@@ -57,7 +57,7 @@ class ProcedureArgs:
 
                 enum = field.metadata.get("enum", None)
                 # Check if the enum name (str) is in the provided data
-                if enum:
+                if use_enum_names and enum:
                     assert (isinstance(enum, EFieldName))
                     key = enum.name
                 else:
@@ -157,7 +157,7 @@ class ProcedureArgs:
                         value = HolderArgs(float(value), "ms") 
 
                     # Set the new key with the alias
-                    arg_dict[enum.name] = value
+                    arg_dict[field.name] = value
         return arg_dict
     
 class Procedure(abc.ABC):

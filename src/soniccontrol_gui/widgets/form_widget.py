@@ -7,7 +7,6 @@ import copy
 import attrs
 import cattrs
 from pathlib import Path
-from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol.procedures.holder import convert_to_holder_args
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -59,8 +58,6 @@ def _create_converter():
 
     return converter
 
-converter = _create_converter()
-
 
 class EntryStyle(Enum):
     PRIMARY = "primary.TEntry"
@@ -92,16 +89,6 @@ class FieldViewBase(abc.ABC, Generic[T], View):
 
     @abc.abstractmethod
     def bind_value_change(self, command: Callable[[T], None]) -> None: ...
-
-
-class FieldViewFactoryType(Protocol):
-    def __call__(self, view: TkinterView, title: str, *args, **kwargs) -> FieldViewBase:
-        ...
-
-FormFieldAttributes = Dict[
-    str, 
-    Union["attrs.Attribute[Any]", FieldViewFactoryType, "FormFieldAttributes"]
-]
 
 
 PrimitiveT = TypeVar("PrimitiveT", str, float, int)
@@ -545,72 +532,103 @@ class DictFieldView(FieldViewBase):
         self._callback = command
 
 
-def _create_field_view_for_type(field_name, field_type: type, slot: TkinterView, parent_widget_name: str, **kwargs) -> FieldViewBase:
-    # is compares for addresses. If variables point to the same underlying object
-    # is compares for types. (needed for windows) 
-    # == compares for equality. (needed for linux) 
-    # == needed for Optional and other compound types, because they are created and not singletons like builtin types
-    if field_type is int:
-        field_view = BasicTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type is float:
-        field_view = BasicTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type is bool:
-        field_view = BooleanFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type is str:
-        field_view = BasicTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type == Optional[int] or field_type is Optional[int]:
-        field_view = NullableTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type == Optional[float] or field_type is Optional[float]:
-        field_view = NullableTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type == Optional[str] or field_type is Optional[str]:
-        field_view = NullableTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type is Dict or field_type is dict:
-        field_view = DictFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type is HolderArgs:
-        field_view = TimeFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type == Optional[Path] or field_type is Optional[Path]:
-        field_view = OptionalPathFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif inspect.isclass(field_type) and issubclass(field_type, Enum): 
-        # for enums we have to check if they are subclasses of the Enum base class
-        field_view = EnumFieldView(slot, field_name, field_type, parent_widget_name=parent_widget_name, **kwargs)
-    elif get_origin(field_type) is tuple or field_type is tuple:
-        field_view = TupleFieldView(slot, field_name, field_type, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type and attrs.has(field_type):
-        # for the case that the type is a nested attrs class.
-        attributes: FormFieldAttributes = attrs.fields_dict(field_type) #type: ignore
-        kwargs.pop("default_value", None) # We do not use default values here. We deduce them later through attrs.Attribute
-        field_view = ObjectFieldView(slot, field_name, attributes, parent_widget_name=parent_widget_name, **kwargs)
-    else:
-        raise TypeError(f"The field with name {field_name} has the type {field_type}, which is not supported")
+"""
+An FieldHook takes as input the type of the attr class, the attrs.Attribute for the field  and the slot, where to put the field.
+Finally we also provide a dict with kwargs.
 
-    return field_view
+We register the hook for a field of a class.
+"""
+FieldHook = Callable[[type, "attrs.Attribute[Any]", TkinterView, Dict[str, Any]], FieldViewBase]
+
+FieldHookRegistry =  Dict[Tuple[type, str], FieldHook]
+
+class DynamicFieldViewFactory:
+    def __init__(self, converter: cattrs.Converter, field_hooks: FieldHookRegistry):
+        self._converter = converter
+        self._field_hooks = field_hooks
+
+    def from_type(self, field_name, field_type: type, slot: TkinterView, parent_widget_name: str, **kwargs) -> FieldViewBase:
+        # is compares for addresses. If variables point to the same underlying object
+        # is compares for types. (needed for windows) 
+        # == compares for equality. (needed for linux) 
+        # == needed for Optional and other compound types, because they are created and not singletons like builtin types
+        if field_type is int:
+            field_view = BasicTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type is float:
+            field_view = BasicTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type is bool:
+            field_view = BooleanFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type is str:
+            field_view = BasicTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type == Optional[int] or field_type is Optional[int]:
+            field_view = NullableTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type == Optional[float] or field_type is Optional[float]:
+            field_view = NullableTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type == Optional[str] or field_type is Optional[str]:
+            field_view = NullableTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type is Dict or field_type is dict:
+            field_view = DictFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type is HolderArgs:
+            field_view = TimeFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type == Optional[Path] or field_type is Optional[Path]:
+            field_view = OptionalPathFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+        elif inspect.isclass(field_type) and issubclass(field_type, Enum): 
+            # for enums we have to check if they are subclasses of the Enum base class
+            field_view = EnumFieldView(slot, field_name, field_type, parent_widget_name=parent_widget_name, **kwargs)
+        elif get_origin(field_type) is tuple or field_type is tuple:
+            field_view = TupleFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, **kwargs)
+        elif field_type and attrs.has(field_type):
+            # for the case that the type is a nested attrs class.
+            kwargs.pop("default_value", None) # We do not use default values here. We deduce them later through attrs.Attribute
+            field_view = ObjectFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, **kwargs)
+        else:
+            raise TypeError(f"The field with name {field_name} has the type {field_type}, which is not supported")
+
+        return field_view
 
 
-def _create_field_view_for_attr(field_name: str, field: attrs.Attribute, slot: TkinterView, parent_widget_name: str) -> FieldViewBase:
-    assert field.type is not None, "There is no type annotation for this field present"
+    def from_attribute(self, field_name: str, field: attrs.Attribute, obj_class: type, slot: TkinterView, parent_widget_name: str) -> FieldViewBase:
+        assert field.type is not None, "There is no type annotation for this field present"
 
-    kwargs = {}
-    if field.default is not None and field.default != attrs.NOTHING:
-        kwargs["default_value"] = field.default.factory() if hasattr(field.default, "factory") else field.default
+        # Apply Attribute Hook
+        hook_key = (obj_class, field_name)
+        if hook_key in self._field_hooks:
+            hook = self._field_hooks[hook_key]
+            field_view = hook(obj_class, field, slot, {"parent_widget_name": parent_widget_name})
+            return field_view
 
-    field_view_kwargs_name = "field_view_kwargs"
-    if field_view_kwargs_name in field.metadata:
-        kwargs[field_view_kwargs_name] = field.metadata.get(field_view_kwargs_name) 
+        # Deduce kwargs for field from attrs.Attribute
+        kwargs = {}
+        if field.default is not None and field.default != attrs.NOTHING:
+            kwargs["default_value"] = field.default.factory() if hasattr(field.default, "factory") else field.default
 
-    return _create_field_view_for_type(field_name, field.type, slot, parent_widget_name, **kwargs)
+        field_view_kwargs_name = "field_view_kwargs"
+        if field_view_kwargs_name in field.metadata:
+            kwargs[field_view_kwargs_name] = field.metadata.get(field_view_kwargs_name) 
+
+        return self.from_type(field_name, field.type, slot, parent_widget_name, **kwargs)
+    
+    def unstructure_value(self, val: Any, obj_class: type) -> Any:
+        """
+        This function is needed, because we need to unstructure the default values.
+        """
+        return self._converter.unstructure(val, obj_class)
 
 
 class TupleFieldView(FieldViewBase[tuple]):
-    def __init__(self,  master: TkinterView, field_name: str, tuple_type: type[tuple], *args, default_value: tuple | None = None, **kwargs):
+    def __init__(self,  master: TkinterView, field_name: str, tuple_type: type[tuple], field_view_factory: DynamicFieldViewFactory, *args, default_value: tuple | None = None, **kwargs):
         self._field_name = field_name
         self._tuple_type = tuple_type
         self._tuple_elements = get_args(tuple_type)
+
+        self._field_view_factory = field_view_factory
+
         self._callback: Callable[[tuple], None] = lambda _: None
         if default_value is not None:
             default_value = tuple(t() for t in self._tuple_elements) 
 
         # We need to unstructure the tuple sub types. Else we get problems if we want to structure it back.
-        self._value = converter.unstructure(default_value, self._tuple_type)
+        self._value = self._field_view_factory.unstructure_value(default_value, self._tuple_type)
 
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
@@ -629,7 +647,7 @@ class TupleFieldView(FieldViewBase[tuple]):
 
     def _add_fields_to_widget(self):
         for i, class_type in enumerate(self._tuple_elements):
-            field_view = _create_field_view_for_type(f"Item {i+1}", class_type, self._frame, self._widget_name)
+            field_view = self._field_view_factory.from_type(f"Item {i+1}", class_type, self._frame, self._widget_name)
             self._fields.append(field_view)
 
             def bind_index(index):
@@ -669,14 +687,15 @@ class TupleFieldView(FieldViewBase[tuple]):
 
 
 class ObjectFieldView(FieldViewBase[dict]):
-    def __init__(self, master: TkinterView, field_name: str, obj_attrs: FormFieldAttributes, *args, **kwargs):
+    def __init__(self, master: TkinterView, field_name: str, obj_class: type, field_view_factory: DynamicFieldViewFactory, *args, **kwargs):
         self._field_name = field_name
-        self._obj_attrs = obj_attrs
+        self._obj_class = obj_class
         self._callback: Callable[[dict], None] = lambda _: None
         self._value: dict = {}
 
         # TODO: handle default values
         parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._field_view_factory = field_view_factory
         self._widget_name = parent_widget_name + "." + self._field_name
         self._fields: Dict[str, FieldViewBase] = {}
         super().__init__(master, *args, **kwargs)
@@ -693,15 +712,9 @@ class ObjectFieldView(FieldViewBase[dict]):
             field_view.grid(row=i, column=0, padx=5, pady=5, sticky=ttk.W)
 
     def _add_fields_to_widget(self):
-        for field_name, field in self._obj_attrs.items():
-            if isinstance(field, dict):
-                # field is another FormFieldAttributes object
-                field_view = ObjectFieldView(self._frame, field_name, field)
-            elif isinstance(field, attrs.Attribute):
-                field_view = _create_field_view_for_attr(field_name, field, self._frame, self._widget_name)
-            else: 
-                # field is FieldViewFactory
-                field_view = field(self._frame, field_name, parent_widget_name=self._widget_name)
+        fields = attrs.fields_dict(self._obj_class)
+        for field_name, field in fields.items():
+            field_view = self._field_view_factory.from_attribute(field_name, field, self._obj_class, self._frame, self._widget_name)
 
             self._fields[field_name] = field_view
             self._value[field_name] = field_view.value
@@ -742,28 +755,24 @@ class ObjectFieldView(FieldViewBase[dict]):
     def bind_value_change(self, command: Callable[[dict], None]) -> None: 
         self._callback = command
 
-
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
-                 title: str, form_attrs: Type | FormFieldAttributes | ProcedureArgs, model_dict: dict | None = None):
+                 title: str, form_class: type, model_dict: dict | None = None, field_hooks: FieldHookRegistry = {}):
         """
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
         """
-        is_attrs_class = isinstance(form_attrs, type) and attrs.has(form_attrs)
-        self._attrs_class: type | None = form_attrs if is_attrs_class else None # type: ignore
-
-        if isinstance(form_attrs, type) and issubclass(form_attrs, ProcedureArgs):
-            self._form_attrs: FormFieldAttributes = form_attrs.fields_dict_with_alias()
-        else:
-            self._form_attrs: FormFieldAttributes = form_attrs if isinstance(form_attrs, dict) else attrs.fields_dict(form_attrs) #type: ignore
+        assert attrs.has(form_class), "the form class provided has to be an attrs class"
+        self._attrs_class: type = form_class
+        self._converter = _create_converter()
+        self._field_view_factory = DynamicFieldViewFactory(self._converter, field_hooks)
 
         self._title = title
         self._view = FormWidgetView(parent_view)
         self._view.set_title(self._title)
         super().__init__(parent, self._view)
 
-        self._attr_view = ObjectFieldView(self._view.field_slot, self._title, self._form_attrs)
+        self._attr_view = ObjectFieldView(self._view.field_slot, self._title, self._attrs_class, self._field_view_factory)
         self._view._initialize_publish()
 
         # bind the model dict to the view
@@ -772,14 +781,17 @@ class FormWidget(UIComponent):
         self._attr_view.bind_value_change(lambda value: self._model_dict.update(**value))
 
     @property
+    def converter(self) -> cattrs.Converter:
+        return self._converter
+
+    @property
     def attrs_object(self) -> Any:
         """
         With this getter you can get the form data as a finished attr object.
         But for that you have to initialize FormWidget with an attrs class for form_attrs
         """
-        assert self._attrs_class is not None
         try:
-            return converter.structure(self._attr_view.value, self._attrs_class)
+            return self._converter.structure(self._attr_view.value, self._attrs_class)
         except cattrs.ClassValidationError as e:
             raise e
     
@@ -789,9 +801,8 @@ class FormWidget(UIComponent):
         With this setter you can set the form data by an attr object.
         But for that you have to initialize FormWidget with an attrs class for form_attrs
         """
-        assert self._attrs_class is not None
         assert isinstance(value, self._attrs_class), f"The value provided is of class {value.__class__} but expected {self._attrs_class}"
-        data = converter.unstructure(value, self._attrs_class)
+        data = self._converter.unstructure(value, self._attrs_class)
         self._attr_view.value = data
         pass
 

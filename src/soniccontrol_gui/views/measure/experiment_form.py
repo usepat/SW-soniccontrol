@@ -1,20 +1,20 @@
+import copy
 import json
-from typing import Any, Callable, Dict, Iterable, List, Optional, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import attrs
-from marshmallow import Schema, ValidationError, fields
+import cattrs
+from marshmallow import ValidationError
 from marshmallow_annotations.ext.attrs import AttrsSchema
-from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
-from soniccontrol.data_capturing.experiment_schema import ExperimentMetaDataSchema
-from soniccontrol.events import Event
+from soniccontrol.data_capturing.experiment import ExperimentMetaData, convert_authors
 from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.view import View
+from soniccontrol_gui.view import TkinterView, View
 from soniccontrol_gui.constants import files, sizes, ui_labels
 
 import ttkbootstrap as ttk
 import logging
 
-from soniccontrol_gui.widgets.form_widget import BasicTypeFieldView, FieldViewFactoryType, FormWidget, FormFieldAttributes
+from soniccontrol_gui.widgets.form_widget import FormWidget, FieldViewBase, BasicTypeFieldView
 from soniccontrol_gui.widgets.message_box import MessageBox
         
 
@@ -38,7 +38,6 @@ class ExperimentForm(UIComponent):
 
         self._template_schema = TemplateSchema(many=True)
         self._templates: List[Template] = []
-        self._form_dict = {}
         self._selected_template_index: Optional[int] = None
 
         self._create_metadata_form()
@@ -61,15 +60,39 @@ class ExperimentForm(UIComponent):
             self._change_template()
 
     def _create_metadata_form(self):
-        form_attrs = cast(FormFieldAttributes, attrs.fields_dict(ExperimentMetaData))
+        # We do currently support no ListFieldView
+        # So instead we define a hook to convert the attribute field of author, so that the form registers a string instead
+        # Also we have to define unstructuring/ structuring hooks so that the data provided and read from the form will be correctly serialized
+        # The form internally unstructures all the classes into simple python data types with cattrs. 
+        # This makes it easier to build recursive forms, because we do not need to handle the serialization/deserialization
 
-        replace_fields: Dict[str, FieldViewFactoryType] = {
-            "authors": lambda view, title, **kwargs: BasicTypeFieldView[str](view, str, title, **kwargs),
+        def form_field_author_hook(obj: type, field: "attrs.Attribute[Any]", slot: TkinterView, kwargs: Dict[str, Any] = {}) -> FieldViewBase:
+            assert obj is ExperimentMetaData
+            assert field.name == "authors"
+
+            return BasicTypeFieldView[str](slot, str, field.name, **kwargs)
+
+        form_field_hooks = {
+            (ExperimentMetaData, "authors"): form_field_author_hook
         }
-        for field_name, field_factory in replace_fields.items():
-            form_attrs[field_name] = field_factory
 
-        self._metadata_form = FormWidget(self, self._view.metadata_form_slot, "", form_attrs, self._form_dict)
+        
+        self._metadata_form = FormWidget(self, self._view.metadata_form_slot, "", ExperimentMetaData, field_hooks=form_field_hooks)
+
+        def authors_unstructure_hook(val: List[str]) -> str:
+            return ", ".join(val)
+
+        def authors_structure_hook(value: Any, t: type) -> List[str]:
+            return convert_authors(value)
+
+        c = self._metadata_form.converter
+        overridden_attr = cattrs.gen.override(struct_hook=authors_structure_hook, unstruct_hook=authors_unstructure_hook)
+        overridden_structure_hook = cattrs.gen.make_dict_structure_fn(ExperimentMetaData,  c, authors=overridden_attr)
+        overridden_unstructure_hook = cattrs.gen.make_dict_unstructure_fn(ExperimentMetaData,  c, authors=overridden_attr)
+
+        self._metadata_form.converter.register_structure_hook(ExperimentMetaData, overridden_structure_hook)
+        self._metadata_form.converter.register_unstructure_hook(ExperimentMetaData, overridden_unstructure_hook)
+
 
     def _load_templates(self):
         if not files.EXPERIMENT_TEMPLATES_JSON.exists():
@@ -85,7 +108,7 @@ class ExperimentForm(UIComponent):
         self.selected_template_index = 0 if len(self._templates) > 0 else None
 
     def _on_save_template(self):
-        template = Template(self._view.template_name, ExperimentMetaData(**self._form_dict))
+        template = Template(self._view.template_name, self._metadata_form.attrs_object)
         if not self._validate_template_data(template):
             return
         
@@ -147,9 +170,7 @@ class ExperimentForm(UIComponent):
             self._view.selected_template = ""
         else:
             selected_template = self._templates[self.selected_template_index]
-            form_data = attrs.asdict(selected_template.form_data)
-            form_data["authors"] = ", ".join(form_data["authors"]) # for authors a StrFieldView is used in the form.
-            self._metadata_form.form_data = form_data
+            self._metadata_form.attrs_object = selected_template.form_data
             self._view.template_name = selected_template.name
             self._view.selected_template = selected_template.name
 
@@ -157,7 +178,7 @@ class ExperimentForm(UIComponent):
         if self.selected_template_index is None:
             raise Exception("No template selected")
         
-        template = Template(self._view.template_name, ExperimentMetaData(**self._form_dict))
+        template = Template(self._view.template_name, self._metadata_form.attrs_object)
         if not self._validate_template_data(template):
             raise Exception("Data is not valid")
         

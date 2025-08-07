@@ -76,11 +76,11 @@ class VersionField(fields.Field):
     def _serialize(self, value, attr, obj, **kwargs):
         if not isinstance(value, Version):
             raise ValidationError(f"Invalid value: {value}. Must be of type Version")
-        return str(value)  # Convert Enum to string for serialization
+        return str(value)  
 
     def _deserialize(self, value, attr, data, **kwargs):
         try:
-            return Version.to_version(value)  # Convert string to Enum during deserialization
+            return Version.to_version(value)  
         except (ValueError, TypeError) as e:
             raise ValidationError(e)
         
