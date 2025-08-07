@@ -18,9 +18,11 @@ class AutoArgs(ProcedureArgs):
 
     scan_arg: ScanArgs = attrs.field(
         default=ScanArgs(),
+        metadata={"prefix": "scan"},
     )
     tune_arg: TuneArgs = attrs.field(
         default=TuneArgs(),
+        metadata={"prefix": "tune"},
     )
 
 

@@ -715,18 +715,15 @@ class ObjectFieldView(FieldViewBase[dict]):
         fields = attrs.fields_dict(self._obj_class)
         for field_name, field in fields.items():
             field_view = self._field_view_factory.from_attribute(field_name, field, self._obj_class, self._frame, self._widget_name)
-
             self._fields[field_name] = field_view
             self._value[field_name] = field_view.value
 
-            # I use here a decorator so that the field_name gets captured by the function and not gets overwritten in 
-            # subsequent runs
-            def set_dict_value(key):
-                def _set_dict_value(val):
-                    self._value[key] = val
-                    self._callback({ key: val }) # we only return the attributes to update. More performant
+            def set_dict_value(_key):
+                def _set_dict_value(_):
+                    # Always rebuild the full value dict from all child field views
+                    self._value = {k: v.value for k, v in self._fields.items()}
+                    self._callback(self._value)
                 return _set_dict_value
-            # This is to ensure that values attributes are always up to date with the actual values of the field_views            
             field_view.bind_value_change(set_dict_value(field_name))
 
     @property
