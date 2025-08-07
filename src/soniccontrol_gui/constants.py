@@ -38,6 +38,13 @@ class _Files:
 files: _Files = _Files()
 
 @attrs.frozen
+class _FileDialogOpts:
+    JSON = {"defaultextension": ".json", "filetypes": [("JSON files", "*.json")]} 
+    SONIC_SCRIPT = {"defaultextension": ".sonic", "filetypes": [("Sonic Script files", "*.sonic"), ("Text files", "*.txt")]}
+
+file_dialog_opts = _FileDialogOpts()
+
+@attrs.frozen
 class _Fonts:
     QTYPE_OT: Literal["QTypeOT"] = "QTypeOT"
     QTYPE_OT_CONDLIGHT: Literal["QTypeOT-CondLight"] = "QTypeOT-CondLight"

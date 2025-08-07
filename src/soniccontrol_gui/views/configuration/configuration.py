@@ -16,7 +16,7 @@ from soniccontrol_gui.view import TabView
 from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence
-from soniccontrol_gui.constants import sizes, ui_labels
+from soniccontrol_gui.constants import sizes, ui_labels, file_dialog_opts
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images
@@ -31,8 +31,6 @@ import attrs
 import cattrs
 
 
-FILE_DIALOG_OPTS_FOR_JSON = {"defaultextension": ".json", "filetypes": [("JSON files", "*.json")]} 
-
 @attrs.define(auto_attribs=True)
 class ATConfig:
     atf: int = attrs.field(default=0)
@@ -41,10 +39,10 @@ class ATConfig:
 
 @attrs.define(auto_attribs=True)
 class TransducerConfig():
-    atconfigs: Tuple[ATConfig, ATConfig, ATConfig, ATConfig] = attrs.field(factory=lambda: tuple(ATConfig() for _ in range(4))) #type: ignore
-    init_script_path: Optional[Path] = attrs.field(default=None, metadata={"field_view_kwargs": FILE_DIALOG_OPTS_FOR_JSON})
     # the name should not be stored inside the json file, but should be retrieved from the file name
-    name: str = attrs.field(default="template")
+    name: str = attrs.field(default="no name")
+    init_script_path: Optional[Path] = attrs.field(default=None, metadata={"field_view_kwargs": file_dialog_opts.SONIC_SCRIPT})
+    atconfigs: Tuple[ATConfig, ATConfig, ATConfig, ATConfig] = attrs.field(factory=lambda: tuple(ATConfig() for _ in range(4))) #type: ignore
 
 
 class Configuration(UIComponent):
@@ -126,7 +124,7 @@ class Configuration(UIComponent):
         self.current_transducer_config = 0 if len(self._configs) > 0 else None
 
     def _import_transducer_config(self):
-        filename: str = filedialog.askopenfilename(**FILE_DIALOG_OPTS_FOR_JSON)
+        filename: str = filedialog.askopenfilename(**file_dialog_opts.JSON)
         if filename == "." or filename == "" or isinstance(filename, (tuple)):
             return
         path = Path(filename)

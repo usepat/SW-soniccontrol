@@ -11,6 +11,7 @@ from async_tkinter_loop import async_handler
 from soniccontrol.data_capturing.capture_target import CaptureScriptArgs
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
+from soniccontrol_gui.utils.widget_utils import enable_all_children
 from soniccontrol_gui.view import TabView
 from soniccontrol.scripting.interpreter_engine import CurrentTarget, InterpreterEngine, InterpreterState
 from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade
@@ -23,7 +24,7 @@ from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.pushbutton import PushButtonView
 from soniccontrol_gui.views.control.scriptingguide import ScriptingGuide
 from soniccontrol_gui.resources import images
-from soniccontrol_gui.constants import files
+from soniccontrol_gui.constants import files, file_dialog_opts
 
 
 @attrs.define
@@ -35,8 +36,6 @@ class Script():
 class ScriptFile(CaptureScriptArgs):
     filepath: str = attrs.field(default="./script.sonic")
     text: str = attrs.field(default="")
-    filetypes: List[Tuple[str, str]] = attrs.field(default=[("Text Files", "*.txt"), ("Sonic Script", "*.sonic")])
-    default_extension: str = attrs.field(default=".sonic")
     logger: logging.Logger = attrs.field(default=logging.getLogger("ScriptFile"))
 
     def load_script(self, filepath: Optional[str] = None):
@@ -192,8 +191,7 @@ class Editor(UIComponent):
 
     def _on_load_script(self):
         filename: str = filedialog.askopenfilename(
-            defaultextension=self._script.default_extension, 
-            filetypes=self._script.filetypes,
+            **file_dialog_opts.SONIC_SCRIPT
         )
         if filename == "." or filename == "" or isinstance(filename, (tuple)):
             return
@@ -215,8 +213,7 @@ class Editor(UIComponent):
 
     def _on_save_as_script(self):
         filename: str = filedialog.asksaveasfilename(
-            defaultextension=self._script.default_extension, 
-            filetypes=self._script.filetypes
+            **file_dialog_opts.SONIC_SCRIPT
         )
         if filename == "." or filename == "" or isinstance(filename, (tuple)):
             return
@@ -446,11 +443,11 @@ class EditorView(TabView):
 
     @property
     def editor_enabled(self) -> bool:
-        pass
+        ...
 
     @editor_enabled.setter 
     def editor_enabled(self, enabled: bool) -> None:
-        pass
+        enable_all_children(self._editor_text, enabled)
 
     @property
     def start_pause_continue_button(self) -> PushButtonView:

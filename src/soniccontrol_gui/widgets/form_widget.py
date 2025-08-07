@@ -12,7 +12,7 @@ from soniccontrol.procedures.holder import convert_to_holder_args
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TkinterView, View
-from soniccontrol_gui.constants import ui_labels
+from soniccontrol_gui.constants import ui_labels, sizes
 from soniccontrol_gui.widgets.file_browse_button import FileBrowseButtonView
 
 import ttkbootstrap as ttk
@@ -341,7 +341,7 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
         self._callback = command
 
 
-class PathFieldView(FieldViewBase[Optional[Path]]):
+class OptionalPathFieldView(FieldViewBase[Optional[Path]]):
     """
     Adapter for FileBrowseButton to use it inside a FormWidget
     """
@@ -353,8 +353,9 @@ class PathFieldView(FieldViewBase[Optional[Path]]):
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
 
-        self._browse_button = FileBrowseButtonView(self, self._widget_name, text=self._field_name, **field_view_kwargs)
         super().__init__(master, *args, **kwargs)
+        self._browse_button = FileBrowseButtonView(self, self._widget_name, text=self._field_name, **field_view_kwargs)
+        self._browse_button.pack(fill=ttk.X, expand=True, pady=sizes.SMALL_PADDING, padx=sizes.SMALL_PADDING)
 
     def _initialize_children(self) -> None: ...
 
@@ -567,8 +568,8 @@ def _create_field_view_for_type(field_name, field_type: type, slot: TkinterView,
         field_view = DictFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
     elif field_type is HolderArgs:
         field_view = TimeFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
-    elif field_type is Path:
-        field_view = PathFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+    elif field_type == Optional[Path] or field_type is Optional[Path]:
+        field_view = OptionalPathFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
     elif inspect.isclass(field_type) and issubclass(field_type, Enum): 
         # for enums we have to check if they are subclasses of the Enum base class
         field_view = EnumFieldView(slot, field_name, field_type, parent_widget_name=parent_widget_name, **kwargs)

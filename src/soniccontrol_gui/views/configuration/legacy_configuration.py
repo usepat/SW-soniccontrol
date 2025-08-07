@@ -23,7 +23,7 @@ from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.widgets.file_browse_button import FileBrowseButtonView
-from soniccontrol_gui.constants import files
+from soniccontrol_gui.constants import files, file_dialog_opts
 from async_tkinter_loop import async_handler
 import marshmallow as marsh
 from marshmallow_annotations.ext.attrs import AttrsSchema
@@ -211,8 +211,7 @@ class LegacyConfiguration(UIComponent):
         self.current_transducer_config = 0 if len(self._configs) > 0 else None
 
     def _import_transducer_config(self):
-        kwargs = {"defaultextension": ".json", "filetypes": [("JSON files", "*.json")]} 
-        filename: str = filedialog.askopenfilename(**kwargs)
+        filename: str = filedialog.askopenfilename(**file_dialog_opts.JSON)
         if filename == "." or filename == "" or isinstance(filename, (tuple)):
             return
         path = Path(filename)
