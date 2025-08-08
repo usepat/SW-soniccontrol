@@ -718,11 +718,10 @@ class ObjectFieldView(FieldViewBase[dict]):
             self._fields[field_name] = field_view
             self._value[field_name] = field_view.value
 
-            def set_dict_value(_key):
-                def _set_dict_value(_):
-                    # Always rebuild the full value dict from all child field views
-                    self._value = {k: v.value for k, v in self._fields.items()}
-                    self._callback(self._value)
+            def set_dict_value(key):
+                def _set_dict_value(val):
+                    self._value[key] = val
+                    self._callback(self._value) # we only return the attributes to update. More performant
                 return _set_dict_value
             field_view.bind_value_change(set_dict_value(field_name))
 
@@ -801,7 +800,6 @@ class FormWidget(UIComponent):
         assert isinstance(value, self._attrs_class), f"The value provided is of class {value.__class__} but expected {self._attrs_class}"
         data = self._converter.unstructure(value, self._attrs_class)
         self._attr_view.value = data
-        pass
 
     @property
     def form_data(self) -> Dict[str, Any]:
