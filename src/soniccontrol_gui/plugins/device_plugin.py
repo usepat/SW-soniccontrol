@@ -8,6 +8,8 @@ from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol_gui.ui_component import UIComponent
+from soniccontrol_gui.view import View
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow
 from importlib.metadata import entry_points
 
@@ -27,6 +29,19 @@ class DevicePlugin:
     device_type: DeviceType
     window_factory: WindowFactoryBase
     protocol_factory: ProtocolList
+
+
+# TODO add UIPluginSlotComponent and PluginSlotRegistry
+class UIComponentFactory(abc.ABC):
+    @abc.abstractmethod
+    def __call__(self, parent: UIComponent, *args, **kwargs) -> UIComponent:
+        ...
+
+@attrs.define()
+class UIPlugin:
+    slot_name: str
+    component_factory: UIComponentFactory
+
 
 class PluginRegistry:
     _registered_plugins: Set[DevicePlugin] = set()

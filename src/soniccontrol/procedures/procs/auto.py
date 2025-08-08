@@ -18,9 +18,11 @@ class AutoArgs(ProcedureArgs):
 
     scan_arg: ScanArgs = attrs.field(
         default=ScanArgs(),
+        metadata={"prefix": "scan"},
     )
     tune_arg: TuneArgs = attrs.field(
         default=TuneArgs(),
+        metadata={"prefix": "tune"},
     )
 
 
@@ -35,11 +37,11 @@ class AutoProc(Procedure):
 
     async def execute(self, device: SonicDevice, args: AutoArgs, configure_only: bool = False) -> None:
         scan = ScanProc()
-        # With False we only execute the arg setter
-        await scan.execute(device, args.scan_arg, False)
+        # With True we only execute the arg setter
+        await scan.execute(device, args.scan_arg, True)
 
         tune = TuneProc()
-        await tune.execute(device, args.tune_arg, False)
+        await tune.execute(device, args.tune_arg, True)
         
         if not configure_only:
             await device.execute_command(commands.SetAuto())
@@ -50,10 +52,6 @@ class AutoProc(Procedure):
             answer = await device.execute_command(commands.GetAuto())
         except (CommandValidationError, CommandExecutionError) as _:
             return {}
-    
-        # This is just a workaround at the moment
-        # TODO: refactor the procedure convert functions for dicts and tuples.
-        scan_args = ScanArgs.to_dict_with_holder_args(answer)
-        tune_args = TuneArgs.to_dict_with_holder_args(answer)
-
-        return {"scan_arg": scan_args, "tune_arg": tune_args}
+        args = AutoArgs.from_answer(answer)
+        # Returns nested dicts for the form widget
+        return args.to_dict()

@@ -23,6 +23,21 @@ class ProcedureType(Enum):
 
 @attrs.define(init=False)
 class ProcedureArgs:
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Recursively convert this ProcedureArgs instance to a nested dictionary,
+        using attribute names as keys for nested ProcedureArgs fields.
+        """
+        result = {}
+        for field in attrs.fields(self.__class__):
+            value = getattr(self, field.name)
+            if issubclass(field.type, ProcedureArgs):
+                result[field.name] = value.to_dict() if value is not None else None
+            else:
+                result[field.name] = value
+        return result
+        
+
     """
         @brief Method used for getting a description of what the procedure does. Used for manuals
     """
@@ -50,11 +65,24 @@ class ProcedureArgs:
         for field in attrs.fields(cls):
             assert (field.type is not None)
             if issubclass(field.type, ProcedureArgs):
-                # If field is a nested ProcedureArgs, recurse
-                nested_instance = field.type(**kwargs)  # Value must itself be a dict
+                # If field is a nested ProcedureArgs, filter kwargs for keys starting with prefix_
+                prefix = field.metadata.get("prefix", "")
+                if prefix:
+                    prefix_str = f"{prefix}_"
+                else:
+                    prefix_str = ""
+
+                # Only treat as flattened if all values are not dicts
+                is_flat = all(not isinstance(v, dict) for v in kwargs.values())
+                if prefix and is_flat:
+                    nested_kwargs = {k[len(prefix_str):]: v for k, v in kwargs.items() if k.startswith(prefix_str)}
+                else:
+                    # Use all keys that match the nested class's fields
+                    nested_field_names = {f.name for f in attrs.fields(field.type)}
+                    nested_kwargs = {k: v for k, v in kwargs.items() if k in nested_field_names}
+                nested_instance = field.type(**nested_kwargs)
                 fields_dict[field.name] = nested_instance
             else:
-
                 enum = field.metadata.get("enum", None)
                 # Check if the enum name (str) is in the provided data
                 if use_enum_names and enum:
@@ -66,7 +94,7 @@ class ProcedureArgs:
                 if key not in kwargs:
                     continue  # Field is missing in input dict; skip it
 
-                value = kwargs[key] 
+                value = kwargs[key]
                 if field.converter is not None:
                     value = field.converter(value)
                 if field.validator is not None:
@@ -134,7 +162,7 @@ class ProcedureArgs:
         return result
     
     @classmethod
-    def to_dict_with_holder_args(cls, answer_dict) -> dict[str, Any]:
+    def to_dict_with_holder_args(cls, answer_dict, attrs_prefix: str = "") -> dict[str, Any]:
         """Converts a answer_dict to a dict, where HolderArgs are converted correctly.
             This is used to create a dictionary that can be used for the Form Widget.
             The AnswerDefinition of the ?<protocol>/(Get<Protocol>) command should include all FieldNames related to it.
@@ -142,8 +170,15 @@ class ProcedureArgs:
         """
         arg_dict = {}
         for field in attrs.fields(cls):
+            prefix = field.metadata.get("prefix", "")
+            if prefix:
+                prefix = f"{prefix}_{attrs_prefix}" if attrs_prefix else prefix + "_"
+            elif attrs_prefix:
+                prefix = f"{attrs_prefix}"
+            else:
+                prefix = ""
             if issubclass(field.type, ProcedureArgs):
-                arg_dict.update(field.type.to_dict_with_holder_args(answer_dict))
+                arg_dict.update(field.type.to_dict_with_holder_args(answer_dict, prefix))
             else:
                 enum = field.metadata.get("enum", field.name)
 
@@ -157,8 +192,10 @@ class ProcedureArgs:
                         value = HolderArgs(float(value), "ms") 
 
                     # Set the new key with the alias
-                    arg_dict[field.name] = value
+                    arg_dict[prefix + field.name] = value
         return arg_dict
+    
+
     
 class Procedure(abc.ABC):
     @classmethod
