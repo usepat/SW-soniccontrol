@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List
 from sonic_protocol.schema import CommandParamDef, DeviceParamConstantType, DeviceParamConstants, DeviceType, ProtocolType, Version
 from sonic_protocol.protocol import protocol_list as operator_protocol_factory
-from soniccontrol_gui.plugins.device_plugin import PluginRegistry, register_device_plugins
+from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry, register_device_plugins
 
 # TODO: we could from max and min values also deduce commands that should fail
 def deduce_param_limits(consts: DeviceParamConstants, param_def: CommandParamDef | None) -> List[str]:
@@ -52,7 +52,7 @@ def deduce_command_examples(protocol_version: Version, device_type: DeviceType, 
     """
     command_examples: List[str] = []
     register_device_plugins()
-    protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in PluginRegistry.get_device_plugins() }
+    protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in DevicePluginRegistry.get_device_plugins() }
     protocol_factory = protocol_factories.get(device_type, operator_protocol_factory)
     protocol = protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
             

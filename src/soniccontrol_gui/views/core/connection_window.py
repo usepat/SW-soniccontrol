@@ -7,7 +7,8 @@ import ttkbootstrap as ttk
 import tkinter as tk
 
 from sonic_protocol.schema import DeviceType, Version
-from soniccontrol_gui.plugins.device_plugin import PluginRegistry
+from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
+from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent, register_ui_plugins
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
@@ -58,7 +59,7 @@ class DeviceWindowManager:
         logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
         logger.debug("Established serial connection")
 
-        protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in PluginRegistry.get_device_plugins() }
+        protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in DevicePluginRegistry.get_device_plugins() }
         device_builder = DeviceBuilder(protocol_factories=protocol_factories, logger=logger)
 
         try:
@@ -94,7 +95,7 @@ class DeviceWindowManager:
         if device_type != DeviceType.UNKNOWN:
             logger.info("Created device successfully, open device window")
 
-            device_plugin = next((plugin for plugin in PluginRegistry.get_device_plugins() if plugin.device_type == device_type), None)
+            device_plugin = next((plugin for plugin in DevicePluginRegistry.get_device_plugins() if plugin.device_type == device_type), None)
             assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
 
             device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
@@ -109,11 +110,22 @@ class DeviceWindowManager:
 
 class ConnectionWindow(UIComponent):
     def __init__(self, simulation_exe_path: Optional[Path] = None):
+        #TODO move this somewhere else?
+        register_ui_plugins()
         show_simulation_button = simulation_exe_path is not None
         self._view: ConnectionWindowView = ConnectionWindowView(show_simulation_button)
+        
         self._simulation_exe_path = simulation_exe_path
         super().__init__(None, self._view)
-
+        # Create and PLACE the plugin slot (tabs=True -> Notebook; False -> stacked)
+        self._plugin_slot = UIPluginSlotComponent(
+            self,
+            [p for p in UIPluginRegistry.get_ui_plugins() if p.slot_name == self.__class__.__name__],
+            master=self._view.plugins_container,
+            tabs=True,  # or False if you want stacked
+        )
+        # Actually lay it out in the container
+        self._plugin_slot.view.pack(fill=tk.BOTH, expand=True)
         # set animation decorator
         def set_loading_animation_frame(frame: str) -> None:
             self._view.loading_text = frame
@@ -237,6 +249,8 @@ class ConnectionWindowView(ttk.Window, View):
         )
         WidgetRegistry.register_widget(self._start_configurator_box, "start_configurator_box", window_name)
 
+        # --- plugin container (NEW) ---
+        self.plugins_container = ttk.Frame(self)
 
         self._loading_text: ttk.StringVar = ttk.StringVar()
         self._loading_label: ttk.Label = ttk.Label(
@@ -257,6 +271,9 @@ class ConnectionWindowView(ttk.Window, View):
             self._start_configurator_box.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
 
         self._loading_label.pack(side=ttk.TOP, pady=sizes.MEDIUM_PADDING)
+
+        # Place plugins_container between controls and loading
+        self.plugins_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=4, pady=6)
 
     @property
     def loading_text(self) -> str:
