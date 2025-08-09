@@ -205,16 +205,16 @@ class TestPluginComponent3Factory(UIComponentFactory):
         return TestPluginComponent3(master, parent)
 
 
-# Register test plugins in the "ConnectionWindow" slot
-UIPluginRegistry.register_ui_plugin(
-    UIPlugin("ConnectionWindow", TestPluginComponent1Factory())
-)
-UIPluginRegistry.register_ui_plugin(
-    UIPlugin("ConnectionWindow", TestPluginComponent2Factory())
-)
-UIPluginRegistry.register_ui_plugin(
-    UIPlugin("ConnectionWindow", TestPluginComponent3Factory())
-)
+# # Register test plugins in the "ConnectionWindow" slot
+# UIPluginRegistry.register_ui_plugin(
+#     UIPlugin("ConnectionWindow", TestPluginComponent1Factory())
+# )
+# UIPluginRegistry.register_ui_plugin(
+#     UIPlugin("ConnectionWindow", TestPluginComponent2Factory())
+# )
+# UIPluginRegistry.register_ui_plugin(
+#     UIPlugin("ConnectionWindow", TestPluginComponent3Factory())
+# )
 
 
 def register_ui_plugins():
