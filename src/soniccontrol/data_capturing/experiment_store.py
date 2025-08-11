@@ -9,7 +9,7 @@ from soniccontrol.data_capturing.converter import create_cattrs_converter_for_ba
 from soniccontrol.data_capturing.experiment import Experiment
 
 
-class ExperimentStore(abc.ABC):
+class ExperimentWriter(abc.ABC):
     @abc.abstractmethod
     def write_metadata(self, experiment: Experiment) -> None: ...
 
@@ -18,6 +18,10 @@ class ExperimentStore(abc.ABC):
 
     @abc.abstractmethod
     def close(self) -> None: ...
+
+class ExperimentReader(abc.ABC):
+    @abc.abstractmethod
+    def read_experiment(self) -> Experiment: ...
 
 
 class HDF5SerializationHelper:
@@ -44,29 +48,28 @@ class HDF5SerializationHelper:
         table.flush()
 
 
-class HDF5ExperimentStore(ExperimentStore):
+  # Timestamp gets stored as string, because for a user it is more readable
+_cols = {
+    EFieldName.TIMESTAMP.name.lower(): tb.StringCol(32), #type: ignore
+    EFieldName.FREQUENCY.name.lower(): tb.UInt32Col(), #type: ignore
+    EFieldName.GAIN.name.lower(): tb.UInt8Col(), #type: ignore
+    EFieldName.URMS.name.lower(): tb.UInt32Col(), #type: ignore
+    EFieldName.IRMS.name.lower(): tb.UInt32Col(), #type: ignore
+    EFieldName.PHASE.name.lower(): tb.UInt32Col(), #type: ignore
+    EFieldName.TEMPERATURE.name.lower(): tb.UInt32Col() #type: ignore
+}
+DataTable = type("DataTable", (tb.IsDescription, ), _cols)
+
+
+class HDF5ExperimentWriter(ExperimentWriter):
     def __init__(self, file_path: Path):
         file_extension = ".h5"
         self._file_path_posix = str(file_path) 
         if not self._file_path_posix.endswith(file_extension):
             self._file_path_posix += ".h5" # add extension
         self._file = tb.open_file(self._file_path_posix, "w")
-        self._create_data_table()
-
-    def _create_data_table(self):
-        # Timestamp gets stored as string, because for a user it is more readable
-        cols = {
-            EFieldName.TIMESTAMP.name.lower(): tb.StringCol(32), #type: ignore
-            EFieldName.FREQUENCY.name.lower(): tb.UInt32Col(), #type: ignore
-            EFieldName.GAIN.name.lower(): tb.UInt8Col(), #type: ignore
-            EFieldName.URMS.name.lower(): tb.UInt32Col(), #type: ignore
-            EFieldName.IRMS.name.lower(): tb.UInt32Col(), #type: ignore
-            EFieldName.PHASE.name.lower(): tb.UInt32Col(), #type: ignore
-            EFieldName.TEMPERATURE.name.lower(): tb.UInt32Col() #type: ignore
-        }
-        DataTable = type("DataTable", (tb.IsDescription, ), cols)
         self._data_table = self._file.create_table("/", "data", DataTable)
-
+        
 
     def write_metadata(self, experiment: Experiment) -> None:
         converter = create_cattrs_converter_for_basic_serialization()
