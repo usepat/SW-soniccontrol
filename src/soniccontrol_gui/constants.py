@@ -259,6 +259,7 @@ class _UIStringsEN:
     FLASH_UART_SLOW: Final[str] = "FLASH_UART_SLOW"
     FLASH_UART_FAST: Final[str] = "FLASH_UART_FAST"
     FLASH_USB: Final[str] = "FLASH_USB"
+    FLASH: Final[str] = "FLASH"
     OPEN_LOGS: Final[str] = "Open Logs"
     GO_TO_MEASUREMENTS: Final[str] = "Go to Measurements"
     FORM_ADD_ENTRY: Final[str] = "Add Entry"
