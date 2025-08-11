@@ -74,20 +74,6 @@ class ExperimentForm(UIComponent):
         
         self._metadata_form = FormWidget(self, self._view.metadata_form_slot, "", ExperimentMetaData, field_hooks=form_field_hooks)
 
-        def authors_unstructure_hook(val: List[str]) -> str:
-            return ", ".join(val)
-
-        def authors_structure_hook(value: Any, t: type) -> List[str]:
-            return convert_authors(value)
-
-        c = self._metadata_form.converter
-        overridden_attr = cattrs.gen.override(struct_hook=authors_structure_hook, unstruct_hook=authors_unstructure_hook)
-        overridden_structure_hook = cattrs.gen.make_dict_structure_fn(ExperimentMetaData,  c, authors=overridden_attr)
-        overridden_unstructure_hook = cattrs.gen.make_dict_unstructure_fn(ExperimentMetaData,  c, authors=overridden_attr)
-
-        self._metadata_form.converter.register_structure_hook(ExperimentMetaData, overridden_structure_hook)
-        self._metadata_form.converter.register_unstructure_hook(ExperimentMetaData, overridden_unstructure_hook)
-
 
     def _load_templates(self):
         if not files.EXPERIMENT_TEMPLATES_JSON.exists():
