@@ -2,7 +2,8 @@ import json
 import attrs
 import click
 
-from soniccontrol.data_capturing.experiment_schema import ExperimentMetaDataSchema
+from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
+from soniccontrol.data_capturing.experiment import ExperimentMetaData
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs
 from soniccontrol.remote_controller import RemoteController
 from soniccontrol_cli.monitor import Monitor
@@ -122,8 +123,8 @@ def spectrum(ctx: click.Context, metadata_file: pathlib.Path, *args, **kwargs):
     with open(metadata_file, "r") as file:
         json_data = json.load(file)
     
-    schema = ExperimentMetaDataSchema()
-    experiment_metadata = schema.load(json_data).data
+    converter = create_cattrs_converter_for_basic_serialization()
+    experiment_metadata = converter.structure(json_data, ExperimentMetaData)
 
     click.echo("Measuring spectrum")
     async_loop.run_until_complete(

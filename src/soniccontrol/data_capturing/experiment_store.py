@@ -5,8 +5,8 @@ from typing import Any, Dict, List
 import tables as tb
 
 from sonic_protocol.field_names import EFieldName
+from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
 from soniccontrol.data_capturing.experiment import Experiment
-from soniccontrol.data_capturing.experiment_schema import ExperimentSchema
 
 
 class ExperimentStore(abc.ABC):
@@ -69,8 +69,8 @@ class HDF5ExperimentStore(ExperimentStore):
 
 
     def write_metadata(self, experiment: Experiment) -> None:
-        schema = ExperimentSchema()
-        data = schema.dump(experiment).data
+        converter = create_cattrs_converter_for_basic_serialization()
+        data = converter.unstructure(experiment, Experiment)
         
         # Unnest metadata, so that the metadata for the form lays also inside the same level as the other meta data
         data.update(data["metadata"])

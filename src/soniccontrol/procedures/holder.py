@@ -20,11 +20,11 @@ class HolderArgs:
     )
 
     @property
-    def duration_in_ms(self) -> float | int:
+    def duration_in_ms(self) -> float:
         if self.unit == "ms":
-            return self.duration
+            return float(self.duration)
         else:
-            return self.duration * 1000
+            return float(self.duration * 1000)
         
     def __str__(self) -> str:
         return f"{self.duration}{self.unit}"
@@ -45,6 +45,10 @@ class HolderArgs:
             return HolderArgs(result_duration_ms, "ms")
         else:
             return HolderArgs(result_duration_ms / 1000, "s")
+        
+    @staticmethod
+    def to_holder_args(obj: Any) -> "HolderArgs":
+        return convert_to_holder_args(obj)
 
 HoldTuple = Tuple[Union[int, float], TimeUnit]
 def convert_to_holder_args(obj: Any) -> HolderArgs:

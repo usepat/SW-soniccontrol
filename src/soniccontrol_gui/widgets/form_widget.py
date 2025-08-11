@@ -7,6 +7,7 @@ import copy
 import attrs
 import cattrs
 from pathlib import Path
+from soniccontrol.data_capturing.converter import create_cattrs_converter_for_forms
 from soniccontrol.procedures.holder import convert_to_holder_args
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -19,44 +20,6 @@ from ttkbootstrap.scrolled import ScrolledFrame
 
 from soniccontrol.procedures.holder import HoldTuple, HolderArgs
 
-
-
-def _create_converter():
-    # We do not want to convert enums and holder args and pathlib.Path
-
-    def enum_structure_hook(value: Any, t: type) -> Enum:
-        if not isinstance(value, Enum):
-            raise ValueError("Not a HolderArgs")
-        return value
-
-    def enum_unstructure_hook(value: Enum) -> Enum:
-        return value
-    
-    def is_enum(cls: Any) -> bool:
-        # here is instance is used to check if cls is a type (Needed because of generic types that are instantiated as objects)
-        return isinstance(cls, type) and issubclass(cls, Enum)
-
-    def holder_args_structure_hook(value: Any, t: type) -> HolderArgs:
-        return convert_to_holder_args(value)
-
-    def holder_args_unstructure_hook(value: HolderArgs) -> HolderArgs:
-        return value
-    
-    def path_structure_hook(value: Any, t: type) -> Path:
-        return value
-
-    def path_unstructure_hook(value: Path) -> Path:
-        return value
-    
-    converter = cattrs.Converter()
-    converter.register_structure_hook_func(is_enum, enum_structure_hook)
-    converter.register_unstructure_hook_func(is_enum, enum_unstructure_hook)
-    converter.register_structure_hook(HolderArgs, holder_args_structure_hook)
-    converter.register_unstructure_hook(HolderArgs, holder_args_unstructure_hook)
-    converter.register_structure_hook(Path, path_structure_hook)
-    converter.register_unstructure_hook(Path, path_unstructure_hook)
-
-    return converter
 
 
 class EntryStyle(Enum):
@@ -760,7 +723,7 @@ class FormWidget(UIComponent):
         """
         assert attrs.has(form_class), "the form class provided has to be an attrs class"
         self._attrs_class: type = form_class
-        self._converter = _create_converter()
+        self._converter = create_cattrs_converter_for_forms()
         self._field_view_factory = DynamicFieldViewFactory(self._converter, field_hooks)
 
         self._title = title

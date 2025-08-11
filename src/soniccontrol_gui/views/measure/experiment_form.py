@@ -4,8 +4,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import attrs
 import cattrs
-from marshmallow import ValidationError
-from marshmallow_annotations.ext.attrs import AttrsSchema
+from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
 from soniccontrol.data_capturing.experiment import ExperimentMetaData, convert_authors
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TkinterView, View
@@ -23,10 +22,6 @@ class Template:
     name: str
     form_data: ExperimentMetaData
 
-class TemplateSchema(AttrsSchema):    
-    class Meta: # type: ignore
-        target = Template
-
 
 class ExperimentForm(UIComponent):
     FINISHED_EDITING_EVENT: str = "<<FINISHED_EDITING>>"
@@ -36,7 +31,7 @@ class ExperimentForm(UIComponent):
         self._view = ExperimentFormView(parent.view if view_slot is None else view_slot)
         super().__init__(parent, self._view )
 
-        self._template_schema = TemplateSchema(many=True)
+        self._converter = create_cattrs_converter_for_basic_serialization()
         self._templates: List[Template] = []
         self._selected_template_index: Optional[int] = None
 
@@ -102,7 +97,7 @@ class ExperimentForm(UIComponent):
         self._logger.info("Load templates from %s", files.EXPERIMENT_TEMPLATES_JSON)
         with open(files.EXPERIMENT_TEMPLATES_JSON, "r") as file:
             data_dict = json.load(file)
-            self._templates = self._template_schema.load(data_dict).data
+            self._templates = self._converter.structure(data_dict, List[Template])
 
         self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
         self.selected_template_index = 0 if len(self._templates) > 0 else None
@@ -123,7 +118,7 @@ class ExperimentForm(UIComponent):
 
         self._logger.info("Save templates to %s", files.EXPERIMENT_TEMPLATES_JSON)
         with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
-            data_dict = self._template_schema.dump(self._templates).data
+            data_dict = self._converter.unstructure(self._templates, List[Template])
             json.dump(data_dict, file)
 
     def _validate_template_data(self, template: Template) -> bool:
@@ -131,12 +126,8 @@ class ExperimentForm(UIComponent):
             MessageBox.show_error(self.view.root, "A template with this name already exists")
             return False
         
-        try:
-            schema = TemplateSchema()
-            schema.dump(template)
-        except ValidationError as err:
-            MessageBox.show_error(self.view.root, err.messages[0])
-            return False
+        # No other validation is needed. 
+        # Is already done by the form widget and the attrs validators 
 
         return True
 
@@ -152,7 +143,7 @@ class ExperimentForm(UIComponent):
         template = self._templates.pop(self.selected_template_index)
         self._logger.info("Delete template %s", template.name)
         with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
-            data_dict = self._template_schema.dump(self._templates).data
+            data_dict = self._converter.unstructure(self._templates, List[Template])
             json.dump(data_dict, file)
 
         self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
