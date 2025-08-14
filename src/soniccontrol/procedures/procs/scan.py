@@ -28,7 +28,7 @@ a wide frequency range at low gain and determines the optimal driving frequency.
             validators.ge(100000),
             validators.le(10000000),
         ],
-        metadata={"enum": EFieldName.SCAN_F_CENTER}
+        metadata={"enum": EFieldName.SCAN_F_CENTER, 'field_view_kwargs': {'SI_unit': 'Hz'}}
     )
     gain: int = attrs.field(
         default=20,
@@ -37,7 +37,7 @@ a wide frequency range at low gain and determines the optimal driving frequency.
             validators.ge(0),
             validators.le(150)
         ],
-        metadata={"enum": EFieldName.SCAN_GAIN}
+        metadata={"enum": EFieldName.SCAN_GAIN, 'field_view_kwargs': {'SI_unit': '%'}}
     )
     f_range: int = attrs.field(
         default=8000,
@@ -46,7 +46,7 @@ a wide frequency range at low gain and determines the optimal driving frequency.
             validators.ge(0),
             validators.le(5000000)
         ],
-        metadata={"enum": EFieldName.SCAN_F_RANGE}
+        metadata={"enum": EFieldName.SCAN_F_RANGE, 'field_view_kwargs': {'SI_unit': 'Hz'}}
     )
     f_step: int = attrs.field(
         default=1000,
@@ -55,7 +55,7 @@ a wide frequency range at low gain and determines the optimal driving frequency.
             validators.ge(0),
             validators.le(5000000)
         ],
-        metadata={"enum": EFieldName.SCAN_F_STEP}
+        metadata={"enum": EFieldName.SCAN_F_STEP, 'field_view_kwargs': {'SI_unit': 'Hz'}}
     )
 
     f_shift: int = attrs.field(
@@ -65,7 +65,7 @@ a wide frequency range at low gain and determines the optimal driving frequency.
             validators.ge(0),
             validators.le(5000000)
         ],
-        metadata={"enum": EFieldName.SCAN_F_SHIFT}
+        metadata={"enum": EFieldName.SCAN_F_SHIFT, 'field_view_kwargs': {'SI_unit': 'Hz'}}
     )
 
     t_step: HolderArgs = attrs.field(

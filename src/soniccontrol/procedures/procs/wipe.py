@@ -22,7 +22,7 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
 
     f_range: int = attrs.field(
         default=8000,
-        metadata={"enum": EFieldName.WIPE_F_RANGE},
+        metadata={"enum": EFieldName.WIPE_F_RANGE, 'field_view_kwargs': {'SI_unit': 'Hz'}},
         validator=[
             validators.instance_of(int),
             validators.ge(0),
@@ -31,7 +31,7 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
     )
     f_step: int = attrs.field(
         default=1000,
-        metadata={"enum": EFieldName.WIPE_F_STEP},
+        metadata={"enum": EFieldName.WIPE_F_STEP, 'field_view_kwargs': {'SI_unit': 'Hz'}},
         validator=[
             validators.instance_of(int),
             validators.ge(10),
@@ -60,7 +60,7 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
             validators.ge(0),
             validators.le(150)
         ],
-        metadata={"enum": EFieldName.WIPE_GAIN}
+        metadata={"enum": EFieldName.WIPE_GAIN, 'field_view_kwargs': {'SI_unit': '%'}}
     )
 
 class WipeProc(Procedure):    

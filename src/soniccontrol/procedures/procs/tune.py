@@ -27,7 +27,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
             validators.ge(0),
             validators.le(5000000)
         ],
-        metadata={"enum": EFieldName.TUNE_F_STEP}
+        metadata={"enum": EFieldName.TUNE_F_STEP, 'field_view_kwargs': {'SI_unit': 'Hz'}}
     )
     t_time: HolderArgs = attrs.field(
         default=HolderArgs(5000, "ms"), 
@@ -51,7 +51,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
             validators.ge(0),
             validators.le(5000000)
         ],
-        metadata={"enum": EFieldName.TUNE_F_SHIFT}
+        metadata={"enum": EFieldName.TUNE_F_SHIFT, 'field_view_kwargs': {'SI_unit': 'Hz'}}
     )
 
     t_step: HolderArgs = attrs.field(
@@ -67,7 +67,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
             validators.ge(0),
             validators.le(150)
         ],
-        metadata={"enum": EFieldName.TUNE_GAIN}
+        metadata={"enum": EFieldName.TUNE_GAIN, 'field_view_kwargs': {'SI_unit': '%'}}
     )
 
 class TuneProc(Procedure):

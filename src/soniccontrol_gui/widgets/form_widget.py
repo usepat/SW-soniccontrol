@@ -8,7 +8,6 @@ import attrs
 import cattrs
 from pathlib import Path
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_forms
-from soniccontrol.procedures.holder import convert_to_holder_args
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TkinterView, View
@@ -30,8 +29,132 @@ class EntryStyle(Enum):
 
 T = TypeVar("T")
 class FieldViewBase(abc.ABC, Generic[T], View):
-    def __init__(self, master: TkinterView, *args, **kwargs):
+    def subscribe_focus_to_scroll(self, widget, top_scroll_frame):
+        """
+        Binds the <FocusIn> event of the widget to scroll it into view in the top_scroll_frame.
+        """
+        if top_scroll_frame is None:
+            return
+        def _on_focus_in(event):
+            try:
+                widget.update_idletasks()
+                top_scroll_frame.update_idletasks()
+
+                # the content frame is this object (its visible container is `.container`).
+                if hasattr(top_scroll_frame, 'yview_moveto'):
+                    # content height (inner) and container (visible) are available via
+                    # top_scroll_frame.winfo_height() and top_scroll_frame.container.winfo_height()
+                    content_height = top_scroll_frame.winfo_height()
+                    container_height = getattr(top_scroll_frame, 'container', top_scroll_frame).winfo_height()
+                    # nothing to do if sizes are not positive
+                    if content_height <= 0 or container_height <= 0:
+                        return
+
+                    # widget position relative to visible container (to check lower-third)
+                    # Walk up the widget.master chain and sum winfo_y() to get a reliable
+                    # position inside the scrolled content (more robust than rooty diffs
+                    # when the content is placed/moved).
+                    def _relative_y_in_ancestor(wdg, ancestor):
+                        y = 0
+                        w = wdg
+                        while w is not None and w != ancestor:
+                            try:
+                                y += w.winfo_y()
+                            except Exception:
+                                # if a widget isn't mapped or raises, fall back
+                                return None
+                            w = getattr(w, 'master', None)
+                        return y
+
+                    # precompute root positions as fallbacks
+                    widget_root = None
+                    container_top = None
+                    content_top = None
+                    try:
+                        widget_root = widget.winfo_rooty()
+                    except Exception:
+                        widget_root = None
+                    try:
+                        container_top = top_scroll_frame.container.winfo_rooty()
+                    except Exception:
+                        container_top = None
+                    try:
+                        content_top = top_scroll_frame.winfo_rooty()
+                    except Exception:
+                        content_top = None
+
+                    pos_in_container = _relative_y_in_ancestor(widget, top_scroll_frame.container)
+                    # fallback to rooty difference if parent-walk failed and we have values
+                    if pos_in_container is None:
+                        if widget_root is None or container_top is None:
+                            return
+                        pos_in_container = widget_root - container_top
+
+                    # If the widget is visible and in the higher (top) third of the visible area, skip scrolling.
+                    # If pos_in_container < 0 the widget is above the visible area and we should scroll.
+                    if pos_in_container >= 0 and pos_in_container <= (1.0 / 3.0) * container_height:
+                        return
+
+                    # Otherwise compute fraction within the full content and scroll so the widget
+                    # appears at the top of the visible area. Use animation to avoid jumps.
+                    if widget_root is not None and content_top is not None:
+                        offset_in_content = widget_root - content_top
+                    else:
+                        # fallback: use position inside container as approximation
+                        offset_in_content = pos_in_container
+                    desired_fraction = offset_in_content / float(content_height)
+                    desired_fraction = max(0.0, min(1.0, desired_fraction))
+
+                    # current fraction (try via scrollbar); fallback to 0.0
+                    try:
+                        current_fraction = top_scroll_frame.vscroll.get()[0]
+                    except Exception:
+                        current_fraction = 0.0
+
+                    # if already close to desired, don't animate
+                    if abs(current_fraction - desired_fraction) < 0.01:
+                        return
+
+                    # cancel any running animation
+                    try:
+                        existing = getattr(top_scroll_frame, '_scroll_anim_id', None)
+                        if existing:
+                            top_scroll_frame.after_cancel(existing)
+                    except Exception:
+                        pass
+
+                    # animate in a few steps
+                    steps = 8
+                    duration_ms = 160
+                    step_time = max(1, int(duration_ms / steps))
+                    delta = (desired_fraction - current_fraction) / float(steps)
+
+                    i = 0
+                    def _animate():
+                        nonlocal i, current_fraction
+                        i += 1
+                        current_fraction = current_fraction + delta
+                        # clamp
+                        frac = max(0.0, min(1.0, current_fraction))
+                        try:
+                            top_scroll_frame.yview_moveto(frac)
+                        except Exception:
+                            return
+                        if i < steps:
+                            top_scroll_frame._scroll_anim_id = top_scroll_frame.after(step_time, _animate)
+                        else:
+                            top_scroll_frame._scroll_anim_id = None
+
+                    _animate()
+            except Exception as e:
+                print(f"Error in scroll handler: {e}")
+
+        widget.bind('<FocusIn>', _on_focus_in, '+')
+            
+    def __init__(self, master: TkinterView, *args, top_scroll_frame: Optional["ScrolledFrame"] = None, **kwargs):
+        self._top_scroll_frame: Optional["ScrolledFrame"] = top_scroll_frame
         View.__init__(self, master, *args, **kwargs)
+        
 
     @property
     @abc.abstractmethod
@@ -67,17 +190,16 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self._field_name = field_name
         self._default_value: PrimitiveT = _default_value 
         self._str_value: ttk.StringVar = ttk.StringVar(value=str(_default_value))
-        field_view_kwargs = kwargs.pop("field_view_kwargs", {})
-        si_unit = field_view_kwargs.pop("SI_unit", None)
+        field_view_kwargs = kwargs.pop("field_view_kwargs", {}) # Others also rely on it so dont pop
         self._si_unit_label = None
-        if si_unit is not None:
-            self._si_unit_label = ttk.Label(self, text=si_unit, state="readonly")
+        self._si_unit = field_view_kwargs.get("SI_unit", None)
         self._value: PrimitiveT = _default_value
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
-
         super().__init__(master, *args, **kwargs)
-
+        # We pop earlier so that the super__init__ does not fail,
+        # but we need restore because other the same Object might be used for other views(ATConfig)
+        kwargs['field_view_kwargs'] = field_view_kwargs
         self._callback: Callable[[PrimitiveT], None] = lambda _: None
         self._str_value.trace_add("write", self._parse_str_value)
 
@@ -85,7 +207,12 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
     def _initialize_children(self) -> None:
         self.label = ttk.Label(self, text=self._field_name)
         self.entry = ttk.Entry(self, textvariable=self._str_value)
+        if self._si_unit is not None:
+            self._si_unit_label = ttk.Label(self, text=self._si_unit, state="readonly")
         WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
+        # Subscribe entry focus to scroll bar if available
+        if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame is not None:
+            self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
         self.grid_columnconfigure(0, weight=1, uniform="col")
@@ -112,13 +239,30 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
     def value(self, v: PrimitiveT) -> None:
         self._value = v
         self._str_value.set(str(v))
+
+    @value.setter
+    def set_value_without_setting_str(self, v: PrimitiveT) -> None:
+        self._value = v
  
     def _parse_str_value(self, *_args):
+        text = self._str_value.get()
+        if text == "":
+            # Don't set value or revert to default, just wait for valid input
+            self.entry.configure(style=EntryStyle.DANGER.value)
+            return
         try:
-            self.value = self._factory(self._str_value.get()) 
+            self.set_value_without_setting_str = self._factory(self._str_value.get()) 
             self.entry.configure(style=EntryStyle.PRIMARY.value)
         except Exception as _:
-            self.value = self._default_value 
+            # I think it would be better to set to some value that signal a missing/broken value
+            # Right now when the input failed then default value gets set, which causes the str_value to be set
+            # which makes selecting every digit replacing it impossible, also the inputs for float is whack
+
+            # But when we use set_value_without_setting_str then the default_value is being used,
+            # even tho the input should be invalid
+
+            # I think we should change this somehow so the user experience is better and it also does not fail silently or using wrong values
+            self.set_value_without_setting_str = self._default_value 
             self.entry.configure(style=EntryStyle.DANGER.value)
         self._callback(self.value)
 
@@ -147,6 +291,11 @@ class BooleanFieldView(FieldViewBase[bool]):
             variable=self._var
         )
         WidgetRegistry.register_widget(self._checkbutton, "checkbutton", self._widget_name)
+        self._checkbutton.bind("<Return>", lambda e: self._var.set(not self._var.get()))
+        
+        # Subscribe checkbutton to scroll on focus
+        if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame:
+            self.subscribe_focus_to_scroll(self._checkbutton, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
         self._checkbutton.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
@@ -201,6 +350,10 @@ class EnumFieldView(FieldViewBase[Enum]):
         )
 
         WidgetRegistry.register_widget(self._selected_enum_member, "entry_enum", self._widget_name)
+        
+        # Subscribe combobox to scroll on focus
+        if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame:
+            self.subscribe_focus_to_scroll(self._config_entry, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
         self.grid_columnconfigure(0, weight=1, uniform="col")
@@ -258,6 +411,10 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
         self.entry = ttk.Entry(self, textvariable=self._str_value)
 
         WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
+        
+        # Subscribe entry to scroll on focus
+        if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame:
+            self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
         self.grid_columnconfigure(0, weight=1, uniform="col")
@@ -361,6 +518,10 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
 
         WidgetRegistry.register_widget(self._time_value_str, "time_str", self._widget_name)
         WidgetRegistry.register_widget(self._unit_value_str, "unit_str", self._widget_name)
+        
+        # Subscribe entry to scroll on focus
+        if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame:
+            self.subscribe_focus_to_scroll(self._entry_time, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
         self.grid_columnconfigure(0, weight=1, uniform="col")
@@ -516,54 +677,51 @@ class DynamicFieldViewFactory:
         self._converter = converter
         self._field_hooks = field_hooks
 
-    def from_type(self, field_name, field_type: type, slot: TkinterView, parent_widget_name: str, **kwargs) -> FieldViewBase:
+    def from_type(self, field_name, field_type: type, slot: TkinterView, parent_widget_name: str, top_scroll_frame: Optional[ScrolledFrame] = None, **kwargs) -> FieldViewBase:
         # is compares for addresses. If variables point to the same underlying object
         # is compares for types. (needed for windows) 
         # == compares for equality. (needed for linux) 
         # == needed for Optional and other compound types, because they are created and not singletons like builtin types
         if field_type is int:
-            field_view = BasicTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return BasicTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type is float:
-            field_view = BasicTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return BasicTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type is bool:
-            field_view = BooleanFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return BooleanFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type is str:
-            field_view = BasicTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return BasicTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type == Optional[int] or field_type is Optional[int]:
-            field_view = NullableTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return NullableTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type == Optional[float] or field_type is Optional[float]:
-            field_view = NullableTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return NullableTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type == Optional[str] or field_type is Optional[str]:
-            field_view = NullableTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return NullableTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type is Dict or field_type is dict:
-            field_view = DictFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return DictFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type is HolderArgs:
-            field_view = TimeFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return TimeFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type == Optional[Path] or field_type is Optional[Path]:
-            field_view = OptionalPathFieldView(slot, field_name, parent_widget_name=parent_widget_name, **kwargs)
+            return OptionalPathFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif inspect.isclass(field_type) and issubclass(field_type, Enum): 
             # for enums we have to check if they are subclasses of the Enum base class
-            field_view = EnumFieldView(slot, field_name, field_type, parent_widget_name=parent_widget_name, **kwargs)
+            return EnumFieldView(slot, field_name, field_type, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif get_origin(field_type) is tuple or field_type is tuple:
-            field_view = TupleFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, **kwargs)
+            return TupleFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type and attrs.has(field_type):
             # for the case that the type is a nested attrs class.
             kwargs.pop("default_value", None) # We do not use default values here. We deduce them later through attrs.Attribute
-            field_view = ObjectFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, **kwargs)
+            return ObjectFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         else:
             raise TypeError(f"The field with name {field_name} has the type {field_type}, which is not supported")
 
-        return field_view
-
-
-    def from_attribute(self, field_name: str, field: attrs.Attribute, obj_class: type, slot: TkinterView, parent_widget_name: str) -> FieldViewBase:
+    def from_attribute(self, field_name: str, field: attrs.Attribute, obj_class: type, slot: TkinterView, parent_widget_name: str, top_scroll_frame: Optional[ScrolledFrame] = None) -> FieldViewBase:
         assert field.type is not None, "There is no type annotation for this field present"
 
         # Apply Attribute Hook
         hook_key = (obj_class, field_name)
         if hook_key in self._field_hooks:
             hook = self._field_hooks[hook_key]
-            field_view = hook(obj_class, field, slot, {"parent_widget_name": parent_widget_name})
+            field_view = hook(obj_class, field, slot, {"parent_widget_name": parent_widget_name, "top_scroll_frame": top_scroll_frame})
             return field_view
 
         # Deduce kwargs for field from attrs.Attribute
@@ -575,7 +733,7 @@ class DynamicFieldViewFactory:
         if field_view_kwargs_name in field.metadata:
             kwargs[field_view_kwargs_name] = field.metadata.get(field_view_kwargs_name) 
 
-        return self.from_type(field_name, field.type, slot, parent_widget_name, **kwargs)
+        return self.from_type(field_name, field.type, slot, parent_widget_name, top_scroll_frame, **kwargs)
     
     def unstructure_value(self, val: Any, obj_class: type) -> Any:
         """
@@ -616,7 +774,7 @@ class TupleFieldView(FieldViewBase[tuple]):
 
     def _add_fields_to_widget(self):
         for i, class_type in enumerate(self._tuple_elements):
-            field_view = self._field_view_factory.from_type(f"Item {i+1}", class_type, self._frame, self._widget_name)
+            field_view = self._field_view_factory.from_type(f"Item {i+1}", class_type, self._frame, self._widget_name, top_scroll_frame=self._top_scroll_frame)
             self._fields.append(field_view)
 
             def bind_index(index):
@@ -683,7 +841,7 @@ class ObjectFieldView(FieldViewBase[dict]):
     def _add_fields_to_widget(self):
         fields = attrs.fields_dict(self._obj_class)
         for field_name, field in fields.items():
-            field_view = self._field_view_factory.from_attribute(field_name, field, self._obj_class, self._frame, self._widget_name)
+            field_view = self._field_view_factory.from_attribute(field_name, field, self._obj_class, self._frame, self._widget_name, top_scroll_frame=self._top_scroll_frame)
             self._fields[field_name] = field_view
             self._value[field_name] = field_view.value
 
@@ -736,8 +894,8 @@ class FormWidget(UIComponent):
         self._view = FormWidgetView(parent_view)
         self._view.set_title(self._title)
         super().__init__(parent, self._view)
-
-        self._attr_view = ObjectFieldView(self._view.field_slot, self._title, self._attrs_class, self._field_view_factory)
+        # self._view.field_slot is the ScrolledFrameView we need to scroll when
+        self._attr_view = ObjectFieldView(self._view.field_slot, self._title, self._attrs_class, self._field_view_factory, top_scroll_frame=self._view._scrolled_frame)
         self._view._initialize_publish()
 
         # bind the model dict to the view

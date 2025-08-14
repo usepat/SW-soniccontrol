@@ -28,7 +28,7 @@ You can set t_off to 0 if you want the signal to never be turned off."""
             validators.ge(0),
             validators.le(10_000_000)
         ],
-        metadata={"enum": EFieldName.RAMP_F_START}
+        metadata={"enum": EFieldName.RAMP_F_START, 'field_view_kwargs': {'SI_unit': 'Hz'}}
     )
     f_stop: int = attrs.field(
         default=2000000,
@@ -37,7 +37,7 @@ You can set t_off to 0 if you want the signal to never be turned off."""
             validators.ge(0),
             validators.le(10_000_000)
         ],
-        metadata={"enum": EFieldName.RAMP_F_STOP}
+        metadata={"enum": EFieldName.RAMP_F_STOP, 'field_view_kwargs': {'SI_unit': 'Hz'}}
     )
     f_step: int = attrs.field(
         default=100000,
@@ -46,7 +46,7 @@ You can set t_off to 0 if you want the signal to never be turned off."""
             validators.ge(10),
             validators.le(500_000)
         ],
-        metadata={"enum": EFieldName.RAMP_F_STEP}
+        metadata={"enum": EFieldName.RAMP_F_STEP, 'field_view_kwargs': {'SI_unit': 'Hz'}}
     )
     t_on: HolderArgs = attrs.field(
         default=HolderArgs(500, "ms"),
