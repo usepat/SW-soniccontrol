@@ -10,7 +10,7 @@ from sonic_protocol.field_names import EFieldName
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureTarget
 from soniccontrol.data_capturing.data_provider import DataProvider
 from soniccontrol.data_capturing.experiment import Experiment
-from soniccontrol.data_capturing.experiment_store import ExperimentStore, HDF5ExperimentStore
+from soniccontrol.data_capturing.experiment_store import ExperimentWriter, HDF5ExperimentWriter
 from soniccontrol.events import Event, EventManager
 
 
@@ -27,7 +27,7 @@ class Capture(EventManager):
         self._data_provider = DataProvider()
         self._target: CaptureTarget | None = None
         self._experiment: Experiment | None = None
-        self._store: ExperimentStore | None = None
+        self._experiment_writer: ExperimentWriter | None = None
         self._metadata_written = False
         self._completed_capturing.set()
 
@@ -50,8 +50,8 @@ class Capture(EventManager):
 
         timestamp_str = experiment.date_time.strftime("%Y%m%d_%H%M%S")
         file_name = self._output_dir / f"sonic_measure_{timestamp_str}"
-        self._store = HDF5ExperimentStore(file_name)
-        self._store.write_metadata(self._experiment)
+        self._experiment_writer = HDF5ExperimentWriter(file_name)
+        self._experiment_writer.write_metadata(self._experiment)
 
         self._target = capture_target
         self._target.subscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
@@ -79,9 +79,9 @@ class Capture(EventManager):
 
         self._completed_capturing.set()        
 
-        if self._store:
-            self._store.close()
-            self._store = None
+        if self._experiment_writer:
+            self._experiment_writer.close()
+            self._experiment_writer = None
 
         self.emit(Event(Capture.END_CAPTURE_EVENT))
         self._logger.info("End Capture")
@@ -92,7 +92,7 @@ class Capture(EventManager):
 
     def on_update(self, status: Dict[EFieldName, Any]):
         if not self._completed_capturing.is_set():
-            assert self._store
+            assert self._experiment_writer
 
             attrs: Dict[str, Any] = { k.name: v for k, v in status.items() }
             
@@ -102,4 +102,4 @@ class Capture(EventManager):
                 attrs[timestamp_col] = datetime.datetime.now()
             
             self._data_provider.add_row(attrs)
-            self._store.add_row(attrs)
+            self._experiment_writer.add_row(attrs)

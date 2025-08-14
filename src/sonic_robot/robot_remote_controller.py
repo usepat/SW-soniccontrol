@@ -12,7 +12,7 @@ from sonic_robot.deduce_command_examples import deduce_command_examples
 from soniccontrol.procedures.procedure_controller import ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.remote_controller import RemoteController
-from soniccontrol_gui.plugins.device_plugin import PluginRegistry, register_device_plugins
+from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry, register_device_plugins
 
 
 # Scope is set to suite, so that the same remote controller can be used across tests.
@@ -21,7 +21,7 @@ from soniccontrol_gui.plugins.device_plugin import PluginRegistry, register_devi
 class RobotRemoteController:
     def __init__(self, log_path: Optional[str] = None):
         register_device_plugins()
-        protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in PluginRegistry.get_device_plugins() }
+        protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in DevicePluginRegistry.get_device_plugins() }
         self._controller = RemoteController(log_path=Path(log_path) if log_path else None, protocol_factories=protocol_factories)
         # Because our RemoteController is async, but robot is sync, 
         # we have to embed all the calls to the RemoteController functions into an asyncio event loop.

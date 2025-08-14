@@ -31,47 +31,35 @@ class DevicePlugin:
     protocol_factory: ProtocolList
 
 
-# TODO add UIPluginSlotComponent and PluginSlotRegistry
-class UIComponentFactory(abc.ABC):
-    @abc.abstractmethod
-    def __call__(self, parent: UIComponent, *args, **kwargs) -> UIComponent:
-        ...
-
-@attrs.define()
-class UIPlugin:
-    slot_name: str
-    component_factory: UIComponentFactory
-
-
-class PluginRegistry:
+class DevicePluginRegistry:
     _registered_plugins: Set[DevicePlugin] = set()
 
     @staticmethod
     def register_device_plugin(plugin: DevicePlugin):
-        PluginRegistry._registered_plugins.add(plugin)
+        DevicePluginRegistry._registered_plugins.add(plugin)
 
     @staticmethod
     def get_device_plugins() -> List[DevicePlugin]:
-        return list(PluginRegistry._registered_plugins)
+        return list(DevicePluginRegistry._registered_plugins)
 
 
 _operator_protocol_factory = LatestProtocol()
 
-PluginRegistry.register_device_plugin(
+DevicePluginRegistry.register_device_plugin(
     DevicePlugin(DeviceType.MVP_WORKER, KnownDeviceWindowFactory(), _operator_protocol_factory)
 )
-PluginRegistry.register_device_plugin(
+DevicePluginRegistry.register_device_plugin(
     DevicePlugin(DeviceType.DESCALE, KnownDeviceWindowFactory(), _operator_protocol_factory)
 )
-PluginRegistry.register_device_plugin(
+DevicePluginRegistry.register_device_plugin(
     DevicePlugin(DeviceType.UNKNOWN, KnownDeviceWindowFactory(), _operator_protocol_factory)
 )
-PluginRegistry.register_device_plugin(
+DevicePluginRegistry.register_device_plugin(
     DevicePlugin(DeviceType.CRYSTAL, KnownDeviceWindowFactory(), _operator_protocol_factory)
 )
 
 def register_device_plugins():
     eps = entry_points()
-    for ep in eps.select(group="soniccontrol_gui.plugins"):
+    for ep in eps.select(group="soniccontrol_gui.device_plugins"):
         device_plugin = ep.load()
-        PluginRegistry.register_device_plugin(device_plugin)
+        DevicePluginRegistry.register_device_plugin(device_plugin)

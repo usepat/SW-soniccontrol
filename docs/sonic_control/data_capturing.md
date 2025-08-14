@@ -22,7 +22,7 @@ As file format HDF5 is used. It is a widely established format for writing exper
 [ExperimentMetaData](@ref soniccontrol.data_capturing.experiment.ExperimentMetaData) define the meta data attributes we want the user to provide. The user can also add own custom meta data to it.  
 [Experiment](@ref soniccontrol.data_capturing.experiment.Experiment) uses then this meta data and sets additionally other meta data attributes that can be deduced by the program. For example the device type, protocol used, the arguments to a procedure, procedure type, script to be executed, etc..
 
-To make serializing easier we use marshmallow-annotations. It converts an attrs class into a marshmallow schema. A marshmallow schema defines how custom classes should be parsed to plain python types: int, float, bool, str, dict, list. Those can then be further processed by other serialization methods like `json.dumps`. It also makes it convenient to write own serializers for it like [HDF5ExperimentStore](@ref soniccontrol.data_capturing.experiment_store.HDF5ExperimentStore).
+To make serializing easier we use cattrs. It can convert attrs classes into plain python datatypes: int, float, bool, str, dict, list. Those can then be further processed by other serialization methods like `json.dumps`. It also makes it convenient to write own serializers for it like [HDF5ExperimentStore](@ref soniccontrol.data_capturing.experiment_store.HDF5ExperimentStore).
 
 ### Capturing Data
 
