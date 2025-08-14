@@ -104,6 +104,11 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self._field_name = field_name
         self._default_value: PrimitiveT = _default_value 
         self._str_value: ttk.StringVar = ttk.StringVar(value=str(_default_value))
+        field_view_kwargs = kwargs.pop("field_view_kwargs", {})
+        si_unit = field_view_kwargs.pop("SI_unit", None)
+        self._si_unit_label = None
+        if si_unit is not None:
+            self._si_unit_label = ttk.Label(self, text=si_unit, state="readonly")
         self._value: PrimitiveT = _default_value
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
@@ -117,7 +122,6 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
     def _initialize_children(self) -> None:
         self.label = ttk.Label(self, text=self._field_name)
         self.entry = ttk.Entry(self, textvariable=self._str_value)
-
         WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
 
     def _initialize_publish(self) -> None:
@@ -126,6 +130,8 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
 
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
         self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W)
+        if self._si_unit_label:
+            self._si_unit_label.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
 
     @property
     def field_name(self) -> str:
