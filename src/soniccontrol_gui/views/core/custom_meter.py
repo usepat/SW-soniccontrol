@@ -189,11 +189,9 @@ class CustomMeter(ttk.Frame):
                 Other keyword arguments that are passed directly to the
                 `Frame` widget that contains the meter components.
         """
-        super().__init__(master=master, **kwargs)
 
         # widget variables
         self.amountusedvar = tk.DoubleVar(value=amountused)
-        self.amountusedvar.trace_add("write", self._draw_meter)
         if (amountmin or amountmax) and amounttotal:
             raise DeprecationWarning("Using old and new code is not allowed")
         elif amounttotal:
@@ -207,14 +205,14 @@ class CustomMeter(ttk.Frame):
         self.labelvar = tk.StringVar(value=subtext)
 
         # misc settings
-        self._set_arc_offset_range(metertype, arcoffset, arcrange)
         self._towardsmaximum = True
-        self._metersize = utility.scale_size(self, metersize)
-        self._meterthickness = utility.scale_size(self, meterthickness)
+        # store raw sizes and defer scaling until after widget init (self.tk exists)
+        self._metersize_raw = metersize
+        self._meterthickness_raw = meterthickness
         self._stripethickness = stripethickness
         self._showtext = showtext
         self._wedgesize = wedgesize
-        self._stepsize = stepsize        
+        self._stepsize = stepsize
         self._textleft = textleft
         self._textright = textright
         self._textfont = textfont
@@ -222,12 +220,22 @@ class CustomMeter(ttk.Frame):
         self._subtextfont = subtextfont
         self._subtextstyle = subtextstyle
         self._bootstyle = bootstyle
-        self._boostyleneg = bootstyleneg if bootstyleneg  else bootstyle
+        self._boostyleneg = bootstyleneg if bootstyleneg else bootstyle
         self._interactive = interactive
         self._step_full_range = step_full_range
+        self._metertype = None
         self._bindids = {}
-
+        super().__init__(master=master, **kwargs)
+        # now that widget has been initialized, scale sizes
+        self._metersize = utility.scale_size(self, self._metersize_raw)
+        self._meterthickness = utility.scale_size(self, self._meterthickness_raw)
+        self._set_arc_offset_range(metertype, arcoffset, arcrange)
         self._setup_widget()
+
+        self.amountusedvar.trace_add("write", self._draw_meter)
+        self._draw_base_image()
+        self._draw_meter()
+
 
     def _setup_widget(self):
         self.meterframe = ttk.Frame(
@@ -277,7 +285,8 @@ class CustomMeter(ttk.Frame):
 
     def _set_widget_colors(self):
         bootstyle = (self._bootstyle if self["amountused"] >= 0 else self._boostyleneg, "meter", "label")
-        self.textcenter.configure(bootstyle=(self._bootstyle if self["amountused"] >= 0 else self._boostyleneg, "meter"))
+        if hasattr(self, "textcenter"):
+            self.textcenter.configure(bootstyle=(self._bootstyle if self["amountused"] >= 0 else self._boostyleneg, "meter"))
         ttkstyle = Bootstyle.ttkstyle_name(string="-".join(bootstyle))
         textcolor = self._lookup_style_option(ttkstyle, "foreground")
         background = self._lookup_style_option(ttkstyle, "background")
@@ -667,7 +676,7 @@ class CustomMeter(ttk.Frame):
         if "metertype" in kwargs:
             self._metertype = kwargs.pop("metertype")
         if "meterthickness" in kwargs:
-            self._meterthickness = self.scale_size(
+            self._meterthickness = utility.scale_size(
                 kwargs.pop("meterthickness")
             )
         if "stripethickness" in kwargs:
@@ -705,12 +714,10 @@ class CustomMeter(ttk.Frame):
                 )
         except AttributeError:
             return
-
-        self._draw_base_image()
-        self._draw_meter()
-
         # pass remaining configurations to `ttk.Frame.configure`
         super(ttk.Frame, self).configure(**kwargs)
+
+        
 
     def __getitem__(self, key: str):
         return self._configure_get(key)
