@@ -66,21 +66,25 @@ class ProcedureController(EventManager):
     
 
         async def proc_task():
+            async def stop_procedure():
+                if self._device.has_command(cmds.SetStop()):
+                    await self._device.execute_command(cmds.SetStop(), raise_exception=False)
+                else:
+                    await self._device.execute_command(cmds.SetOff(), raise_exception=False)
+
             try:
                 await procedure.execute(self._device, args)
                 if procedure.is_remote:
                     await self._remote_procedure_state.wait_till_procedure_halted()          
             except Exception as e:
-                if procedure.is_remote:
-                    if self._device.has_command(cmds.SetStop()):
-                        await self._device.execute_command(cmds.SetStop(), raise_exception=False)
-                    else:
-                        await self._device.execute_command(cmds.SetOff(), raise_exception=False)
-                await self._device.set_signal_off()
                 if not isinstance(e, asyncio.CancelledError):
                     raise e # if task was not cancelled, then some internal unexpected exception occurred
             finally:
+                if procedure.is_remote:
+                    await stop_procedure()
+                await self._device.set_signal_off()
                 self._on_proc_finished()
+                
 
         self._remote_procedure_state.reset_completion_flag()
         self._running_proc_task = event_loop.create_task(proc_task())
@@ -96,10 +100,6 @@ class ProcedureController(EventManager):
 
     async def stop_proc(self) -> None:
         self._logger.info("Stop procedure")
-        if self._device.has_command(cmds.SetStop()):
-            await self._device.execute_command(cmds.SetStop())
-        else:
-            await self._device.execute_command(cmds.SetOff())
         if self._running_proc_task: 
             self._running_proc_task.cancel()
             await self._running_proc_task

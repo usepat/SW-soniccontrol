@@ -219,19 +219,19 @@ class _UIStringsEN:
     VISUALIZE: Final[str] = "Visualize"
     HOME_HELP_INTRODUCTION: Final[
         str
-    ] = "The Home tab is used to set the most important parameters of a Sonicamp device manually."
+    ] = "The Home tab is used to manually control the most basic aspects of the sonic amp"
     HOME_HELP_CONTROL_PANEL: Final[
         str
     ] = "The Manual Control Panel contains entries to set the named parameters. Based on your Sonicamp those parameters may differ from the shown image."
     HOME_HELP_FREQUENCY: Final[
         str
-    ] = ""#"Here should be a description of the frequency entry."
-    HOME_HELP_GAIN: Final[str] = ""#"Here should be a description of the gain entry."
+    ] = "The frequency ranges from 100kHz to 10MHz"#"Here should be a description of the frequency entry."
+    HOME_HELP_GAIN: Final[str] = "The gain ranges from 0% to 150%"#"Here should be a description of the gain entry."
     HOME_HELP_CATCH: Final[str] = ""#"Here should be a description of the catch entry."
     HOME_HELP_WIPE: Final[str] = ""#"Here should be a description of the wipe entry."
     HOME_HELP_SET_VALUES: Final[
         str
-    ] = "The 'Set Values' button sets all currently configured parameters."
+    ] = "The 'Send' button sets all currently configured parameters."
     HOME_HELP_OUTPUT: Final[
         str
     ] = "The Sonicamp device sends it's answer to the requested configuration in the Feedback frame."
@@ -267,7 +267,9 @@ class _UIStringsEN:
     FETCH_CONFIG_LABEL: Final[str] = "fetch configuration"
     WAITING_FOR_ANSWER: Final[str] = "Waiting for answer"
     START_CONFIGURATOR: Final[str] = "--start-configurator"
-
+    TODO: Final[str] = "In the future the INFO tab will provide all necessary information about the Sonic Control and the SonicAmp and furthermore will link a more detailed documentation about both the software and the device. For now if you have any questions feel free to contact us"
+    CONTACT: Final[str] = "Contact"
+    NEW_LINE: Final[str] = ""
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()
 
