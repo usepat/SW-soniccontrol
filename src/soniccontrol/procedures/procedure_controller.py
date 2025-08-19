@@ -101,8 +101,14 @@ class ProcedureController(EventManager):
     async def stop_proc(self) -> None:
         self._logger.info("Stop procedure")
         if self._running_proc_task: 
-            self._running_proc_task.cancel()
-            await self._running_proc_task
+            # Create a local reference as self._running_proc_task is being set to None in _on_proc_finished
+            task_to_cancel = self._running_proc_task
+            task_to_cancel.cancel()
+            try:
+                await task_to_cancel
+            except asyncio.CancelledError:
+                # This is expected when we cancel the task
+                pass
 
     async def wait_for_proc_to_finish(self) -> None:
         await self._remote_procedure_state.wait_till_procedure_halted()
