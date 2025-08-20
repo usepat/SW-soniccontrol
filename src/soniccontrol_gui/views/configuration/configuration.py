@@ -142,6 +142,8 @@ class Configuration(UIComponent):
                 try:
                     data_dict = json.load(file)
                     self.apply_migration(data_dict)
+                    # Should we override the file content manually after migration
+                    # or maybe keep a copy of the old file?
                     config = self._converter.structure(data_dict, TransducerConfig)
                     config.name = json_file.stem
                     self._configs.append(config)
