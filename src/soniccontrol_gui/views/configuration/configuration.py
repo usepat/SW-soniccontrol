@@ -112,6 +112,13 @@ class Configuration(UIComponent):
             data_dict = self._converter.unstructure(TransducerConfig())
             json.dump(data_dict, file)
 
+    def apply_migration(self, data_dict: dict):
+        try:
+            self._converter.structure(dict, TransducerConfig)
+        except Exception as e:
+            pass
+        return
+
     def _load_config(self):
         if files.TRANSDUCER_CONFIG_FOLDER.exists() is False:
             self._logger.info("Create transducer config folder %s", files.TRANSDUCER_CONFIG_FOLDER)
@@ -127,6 +134,7 @@ class Configuration(UIComponent):
             with open(json_file, "r") as file:
                 try:
                     data_dict = json.load(file)
+                    self.apply_migration(data_dict)
                     config = self._converter.structure(data_dict, TransducerConfig)
                     config.name = json_file.stem
                     self._configs.append(config)
