@@ -8,7 +8,7 @@ from sonic_protocol.schema import SIPrefix
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
 from soniccontrol.data_capturing.experiment import TEMPERATURE_META, ExperimentMetaData, convert_authors
 from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.utils.si_unit import SIVar, TemperatureSIVar
+from soniccontrol_gui.utils.si_unit import MeterSIVar, SIVar, TemperatureSIVar
 from soniccontrol_gui.view import TkinterView, View
 from soniccontrol_gui.constants import files, sizes, ui_labels
 
@@ -17,6 +17,8 @@ import logging
 
 from soniccontrol_gui.widgets.form_widget import FormWidget, FieldViewBase, BasicTypeFieldView
 from soniccontrol_gui.widgets.message_box import MessageBox
+from soniccontrol_gui.widgets.user_selection import DynamicUserSelection
+from async_tkinter_loop import async_handler
         
 
 @attrs.define(auto_attribs=True)
@@ -37,14 +39,106 @@ class ExperimentForm(UIComponent):
         self._templates: List[Template] = []
         self._selected_template_index: Optional[int] = None
 
-        self._create_metadata_form()
-
+        # Initialize UI components first
         self._view.set_save_template_command(self._on_save_template)
         self._view.set_new_template_command(self._on_new_template)
         self._view.set_select_template_command(self._on_select_template)
         self._view.set_delete_template_command(self._on_delete_template)
 
-        self._load_templates()
+        # Start async initialization
+        self._start_async_initialization()
+
+    def _start_async_initialization(self):
+        """Start the async initialization process."""
+        # Use after_idle to ensure the UI is ready, then start async loading
+        self._view.after_idle(self._begin_async_loading)
+
+    @async_handler
+    async def _begin_async_loading(self):
+        """Begin the async loading process including migration."""
+        try:
+            # Load and migrate templates first (this may require user input)
+            await self._load_and_migrate_templates()
+            
+            # Only after migration is complete, create the form widget
+            self._create_metadata_form()
+            
+            # Set up the template selection
+            self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
+            self.selected_template_index = 0 if len(self._templates) > 0 else None
+            
+        except Exception as e:
+            self._logger.error(f"Failed to initialize ExperimentForm: {e}")
+            # Fallback: create form without templates
+            self._create_metadata_form()
+
+    async def _load_and_migrate_templates(self):
+        """Load templates and apply any necessary migrations, including user interactions."""
+        if not files.EXPERIMENT_TEMPLATES_JSON.exists():
+            with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
+                json.dump([], file)
+            return
+
+        self._logger.info("Load templates from %s", files.EXPERIMENT_TEMPLATES_JSON)
+        with open(files.EXPERIMENT_TEMPLATES_JSON, "r") as file:
+            data_dict_list = json.load(file)
+            
+            # Apply migrations (including user interactions)
+            await self._apply_complete_migration(data_dict_list)
+            
+            # Now structure the migrated data
+            self._templates = self._converter.structure(data_dict_list, List[Template])
+
+    async def _apply_complete_migration(self, data_dict_list: List[dict]):
+        """Apply complete migration including user interactions."""
+        for data_dict in data_dict_list:
+            form_data = data_dict['form_data']
+            try:
+                # Try to structure the form_data as a valid format
+                self._converter.structure(form_data, ExperimentMetaData)
+            except Exception:
+                medium_temperature = form_data.get('medium_temperature', None)
+                if medium_temperature:
+                    try:    
+                        self._converter.structure(medium_temperature, SIVar)
+                    except Exception:
+                        si_var = TemperatureSIVar(value=medium_temperature, si_prefix=SIPrefix.NONE)
+                        form_data['medium_temperature'] = self._converter.unstructure(si_var)
+                
+                gap = form_data.get('gap', None)
+                if gap:
+                    try:    
+                        self._converter.structure(gap, SIVar)
+                    except Exception:
+                        # Show user dialog for gap migration
+                        si_prefix_selection = DynamicUserSelection(
+                            root=self._view.root,
+                            message="gap value is not in SI Units pls select a valid SI Unit",
+                            title="Select SI Unit",
+                            target_type=SIPrefix
+                        )
+                        si_prefix = await si_prefix_selection.wait_for_answer()
+                        if not isinstance(si_prefix, SIPrefix):
+                            si_prefix = SIPrefix.NONE 
+                        si_var = MeterSIVar(value=gap, si_prefix=si_prefix)
+                        form_data['gap'] = self._converter.unstructure(si_var)
+                
+                cable_length = form_data.get('cable_length', None)
+                if cable_length:
+                    try:    
+                        self._converter.structure(cable_length, SIVar)
+                    except Exception:
+                        si_prefix_selection = DynamicUserSelection(
+                            root=self._view.root,
+                            message="gap value is not in SI Units pls select a valid SI Unit",
+                            title="Select SI Unit",
+                            target_type=SIPrefix
+                        )
+                        si_prefix = await si_prefix_selection.wait_for_answer()
+                        if not isinstance(si_prefix, SIPrefix):
+                            si_prefix = SIPrefix.NONE 
+                        si_var = MeterSIVar(value=cable_length, si_prefix=si_prefix)
+                        form_data['cable_length'] = self._converter.unstructure(si_var)
         
     @property
     def selected_template_index(self) -> Optional[int]:
@@ -57,6 +151,10 @@ class ExperimentForm(UIComponent):
             self._change_template()
 
     def _create_metadata_form(self):
+        # Skip if form already exists
+        if hasattr(self, '_metadata_form'):
+            return
+            
         # We do currently support no ListFieldView
         # So instead we define a hook to convert the attribute field of author, so that the form registers a string instead
         # Also we have to define unstructuring/ structuring hooks so that the data provided and read from the form will be correctly serialized
@@ -75,32 +173,13 @@ class ExperimentForm(UIComponent):
 
         
         self._metadata_form = FormWidget(self, self._view.metadata_form_slot, "", ExperimentMetaData, field_hooks=form_field_hooks)
-    def _apply_migration(self, data_dict_list: List[dict]):
-        for data_dict in data_dict_list:
-            form_data = data_dict['form_data'] # Should we access with get?
-            try:
-                self._converter.structure(dict, Template)
-            except Exception as e:
-                medium_temperature = form_data.get('medium_temperature', None)
-                if medium_temperature:
-                    try:    
-                        self._converter.structure(medium_temperature, SIVar)
-                    except Exception as e:
-                        si_var = TemperatureSIVar(value=medium_temperature, si_prefix=SIPrefix.NONE)
-                        form_data['medium_temperature'] = self._converter.unstructure(si_var)
-
-    def _load_templates(self):
-        if not files.EXPERIMENT_TEMPLATES_JSON.exists():
-            with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
-                json.dump([], file)
-
-        self._logger.info("Load templates from %s", files.EXPERIMENT_TEMPLATES_JSON)
-        with open(files.EXPERIMENT_TEMPLATES_JSON, "r") as file:
-            data_dict = json.load(file)
-            self._apply_migration(data_dict)
-            self._templates = self._converter.structure(data_dict, List[Template])
-
-        self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
+    
+    def _save_templates_to_file(self):
+        """Save templates to file."""
+        self._logger.info("Save templates to %s", files.EXPERIMENT_TEMPLATES_JSON)
+        with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
+            data_dict = self._converter.unstructure(self._templates, List[Template])
+            json.dump(data_dict, file)
         self.selected_template_index = 0 if len(self._templates) > 0 else None
 
     def _on_save_template(self):
@@ -117,10 +196,7 @@ class ExperimentForm(UIComponent):
         self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
         self._view.selected_template = template.name
 
-        self._logger.info("Save templates to %s", files.EXPERIMENT_TEMPLATES_JSON)
-        with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
-            data_dict = self._converter.unstructure(self._templates, List[Template])
-            json.dump(data_dict, file)
+        self._save_templates_to_file()
 
     def _validate_template_data(self, template: Template) -> bool:
         if self.selected_template_index is None and template.name in map(lambda template: template.name, self._templates):
@@ -143,9 +219,7 @@ class ExperimentForm(UIComponent):
 
         template = self._templates.pop(self.selected_template_index)
         self._logger.info("Delete template %s", template.name)
-        with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
-            data_dict = self._converter.unstructure(self._templates, List[Template])
-            json.dump(data_dict, file)
+        self._save_templates_to_file()
 
         self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
         self.selected_template_index = None if len(self._templates) == 0 else 0

@@ -110,8 +110,8 @@ class AttSiVar(SIVar[float], si_meta=ATT_META):
     def __init__(self, value: float = 0.0, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
-# Temperature variable for the experiment
 TEMPERATURE_META = SIVarMeta(si_unit=SIUnit.CELSIUS, si_prefix_min=SIPrefix.MILLI, si_prefix_max=SIPrefix.NONE)
+
 
 class TemperatureSIVar(SIVar[float], si_meta=TEMPERATURE_META):
     """Temperature variable with fixed metadata."""
@@ -119,7 +119,10 @@ class TemperatureSIVar(SIVar[float], si_meta=TEMPERATURE_META):
     def __init__(self, value: float = 0.0, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
+METER_META = SIVarMeta(si_unit=SIUnit.METER, si_prefix_min=SIPrefix.MILLI, si_prefix_max=SIPrefix.NONE)
 
-@attrs.define(auto_attribs=True)
-class ATConfig:
-    atf: AtfSiVar = attrs.field(factory=lambda: AtfSiVar(value=0, si_prefix=SIPrefix.NONE))
+class MeterSIVar(SIVar[float], si_meta=METER_META):
+    """Temperature variable with fixed metadata."""
+    
+    def __init__(self, value: float = 0.0, si_prefix: SIPrefix = SIPrefix.NONE):
+        super().__init__(value=value, si_prefix=si_prefix)
