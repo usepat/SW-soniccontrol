@@ -116,8 +116,15 @@ class Configuration(UIComponent):
         try:
             self._converter.structure(dict, TransducerConfig)
         except Exception as e:
-            pass
-        return
+            atconfigs = data_dict.get('atconfigs', None)
+            if atconfigs:
+                for at_dict in atconfigs:
+                    if isinstance(at_dict.get('atf', None), int):
+                        si_var = SIVar(value=at_dict['atf'], si_prefix=SIPrefix.NONE, meta=ATF_META)
+                        at_dict['atf'] = self._converter.unstructure(si_var)
+                    if isinstance(at_dict.get('att', None), float) or isinstance(at_dict.get('att', None), int):
+                        si_var = SIVar(value=at_dict['att'], si_prefix=SIPrefix.NONE, meta=ATT_META)
+                        at_dict['att'] = self._converter.unstructure(si_var)
 
     def _load_config(self):
         if files.TRANSDUCER_CONFIG_FOLDER.exists() is False:
