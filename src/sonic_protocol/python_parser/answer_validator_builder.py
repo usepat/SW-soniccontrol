@@ -57,7 +57,7 @@ class AnswerValidatorBuilder:
         si_prefix = answer_field.field_type.si_prefix
         si_unit = answer_field.field_type.si_unit
         if si_prefix and si_unit:
-            result_str += " " + si_prefix.value + si_unit.value
+            result_str += " " + si_prefix.symbol + si_unit.value
         elif si_unit:
             result_str += " " + si_unit.value
      

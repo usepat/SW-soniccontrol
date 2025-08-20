@@ -3,14 +3,17 @@ import asyncio
 import logging
 from pathlib import Path
 from tkinter import filedialog
-from typing import Callable, List, Iterable, Optional, Tuple
+from typing import Callable, List, Iterable, Optional, Tuple, Any, cast
 import ttkbootstrap as ttk
 import json
 from sonic_protocol.python_parser import commands
+from sonic_protocol.schema import SIPrefix, SIUnit
+from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol.updater import Updater
 from soniccontrol_gui.ui_component import UIComponent
+from soniccontrol_gui.utils.si_unit import SIVar, SIVarMeta
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
 from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade
@@ -31,11 +34,16 @@ import attrs
 import cattrs
 
 
+ATF_META = SIVarMeta(si_unit=SIUnit.HERTZ, si_prefix_min=SIPrefix.NONE, si_prefix_max=SIPrefix.MEGA)
+ATT_META = SIVarMeta(si_unit=SIUnit.CELSIUS, si_prefix_min=SIPrefix.MILLI, si_prefix_max=SIPrefix.NONE)# Milli?
+
+
+
 @attrs.define(auto_attribs=True)
 class ATConfig:
-    atf: int = attrs.field(default=0)
+    atf: SIVar[int] = attrs.field(factory=lambda: SIVar(value=0, si_prefix=SIPrefix.NONE, meta=ATF_META))
     atk: float = attrs.field(default=0)
-    att: float = attrs.field(default=0)
+    att: SIVar[float] = attrs.field(factory=lambda: SIVar(value=0.0, si_prefix=SIPrefix.NONE, meta=ATT_META))
 
 @attrs.define(auto_attribs=True)
 class TransducerConfig():
@@ -50,8 +58,14 @@ class Configuration(UIComponent):
 
     def __init__(self, parent: UIComponent, device: SonicDevice, updater: Updater):
         self._logger = logging.getLogger(parent.logger.name + "." + Configuration.__name__)
-        
-        self._converter = cattrs.Converter()
+
+
+        # Use the shared, lazily-created forms converter so other UI code can
+        # reuse the same hooks and behavior (SIPrefix, SIUnit, SIVarMeta, SIVar).
+
+        # Is this bad?
+        self._converter = create_cattrs_converter_for_basic_serialization()
+
         # ensure that the name of the config does not get written into the json file
         omit_name_hook = cattrs.gen.make_dict_unstructure_fn(TransducerConfig, self._converter, name=cattrs.gen.override(omit=True))
         self._converter.register_unstructure_hook(TransducerConfig, omit_name_hook)
@@ -62,16 +76,15 @@ class Configuration(UIComponent):
         self._current_transducer_config: Optional[int] = None
         self._device = device
         self._interpreter = InterpreterEngine(device, updater)
-        
-        
+
         self._view = ConfigurationView(parent.view, self, self._count_atk_atf)
         self._form = FormWidget(self, self._view.form_slot, "Transducer Config", TransducerConfig)
         super().__init__(parent, self._view, self._logger)
 
-
         def show_script_error(e):
-                error = e.data["exception"]
-                MessageBox.show_error(self._view.root, f"{error.__class__.__name__}: {str(error)}")
+            error = e.data["exception"]
+            MessageBox.show_error(self._view.root, f"{error.__class__.__name__}: {str(error)}")
+
         self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, show_script_error)
 
         self._view.set_save_config_command(self._save_config)
@@ -225,9 +238,10 @@ class Configuration(UIComponent):
         config: TransducerConfig = self._form.attrs_object
         for i, atconfig in enumerate(config.atconfigs):
             # i+1 because atfs start at 1 and not 0.
-            await self._device.execute_command(commands.SetAtf(i+1, atconfig.atf))
+            # SIVar holds the primitive in .value; device commands expect primitives.
+            await self._device.execute_command(commands.SetAtf(i+1, atconfig.atf.to_prefix(SIPrefix.NONE)))
             await self._device.execute_command(commands.SetAtk(i+1, atconfig.atk))
-            await self._device.execute_command(commands.SetAtt(i+1, atconfig.att))
+            await self._device.execute_command(commands.SetAtt(i+1, atconfig.att.to_prefix(SIPrefix.NONE)))
 
         if config.init_script_path is not None:
             await self._execute_init_script(config.init_script_path)

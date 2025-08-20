@@ -10,7 +10,7 @@ class AnswerFieldToStringConverter:
         self._unit = ""
         si_prefix = field_def.field_type.si_prefix
         if si_prefix:
-            self._unit += si_prefix.value
+            self._unit += si_prefix.symbol
         si_unit = field_def.field_type.si_unit
         if si_unit:
             self._unit += si_unit.value

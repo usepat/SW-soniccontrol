@@ -4,6 +4,8 @@ import attrs
 import numpy as np
 
 import re
+from functools import total_ordering
+
 
 VersionTuple = Tuple[int, int, int]
 
@@ -65,14 +67,35 @@ class SIUnit(Enum):
     DEGREE = "°"
     PERCENT = "%"
 
+@total_ordering
 class SIPrefix(Enum):
-    NANO  = 'n'   # 10⁻⁹
-    MICRO = 'u'   # 10⁻⁶
-    MILLI = 'm'   # 10⁻³
-    NONE  = ''    # 10⁰ (base unit, no prefix)
-    KILO  = 'k'   # 10³
-    MEGA  = 'M'   # 10⁶
-    GIGA  = 'G'   # 10⁹
+    NANO  = ('n', -9)
+    MICRO = ('u', -6)
+    MILLI = ('m', -3)
+    DECI  = ('d', -2)
+    CENTI = ('c', -1)
+    NONE  = ('' , 0) #(base unit, no prefix)
+    KILO  = ('k', 3)
+    MEGA  = ('M', 6)
+    GIGA  = ('G', 9)
+
+    def __init__(self, symbol: str, exponent: int) -> None:
+        self.symbol = symbol
+        self.exponent = exponent
+
+    @property
+    def factor(self):
+        return 1 if self.exponent == 0 else 10 ** self.exponent
+    
+    def __eq__(self, other):
+        if isinstance(other, SIPrefix):
+            return self.exponent == other.exponent
+        return NotImplemented
+
+    def __lt__(self, other):
+        if isinstance(other, SIPrefix):
+            return self.exponent < other.exponent
+        return NotImplemented
 
 class ConverterType(Enum):
     """!

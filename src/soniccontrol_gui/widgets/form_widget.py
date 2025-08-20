@@ -1,14 +1,17 @@
 import abc
 from enum import Enum
 import inspect
+import math
 from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, Tuple, Type, TypeVar, Union, get_args, get_origin
 
 import copy
 import attrs
 import cattrs
 from pathlib import Path
+from sonic_protocol.schema import SIPrefix
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_forms
 from soniccontrol_gui.ui_component import UIComponent
+from soniccontrol_gui.utils.si_unit import SIVar
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TkinterView, View
 from soniccontrol_gui.constants import ui_labels, sizes
@@ -268,6 +271,146 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
 
 
     def bind_value_change(self, command: Callable[[PrimitiveT], None]):
+        self._callback = command
+
+
+class SITypeFieldView(FieldViewBase[SIVar]):
+    def __init__(self, master: TkinterView, field_name: str, *args, default_value: SIVar, **kwargs):
+        
+        _default_value = default_value
+        self._field_name = field_name
+        self._default_value: SIVar = _default_value 
+        self._str_value: ttk.StringVar = ttk.StringVar(value=str(_default_value))
+        field_view_kwargs = kwargs.pop("field_view_kwargs", {}) # Others also rely on it so dont pop
+        self._value: SIVar = _default_value
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._widget_name = parent_widget_name + "." + self._field_name
+        super().__init__(master, *args, **kwargs)
+        # We pop earlier so that the super__init__ does not fail,
+        # but we need restore because other the same Object might be used for other views(ATConfig)
+        kwargs['field_view_kwargs'] = field_view_kwargs
+        self._callback: Callable[[SIVar], None] = lambda _: None
+        self._str_value.trace_add("write", self._parse_str_value)
+
+
+    def _initialize_children(self) -> None:
+        self.label = ttk.Label(self, text=self._field_name)
+        self.entry = ttk.Entry(self, textvariable=self._str_value)
+        # Build readable labels for prefixes and a mapping back to the enum
+        # First collect only the allowed prefixes (allowed_prefix may raise, so be defensive)
+        prefixes: List[SIPrefix] = []
+        for p in SIPrefix:
+            try:
+                if self._value.allowed_prefix(p):
+                    prefixes.append(p)
+            except Exception:
+                # ignore prefixes that can't be queried
+                continue
+
+        def _prefix_label(p: SIPrefix) -> str:
+            # prefer explicit attributes, with safe fallbacks
+            sym = getattr(p, "symbol", None) or (p.value if isinstance(getattr(p, "value", None), str) else "")
+            si_unit = getattr(self._value.meta, "si_unit", None)
+            unit_str = getattr(si_unit, "value", "") if si_unit is not None else ""
+            if sym is not None:
+                return f"{sym}{unit_str}".strip()
+            return f"{p.name} {unit_str}".strip()
+
+        prefix_items = [_prefix_label(p) for p in prefixes]
+        # map label -> prefix (zip uses the same filtered prefixes list)
+        self._prefix_map = {label: p for label, p in zip(prefix_items, prefixes)}
+
+        # Combobox for selecting prefix (show readable labels)
+        self.si_unit_combobox = ttk.Combobox(self, values=prefix_items, state="readonly")
+        try:
+            current_prefix = getattr(self._value, "si_prefix", None)
+            if current_prefix is not None:
+                for lbl, p in self._prefix_map.items():
+                    if p == current_prefix:
+                        self.si_unit_combobox.set(lbl)
+                        break
+        except Exception:
+            pass
+
+        # handler: convert the numeric value to the new prefix so displayed number stays the same unit-wise
+        def _on_prefix_change(_=None):
+            sel = self.si_unit_combobox.get()
+            prefix = self._prefix_map.get(sel)
+            if prefix is None:
+                return
+            try:
+                # self._value assumed to be an SIVar instance (model)
+                # convert_to_prefix mutates value to represent same quantity in new prefix
+                self._value.convert_to_prefix(prefix)
+                # update the entry text to reflect converted numeric value
+                self._str_value.set(str(self._value.value))
+                # notify listeners
+                self._callback(self._value)
+            except Exception:
+                # out-of-range selection or other error: indicate to user
+                self.entry.configure(style=EntryStyle.DANGER.value)
+
+        self.si_unit_combobox.bind("<<ComboboxSelected>>", _on_prefix_change)
+        WidgetRegistry.register_widget(self.si_unit_combobox, "unit_combobox", self._widget_name)
+        WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
+        # Subscribe entry focus to scroll bar if available
+        if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame is not None:
+            self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
+
+    def _initialize_publish(self) -> None:
+        self.grid_columnconfigure(0, weight=1, uniform="col")
+        self.grid_columnconfigure(1, weight=1, uniform="col")
+
+        self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
+        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W)
+        self.si_unit_combobox.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
+
+    @property
+    def field_name(self) -> str:
+        return self._field_name
+
+    @property
+    def default(self) -> SIVar: 
+        return self._default_value
+
+    @property
+    def value(self) -> SIVar:
+        return self._value
+    
+    @value.setter
+    def value(self, v: SIVar) -> None:
+        self._value = v
+        self._str_value.set(str(self._value.value))
+
+    @value.setter
+    def set_value_without_setting_str(self, v: SIVar) -> None:
+        self._value = v
+ 
+    def _parse_str_value(self, *_args):
+        text = self._str_value.get()
+        if text == "":
+            # Don't set value or revert to default, just wait for valid input
+            self.entry.configure(style=EntryStyle.DANGER.value)
+            return
+        try:
+            value = type(self.value.value)(self._str_value.get())
+            self.set_value_without_setting_str = SIVar(value, self.value.si_prefix, self.value.meta)
+            self.entry.configure(style=EntryStyle.PRIMARY.value)
+        except Exception as _:
+            # I think it would be better to set to some value that signal a missing/broken value
+            # Right now when the input failed then default value gets set, which causes the str_value to be set
+            # which makes selecting every digit replacing it impossible, also the inputs for float is whack
+
+            # But when we use set_value_without_setting_str then the default_value is being used,
+            # even tho the input should be invalid
+
+            # I think we should change this somehow so the user experience is better and it also does not fail silently or using wrong values
+            self.set_value_without_setting_str = self._default_value 
+            self.entry.configure(style=EntryStyle.DANGER.value)
+        self._callback(self.value)
+
+
+    def bind_value_change(self, command: Callable[[SIVar], None]):
         self._callback = command
 
 
@@ -690,6 +833,8 @@ class DynamicFieldViewFactory:
             return BooleanFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type is str:
             return BasicTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
+        elif field_type is SIVar[int] or field_type is SIVar[float]:
+            return SITypeFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type == Optional[int] or field_type is Optional[int]:
             return NullableTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type == Optional[float] or field_type is Optional[float]:
