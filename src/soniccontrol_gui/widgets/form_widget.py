@@ -1,8 +1,7 @@
 import abc
 from enum import Enum
 import inspect
-import math
-from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, Tuple, Type, TypeVar, Union, get_args, get_origin
+from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, TypeVar, Union, get_args, get_origin
 
 import copy
 import attrs
@@ -163,6 +162,9 @@ class FieldViewBase(abc.ABC, Generic[T], View):
     @abc.abstractmethod
     def field_name(self) -> str: ...
 
+    @property
+    @abc.abstractmethod
+    def valid(self) -> bool: ...
 
     @property
     @abc.abstractmethod
@@ -197,6 +199,7 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self._si_unit_label = None
         self._si_unit = field_view_kwargs.get("SI_unit", None)
         self._value: PrimitiveT = _default_value
+        self._is_valid: bool = True  # Start with valid default value
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
@@ -231,6 +234,10 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         return self._field_name
 
     @property
+    def valid(self) -> bool:
+        return self._is_valid
+
+    @property
     def default(self) -> PrimitiveT: 
         return self._default_value
 
@@ -241,33 +248,29 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
     @value.setter
     def value(self, v: PrimitiveT) -> None:
         self._value = v
+        self._is_valid = True
         self._str_value.set(str(v))
 
-    @value.setter
     def set_value_without_setting_str(self, v: PrimitiveT) -> None:
         self._value = v
  
     def _parse_str_value(self, *_args):
         text = self._str_value.get()
         if text == "":
-            # Don't set value or revert to default, just wait for valid input
+            # Empty text is invalid for basic types
+            self._is_valid = False
             self.entry.configure(style=EntryStyle.DANGER.value)
             return
         try:
-            self.set_value_without_setting_str = self._factory(self._str_value.get()) 
+            self._value = self._factory(self._str_value.get()) 
+            self._is_valid = True
             self.entry.configure(style=EntryStyle.PRIMARY.value)
         except Exception as _:
-            # I think it would be better to set to some value that signal a missing/broken value
-            # Right now when the input failed then default value gets set, which causes the str_value to be set
-            # which makes selecting every digit replacing it impossible, also the inputs for float is whack
-
-            # But when we use set_value_without_setting_str then the default_value is being used,
-            # even tho the input should be invalid
-
-            # I think we should change this somehow so the user experience is better and it also does not fail silently or using wrong values
-            self.set_value_without_setting_str = self._default_value 
+            # Parse failed - mark as invalid but don't change the value
+            # This preserves the last valid value while indicating error state
+            self._is_valid = False
             self.entry.configure(style=EntryStyle.DANGER.value)
-        self._callback(self.value)
+        self._callback(self._value)
 
 
     def bind_value_change(self, command: Callable[[PrimitiveT], None]):
@@ -283,6 +286,11 @@ class SITypeFieldView(FieldViewBase[SIVar]):
         self._str_value: ttk.StringVar = ttk.StringVar(value=str(_default_value))
         field_view_kwargs = kwargs.pop("field_view_kwargs", {}) # Others also rely on it so dont pop
         self._value: SIVar = _default_value
+        self._is_valid: bool = True  # Start with valid default value
+        
+        # Determine value type from the default_value's actual type
+        self._value_type = type(default_value.value)
+        
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
@@ -370,6 +378,10 @@ class SITypeFieldView(FieldViewBase[SIVar]):
         return self._field_name
 
     @property
+    def valid(self) -> bool:
+        return self._is_valid
+
+    @property
     def default(self) -> SIVar: 
         return self._default_value
 
@@ -389,29 +401,267 @@ class SITypeFieldView(FieldViewBase[SIVar]):
     def _parse_str_value(self, *_args):
         text = self._str_value.get()
         if text == "":
-            # Don't set value or revert to default, just wait for valid input
+            # Empty text is invalid for SIVar
+            self._is_valid = False
             self.entry.configure(style=EntryStyle.DANGER.value)
             return
         try:
-            value = type(self.value.value)(self._str_value.get())
-            self.set_value_without_setting_str = SIVar(value, self.value.si_prefix, self.value.meta)
+            sel = self.si_unit_combobox.get()
+            current_prefix = self._prefix_map.get(sel, SIPrefix.NONE)
+            
+            # Use the value_type stored during initialization
+            value = self._value_type(text)
+            # Create new SIVar with fixed meta
+            if self._value:
+                self._value.value = value
+                self._value.si_prefix = current_prefix
+            self._is_valid = True
             self.entry.configure(style=EntryStyle.PRIMARY.value)
         except Exception as _:
-            # I think it would be better to set to some value that signal a missing/broken value
-            # Right now when the input failed then default value gets set, which causes the str_value to be set
-            # which makes selecting every digit replacing it impossible, also the inputs for float is whack
-
-            # But when we use set_value_without_setting_str then the default_value is being used,
-            # even tho the input should be invalid
-
-            # I think we should change this somehow so the user experience is better and it also does not fail silently or using wrong values
-            self.set_value_without_setting_str = self._default_value 
+            # Parse failed - mark as invalid but don't change the value
+            self._is_valid = False
             self.entry.configure(style=EntryStyle.DANGER.value)
         self._callback(self.value)
 
 
     def bind_value_change(self, command: Callable[[SIVar], None]):
         self._callback = command
+
+T = TypeVar("T", int, float)
+class OptionalSITypeFieldView(FieldViewBase[Optional[SIVar[T]]]):
+    def __init__(self, master: TkinterView, field_name: str, *args, 
+                 default_value: Optional[SIVar[T]] = None, **kwargs):
+        
+        self._field_name = field_name
+        self._default_value: Optional[SIVar] = default_value 
+        
+        # Initialize display value
+        if default_value is None:
+            display_value = ""
+        else:
+            display_value = str(default_value.value)
+            
+        self._str_value: ttk.StringVar = ttk.StringVar(value=display_value)
+        field_view_kwargs = kwargs.pop("field_view_kwargs", {})
+        
+        # Store the SIVar subclass factory from field_view_kwargs
+        self._si_var_class = field_view_kwargs.get("si_var_class", None)
+        
+        # Extract metadata from the subclass or default value
+        if self._si_var_class and hasattr(self._si_var_class, '_si_meta'):
+            self._si_meta = self._si_var_class._si_meta
+        elif default_value is not None:
+            self._si_meta = default_value.meta
+        else:
+            # No valid source for metadata - this is an error condition
+            raise ValueError(f"OptionalSITypeFieldView for field '{field_name}' requires either a si_var_class in field_view_kwargs or a default_value with metadata")
+        
+        # Extract the actual type from the default value if available,
+        # otherwise determine from the SIVar subclass
+        if default_value is not None:
+            self._value_type = type(default_value.value)
+        else:
+            # For new instances without default value, determine type from the SIVar subclass
+            # The si_var_class should be a specific subclass like AtfSiVar(SIVar[int]) or TemperatureSIVar(SIVar[float])
+            if self._si_var_class:
+                # Check if it's AtfSiVar (which uses int) or other types (which use float)
+                if hasattr(self._si_var_class, '__orig_bases__'):
+                    # Extract the Generic type parameter from SIVar[T]
+                    for base in self._si_var_class.__orig_bases__:
+                        if hasattr(base, '__origin__') and base.__origin__ is SIVar:
+                            if hasattr(base, '__args__') and base.__args__:
+                                self._value_type = base.__args__[0]
+                                break
+                    else:
+                        # Couldn't extract type from bases
+                        raise RuntimeError(f"Could not determine value type from SIVar subclass {self._si_var_class.__name__} for field '{self._field_name}'")
+                else:
+                    # If we can't determine from generic parameters
+                    raise RuntimeError(f"Could not determine value type from SIVar subclass {self._si_var_class.__name__} for field '{self._field_name}' - no __orig_bases__ available")
+            else:
+                # No si_var_class available - this should not happen due to earlier validation
+                raise RuntimeError(f"No si_var_class available for field '{self._field_name}' - this indicates a programming error")
+        
+        self._value: Optional[SIVar] = default_value
+        self._is_valid: bool = True  # Start with valid state (None is valid for optional)
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._widget_name = parent_widget_name + "." + self._field_name
+        super().__init__(master, *args, **kwargs)
+        kwargs['field_view_kwargs'] = field_view_kwargs
+        self._callback: Callable[[Optional[SIVar]], None] = lambda _: None
+        self._str_value.trace_add("write", self._parse_str_value)
+
+    def _get_default_prefix_from_constructor(self) -> Optional[SIPrefix]:
+        """Extract the default si_prefix value from the SIVar subclass constructor."""
+        if not self._si_var_class:
+            return None
+            
+        import inspect
+        try:
+            # Get the constructor signature
+            sig = inspect.signature(self._si_var_class.__init__)
+            
+            # Look for the si_prefix parameter
+            if 'si_prefix' in sig.parameters:
+                param = sig.parameters['si_prefix']
+                if param.default != inspect.Parameter.empty:
+                    return param.default
+            
+            return None
+        except Exception:
+            # If anything goes wrong with inspection, return None
+            return None
+
+    def _initialize_children(self) -> None:
+        self.label = ttk.Label(self, text=self._field_name)
+        self.entry = ttk.Entry(self, textvariable=self._str_value)
+        
+        # Build readable labels for prefixes using the fixed meta
+        prefixes: List[SIPrefix] = []
+        for p in SIPrefix:
+            try:
+                if self._si_meta.si_prefix_min <= p <= self._si_meta.si_prefix_max:
+                    prefixes.append(p)
+            except Exception:
+                continue
+
+        def _prefix_label(p: SIPrefix) -> str:
+            sym = getattr(p, "symbol", None) or ""
+            unit_str = getattr(self._si_meta.si_unit, "value", "") if self._si_meta.si_unit is not None else ""
+            if sym is not None:
+                return f"{sym}{unit_str}".strip()
+            return f"{p.name} {unit_str}".strip()
+
+        prefix_items = [_prefix_label(p) for p in prefixes]
+        self._prefix_map = {label: p for label, p in zip(prefix_items, prefixes)}
+
+        # Combobox for selecting prefix
+        self.si_unit_combobox = ttk.Combobox(self, values=prefix_items, state="readonly")
+        
+        # Set current prefix if value exists
+        if self._value is not None:
+            for lbl, p in self._prefix_map.items():
+                if p == self._value.si_prefix:
+                    self.si_unit_combobox.set(lbl)
+                    break
+        else:
+            # Get default prefix from the SIVar subclass constructor
+            default_prefix = self._get_default_prefix_from_constructor()
+            if default_prefix is not None:
+                # Set combobox to the default prefix from constructor
+                for lbl, p in self._prefix_map.items():
+                    if p == default_prefix:
+                        self.si_unit_combobox.set(lbl)
+                        break
+                else:
+                    # Programming error: default prefix not in allowed range
+                    raise RuntimeError(f"Programming error: Default prefix {default_prefix} from {self._si_var_class.__name__} constructor is not in allowed range {self._si_meta.si_prefix_min} to {self._si_meta.si_prefix_max} for field '{self._field_name}'")
+            else:
+                # Fallback: couldn't determine default prefix, use first available
+                if prefix_items:
+                    self.si_unit_combobox.set(prefix_items[0])
+
+        def _on_prefix_change(_=None):
+            sel = self.si_unit_combobox.get()
+            prefix = self._prefix_map.get(sel)
+            if prefix is None:
+                return
+            try:
+                if self._value is not None:
+                    # Convert existing value to new prefix
+                    self._value.convert_to_prefix(prefix)
+                    self._str_value.set(str(self._value.value))
+                self._callback(self._value)
+            except Exception:
+                self.entry.configure(style=EntryStyle.DANGER.value)
+
+        self.si_unit_combobox.bind("<<ComboboxSelected>>", _on_prefix_change)
+        WidgetRegistry.register_widget(self.si_unit_combobox, "unit_combobox", self._widget_name)
+        WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
+        
+        if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame is not None:
+            self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
+
+    def _initialize_publish(self) -> None:
+        self.grid_columnconfigure(0, weight=1, uniform="col")
+        self.grid_columnconfigure(1, weight=1, uniform="col")
+
+        self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
+        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W)
+        self.si_unit_combobox.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
+
+    @property
+    def field_name(self) -> str:
+        return self._field_name
+
+    @property
+    def valid(self) -> bool:
+        return self._is_valid
+
+    @property
+    def default(self) -> Optional[SIVar[T]]: 
+        return self._default_value
+
+    @property
+    def value(self) -> Optional[SIVar[T]]:
+        return self._value
+    
+    @value.setter
+    def value(self, v: Optional[SIVar[T]] | None) -> None:
+        # Handle both SIVar objects and unstructured dicts
+        if v is None:
+            self._value = None
+            self._str_value.set("")
+        else:
+            self._value = v
+            for lbl, p in self._prefix_map.items():
+                if p == self._value.si_prefix:
+                    self.si_unit_combobox.set(lbl)
+                    self._str_value.set(str(v.value))
+                    break
+ 
+    def _parse_str_value(self, *_args):
+        text = self._str_value.get().strip()
+        if text == "":
+            # Empty text means None value - this is valid for Optional
+            self._value = None
+            self._is_valid = True
+            self.entry.configure(style=EntryStyle.PRIMARY.value)
+            self._callback(self._value)
+            return
+            
+        try:
+            # Get current prefix from combobox
+            sel = self.si_unit_combobox.get()
+            current_prefix = self._prefix_map.get(sel, SIPrefix.NONE)
+            
+            # Use the value_type stored during initialization
+            value = self._value_type(text)
+            # Create new SIVar with fixed meta
+            if self._value:
+                self._value.value = value
+                self._value.si_prefix = current_prefix
+            else:
+                # Create new instance using the stored subclass factory
+                if self._si_var_class:
+                    # Use the specific subclass if available
+                    self._value = self._si_var_class(value, current_prefix)
+                else:
+                    # This should never happen since we validate si_var_class in __init__
+                    raise RuntimeError(f"No si_var_class available for field '{self._field_name}' - this indicates a programming error")
+            self._is_valid = True
+            self.entry.configure(style=EntryStyle.PRIMARY.value)
+            
+        except Exception:
+            # On parse error, mark as invalid but keep previous value
+            self._is_valid = False
+            self.entry.configure(style=EntryStyle.DANGER.value)
+            
+        self._callback(self._value)
+
+    def bind_value_change(self, command: Callable[[Optional[SIVar[T]]], None]):
+        self._callback = command
+
 
 
 class BooleanFieldView(FieldViewBase[bool]):
@@ -446,6 +696,10 @@ class BooleanFieldView(FieldViewBase[bool]):
     @property
     def field_name(self) -> str:
         return self._field_name
+
+    @property
+    def valid(self) -> bool:
+        return True  # Boolean fields are always valid
 
     @property
     def default(self) -> bool:
@@ -510,6 +764,10 @@ class EnumFieldView(FieldViewBase[Enum]):
         return self._field_name
 
     @property
+    def valid(self) -> bool:
+        return True  # Enum fields are always valid (combobox ensures valid selection)
+
+    @property
     def default(self) -> Enum: 
         return self._default_value
 
@@ -540,6 +798,7 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
         self._default_value: Optional[PrimitiveT] = default_value 
         self._str_value: ttk.StringVar = ttk.StringVar(value=str("" if default_value is None else default_value))
         self._value: Optional[PrimitiveT] = default_value
+        self._is_valid: bool = True  # Start with valid state (None is valid for nullable)
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
 
@@ -571,6 +830,10 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
         return self._field_name
 
     @property
+    def valid(self) -> bool:
+        return self._is_valid
+
+    @property
     def default(self) -> Optional[PrimitiveT]: 
         return self._default_value
 
@@ -586,10 +849,12 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
     def _parse_str_value(self, *_args):
         try:
             text = self._str_value.get()
-            self.value = None if text == "" else self._factory(text) 
+            self._value = None if text == "" else self._factory(text) 
+            self._is_valid = True
             self.entry.configure(style=EntryStyle.PRIMARY.value)
         except Exception as _:
-            self.value = self._default_value 
+            # Parse failed - mark as invalid but don't change the value
+            self._is_valid = False
             self.entry.configure(style=EntryStyle.DANGER.value)
         self._callback(self.value)
 
@@ -613,13 +878,19 @@ class OptionalPathFieldView(FieldViewBase[Optional[Path]]):
         self._browse_button = FileBrowseButtonView(self, self._widget_name, text=self._field_name, **field_view_kwargs)
         self._browse_button.pack(fill=ttk.X, expand=True, pady=sizes.SMALL_PADDING, padx=sizes.SMALL_PADDING)
 
-    def _initialize_children(self) -> None: ...
+    def _initialize_children(self) -> None: 
+        pass
 
-    def _initialize_publish(self) -> None: ...
+    def _initialize_publish(self) -> None: 
+        pass
 
     @property
     def field_name(self) -> str:
         return self._field_name
+
+    @property
+    def valid(self) -> bool:
+        return True  # OptionalPathFieldView is always valid (None is valid)
 
     @property
     def default(self) -> Path | None: 
@@ -644,6 +915,7 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         self._time_value = self._default_value[0] 
         self._time_value_str: ttk.StringVar = ttk.StringVar(value=str(self._time_value))
         self._unit_value_str: ttk.StringVar = ttk.StringVar(value=self._default_value[1])
+        self._is_valid: bool = True  # Start with valid default value
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
@@ -686,6 +958,10 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         return self._field_name
 
     @property
+    def valid(self) -> bool:
+        return self._is_valid
+
+    @property
     def default(self) -> HoldTuple: 
         return self._default_value
 
@@ -709,9 +985,11 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
     def _parse_str_value(self, *_args):
         try:
             self._time_value = float(self._time_value_str.get())
+            self._is_valid = True
             self._entry_time.configure(style=EntryStyle.PRIMARY.value)
         except Exception as _:
-            self._time_value = self._default_value[0] 
+            # Parse failed - mark as invalid but don't change the value
+            self._is_valid = False
             self._entry_time.configure(style=EntryStyle.DANGER.value)
         self._callback((self._time_value, self._unit_value_str.get())) # type: ignore
 
@@ -782,6 +1060,10 @@ class DictFieldView(FieldViewBase):
         return self._field_name
 
     @property
+    def valid(self) -> bool:
+        return True  # DictFieldView is always valid
+
+    @property
     def default(self) -> Dict[str, str]:
         return self._default_value
 
@@ -791,7 +1073,9 @@ class DictFieldView(FieldViewBase):
 
     @value.setter
     def value(self, v: Dict[str, str]) -> None: 
-        for child in self._entries_frame.children.values():
+        # Create a list copy to avoid "dictionary changed size during iteration" error
+        children_to_destroy = list(self._entries_frame.children.values())
+        for child in children_to_destroy:
             child.destroy()
         self._entries.clear()
 
@@ -833,14 +1117,35 @@ class DynamicFieldViewFactory:
             return BooleanFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type is str:
             return BasicTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
-        elif field_type is SIVar[int] or field_type is SIVar[float]:
+        elif inspect.isclass(field_type) and issubclass(field_type, SIVar):
+            # Handle direct SIVar subclasses like TemperatureSIVar, AtfSiVar
+            field_view_kwargs = kwargs.get("field_view_kwargs", {})
+            field_view_kwargs["si_var_class"] = field_type
+            kwargs["field_view_kwargs"] = field_view_kwargs
             return SITypeFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
-        elif field_type == Optional[int] or field_type is Optional[int]:
-            return NullableTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
-        elif field_type == Optional[float] or field_type is Optional[float]:
-            return NullableTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
-        elif field_type == Optional[str] or field_type is Optional[str]:
-            return NullableTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
+        elif get_origin(field_type) is Union and len(get_args(field_type)) == 2 and type(None) in get_args(field_type):
+            # Handle Optional[SomeType] which is Union[SomeType, None]
+            inner_type = get_args(field_type)[0] if get_args(field_type)[1] is type(None) else get_args(field_type)[1]
+            
+            # Check if it's Optional[SIVar subclass]
+            if inspect.isclass(inner_type) and issubclass(inner_type, SIVar):
+                # This is Optional[TemperatureSIVar] or similar SIVar subclass
+                # Pass the subclass in field_view_kwargs for the factory
+                field_view_kwargs = kwargs.get("field_view_kwargs", {})
+                field_view_kwargs["si_var_class"] = inner_type
+                kwargs["field_view_kwargs"] = field_view_kwargs
+                return OptionalSITypeFieldView[float](slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
+            elif inner_type is int:
+                return NullableTypeFieldView[int](slot, int, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
+            elif inner_type is float:
+                return NullableTypeFieldView[float](slot, float, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
+            elif inner_type is str:
+                return NullableTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
+            elif inner_type is Path:
+                return OptionalPathFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
+            else:
+                # Fallback for unsupported Optional types
+                raise TypeError(f"The field with name {field_name} has type Optional[{inner_type}], which is not supported")
         elif field_type is Dict or field_type is dict:
             return DictFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type is HolderArgs:
@@ -939,6 +1244,11 @@ class TupleFieldView(FieldViewBase[tuple]):
         return self._field_name
 
     @property
+    def valid(self) -> bool:
+        # TupleFieldView is valid if all its child field views are valid
+        return all(field.valid for field in self._fields)
+
+    @property
     def default(self) -> tuple:
         return tuple(field_view.default for field_view in self._fields)
     
@@ -1002,6 +1312,11 @@ class ObjectFieldView(FieldViewBase[dict]):
         return self._field_name
 
     @property
+    def valid(self) -> bool:
+        # ObjectFieldView is valid if all its child field views are valid
+        return all(field.valid for field in self._fields.values())
+
+    @property
     def default(self) -> dict:
         default_fields =  {}
         for field_name, field in self._fields.items():
@@ -1058,6 +1373,10 @@ class FormWidget(UIComponent):
         With this getter you can get the form data as a finished attr object.
         But for that you have to initialize FormWidget with an attrs class for form_attrs
         """
+        # Check validity before allowing access to attrs_object
+        if not self._attr_view.valid:
+            raise ValueError("Cannot access attrs_object: form contains invalid fields")
+        
         try:
             return self._converter.structure(self._attr_view.value, self._attrs_class)
         except cattrs.ClassValidationError as e:
@@ -1079,6 +1398,13 @@ class FormWidget(UIComponent):
         Gets the form data. Consists of nested dicts
         """
         return self._model_dict
+
+    @property
+    def is_valid(self) -> bool:
+        """
+        Check if all form fields are in a valid state
+        """
+        return self._attr_view.valid
 
     @form_data.setter
     def form_data(self, value: Dict[str, Any]):

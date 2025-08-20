@@ -6,11 +6,18 @@ import cattrs
 from sonic_protocol.schema import SIPrefix, SIUnit, Version
 from soniccontrol.data_capturing.experiment import ExperimentMetaData, convert_authors
 from soniccontrol.procedures.holder import HolderArgs
-from soniccontrol_gui.utils.si_unit import SIVar, SIVarMeta
+from soniccontrol_gui.utils.si_unit import SIVar, SIVarMeta, TemperatureSIVar, AtfSiVar
 
 def is_sivar(cls: Any) -> bool:
-        # Check for both the exact SIVar type and generic instances like SIVar[float]
-        return cls is SIVar or get_origin(cls) is SIVar
+    # Check for SIVar subclasses (including generic instances like SIVar[float])
+    if get_origin(cls) is SIVar:
+        return True
+    # Check if it's a direct subclass of SIVar (like TemperatureSIVar, AtfSiVar)
+    try:
+        return isinstance(cls, type) and issubclass(cls, SIVar)
+    except TypeError:
+        # issubclass can raise TypeError for non-class arguments
+        return False
 
 
 def add_author_hooks_to_converter(c: cattrs.Converter):
@@ -64,15 +71,7 @@ def create_cattrs_converter_for_forms():
         return value
 
     def si_prefix_structure_hook(value: Any, t: type):
-        if isinstance(value, str):
-            if value in SIPrefix.__members__:
-                return SIPrefix[value]
-            for u in SIPrefix:
-                if u.symbol == value or u.value == value:
-                    return u
-        if isinstance(value, SIPrefix):
-            return value
-        raise TypeError(f"expected SIPrefix or str, but got {t} instead")
+        return value
 
     def si_unit_structure_hook(value: Any, t: type):
         if isinstance(value, str):
@@ -88,21 +87,36 @@ def create_cattrs_converter_for_forms():
     def si_unit_unstructure_hook(u: SIUnit):
         return u
 
-
-    # Explicit SIVar handlers (SIVar is generic so gen cannot auto-create structure fn)
+        # Generic SIVar handlers that work with all subclasses  
     def si_var_structure_hook(obj: Any, t: type):
         if isinstance(obj, SIVar):
             return obj
         if not isinstance(obj, dict):
             raise TypeError(f"Cannot structure SIVar from {obj!r}")
+        
         value = obj.get("value")
+        if value is None:
+            raise ValueError("SIVar value cannot be None")
         si_prefix = converter.structure(obj.get("si_prefix"), SIPrefix)
         meta = converter.structure(obj.get("meta"), SIVarMeta)
-        _type = obj.get("T")
-        return SIVar(value=_type(value), si_prefix=si_prefix, meta=meta)
+        
+        # Determine value type from metadata or fallback to type detection
+        try:
+            # Try int first, then float
+            if isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
+                typed_value = int(value)
+            else:
+                typed_value = float(value)
+        except (ValueError, TypeError):
+            typed_value = value  # Keep original if conversion fails
+        
+        # Create a direct SIVar instance with the metadata
+        return SIVar(value=typed_value, si_prefix=si_prefix, meta=meta)  # type: ignore
 
-    def si_var_unstructure_hook(sivar: SIVar) -> SIVar:
+    def si_var_unstructure_hook(sivar: SIVar):
         return sivar
+
+    
 
     converter = cattrs.Converter()
     converter.register_structure_hook_func(is_enum, enum_structure_hook)
@@ -115,6 +129,7 @@ def create_cattrs_converter_for_forms():
     converter.register_unstructure_hook(SIPrefix, si_prefix_unstructure_hook)
     converter.register_structure_hook(SIUnit, si_unit_structure_hook)
     converter.register_unstructure_hook(SIUnit, si_unit_unstructure_hook)
+    # Generic SIVar hooks work for all subclasses
     converter.register_structure_hook_func(is_sivar, si_var_structure_hook)
     converter.register_unstructure_hook_func(is_sivar, si_var_unstructure_hook)
     add_author_hooks_to_converter(converter)
@@ -174,33 +189,35 @@ def create_cattrs_converter_for_basic_serialization():
         return u.name
 
 
-    # Explicit SIVar handlers (SIVar is generic so gen cannot auto-create structure fn)
+        # Generic SIVar handlers that work with all subclasses  
     def si_var_structure_hook(obj: Any, t: type):
         if isinstance(obj, SIVar):
             return obj
         if not isinstance(obj, dict):
             raise TypeError(f"Cannot structure SIVar from {obj!r}")
+        
         value = obj.get("value")
         if value is None:
             raise ValueError("SIVar value cannot be None")
         si_prefix = converter.structure(obj.get("si_prefix"), SIPrefix)
         meta = converter.structure(obj.get("meta"), SIVarMeta)
-        _type_name = obj.get("T")
         
-        # Convert type name string back to actual type
-        if _type_name == "int":
-            _type = int
-        elif _type_name == "float":
-            _type = float
-        else:
-            raise ValueError(f"Unsupported SIVar type: {_type_name}")
-            
-        return SIVar(value=_type(value), si_prefix=si_prefix, meta=meta)
+        # Determine value type from metadata or fallback to type detection
+        try:
+            # Try int first, then float
+            if isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
+                typed_value = int(value)
+            else:
+                typed_value = float(value)
+        except (ValueError, TypeError):
+            typed_value = value  # Keep original if conversion fails
+        
+        # Create a direct SIVar instance with the metadata
+        return SIVar(value=typed_value, si_prefix=si_prefix, meta=meta)  # type: ignore
 
     def si_var_unstructure_hook(sivar: SIVar):
         return {
             "value": sivar.value,
-            "T": type(sivar.value).__name__,
             "si_prefix": converter.unstructure(sivar.si_prefix),
             "meta": converter.unstructure(sivar.meta),
         }
@@ -219,6 +236,7 @@ def create_cattrs_converter_for_basic_serialization():
     converter.register_unstructure_hook(SIPrefix, si_prefix_unstructure_hook)
     converter.register_structure_hook(SIUnit, si_unit_structure_hook)
     converter.register_unstructure_hook(SIUnit, si_unit_unstructure_hook)
+    # Generic SIVar hooks work for all subclasses
     converter.register_structure_hook_func(is_sivar, si_var_structure_hook)
     converter.register_unstructure_hook_func(is_sivar, si_var_unstructure_hook)
 

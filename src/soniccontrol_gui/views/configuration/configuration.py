@@ -13,7 +13,7 @@ from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol.updater import Updater
 from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.utils.si_unit import SIVar, SIVarMeta
+from soniccontrol_gui.utils.si_unit import AtfSiVar, AttSiVar, SIVar, SIVarMeta
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
 from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade
@@ -34,16 +34,12 @@ import attrs
 import cattrs
 
 
-ATF_META = SIVarMeta(si_unit=SIUnit.HERTZ, si_prefix_min=SIPrefix.NONE, si_prefix_max=SIPrefix.MEGA)
-ATT_META = SIVarMeta(si_unit=SIUnit.CELSIUS, si_prefix_min=SIPrefix.MILLI, si_prefix_max=SIPrefix.NONE)# Milli?
-
-
 
 @attrs.define(auto_attribs=True)
 class ATConfig:
-    atf: SIVar[int] = attrs.field(factory=lambda: SIVar(value=0, si_prefix=SIPrefix.NONE, meta=ATF_META))
+    atf: AtfSiVar = attrs.field(default=AtfSiVar())
     atk: float = attrs.field(default=0)
-    att: SIVar[float] = attrs.field(factory=lambda: SIVar(value=0.0, si_prefix=SIPrefix.NONE, meta=ATT_META))
+    att: AttSiVar = attrs.field(default=AttSiVar())
 
 @attrs.define(auto_attribs=True)
 class TransducerConfig():
@@ -114,16 +110,16 @@ class Configuration(UIComponent):
 
     def apply_migration(self, data_dict: dict):
         try:
-            self._converter.structure(dict, TransducerConfig)
+            self._converter.structure(data_dict, TransducerConfig)
         except Exception as e:
             atconfigs = data_dict.get('atconfigs', None)
             if atconfigs:
                 for at_dict in atconfigs:
                     if isinstance(at_dict.get('atf', None), int):
-                        si_var = SIVar(value=at_dict['atf'], si_prefix=SIPrefix.NONE, meta=ATF_META)
+                        si_var = AtfSiVar(value=at_dict['atf'], si_prefix=SIPrefix.NONE)
                         at_dict['atf'] = self._converter.unstructure(si_var)
                     if isinstance(at_dict.get('att', None), float) or isinstance(at_dict.get('att', None), int):
-                        si_var = SIVar(value=at_dict['att'], si_prefix=SIPrefix.NONE, meta=ATT_META)
+                        si_var = AttSiVar(value=at_dict['att'], si_prefix=SIPrefix.NONE)
                         at_dict['att'] = self._converter.unstructure(si_var)
 
     def _load_config(self):

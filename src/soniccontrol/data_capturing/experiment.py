@@ -3,9 +3,10 @@ from typing import Any, Dict, List, Optional
 import attrs
 import datetime
 
-from sonic_protocol.schema import Version
+from sonic_protocol.schema import SIPrefix, SIUnit, Version
 from soniccontrol.data_capturing.capture_target import CaptureTargets
 from soniccontrol.device_data import FirmwareInfo
+from soniccontrol_gui.utils.si_unit import SIVar, SIVarMeta, TemperatureSIVar
 
 
 def convert_authors(x: Any) -> List[str]:
@@ -19,6 +20,7 @@ def convert_authors(x: Any) -> List[str]:
 
 
 
+TEMPERATURE_META = SIVarMeta(si_unit=SIUnit.CELSIUS, si_prefix_min=SIPrefix.MILLI, si_prefix_max=SIPrefix.NONE)
 # This here is in his own class, because it is used for the Form class directly.
 @attrs.define(auto_attribs=True)
 class ExperimentMetaData:
@@ -33,7 +35,7 @@ class ExperimentMetaData:
     location: Optional[str] = None
     description: str = ""
 
-    medium_temperature: Optional[float] = None
+    medium_temperature: Optional[TemperatureSIVar] = None
     gap: Optional[float] = None
     reflector: Optional[str] = None
     cable_length: Optional[float] = None

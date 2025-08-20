@@ -4,9 +4,11 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import attrs
 import cattrs
+from sonic_protocol.schema import SIPrefix
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
-from soniccontrol.data_capturing.experiment import ExperimentMetaData, convert_authors
+from soniccontrol.data_capturing.experiment import TEMPERATURE_META, ExperimentMetaData, convert_authors
 from soniccontrol_gui.ui_component import UIComponent
+from soniccontrol_gui.utils.si_unit import SIVar, TemperatureSIVar
 from soniccontrol_gui.view import TkinterView, View
 from soniccontrol_gui.constants import files, sizes, ui_labels
 
@@ -73,7 +75,19 @@ class ExperimentForm(UIComponent):
 
         
         self._metadata_form = FormWidget(self, self._view.metadata_form_slot, "", ExperimentMetaData, field_hooks=form_field_hooks)
-
+    def _apply_migration(self, data_dict_list: List[dict]):
+        for data_dict in data_dict_list:
+            form_data = data_dict['form_data'] # Should we access with get?
+            try:
+                self._converter.structure(dict, Template)
+            except Exception as e:
+                medium_temperature = form_data.get('medium_temperature', None)
+                if medium_temperature:
+                    try:    
+                        self._converter.structure(medium_temperature, SIVar)
+                    except Exception as e:
+                        si_var = TemperatureSIVar(value=medium_temperature, si_prefix=SIPrefix.NONE)
+                        form_data['medium_temperature'] = self._converter.unstructure(si_var)
 
     def _load_templates(self):
         if not files.EXPERIMENT_TEMPLATES_JSON.exists():
@@ -83,6 +97,7 @@ class ExperimentForm(UIComponent):
         self._logger.info("Load templates from %s", files.EXPERIMENT_TEMPLATES_JSON)
         with open(files.EXPERIMENT_TEMPLATES_JSON, "r") as file:
             data_dict = json.load(file)
+            self._apply_migration(data_dict)
             self._templates = self._converter.structure(data_dict, List[Template])
 
         self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
