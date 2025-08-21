@@ -819,11 +819,20 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
     @value.setter
     def value(self, v: Union[SIVar, None]) -> None:
         self._value = v
+        
         if v is None:
             self._update_str_value_without_trace("")
         else:
             # Update the string value without triggering trace recursion
             self._update_str_value_without_trace(str(v.value))
+            
+            # Update combobox to reflect the prefix of the new SIVar
+            if self.si_unit_combobox is not None:
+                for lbl, p in self._prefix_map.items():
+                    if p == v.si_prefix:
+                        self.si_unit_combobox.set(lbl)
+                        break
+            
             # Update optional widgets when value changes
             if self._use_scale and hasattr(self, 'scale'):
                 self._update_scale_range()
@@ -1662,6 +1671,8 @@ class ObjectFieldView(FieldViewBase[dict]):
         for field_name, value in v.items():
             # This updates also automatically the self._value of this class
             self._fields[field_name].value = value
+            # Ensure self._value is updated immediately for each field
+            self._value[field_name] = value
         self._callback(copy.deepcopy(self._value)) # We use deepcopy to avoid reference issues
 
 
