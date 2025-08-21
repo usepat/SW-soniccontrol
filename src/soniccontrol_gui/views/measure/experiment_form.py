@@ -1,5 +1,6 @@
 import copy
 import json
+from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import attrs
@@ -79,18 +80,43 @@ class ExperimentForm(UIComponent):
                 json.dump([], file)
             return
 
+        # Check if the file is a backup file and warn if so
+        if ".backup_" in files.EXPERIMENT_TEMPLATES_JSON.name:
+            self._logger.warning("Attempting to load a backup file as the main template file: %s", files.EXPERIMENT_TEMPLATES_JSON)
+
         self._logger.info("Load templates from %s", files.EXPERIMENT_TEMPLATES_JSON)
         with open(files.EXPERIMENT_TEMPLATES_JSON, "r") as file:
-            data_dict_list = json.load(file)
+            original_data = json.load(file)
+            data_dict_list = copy.deepcopy(original_data)  # Work with a copy
             
             # Apply migrations (including user interactions)
-            await self._apply_complete_migration(data_dict_list)
+            migration_applied = await self._apply_complete_migration(data_dict_list)
+            
+            # If migration was applied, create backup and save the migrated version
+            if migration_applied:
+                self._create_backup_file(files.EXPERIMENT_TEMPLATES_JSON)
+                self._logger.info("Migration applied to experiment templates, saving updated file")
+                with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as write_file:
+                    json.dump(data_dict_list, write_file, indent=2)
             
             # Now structure the migrated data
             self._templates = self._converter.structure(data_dict_list, List[Template])
 
-    async def _apply_complete_migration(self, data_dict_list: List[dict]):
-        """Apply complete migration including user interactions."""
+    def _create_backup_file(self, original_file: Path) -> Path:
+        """Create a backup copy of the original file."""
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file = original_file.with_suffix(f".backup_{timestamp}.json")
+        
+        # Copy the original file to backup
+        import shutil
+        shutil.copy2(original_file, backup_file)
+        self._logger.info("Created backup file: %s", backup_file)
+        return backup_file
+
+    async def _apply_complete_migration(self, data_dict_list: List[dict]) -> bool:
+        """Apply complete migration including user interactions. Returns True if any migration was performed."""
+        migration_applied = False
         for data_dict in data_dict_list:
             form_data = data_dict['form_data']
             try:
@@ -98,47 +124,47 @@ class ExperimentForm(UIComponent):
                 self._converter.structure(form_data, ExperimentMetaData)
             except Exception:
                 medium_temperature = form_data.get('medium_temperature', None)
-                if medium_temperature:
+                if medium_temperature is not None:
                     try:    
                         self._converter.structure(medium_temperature, SIVar)
                     except Exception:
                         si_var = TemperatureSIVar(value=medium_temperature, si_prefix=SIPrefix.NONE)
                         form_data['medium_temperature'] = self._converter.unstructure(si_var)
+                        migration_applied = True
                 
                 gap = form_data.get('gap', None)
-                if gap:
+                if gap is not None:
                     try:    
                         self._converter.structure(gap, SIVar)
                     except Exception:
                         # Show user dialog for gap migration
-                        si_prefix_selection = DynamicUserSelection(
-                            root=self._view.root,
-                            message="gap value is not in SI Units pls select a valid SI Unit",
+                        si_var_selection = DynamicUserSelection(
+                            self._view.root,
+                            message=f"Error in experiment template {form_data['experiment_name']}: {form_data['gap']}.Gap value is not in SI Units please select a valid SI Unit",
                             title="Select SI Unit",
-                            target_type=SIPrefix
+                            target_type=MeterSIVar
                         )
-                        si_prefix = await si_prefix_selection.wait_for_answer()
-                        if not isinstance(si_prefix, SIPrefix):
-                            si_prefix = SIPrefix.NONE 
-                        si_var = MeterSIVar(value=gap, si_prefix=si_prefix)
+                        si_var = await si_var_selection.wait_for_answer()
                         form_data['gap'] = self._converter.unstructure(si_var)
+                        migration_applied = True
                 
                 cable_length = form_data.get('cable_length', None)
-                if cable_length:
+                if cable_length is not None:
                     try:    
                         self._converter.structure(cable_length, SIVar)
                     except Exception:
-                        si_prefix_selection = DynamicUserSelection(
-                            root=self._view.root,
-                            message="gap value is not in SI Units pls select a valid SI Unit",
+                        si_var_selection = DynamicUserSelection(
+                            self._view.root,
+                            message=f"Error in experiment template {form_data['experiment_name']}: {form_data['cable_length']}.Cable_length is not in SI Units please select a valid SI Unit",
                             title="Select SI Unit",
-                            target_type=SIPrefix
+                            target_type=MeterSIVar,
+
                         )
-                        si_prefix = await si_prefix_selection.wait_for_answer()
-                        if not isinstance(si_prefix, SIPrefix):
-                            si_prefix = SIPrefix.NONE 
-                        si_var = MeterSIVar(value=cable_length, si_prefix=si_prefix)
+                        si_var = await si_var_selection.wait_for_answer()
                         form_data['cable_length'] = self._converter.unstructure(si_var)
+                        migration_applied = True
+        
+        return migration_applied
         
     @property
     def selected_template_index(self) -> Optional[int]:

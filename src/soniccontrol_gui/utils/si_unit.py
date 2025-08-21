@@ -11,6 +11,9 @@ class SIVarMeta:
     si_unit: SIUnit
     si_prefix_min: SIPrefix
     si_prefix_max: SIPrefix
+    # Range values as tuples of (value, prefix)
+    min_value: tuple[float, SIPrefix] = attrs.field(default=(0.0, SIPrefix.NONE))
+    max_value: tuple[float, SIPrefix] = attrs.field(default=(1000.0, SIPrefix.NONE))
 
 
 T = TypeVar("T", int, float)
@@ -72,6 +75,24 @@ class SIVar(Generic[T], metaclass=SIVarMetaClass):
     def allowed_prefix(self, prefix: SIPrefix) -> bool:
         return self.meta.si_prefix_min <= prefix <= self.meta.si_prefix_max
 
+    def get_min_value_in_prefix(self, target_prefix: SIPrefix) -> float:
+        """Get the minimum allowed value converted to the target prefix."""
+        min_val, min_prefix = self.meta.min_value
+        # Convert from min_prefix to target_prefix
+        return min_val * (min_prefix.factor / target_prefix.factor)
+
+    def get_max_value_in_prefix(self, target_prefix: SIPrefix) -> float:
+        """Get the maximum allowed value converted to the target prefix."""
+        max_val, max_prefix = self.meta.max_value
+        # Convert from max_prefix to target_prefix
+        return max_val * (max_prefix.factor / target_prefix.factor)
+
+    def is_value_in_range(self, value: float, prefix: SIPrefix) -> bool:
+        """Check if a value in the given prefix is within the allowed range."""
+        min_val = self.get_min_value_in_prefix(prefix)
+        max_val = self.get_max_value_in_prefix(prefix)
+        return min_val <= value <= max_val
+
     def to_prefix(self, prefix: SIPrefix):
         if not self.allowed_prefix(prefix):
             raise ValueError("Prefix outside specified limits")
@@ -93,36 +114,79 @@ class SIVar(Generic[T], metaclass=SIVarMetaClass):
         self.si_prefix = prefix
 
 
-# Define specific SI variable types with fixed metadata
-ATF_META = SIVarMeta(si_unit=SIUnit.HERTZ, si_prefix_min=SIPrefix.NONE, si_prefix_max=SIPrefix.MEGA)
-
-class AtfSiVar(SIVar[int], si_meta=ATF_META):
-    """ATF frequency variable with fixed metadata."""
-    
-    def __init__(self, value: int = 0, si_prefix: SIPrefix = SIPrefix.NONE):
-        super().__init__(value=value, si_prefix=si_prefix)
-
-ATT_META = SIVarMeta(si_unit=SIUnit.CELSIUS, si_prefix_min=SIPrefix.MILLI, si_prefix_max=SIPrefix.NONE)# Milli?
-
-class AttSiVar(SIVar[float], si_meta=ATT_META):
-    """ATF frequency variable with fixed metadata."""
-    
-    def __init__(self, value: float = 0.0, si_prefix: SIPrefix = SIPrefix.NONE):
-        super().__init__(value=value, si_prefix=si_prefix)
-
-TEMPERATURE_META = SIVarMeta(si_unit=SIUnit.CELSIUS, si_prefix_min=SIPrefix.MILLI, si_prefix_max=SIPrefix.NONE)
-
+TEMPERATURE_META = SIVarMeta(
+    si_unit=SIUnit.CELSIUS, 
+    si_prefix_min=SIPrefix.MILLI, 
+    si_prefix_max=SIPrefix.NONE,
+    min_value=(-273.15, SIPrefix.NONE),     # Absolute zero
+    max_value=(1000.0, SIPrefix.NONE)       # 1000°C
+)
 
 class TemperatureSIVar(SIVar[float], si_meta=TEMPERATURE_META):
     """Temperature variable with fixed metadata."""
     
+    def __init__(self, value: float = 20.0, si_prefix: SIPrefix = SIPrefix.NONE):
+        super().__init__(value=value, si_prefix=si_prefix)
+
+METER_META = SIVarMeta(
+    si_unit=SIUnit.METER, 
+    si_prefix_min=SIPrefix.MILLI, 
+    si_prefix_max=SIPrefix.NONE,
+    min_value=(0.0, SIPrefix.MILLI),      # 0mm
+    max_value=(1000.0, SIPrefix.NONE)     # 1000m
+)
+
+class MeterSIVar(SIVar[float], si_meta=METER_META):
+    """Distance variable with fixed metadata."""
+    
     def __init__(self, value: float = 0.0, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
-METER_META = SIVarMeta(si_unit=SIUnit.METER, si_prefix_min=SIPrefix.MILLI, si_prefix_max=SIPrefix.NONE)
+FREQUENCY_META = SIVarMeta(
+    si_unit=SIUnit.HERTZ, 
+    si_prefix_min=SIPrefix.NONE, 
+    si_prefix_max=SIPrefix.MEGA,
+    min_value=(100000, SIPrefix.NONE),        # 100kHz
+    max_value=(10, SIPrefix.MEGA)       # 10MHz
+)
 
-class MeterSIVar(SIVar[float], si_meta=METER_META):
-    """Temperature variable with fixed metadata."""
+class FrequencySIVar(SIVar[int], si_meta=FREQUENCY_META):
+    """Frequency variable for home UI with flexible range."""
     
-    def __init__(self, value: float = 0.0, si_prefix: SIPrefix = SIPrefix.NONE):
+    def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
+        super().__init__(value=value, si_prefix=si_prefix)
+
+GAIN_META = SIVarMeta(
+    si_unit=SIUnit.PERCENT, 
+    si_prefix_min=SIPrefix.NONE, 
+    si_prefix_max=SIPrefix.NONE,  # Only use base unit (no prefix)
+    min_value=(0, SIPrefix.NONE),        # 0%
+    max_value=(150, SIPrefix.NONE)       # 150%
+)
+
+class GainSIVar(SIVar[int], si_meta=GAIN_META):
+    """Gain variable for home UI (single prefix - no combobox)."""
+    
+    def __init__(self, value: int = 0, si_prefix: SIPrefix = SIPrefix.NONE):
+        super().__init__(value=value, si_prefix=si_prefix)
+
+
+class AtfSiVar(SIVar[int], si_meta=FREQUENCY_META):
+    """ATF frequency variable with fixed metadata."""
+    
+    def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
+        super().__init__(value=value, si_prefix=si_prefix)
+
+ATT_META = SIVarMeta(
+    si_unit=SIUnit.CELSIUS, 
+    si_prefix_min=SIPrefix.MILLI, 
+    si_prefix_max=SIPrefix.NONE,
+    min_value=(-273.15, SIPrefix.NONE),       # 0°C
+    max_value=(1000.0, SIPrefix.NONE)      # 100°C
+)
+
+class AttSiVar(SIVar[float], si_meta=ATT_META):
+    """ATF frequency variable with fixed metadata."""
+    
+    def __init__(self, value: float = 20.0, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)

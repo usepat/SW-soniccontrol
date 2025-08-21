@@ -1,7 +1,9 @@
 
 import asyncio
+import datetime
 import logging
 from pathlib import Path
+import shutil
 from tkinter import filedialog
 from typing import Callable, List, Iterable, Optional, Tuple, Any, cast
 import ttkbootstrap as ttk
@@ -37,9 +39,15 @@ import cattrs
 
 @attrs.define(auto_attribs=True)
 class ATConfig:
-    atf: AtfSiVar = attrs.field(default=AtfSiVar())
+    atf: AtfSiVar = attrs.field(
+        default=AtfSiVar(), 
+        #metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}
+    )
     atk: float = attrs.field(default=0)
-    att: AttSiVar = attrs.field(default=AttSiVar())
+    att: AttSiVar = attrs.field(
+        default=AttSiVar(), 
+        #metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}
+    )
 
 @attrs.define(auto_attribs=True)
 class TransducerConfig():
@@ -108,19 +116,35 @@ class Configuration(UIComponent):
             data_dict = self._converter.unstructure(TransducerConfig())
             json.dump(data_dict, file)
 
-    def apply_migration(self, data_dict: dict):
+    def apply_migration(self, data_dict: dict) -> bool:
+        """Apply migration to data dict. Returns True if migration was performed."""
         try:
             self._converter.structure(data_dict, TransducerConfig)
-        except Exception as e:
+            return False  # No migration needed
+        except Exception:
+            migration_applied = False
             atconfigs = data_dict.get('atconfigs', None)
             if atconfigs:
                 for at_dict in atconfigs:
                     if isinstance(at_dict.get('atf', None), int):
                         si_var = AtfSiVar(value=at_dict['atf'], si_prefix=SIPrefix.NONE)
                         at_dict['atf'] = self._converter.unstructure(si_var)
+                        migration_applied = True
                     if isinstance(at_dict.get('att', None), float) or isinstance(at_dict.get('att', None), int):
                         si_var = AttSiVar(value=at_dict['att'], si_prefix=SIPrefix.NONE)
                         at_dict['att'] = self._converter.unstructure(si_var)
+                        migration_applied = True
+            return migration_applied
+
+    def _create_backup_file(self, original_file: Path) -> Path:
+        """Create a backup copy of the original file."""
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file = original_file.with_suffix(f".backup_{timestamp}.json")
+        
+        # Copy the original file to backup
+        shutil.copy2(original_file, backup_file)
+        self._logger.info("Created backup file: %s", backup_file)
+        return backup_file
 
     def _load_config(self):
         if files.TRANSDUCER_CONFIG_FOLDER.exists() is False:
@@ -128,18 +152,33 @@ class Configuration(UIComponent):
             files.TRANSDUCER_CONFIG_FOLDER.mkdir(parents=True, exist_ok=True)
             self._create_default_config_file()
 
-        if not any(files.TRANSDUCER_CONFIG_FOLDER.glob("*.json")):
-            self._logger.info("No JSON files found in the transducer config folder")
+        # Check if any non-backup JSON files exist
+        non_backup_json_files = [f for f in files.TRANSDUCER_CONFIG_FOLDER.glob("*.json") if ".backup_" not in f.name]
+        if not non_backup_json_files:
+            self._logger.info("No non-backup JSON files found in the transducer config folder")
             self._create_default_config_file()   
 
         self._logger.info("Load configuration from %s", files.TRANSDUCER_CONFIG_FOLDER)
         for json_file in files.TRANSDUCER_CONFIG_FOLDER.glob("*.json"):
+            # Skip backup files
+            if ".backup_" in json_file.name:
+                self._logger.debug("Skipping backup file: %s", json_file.name)
+                continue
+                
             with open(json_file, "r") as file:
                 try:
                     data_dict = json.load(file)
-                    self.apply_migration(data_dict)
-                    # Should we override the file content manually after migration
-                    # or maybe keep a copy of the old file?
+                    
+                    # Apply migration and check if changes were made
+                    migration_applied = self.apply_migration(data_dict)
+                    
+                    if migration_applied:
+                        # Create backup and save migrated version
+                        self._create_backup_file(json_file)
+                        self._logger.info("Migration applied to %s, saving updated file", json_file)
+                        with open(json_file, "w") as write_file:
+                            json.dump(data_dict, write_file, indent=2)
+                    
                     config = self._converter.structure(data_dict, TransducerConfig)
                     config.name = json_file.stem
                     self._configs.append(config)
@@ -158,6 +197,11 @@ class Configuration(UIComponent):
             self._logger.warn("There exists no file with the specified path")
             MessageBox.show_error(self._view.root, "There exists no file with the specified path")
             return
+            
+        # Warn if user is trying to import a backup file
+        if ".backup_" in path.name:
+            self._logger.warning("Importing a backup file: %s", path.name)
+            
         with open(path, "r") as file:
             try:
                 data_dict = json.load(file)

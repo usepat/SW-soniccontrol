@@ -212,7 +212,7 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
 
     def _initialize_children(self) -> None:
         self.label = ttk.Label(self, text=self._field_name)
-        self.entry = ttk.Entry(self, textvariable=self._str_value)
+        self.entry = ttk.Entry(self, textvariable=self._str_value, width=12)
         if self._si_unit is not None:
             self._si_unit_label = ttk.Label(self, text=self._si_unit, state="readonly")
         WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
@@ -221,11 +221,12 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
             self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
-        self.grid_columnconfigure(0, weight=1, uniform="col")
-        self.grid_columnconfigure(1, weight=1, uniform="col")
+        self.grid_columnconfigure(0, weight=0, minsize=80)      # Label: fixed width
+        self.grid_columnconfigure(1, weight=1, minsize=120)     # Entry: expandable
+        self.grid_rowconfigure(0, weight=1)                     # Allow vertical expansion
 
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
-        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W)
+        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.EW)
         if self._si_unit_label:
             self._si_unit_label.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
 
@@ -283,13 +284,17 @@ class SITypeFieldView(FieldViewBase[SIVar]):
         _default_value = default_value
         self._field_name = field_name
         self._default_value: SIVar = _default_value 
-        self._str_value: ttk.StringVar = ttk.StringVar(value=str(_default_value))
+        self._str_value: ttk.StringVar = ttk.StringVar(value=str(_default_value.value))
         field_view_kwargs = kwargs.pop("field_view_kwargs", {}) # Others also rely on it so dont pop
         self._value: SIVar = _default_value
         self._is_valid: bool = True  # Start with valid default value
         
         # Determine value type from the default_value's actual type
         self._value_type = type(default_value.value)
+        
+        # Extract optional UI elements from kwargs
+        self._use_scale = field_view_kwargs.get("use_scale", False)
+        self._use_spinbox = field_view_kwargs.get("use_spinbox", False)
         
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
@@ -298,12 +303,99 @@ class SITypeFieldView(FieldViewBase[SIVar]):
         # but we need restore because other the same Object might be used for other views(ATConfig)
         kwargs['field_view_kwargs'] = field_view_kwargs
         self._callback: Callable[[SIVar], None] = lambda _: None
-        self._str_value.trace_add("write", self._parse_str_value)
+        self._trace_id = self._str_value.trace_add("write", self._parse_str_value)
+        
+        # Track timer for visual feedback to avoid multiple overlapping timers
+        self._style_reset_timer = None
+        
+        # Flag to prevent recursive scale updates
+        self._updating_scale = False
+
+    def _clamp_value_with_feedback(self, value, prefix, update_callback: Optional[Callable[[Any], None]] = None):
+        """
+        Clamp a value to the valid range and provide visual feedback.
+        
+        Args:
+            value: The value to clamp
+            prefix: The SI prefix for range calculation
+            update_callback: Optional callback to update the UI with clamped value
+            
+        Returns:
+            tuple: (clamped_value, was_clamped)
+        """
+        if not (self._value and hasattr(self._value, 'is_value_in_range')):
+            return value, False
+            
+        if self._value.is_value_in_range(value, prefix):
+            # Value is in range - reset to normal style
+            self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
+            self._is_valid = True
+            return value, False
+            
+        # Value is out of range - clamp it
+        was_clamped = False
+        if hasattr(self._value, 'get_min_value_in_prefix') and hasattr(self._value, 'get_max_value_in_prefix'):
+            min_val = self._value.get_min_value_in_prefix(prefix)
+            max_val = self._value.get_max_value_in_prefix(prefix)
+            # Clamp the value to the valid range
+            clamped_value = max(min_val, min(max_val, value))
+            # Convert back to the correct type
+            clamped_value = self._value_type(clamped_value)
+            was_clamped = True
+            
+            # Update UI if callback provided
+            if update_callback:
+                update_callback(clamped_value)
+            
+            # Show visual feedback for clamping
+            self._show_clamp_feedback()
+            
+            return clamped_value, was_clamped
+            
+        return value, False
+    
+    def _show_clamp_feedback(self):
+        """Show temporary visual feedback that a value was clamped."""
+        # Cancel any existing timer to avoid overlapping
+        if self._style_reset_timer:
+            self.after_cancel(self._style_reset_timer)
+            
+        # Show warning style
+        self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+        self._is_valid = False
+        
+        # Reset style after delay
+        def _reset_style():
+            self._style_reset_timer = None
+            if hasattr(self, '_get_input_widget'):
+                self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
+                self._is_valid = True
+                
+        self._style_reset_timer = self.after(1500, _reset_style)
+
+    def _update_str_value_without_trace(self, new_value: str):
+        """Update the string value without triggering the trace callback to avoid recursion."""
+        try:
+            self._str_value.trace_remove("write", self._trace_id)
+        except ValueError:
+            pass  # Trace might not exist
+        self._str_value.set(new_value)
+        self._trace_id = self._str_value.trace_add("write", self._parse_str_value)
+
+    def destroy(self):
+        """Clean up resources when widget is destroyed."""
+        # Cancel any pending timer
+        if self._style_reset_timer:
+            self.after_cancel(self._style_reset_timer)
+            self._style_reset_timer = None
+        # Call parent destroy
+        super().destroy()
 
 
     def _initialize_children(self) -> None:
         self.label = ttk.Label(self, text=self._field_name)
-        self.entry = ttk.Entry(self, textvariable=self._str_value)
+        self.entry = ttk.Entry(self, textvariable=self._str_value, width=12)
+        
         # Build readable labels for prefixes and a mapping back to the enum
         # First collect only the allowed prefixes (allowed_prefix may raise, so be defensive)
         prefixes: List[SIPrefix] = []
@@ -328,20 +420,35 @@ class SITypeFieldView(FieldViewBase[SIVar]):
         # map label -> prefix (zip uses the same filtered prefixes list)
         self._prefix_map = {label: p for label, p in zip(prefix_items, prefixes)}
 
-        # Combobox for selecting prefix (show readable labels)
-        self.si_unit_combobox = ttk.Combobox(self, values=prefix_items, state="readonly")
-        try:
-            current_prefix = getattr(self._value, "si_prefix", None)
-            if current_prefix is not None:
-                for lbl, p in self._prefix_map.items():
-                    if p == current_prefix:
-                        self.si_unit_combobox.set(lbl)
-                        break
-        except Exception:
-            pass
+        # Check if there's only one allowed prefix
+        if len(prefixes) == 1:
+            # Only one prefix allowed - use a label instead of combobox
+            current_prefix_label = prefix_items[0]
+            self.si_unit_label = ttk.Label(self, text=current_prefix_label, state="readonly")
+            self.si_unit_combobox = None  # No combobox needed
+        else:
+            # Multiple prefixes - use combobox for selection with dynamic width
+            max_width = max(len(item) for item in prefix_items) if prefix_items else 5
+            combobox_width = min(max(max_width + 2, 5), 8)  # Between 5-8 characters
+            self.si_unit_combobox = ttk.Combobox(self, values=prefix_items, state="readonly", width=combobox_width)
+            self.si_unit_label = None  # No label needed
+            
+            try:
+                current_prefix = getattr(self._value, "si_prefix", None)
+                if current_prefix is not None:
+                    for lbl, p in self._prefix_map.items():
+                        if p == current_prefix:
+                            self.si_unit_combobox.set(lbl)
+                            break
+            except Exception:
+                pass
 
         # handler: convert the numeric value to the new prefix so displayed number stays the same unit-wise
         def _on_prefix_change(_=None):
+            # Only handle prefix changes if combobox exists (multiple prefixes)
+            if self.si_unit_combobox is None:
+                return
+                
             sel = self.si_unit_combobox.get()
             prefix = self._prefix_map.get(sel)
             if prefix is None:
@@ -350,28 +457,243 @@ class SITypeFieldView(FieldViewBase[SIVar]):
                 # self._value assumed to be an SIVar instance (model)
                 # convert_to_prefix mutates value to represent same quantity in new prefix
                 self._value.convert_to_prefix(prefix)
+                
+                # After prefix conversion, check if the value is still in valid range
+                # and clamp it if necessary
+                current_value = self._value.value
+                if not self._value.is_value_in_range(current_value, prefix):
+                    # Value is out of range after prefix conversion - clamp it
+                    min_val = self._value.get_min_value_in_prefix(prefix)
+                    max_val = self._value.get_max_value_in_prefix(prefix)
+                    clamped_value = max(min_val, min(max_val, current_value))
+                    # Convert to the appropriate type
+                    clamped_value = self._value_type(clamped_value)
+                    self._value.value = clamped_value
+                    # Show visual feedback for clamping
+                    self._show_clamp_feedback()
+                
                 # update the entry text to reflect converted numeric value
-                self._str_value.set(str(self._value.value))
+                self._update_str_value_without_trace(str(self._value.value))
+                # Update scale range if scale is enabled
+                if self._use_scale:
+                    self._update_scale_range()
+                    # Also update the scale position to the new converted value
+                    self._updating_scale = True
+                    try:
+                        self.scale.set(float(self._value.value))
+                    finally:
+                        self._updating_scale = False
+                # Update spinbox range if spinbox is enabled
+                if self._use_spinbox:
+                    self._update_spinbox_range()
                 # notify listeners
                 self._callback(self._value)
             except Exception:
                 # out-of-range selection or other error: indicate to user
-                self.entry.configure(style=EntryStyle.DANGER.value)
+                self._get_input_widget().configure(style=EntryStyle.DANGER.value)
 
-        self.si_unit_combobox.bind("<<ComboboxSelected>>", _on_prefix_change)
-        WidgetRegistry.register_widget(self.si_unit_combobox, "unit_combobox", self._widget_name)
+        # Only bind combobox event if combobox exists
+        if self.si_unit_combobox is not None:
+            self.si_unit_combobox.bind("<<ComboboxSelected>>", _on_prefix_change)
+        
+        # Optional Scale widget
+        if self._use_scale:
+            # Create a frame to hold the scale and its labels
+            self.scale_frame = ttk.Frame(self)
+            self.scale = ttk.Scale(self.scale_frame, orient='horizontal')
+            
+            # Create min/max labels for the scale
+            self.scale_min_label = ttk.Label(self.scale_frame, text="0")
+            self.scale_max_label = ttk.Label(self.scale_frame, text="100")
+            
+            # Layout the scale frame: min_label | scale | max_label
+            self.scale_frame.grid_columnconfigure(1, weight=1)  # Scale takes most space
+            self.scale_min_label.grid(row=0, column=0, padx=2)
+            self.scale.grid(row=0, column=1, sticky=ttk.EW, padx=5)
+            self.scale_max_label.grid(row=0, column=2, padx=2)
+            
+            self._update_scale_range()
+            self.scale.set(float(self._value.value))
+            
+            def _on_scale_change(value):
+                # Prevent recursive calls
+                if self._updating_scale:
+                    return
+                    
+                try:
+                    # Convert the scale value to the appropriate type
+                    scaled_value = self._value_type(float(value))
+                    
+                    # Clamp value if needed and provide visual feedback
+                    def update_scale_position(clamped_val):
+                        # Set the flag to prevent recursion
+                        self._updating_scale = True
+                        try:
+                            self.scale.set(float(clamped_val))
+                        finally:
+                            self._updating_scale = False
+                    
+                    scaled_value, was_clamped = self._clamp_value_with_feedback(
+                        scaled_value, self._value.si_prefix, update_scale_position)
+                    
+                    self._value.value = scaled_value
+                    # Update the string value without triggering trace recursion
+                    self._update_str_value_without_trace(str(scaled_value))
+                    self._callback(self._value)
+                except Exception:
+                    self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+            
+            self.scale.configure(command=_on_scale_change)
+            #WidgetRegistry.register_widget(self.scale, "scale", self._widget_name)
+        
+        # Optional Spinbox widget
+        if self._use_spinbox:
+            self.spinbox = ttk.Spinbox(self, textvariable=self._str_value, width=12)
+            self._update_spinbox_range()
+            
+            def _on_spinbox_change():
+                # Parse the spinbox value and trigger validation
+                self._parse_str_value()
+            
+            self.spinbox.configure(command=_on_spinbox_change)
+            WidgetRegistry.register_widget(self.spinbox, "spinbox", self._widget_name)
+
+        # Only register combobox if it exists (multiple prefixes)
+        if self.si_unit_combobox is not None:
+            WidgetRegistry.register_widget(self.si_unit_combobox, "unit_combobox", self._widget_name)
+        # Register label if it exists (single prefix)
+        if self.si_unit_label is not None:
+            WidgetRegistry.register_widget(self.si_unit_label, "unit_label", self._widget_name)
+            
         WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
         # Subscribe entry focus to scroll bar if available
         if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame is not None:
-            self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
+            # Subscribe the appropriate input widget based on what's being used
+            if self._use_spinbox:
+                self.subscribe_focus_to_scroll(self.spinbox, self._top_scroll_frame)
+            else:
+                self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
+
+    def _update_scale_range(self) -> None:
+        """Update the scale widget range based on the current prefix and metadata range."""
+        if not self._use_scale or not hasattr(self, 'scale'):
+            return
+            
+        try:
+            # Get the min/max values in the current prefix from metadata
+            current_prefix = self._value.si_prefix
+            range_min = self._value.get_min_value_in_prefix(current_prefix)
+            range_max = self._value.get_max_value_in_prefix(current_prefix)
+            
+            # Configure the scale with proper range
+            self.scale.configure(from_=range_min, to=range_max)
+            
+            # Update the labels if they exist
+            if hasattr(self, 'scale_min_label') and hasattr(self, 'scale_max_label'):
+                # Format the numbers nicely
+                if isinstance(self._value.value, int):
+                    min_text = f"{int(range_min)}"
+                    max_text = f"{int(range_max)}"
+                else:
+                    min_text = f"{range_min:.1f}"
+                    max_text = f"{range_max:.1f}"
+                
+                self.scale_min_label.configure(text=min_text)
+                self.scale_max_label.configure(text=max_text)
+            
+        except Exception:
+            # Fallback to default range
+            self.scale.configure(from_=0, to=100)
+            if hasattr(self, 'scale_min_label') and hasattr(self, 'scale_max_label'):
+                self.scale_min_label.configure(text="0")
+                self.scale_max_label.configure(text="100")
+
+    def _update_spinbox_range(self) -> None:
+        """Update the spinbox widget range based on the current prefix and metadata range."""
+        if not self._use_spinbox or not hasattr(self, 'spinbox'):
+            return
+            
+        try:
+            # Get the min/max values in the current prefix from metadata
+            current_prefix = self._value.si_prefix
+            range_min = self._value.get_min_value_in_prefix(current_prefix)
+            range_max = self._value.get_max_value_in_prefix(current_prefix)
+            
+            # Calculate smart increment based on the range and prefix
+            range_span = range_max - range_min
+            
+            if isinstance(self._value.value, int):
+                # For integers, use sensible step sizes
+                if range_span <= 100:
+                    increment = 1
+                elif range_span <= 1000:
+                    increment = 10
+                elif range_span <= 10000:
+                    increment = 100
+                elif range_span <= 100000:
+                    increment = 1000
+                else:
+                    increment = 10000
+                    
+                self.spinbox.configure(from_=int(range_min), to=int(range_max), increment=increment)
+            else:
+                # For floats, use decimal increments based on the range
+                if range_span <= 1:
+                    increment = 0.01
+                elif range_span <= 10:
+                    increment = 0.1
+                elif range_span <= 100:
+                    increment = 1.0
+                elif range_span <= 1000:
+                    increment = 10.0
+                else:
+                    increment = 100.0
+                    
+                self.spinbox.configure(from_=range_min, to=range_max, increment=increment)
+                
+        except Exception:
+            # Fallback to default range
+            self.spinbox.configure(from_=0, to=100, increment=1)
+
+    def _get_input_widget(self):
+        """Get the currently visible input widget (entry or spinbox)."""
+        if self._use_spinbox and hasattr(self, 'spinbox'):
+            return self.spinbox
+        else:
+            return self.entry
 
     def _initialize_publish(self) -> None:
-        self.grid_columnconfigure(0, weight=1, uniform="col")
-        self.grid_columnconfigure(1, weight=1, uniform="col")
+        # Configure columns with better proportions
+        self.grid_columnconfigure(0, weight=0, minsize=80)      # Label: fixed width
+        self.grid_columnconfigure(1, weight=1, minsize=120)     # Entry/Spinbox: expandable
+        self.grid_columnconfigure(2, weight=0, minsize=60)      # Unit: fixed width
 
+        # Place the basic widgets in row 0
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
-        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W)
-        self.si_unit_combobox.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
+        
+        # Use spinbox instead of entry if enabled, otherwise use entry
+        if self._use_spinbox:
+            self.spinbox.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.EW)
+            # Hide the entry widget if spinbox is used
+            # Note: We still create the entry for consistency but don't grid it
+        else:
+            self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.EW)
+            
+        # Place combobox or label based on number of allowed prefixes
+        if self.si_unit_combobox is not None:
+            self.si_unit_combobox.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.EW)
+        elif self.si_unit_label is not None:
+            self.si_unit_label.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
+        
+        # Place scale below all other widgets if enabled
+        if self._use_scale:
+            # Configure row 1 for the scale - allow it to expand vertically
+            self.grid_rowconfigure(1, weight=1)
+            # Span the scale frame across all three columns
+            self.scale_frame.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky=ttk.NSEW)
+        else:
+            # If no scale, allow the main row to expand
+            self.grid_rowconfigure(0, weight=1)
 
     @property
     def field_name(self) -> str:
@@ -392,35 +714,82 @@ class SITypeFieldView(FieldViewBase[SIVar]):
     @value.setter
     def value(self, v: SIVar) -> None:
         self._value = v
-        self._str_value.set(str(self._value.value))
+        # Update the string value without triggering trace recursion
+        self._update_str_value_without_trace(str(self._value.value))
+        # Update optional widgets when value changes
+        if self._use_scale and hasattr(self, 'scale'):
+            self._update_scale_range()
+            self._updating_scale = True
+            try:
+                self.scale.set(float(self._value.value))
+            finally:
+                self._updating_scale = False
+        if self._use_spinbox and hasattr(self, 'spinbox'):
+            self._update_spinbox_range()
 
     @value.setter
     def set_value_without_setting_str(self, v: SIVar) -> None:
         self._value = v
+        # Update optional widgets when value changes
+        if self._use_scale and hasattr(self, 'scale'):
+            self._update_scale_range()
+            self._updating_scale = True
+            try:
+                self.scale.set(float(self._value.value))
+            finally:
+                self._updating_scale = False
+        if self._use_spinbox and hasattr(self, 'spinbox'):
+            self._update_spinbox_range()
  
     def _parse_str_value(self, *_args):
         text = self._str_value.get()
         if text == "":
             # Empty text is invalid for SIVar
             self._is_valid = False
-            self.entry.configure(style=EntryStyle.DANGER.value)
+            self._get_input_widget().configure(style=EntryStyle.DANGER.value)
             return
         try:
-            sel = self.si_unit_combobox.get()
-            current_prefix = self._prefix_map.get(sel, SIPrefix.NONE)
+            # Get current prefix from combobox if it exists, otherwise use the single prefix
+            if self.si_unit_combobox is not None:
+                sel = self.si_unit_combobox.get()
+                current_prefix = self._prefix_map.get(sel, SIPrefix.NONE)
+            else:
+                # Single prefix case - get the only prefix from the map
+                current_prefix = list(self._prefix_map.values())[0] if self._prefix_map else SIPrefix.NONE
             
             # Use the value_type stored during initialization
             value = self._value_type(text)
+            
+            self._update_str_value_without_trace(str(value))
+            min_val = self._value.get_min_value_in_prefix(current_prefix)
+            max_val = self._value.get_max_value_in_prefix(current_prefix)
+            if value < min_val or value > max_val:
+                self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+                self._is_valid = False
+            else:
+                self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
+                self._is_valid = True
+            
             # Create new SIVar with fixed meta
             if self._value:
                 self._value.value = value
                 self._value.si_prefix = current_prefix
-            self._is_valid = True
-            self.entry.configure(style=EntryStyle.PRIMARY.value)
+                
+            # Update optional widgets when value changes
+            if self._use_scale and hasattr(self, 'scale'):
+                self._update_scale_range()
+                self._updating_scale = True
+                try:
+                    self.scale.set(float(value))
+                finally:
+                    self._updating_scale = False
+            if self._use_spinbox and hasattr(self, 'spinbox'):
+                self._update_spinbox_range()
+                
         except Exception as _:
             # Parse failed - mark as invalid but don't change the value
             self._is_valid = False
-            self.entry.configure(style=EntryStyle.DANGER.value)
+            self._get_input_widget().configure(style=EntryStyle.DANGER.value)
         self._callback(self.value)
 
 
@@ -443,6 +812,10 @@ class OptionalSITypeFieldView(FieldViewBase[Optional[SIVar[T]]]):
             
         self._str_value: ttk.StringVar = ttk.StringVar(value=display_value)
         field_view_kwargs = kwargs.pop("field_view_kwargs", {})
+        
+        # Extract optional UI elements from kwargs
+        self._use_scale = kwargs.pop("use_scale", False)
+        self._use_spinbox = kwargs.pop("use_spinbox", False)
         
         # Store the SIVar subclass factory from field_view_kwargs
         self._si_var_class = field_view_kwargs.get("si_var_class", None)
@@ -490,6 +863,9 @@ class OptionalSITypeFieldView(FieldViewBase[Optional[SIVar[T]]]):
         kwargs['field_view_kwargs'] = field_view_kwargs
         self._callback: Callable[[Optional[SIVar]], None] = lambda _: None
         self._str_value.trace_add("write", self._parse_str_value)
+        
+        # Flag to prevent recursive scale updates
+        self._updating_scale = False
 
     def _get_default_prefix_from_constructor(self) -> Optional[SIPrefix]:
         """Extract the default si_prefix value from the SIVar subclass constructor."""
@@ -514,7 +890,7 @@ class OptionalSITypeFieldView(FieldViewBase[Optional[SIVar[T]]]):
 
     def _initialize_children(self) -> None:
         self.label = ttk.Label(self, text=self._field_name)
-        self.entry = ttk.Entry(self, textvariable=self._str_value)
+        self.entry = ttk.Entry(self, textvariable=self._str_value, width=12)
         
         # Build readable labels for prefixes using the fixed meta
         prefixes: List[SIPrefix] = []
@@ -536,7 +912,10 @@ class OptionalSITypeFieldView(FieldViewBase[Optional[SIVar[T]]]):
         self._prefix_map = {label: p for label, p in zip(prefix_items, prefixes)}
 
         # Combobox for selecting prefix
-        self.si_unit_combobox = ttk.Combobox(self, values=prefix_items, state="readonly")
+        # Calculate dynamic width based on prefix string lengths
+        combobox_width = max(len(item) for item in prefix_items) if prefix_items else 5
+        combobox_width = min(max(combobox_width, 5), 8)  # Ensure width is between 5 and 8
+        self.si_unit_combobox = ttk.Combobox(self, values=prefix_items, state="readonly", width=combobox_width)
         
         # Set current prefix if value exists
         if self._value is not None:
@@ -583,12 +962,13 @@ class OptionalSITypeFieldView(FieldViewBase[Optional[SIVar[T]]]):
             self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
-        self.grid_columnconfigure(0, weight=1, uniform="col")
-        self.grid_columnconfigure(1, weight=1, uniform="col")
+        self.grid_columnconfigure(0, weight=0, minsize=80)      # Label: fixed width
+        self.grid_columnconfigure(1, weight=1, minsize=120)     # Entry: expandable
+        self.grid_columnconfigure(2, weight=0, minsize=60)      # Unit: fixed width
 
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
-        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W)
-        self.si_unit_combobox.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
+        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.EW)
+        self.si_unit_combobox.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.EW)
 
     @property
     def field_name(self) -> str:
@@ -671,18 +1051,28 @@ class BooleanFieldView(FieldViewBase[bool]):
         self._var = ttk.BooleanVar(value=self._default_value)
         self._callback: Callable[[bool], None] = lambda _: None
 
+        # Extract field_view_kwargs for checkbutton configuration
+        field_view_kwargs = kwargs.pop("field_view_kwargs", {})
+        self._checkbutton_kwargs = field_view_kwargs  # Store for use in _initialize_children
+        
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
 
         super().__init__(master, *args, **kwargs)
+        # Restore field_view_kwargs for potential reuse
+        kwargs['field_view_kwargs'] = field_view_kwargs
         self._var.trace_add("write", self._on_change)
 
     def _initialize_children(self) -> None:
-        self._checkbutton = ttk.Checkbutton(
-            self,
-            text=self._field_name,
-            variable=self._var
-        )
+        # Create checkbutton with additional kwargs from field_view_kwargs
+        checkbutton_config = {
+            "text": self._field_name,
+            "variable": self._var
+        }
+        # Add any additional configuration from field_view_kwargs
+        checkbutton_config.update(self._checkbutton_kwargs)
+        
+        self._checkbutton = ttk.Checkbutton(self, **checkbutton_config)
         WidgetRegistry.register_widget(self._checkbutton, "checkbutton", self._widget_name)
         self._checkbutton.bind("<Return>", lambda e: self._var.set(not self._var.get()))
         
@@ -691,6 +1081,7 @@ class BooleanFieldView(FieldViewBase[bool]):
             self.subscribe_focus_to_scroll(self._checkbutton, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
+        self.grid_rowconfigure(0, weight=1)                     # Allow vertical expansion
         self._checkbutton.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
 
     @property
@@ -739,11 +1130,17 @@ class EnumFieldView(FieldViewBase[Enum]):
     def _initialize_children(self) -> None:
         self.label = ttk.Label(self, text=self._field_name)
 
+        enum_names = [e.name for e in self._enum_class]
+        # Calculate dynamic width based on enum name lengths
+        combobox_width = max(len(name) for name in enum_names) if enum_names else 5
+        combobox_width = min(max(combobox_width, 5), 15)  # Ensure width is between 5 and 15
+
         self._config_entry = ttk.Combobox(
             self,
             textvariable=self._selected_enum_member,
-            values=[e.name for e in self._enum_class],
-            state="readonly"
+            values=enum_names,
+            state="readonly",
+            width=combobox_width
         )
 
         WidgetRegistry.register_widget(self._selected_enum_member, "entry_enum", self._widget_name)
@@ -755,9 +1152,10 @@ class EnumFieldView(FieldViewBase[Enum]):
     def _initialize_publish(self) -> None:
         self.grid_columnconfigure(0, weight=1, uniform="col")
         self.grid_columnconfigure(1, weight=1, uniform="col")
+        self.grid_rowconfigure(0, weight=1)                     # Allow vertical expansion
 
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
-        self._config_entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W) 
+        self._config_entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.EW) 
 
     @property
     def field_name(self) -> str:
@@ -810,7 +1208,7 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
 
     def _initialize_children(self) -> None:
         self.label = ttk.Label(self, text=self._field_name)
-        self.entry = ttk.Entry(self, textvariable=self._str_value)
+        self.entry = ttk.Entry(self, textvariable=self._str_value, width=12)
 
         WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
         
@@ -819,11 +1217,12 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
             self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
-        self.grid_columnconfigure(0, weight=1, uniform="col")
-        self.grid_columnconfigure(1, weight=1, uniform="col")
+        self.grid_columnconfigure(0, weight=0, minsize=80)      # Label: fixed width
+        self.grid_columnconfigure(1, weight=1, minsize=120)     # Entry: expandable
+        self.grid_rowconfigure(0, weight=1)                     # Allow vertical expansion
 
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
-        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W)
+        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.EW)
 
     @property
     def field_name(self) -> str:
@@ -928,7 +1327,7 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
     def _initialize_children(self) -> None:
         self._label = ttk.Label(self, text=self._field_name)
         self._entry_frame = ttk.Frame(self)
-        self._entry_time = ttk.Entry(self._entry_frame, textvariable=self._time_value_str)
+        self._entry_time = ttk.Entry(self._entry_frame, textvariable=self._time_value_str, width=12)
         self._unit_button = ttk.Button(self._entry_frame, text=self._unit_value_str.get(), command=self._toggle_unit)
 
         WidgetRegistry.register_widget(self._time_value_str, "time_str", self._widget_name)
@@ -939,12 +1338,13 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
             self.subscribe_focus_to_scroll(self._entry_time, self._top_scroll_frame)
 
     def _initialize_publish(self) -> None:
-        self.grid_columnconfigure(0, weight=1, uniform="col")
-        self.grid_columnconfigure(1, weight=1, uniform="col")
+        self.grid_columnconfigure(0, weight=0, minsize=80)      # Label: fixed width
+        self.grid_columnconfigure(1, weight=1, minsize=120)     # Entry frame: expandable
+        self.grid_rowconfigure(0, weight=1)                     # Allow vertical expansion
 
         self._label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
-        self._entry_frame.grid(row=0, column=1, sticky=ttk.W)
-        self._entry_time.pack(padx=5, pady=5, side=ttk.LEFT)
+        self._entry_frame.grid(row=0, column=1, sticky=ttk.EW)
+        self._entry_time.pack(padx=5, pady=5, side=ttk.LEFT, fill=ttk.X, expand=True)
         self._unit_button.pack(padx=5, pady=5, side=ttk.RIGHT)
 
     def _toggle_unit(self) -> None:
@@ -1034,8 +1434,8 @@ class DictFieldView(FieldViewBase):
         entry_value_var = ttk.StringVar(row_frame, value)
         self._entries[entry_id] = (entry_key_var, entry_value_var)
 
-        entry_key = ttk.Entry(row_frame, textvariable=entry_key_var)
-        entry_value = ttk.Entry(row_frame, textvariable=entry_value_var)
+        entry_key = ttk.Entry(row_frame, textvariable=entry_key_var, width=12)
+        entry_value = ttk.Entry(row_frame, textvariable=entry_value_var, width=12)
         delete_button = ttk.Button(row_frame, text="-")
 
         row_frame.pack(fill=ttk.X, side=ttk.BOTTOM, pady=3)
@@ -1122,6 +1522,20 @@ class DynamicFieldViewFactory:
             field_view_kwargs = kwargs.get("field_view_kwargs", {})
             field_view_kwargs["si_var_class"] = field_type
             kwargs["field_view_kwargs"] = field_view_kwargs
+            # Create default instance - SIVar subclasses provide default constructors
+            default_instance =  kwargs.get('default_value', None)
+            if not default_instance:
+                # For SIVar subclasses, always use explicit parameters to avoid linter confusion
+                # The concrete subclasses like AtfSiVar, AttSiVar have defaults, but we'll be explicit
+                if hasattr(field_type, '_si_meta') or (inspect.isclass(field_type) and issubclass(field_type, SIVar)):
+                    # It's a concrete SIVar subclass - create with explicit defaults
+                    kwargs['default_value'] = field_type(value=0, si_prefix=SIPrefix.NONE)
+                else:
+                    # Fallback for other types
+                    try:
+                        kwargs['default_value'] = field_type()
+                    except TypeError:
+                        kwargs['default_value'] = field_type(value=0, si_prefix=SIPrefix.NONE)
             return SITypeFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif get_origin(field_type) is Union and len(get_args(field_type)) == 2 and type(None) in get_args(field_type):
             # Handle Optional[SomeType] which is Union[SomeType, None]
@@ -1288,10 +1702,15 @@ class ObjectFieldView(FieldViewBase[dict]):
         self._add_fields_to_widget()
 
     def _initialize_publish(self) -> None:
-        self._frame.grid(sticky=ttk.NSEW, padx=5, pady=5)
+        self._frame.pack(fill=ttk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Configure the frame to expand its columns
+        self._frame.grid_columnconfigure(0, weight=1)
 
         for i, field_view in enumerate(self._fields.values()):
-            field_view.grid(row=i, column=0, padx=5, pady=5, sticky=ttk.W)
+            field_view.grid(row=i, column=0, padx=5, pady=5, sticky=ttk.NSEW)
+            # Configure each row to expand vertically to distribute space evenly
+            self._frame.grid_rowconfigure(i, weight=1)
 
     def _add_fields_to_widget(self):
         fields = attrs.fields_dict(self._obj_class)
@@ -1340,10 +1759,11 @@ class ObjectFieldView(FieldViewBase[dict]):
 
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
-                 title: str, form_class: type, model_dict: dict | None = None, field_hooks: FieldHookRegistry = {}):
+                 title: str, form_class: type, model_dict: dict | None = None, field_hooks: FieldHookRegistry = {}, use_scroll: bool = True):
         """
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
+                use_scroll: Whether to use a scrolled frame (default True) or a regular frame (False)
         """
         assert attrs.has(form_class), "the form class provided has to be an attrs class"
         self._attrs_class: type = form_class
@@ -1351,11 +1771,12 @@ class FormWidget(UIComponent):
         self._field_view_factory = DynamicFieldViewFactory(self._converter, field_hooks)
 
         self._title = title
-        self._view = FormWidgetView(parent_view)
+        self._view = FormWidgetView(parent_view, use_scroll=use_scroll)
         self._view.set_title(self._title)
         super().__init__(parent, self._view)
-        # self._view.field_slot is the ScrolledFrameView we need to scroll when
-        self._attr_view = ObjectFieldView(self._view.field_slot, self._title, self._attrs_class, self._field_view_factory, top_scroll_frame=self._view._scrolled_frame)
+        # self._view.field_slot is the content frame (scrolled or regular) we need to scroll when using ScrolledFrame
+        scroll_frame = self._view._content_frame if use_scroll else None
+        self._attr_view = ObjectFieldView(self._view.field_slot, self._title, self._attrs_class, self._field_view_factory, top_scroll_frame=scroll_frame)
         self._view._initialize_publish()
 
         # bind the model dict to the view
@@ -1415,30 +1836,33 @@ class FormWidget(UIComponent):
 
         
 class FormWidgetView(View):
-    def __init__(self, master: ttk.Frame | View, *args, **kwargs):
+    def __init__(self, master: ttk.Frame | View, use_scroll: bool = True, *args, **kwargs):
+        self._use_scroll = use_scroll
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
         self._title_frame = ttk.Frame(self)
         self._title = ttk.StringVar()
         self._title_label = ttk.Label(self._title_frame, textvariable=self._title, font=("Arial", 16))
-        self._scrolled_frame = ScrolledFrame(self)
         
+        if self._use_scroll:
+            self._content_frame = ScrolledFrame(self)
+        else:
+            self._content_frame = ttk.Frame(self)
 
     def _initialize_publish(self) -> None:
         self.pack(fill=ttk.BOTH, expand=True)
         self._title_frame.pack(fill=ttk.X, pady=10)
         self._title_label.pack()
-        self._scrolled_frame.pack(fill=ttk.BOTH, pady=10, expand=True)
+        self._content_frame.pack(fill=ttk.BOTH, pady=10, expand=True)
 
         # TODO: refactor this, because we have now only one child inside the scroll frame
-        for i, child in enumerate(self._scrolled_frame.children.values()):
-            child.pack(fill=ttk.X, padx=5, pady=5)
-        
+        for i, child in enumerate(self._content_frame.children.values()):
+            child.pack(fill=ttk.BOTH, expand=True, padx=5, pady=5)
 
     @property
     def field_slot(self) -> ttk.Frame:
-        return self._scrolled_frame
+        return self._content_frame
 
     def set_title(self, title: str) -> None:
         self._title.set(title)

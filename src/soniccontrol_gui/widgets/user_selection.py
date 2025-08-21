@@ -40,7 +40,7 @@ class DynamicUserSelection(UIComponent):
             message, title, target_type
         )
         self._answer = asyncio.Future()
-        super().__init__(root, self._view)
+        super().__init__(None, self._view)
         
         # Set up callbacks
         def close_callback():
@@ -129,10 +129,10 @@ class DynamicUserSelectionView(tk.Toplevel, View):  # type: ignore[misc]
             
             # Use the factory to create the appropriate field view
             self._field_view = factory.from_type(
-                field_name="user_input",
+                field_name=self._target_type.__name__, 
                 field_type=self._target_type,
                 slot=parent,
-                parent_widget_name="user_selection"
+                parent_widget_name="user_selection",
             )
             
             # Pack the field view
@@ -199,6 +199,7 @@ class DynamicUserSelectionView(tk.Toplevel, View):  # type: ignore[misc]
         """Handle OK button click."""
         self.clear_error()
         self._ok_callback()
+        self.destroy()
     
     def _set_initial_focus(self):
         """Set initial focus to the input widget."""
@@ -206,18 +207,27 @@ class DynamicUserSelectionView(tk.Toplevel, View):  # type: ignore[misc]
             self._field_view.focus_set()
     
     def _center_window(self):
-        """Center the window on the screen."""
+        """Center the window relative to the parent window."""
         self.update_idletasks()
         width = self.winfo_reqwidth()
         height = self.winfo_reqheight()
         
-        # Get screen dimensions
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        
-        # Calculate position
-        x = (screen_width // 2) - (width // 2)
-        y = (screen_height // 2) - (height // 2)
+        # Get parent window dimensions and position
+        if self.master:
+            parent_x = self.master.winfo_rootx()
+            parent_y = self.master.winfo_rooty()
+            parent_width = self.master.winfo_width()
+            parent_height = self.master.winfo_height()
+            
+            # Calculate position to center relative to parent
+            x = parent_x + (parent_width // 2) - (width // 2)
+            y = parent_y + (parent_height // 2) - (height // 2)
+        else:
+            # Fallback to screen center if no parent
+            screen_width = self.winfo_screenwidth()
+            screen_height = self.winfo_screenheight()
+            x = (screen_width // 2) - (width // 2)
+            y = (screen_height // 2) - (height // 2)
         
         self.geometry(f"{width}x{height}+{x}+{y}")
 
