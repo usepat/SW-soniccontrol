@@ -39,9 +39,9 @@ import cattrs
 
 @attrs.define(auto_attribs=True)
 class ATConfig:
-    atf: AtfSiVar = attrs.field(
-        default=AtfSiVar(), 
-        #metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}
+    atf: Optional[AtfSiVar] = attrs.field(
+        default=None,
+        metadata={"field_view_kwargs": {"treat_zero_as_none": True}}
     )
     atk: float = attrs.field(default=0)
     att: AttSiVar = attrs.field(
@@ -296,7 +296,7 @@ class Configuration(UIComponent):
         for i, atconfig in enumerate(config.atconfigs):
             # i+1 because atfs start at 1 and not 0.
             # SIVar holds the primitive in .value; device commands expect primitives.
-            await self._device.execute_command(commands.SetAtf(i+1, atconfig.atf.to_prefix(SIPrefix.NONE)))
+            await self._device.execute_command(commands.SetAtf(i+1, atconfig.atf.to_prefix(SIPrefix.NONE) if atconfig.atf else 0))
             await self._device.execute_command(commands.SetAtk(i+1, atconfig.atk))
             await self._device.execute_command(commands.SetAtt(i+1, atconfig.att.to_prefix(SIPrefix.NONE)))
 
