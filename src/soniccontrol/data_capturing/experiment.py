@@ -41,7 +41,10 @@ class ExperimentMetaData:
     cable_length: Optional[MeterSIVar] = None
     cable_type: Optional[str] = None
 
-    additional_metadata: Dict = attrs.Factory(dict)
+    additional_metadata: Dict = attrs.field(factory=dict,
+                                                                    #Either specify all major SIVars or allow abstract SIVar
+        metadata={"field_view_kwargs": {"types": [int, float, str, SIVar]}}
+    )
 
 
 @attrs.define(auto_attribs=True)

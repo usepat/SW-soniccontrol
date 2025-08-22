@@ -80,26 +80,22 @@ class ExperimentForm(UIComponent):
                 json.dump([], file)
             return
 
-        # Check if the file is a backup file and warn if so
         if ".backup_" in files.EXPERIMENT_TEMPLATES_JSON.name:
             self._logger.warning("Attempting to load a backup file as the main template file: %s", files.EXPERIMENT_TEMPLATES_JSON)
 
         self._logger.info("Load templates from %s", files.EXPERIMENT_TEMPLATES_JSON)
         with open(files.EXPERIMENT_TEMPLATES_JSON, "r") as file:
             original_data = json.load(file)
-            data_dict_list = copy.deepcopy(original_data)  # Work with a copy
+            data_dict_list = copy.deepcopy(original_data)
             
-            # Apply migrations (including user interactions)
             migration_applied = await self._apply_complete_migration(data_dict_list)
             
-            # If migration was applied, create backup and save the migrated version
             if migration_applied:
                 self._create_backup_file(files.EXPERIMENT_TEMPLATES_JSON)
                 self._logger.info("Migration applied to experiment templates, saving updated file")
                 with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as write_file:
                     json.dump(data_dict_list, write_file, indent=2)
             
-            # Now structure the migrated data
             self._templates = self._converter.structure(data_dict_list, List[Template])
 
     def _create_backup_file(self, original_file: Path) -> Path:
@@ -120,7 +116,6 @@ class ExperimentForm(UIComponent):
         for data_dict in data_dict_list:
             form_data = data_dict['form_data']
             try:
-                # Try to structure the form_data as a valid format
                 self._converter.structure(form_data, ExperimentMetaData)
             except Exception:
                 medium_temperature = form_data.get('medium_temperature', None)
@@ -137,7 +132,6 @@ class ExperimentForm(UIComponent):
                     try:    
                         self._converter.structure(gap, SIVar)
                     except Exception:
-                        # Show user dialog for gap migration
                         si_var_selection = DynamicUserSelection(
                             self._view.root,
                             message=f"Error in experiment template {form_data['experiment_name']}: {form_data['gap']}.Gap value is not in SI Units please select a valid SI Unit",
@@ -177,7 +171,6 @@ class ExperimentForm(UIComponent):
             self._change_template()
 
     def _create_metadata_form(self):
-        # Skip if form already exists
         if hasattr(self, '_metadata_form'):
             return
             

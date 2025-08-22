@@ -439,54 +439,54 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
         super().destroy()
 
 
+
     def _initialize_children(self) -> None:
+        from sonic_protocol.schema import SIUnit, SIPrefix
         self.label = ttk.Label(self, text=self._field_name)
         self.entry = ttk.Entry(self, textvariable=self._str_value, width=12)
-        
-        # Build readable labels for prefixes and a mapping back to the enum
-        # Get allowed prefixes directly from the stored meta information
-        prefixes: List[SIPrefix] = []
-        
-        # Use stored meta information to determine allowed prefixes
+
         if self._si_var_meta is not None:
-            # Get allowed prefixes from meta range
+            # Normal case: use meta to determine allowed prefixes
+            prefixes: List[SIPrefix] = []
             for p in SIPrefix:
                 if self._si_var_meta.si_prefix_min <= p <= self._si_var_meta.si_prefix_max:
                     prefixes.append(p)
+            def _prefix_label(p: SIPrefix) -> str:
+                unit_str = self._si_var_meta.si_unit.value if self._si_var_meta else ""
+                return f"{p.symbol}{unit_str}".strip()
+            prefix_items = [_prefix_label(p) for p in prefixes]
+            self._prefix_map = {label: p for label, p in zip(prefix_items, prefixes)}
+            if len(prefixes) == 1:
+                current_prefix_label = prefix_items[0]
+                self.si_unit_label = ttk.Label(self, text=current_prefix_label, state="readonly")
+                self.si_unit_combobox = None
+            else:
+                max_width = max(len(item) for item in prefix_items) if prefix_items else 5
+                combobox_width = min(max(max_width + 2, 5), 8)
+                self.si_unit_combobox = ttk.Combobox(self, values=prefix_items, state="readonly", width=combobox_width)
+                self.si_unit_label = None
+                try:
+                    current_prefix = getattr(self._value, "si_prefix", None)
+                    if current_prefix is not None:
+                        for lbl, p in self._prefix_map.items():
+                            if p == current_prefix:
+                                self.si_unit_combobox.set(lbl)
+                                break
+                except Exception:
+                    pass
+            # SI unit selection is fixed by meta
+            self.si_unit_select = None
         else:
-            raise ValueError("No meta information available for determining allowed prefixes")
-
-        def _prefix_label(p: SIPrefix) -> str:
-            # Use stored meta information for unit
-            unit_str = self._si_var_meta.si_unit.value if self._si_var_meta else ""
-            return f"{p.symbol}{unit_str}".strip()
-
-        prefix_items = [_prefix_label(p) for p in prefixes]
-        # map label -> prefix (zip uses the same filtered prefixes list)
-        self._prefix_map = {label: p for label, p in zip(prefix_items, prefixes)}
-
-        # Check if there's only one allowed prefix
-        if len(prefixes) == 1:
-            # Only one prefix allowed - use a label instead of combobox
-            current_prefix_label = prefix_items[0]
-            self.si_unit_label = ttk.Label(self, text=current_prefix_label, state="readonly")
-            self.si_unit_combobox = None  # No combobox needed
-        else:
-            # Multiple prefixes - use combobox for selection with dynamic width
-            max_width = max(len(item) for item in prefix_items) if prefix_items else 5
-            combobox_width = min(max(max_width + 2, 5), 8)  # Between 5-8 characters
-            self.si_unit_combobox = ttk.Combobox(self, values=prefix_items, state="readonly", width=combobox_width)
-            self.si_unit_label = None  # No label needed
-            
-            try:
-                current_prefix = getattr(self._value, "si_prefix", None)
-                if current_prefix is not None:
-                    for lbl, p in self._prefix_map.items():
-                        if p == current_prefix:
-                            self.si_unit_combobox.set(lbl)
-                            break
-            except Exception:
-                pass
+            # meta is None: allow user to select SI unit and prefix from full range
+            all_units = [u for u in SIUnit]
+            all_prefixes = [p for p in SIPrefix]
+            self._prefix_map = {p.symbol: p for p in all_prefixes}
+            self._unit_map = {u.value: u for u in all_units}
+            self.si_unit_select = ttk.Combobox(self, values=[u.value for u in all_units], state="readonly", width=10)
+            self.si_unit_select.set(all_units[0].value)
+            self.si_unit_combobox = ttk.Combobox(self, values=[p.symbol for p in all_prefixes], state="readonly", width=5)
+            self.si_unit_combobox.set(all_prefixes[0].symbol)
+            self.si_unit_label = None
 
         # handler: convert the numeric value to the new prefix so displayed number stays the same unit-wise
         def _on_prefix_change(_=None):
@@ -775,29 +775,32 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
 
         # Place the basic widgets in row 0
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
-        
+
         # Use spinbox instead of entry if enabled, otherwise use entry
         if self._use_spinbox:
             self.spinbox.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.EW)
-            # Hide the entry widget if spinbox is used
-            # Note: We still create the entry for consistency but don't grid it
         else:
             self.entry.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.EW)
-            
-        # Place combobox or label based on number of allowed prefixes
-        if self.si_unit_combobox is not None:
-            self.si_unit_combobox.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.EW)
-        elif self.si_unit_label is not None:
-            self.si_unit_label.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
-        
+
+        # Place SI unit and prefix selectors
+        if self._si_var_meta is None:
+            # meta is None: show both unit and prefix selectors
+            if self.si_unit_select is not None:
+                self.si_unit_select.grid(row=0, column=2, padx=2, pady=5, sticky=ttk.EW)
+            if self.si_unit_combobox is not None:
+                self.si_unit_combobox.grid(row=0, column=3, padx=2, pady=5, sticky=ttk.EW)
+        else:
+            # meta present: show prefix combobox or label as before
+            if self.si_unit_combobox is not None:
+                self.si_unit_combobox.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.EW)
+            elif self.si_unit_label is not None:
+                self.si_unit_label.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
+
         # Place scale below all other widgets if enabled
         if self._use_scale:
-            # Configure row 1 for the scale - allow it to expand vertically
             self.grid_rowconfigure(1, weight=1)
-            # Span the scale frame across all three columns
-            self.scale_frame.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky=ttk.NSEW)
+            self.scale_frame.grid(row=1, column=0, columnspan=4, padx=5, pady=5, sticky=ttk.NSEW)
         else:
-            # If no scale, allow the main row to expand
             self.grid_rowconfigure(0, weight=1)
 
     @property
@@ -860,53 +863,64 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                 self._update_spinbox_range()
  
     def _parse_str_value(self, *_args):
+        from sonic_protocol.schema import SIUnit, SIPrefix
         text = self._str_value.get()
         if text == "":
             if self._is_optional:
-                # Empty text is valid for optional SIVar (means None)
                 self._value = None
                 self._is_valid = True
                 self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
                 self._callback(self._value)
                 return
             else:
-                # Empty text is invalid for non-optional SIVar
                 self._is_valid = False
                 self._get_input_widget().configure(style=EntryStyle.DANGER.value)
                 return
         try:
-            # Get current prefix from combobox if it exists, otherwise use the single prefix
-            if self.si_unit_combobox is not None:
-                sel = self.si_unit_combobox.get()
-                current_prefix = self._prefix_map.get(sel, SIPrefix.NONE)
+            # Determine prefix and unit
+            if self._si_var_meta is None:
+                # meta is None: get prefix and unit from selectors
+                if self.si_unit_combobox is not None:
+                    prefix_sel = self.si_unit_combobox.get()
+                    current_prefix = self._prefix_map.get(prefix_sel, SIPrefix.NONE)
+                else:
+                    current_prefix = SIPrefix.NONE
+                if self.si_unit_select is not None:
+                    unit_sel = self.si_unit_select.get()
+                    current_unit = self._unit_map.get(unit_sel, SIUnit.CELSIUS)
+                else:
+                    pass
             else:
-                # Single prefix case - get the only prefix from the map
-                current_prefix = list(self._prefix_map.values())[0] if self._prefix_map else SIPrefix.NONE
-            
-            # Use the value_type determined during initialization
+                if self.si_unit_combobox is not None:
+                    sel = self.si_unit_combobox.get()
+                    current_prefix = self._prefix_map.get(sel, SIPrefix.NONE)
+                else:
+                    current_prefix = list(self._prefix_map.values())[0] if self._prefix_map else SIPrefix.NONE
+                # current_unit is not used
+
             value = self._value_type(text)
-            
-            # Check if zero should be treated as None (optional behavior)
-            # This is useful when 0 and "not set" have the same semantic meaning
+
             if self._treat_zero_as_none and self._is_optional and value == 0:
-                # Treat zero as None for optional fields when this option is enabled
                 self._value = None
                 self._is_valid = True
                 self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
                 self._callback(self._value)
                 return
-            
+
             self._update_str_value_without_trace(str(value))
-            
+
             # For optional fields, we need to ensure we have a value object to check ranges
             if self._value is None and self._is_optional:
-                # Create a new SIVar for validation using the stored class information
-                temp_value = self._si_var_class(value, current_prefix)
+                # meta is None: create a SIVar with meta=None, else use class
+                if self._si_var_meta is None:
+                    temp_value = SIVar(value, current_prefix, meta=None)
+                else:
+                    temp_value = self._si_var_class(value, current_prefix)
             else:
                 temp_value = self._value
-            
-            # Range validation if we have a value object
-            if temp_value is not None:
+
+            # Range validation if we have a value object and meta
+            if temp_value is not None and (self._si_var_meta is not None):
                 min_val = temp_value.get_min_value_in_prefix(current_prefix)
                 max_val = temp_value.get_max_value_in_prefix(current_prefix)
                 if value < min_val or value > max_val:
@@ -918,24 +932,26 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             else:
                 self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
                 self._is_valid = True
-            
-            # Create new SIVar with fixed meta
+
+            # Create or update SIVar
             if self._value:
                 self._value.value = value
                 self._value.si_prefix = current_prefix
+                if self._si_var_meta is None:
+                    self._value.meta = None
             else:
-                # For optional fields, create the SIVar instance using stored class information
-                self._value = self._si_var_class(value, current_prefix)
-                
-                # When creating a new SIVar for the first time, ensure the combobox reflects the actual prefix
+                if self._si_var_meta is None:
+                    self._value = SIVar(value, current_prefix, meta=None)
+                else:
+                    self._value = self._si_var_class(value, current_prefix)
+
                 if self.si_unit_combobox is not None:
                     actual_prefix = self._value.si_prefix
                     for lbl, p in self._prefix_map.items():
                         if p == actual_prefix:
                             self.si_unit_combobox.set(lbl)
                             break
-                
-            # Update optional widgets when value changes
+
             if self._value is not None:
                 if self._use_scale and hasattr(self, 'scale'):
                     self._update_scale_range()
@@ -946,9 +962,8 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                         self._updating_scale = False
                 if self._use_spinbox and hasattr(self, 'spinbox'):
                     self._update_spinbox_range()
-                
+
         except Exception as _:
-            # Parse failed - mark as invalid but don't change the value
             self._is_valid = False
             self._get_input_widget().configure(style=EntryStyle.DANGER.value)
         self._callback(self.value)
@@ -1312,98 +1327,6 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         self._callback = command
 
 
-class DictFieldView(FieldViewBase):
-    def __init__(self, master: TkinterView, field_name: str, *args, default_value: Dict[str, str] | None = None, **kwargs):
-        self._entries: Dict[int, Tuple[ttk.StringVar, ttk.StringVar]] = {}
-        self._field_name = field_name
-        self._callback: Callable[[Dict[str, str]], None] = lambda _: None
-        self._default_value = {} if default_value is None else default_value.copy()
-
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
-        super().__init__(master, *args, **kwargs)
-
-        self.value = self._default_value
-
-
-    def _initialize_children(self) -> None:
-        self._label = ttk.Label(self, text=self._field_name)
-        self._add_entry_button = ttk.Button(self, text=ui_labels.FORM_ADD_ENTRY, command=self._add_entry)
-        self._entries_frame = ttk.Frame(self)
-
-    def _initialize_publish(self) -> None:
-        self._label.pack(fill=ttk.X, side=ttk.TOP)
-        self._add_entry_button.pack(fill=ttk.X)
-        self._entries_frame.pack(fill=ttk.BOTH, side=ttk.BOTTOM)
-
-    def _generate_entry_id(self) -> int:
-        self._id = 0 if not hasattr(self, "_id") else (self._id + 1)
-        return self._id
-    
-    def _add_entry(self, key: str = "", value: str = "") -> None:
-        entry_id = self._generate_entry_id()
-    
-        row_frame = ttk.Frame(self._entries_frame)
-    
-        entry_key_var = ttk.StringVar(row_frame, key)
-        entry_value_var = ttk.StringVar(row_frame, value)
-        self._entries[entry_id] = (entry_key_var, entry_value_var)
-
-        entry_key = ttk.Entry(row_frame, textvariable=entry_key_var, width=12)
-        entry_value = ttk.Entry(row_frame, textvariable=entry_value_var, width=12)
-        delete_button = ttk.Button(row_frame, text="-")
-
-        row_frame.pack(fill=ttk.X, side=ttk.BOTTOM, pady=3)
-        row_frame.columnconfigure(0, weight=2)
-        row_frame.columnconfigure(1, weight=2)
-        row_frame.columnconfigure(2, weight=1)
-        entry_key.grid(column=0, row=0)
-        entry_value.grid(column=1, row=0)
-        delete_button.grid(column=2, row=0)
-
-        def delete_entry():
-            del self._entries[entry_id]
-            row_frame.destroy()
-
-        delete_button.configure(command=delete_entry)
-        entry_key_var.trace_add("write", self._on_value_change)
-        entry_value_var.trace_add("write", self._on_value_change)
-
-
-    @property
-    def field_name(self) -> str: 
-        return self._field_name
-
-    @property
-    def valid(self) -> bool:
-        return True  # DictFieldView is always valid
-
-    @property
-    def default(self) -> Dict[str, str]:
-        return self._default_value
-
-    @property
-    def value(self) -> Dict[str, str]: 
-        return { key_var.get(): value_var.get() for key_var, value_var in self._entries.values() }
-
-    @value.setter
-    def value(self, v: Dict[str, str]) -> None: 
-        # Create a list copy to avoid "dictionary changed size during iteration" error
-        children_to_destroy = list(self._entries_frame.children.values())
-        for child in children_to_destroy:
-            child.destroy()
-        self._entries.clear()
-
-        for key, value in v.items():
-            self._add_entry(key, value)
-
-    def _on_value_change(self, *_args):
-        self._callback(self.value)
-
-    def bind_value_change(self, command: Callable[[Dict[str, str]], None]) -> None: 
-        self._callback = command
-
-
 """
 An FieldHook takes as input the type of the attr class, the attrs.Attribute for the field  and the slot, where to put the field.
 Finally we also provide a dict with kwargs.
@@ -1481,7 +1404,7 @@ class DynamicFieldViewFactory:
                 # Fallback for unsupported Optional types
                 raise TypeError(f"The field with name {field_name} has type Optional[{inner_type}], which is not supported")
         elif field_type is Dict or field_type is dict:
-            return DictFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
+            return DictFieldView(slot, field_name, self, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type is HolderArgs:
             return TimeFieldView(slot, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type == Optional[Path] or field_type is Optional[Path]:
@@ -1524,6 +1447,174 @@ class DynamicFieldViewFactory:
         This function is needed, because we need to unstructure the default values.
         """
         return self._converter.unstructure(val, obj_class)
+    
+
+
+class DictFieldView(FieldViewBase):
+    def __init__(self, master: TkinterView, field_name: str, field_view_factory: DynamicFieldViewFactory, *args, default_value: Dict | None = None, **kwargs):
+        self._entries: Dict[int, Dict] = {}  # entry_id -> {key_var, type_var, value_field, frame}
+        self._field_name = field_name
+        self._callback: Callable[[Dict], None] = lambda _: None
+        self._default_value = {} if default_value is None else default_value.copy()
+        self._field_view_factory = field_view_factory
+
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        field_view_kwargs = kwargs.pop("field_view_kwargs", {})
+        self._types = field_view_kwargs.get("types", None)
+        if not self._types:
+            self._types = [str]
+        self._widget_name = parent_widget_name + "." + self._field_name
+        super().__init__(master, *args, **kwargs)
+        kwargs["field_view_kwargs"] = field_view_kwargs
+
+        self.value = self._default_value
+
+
+    def _initialize_children(self) -> None:
+        self._label = ttk.Label(self, text=self._field_name)
+        self._add_entry_button = ttk.Button(self, text=ui_labels.FORM_ADD_ENTRY, command=self._add_entry)
+        self._entries_frame = ttk.Frame(self)
+
+    def _initialize_publish(self) -> None:
+        self._label.pack(fill=ttk.X, side=ttk.TOP)
+        self._add_entry_button.pack(fill=ttk.X)
+        self._entries_frame.pack(fill=ttk.BOTH, side=ttk.BOTTOM)
+
+    def _generate_entry_id(self) -> int:
+        self._id = 0 if not hasattr(self, "_id") else (self._id + 1)
+        return self._id
+    
+
+    def _add_entry(self, key: str = "", value: Any = None, value_type: type | None = None) -> None:
+        entry_id = self._generate_entry_id()
+        row_frame = ttk.Frame(self._entries_frame)
+        entry_key_var = ttk.StringVar(row_frame, key)
+        entry_key = ttk.Entry(row_frame, textvariable=entry_key_var, width=12)
+
+        # Type selection logic
+        if value_type is None:
+            if len(self._types) == 1:
+                value_type = self._types[0]
+            else:
+                value_type = None
+
+        # If multiple types, show combobox until selected, then replace with field
+        type_var = None
+        value_field = None
+        type_combobox = None
+        def create_value_field(selected_type):
+            nonlocal value_field
+            # Remove combobox if present
+            if type_combobox:
+                type_combobox.grid_remove()
+            # Remove old value field if present
+            if value_field:
+                value_field.destroy()
+            value_field = self._field_view_factory.from_type(
+                f"Value {entry_id}", selected_type, row_frame, self._widget_name)
+            # Set value if provided
+            if value is not None:
+                value_field.value = value
+            value_field.grid(column=1, row=0, padx=2, sticky=ttk.EW)
+            value_field.bind_value_change(lambda v: self._on_value_change())
+            self._entries[entry_id]['value_field'] = value_field
+
+        if len(self._types) == 1:
+            # Only one type, use it directly
+            value_field = self._field_view_factory.from_type(
+                f"Value {entry_id}", self._types[0], row_frame, self._widget_name)
+            if value is not None:
+                value_field.value = value
+            value_field.grid(column=1, row=0, padx=2, sticky=ttk.EW)
+            value_field.bind_value_change(lambda v: self._on_value_change())
+        else:
+            # Multiple types, show combobox first
+            type_var = ttk.StringVar(row_frame)
+            type_names = [t.__name__ for t in self._types]
+            type_combobox = ttk.Combobox(row_frame, textvariable=type_var, values=type_names, state="readonly", width=8)
+            type_combobox.grid(column=1, row=0, padx=2, sticky=ttk.EW)
+            def on_type_selected(*_):
+                selected_type_name = type_var.get()
+                for t in self._types:
+                    if t.__name__ == selected_type_name:
+                        create_value_field(t)
+                        break
+            type_combobox.bind("<<ComboboxSelected>>", on_type_selected)
+            # If value_type is provided, pre-select and create field
+            if value_type is not None:
+                type_var.set(value_type.__name__)
+                create_value_field(value_type)
+
+        delete_button = ttk.Button(row_frame, text="-")
+        def delete_entry():
+            del self._entries[entry_id]
+            row_frame.destroy()
+            self._on_value_change()
+        delete_button.configure(command=delete_entry)
+
+        row_frame.pack(fill=ttk.X, side=ttk.BOTTOM, pady=3)
+        row_frame.columnconfigure(0, weight=2)
+        row_frame.columnconfigure(1, weight=2)
+        row_frame.columnconfigure(2, weight=1)
+        entry_key.grid(column=0, row=0)
+        delete_button.grid(column=2, row=0)
+
+        self._entries[entry_id] = {
+            'key_var': entry_key_var,
+            'type_var': type_var,
+            'value_field': value_field,
+            'frame': row_frame
+        }
+        entry_key_var.trace_add("write", lambda *_: self._on_value_change())
+
+
+    @property
+    def field_name(self) -> str: 
+        return self._field_name
+
+    @property
+    def valid(self) -> bool:
+        return True  # DictFieldView is always valid
+
+    @property
+    def default(self) -> Dict[str, str]:
+        return self._default_value
+
+    @property
+    def value(self) -> Dict:
+        result = {}
+        for entry in self._entries.values():
+            key = entry['key_var'].get()
+            value_field = entry['value_field']
+            if value_field is not None:
+                result[key] = value_field.value
+        return result
+
+    @value.setter
+    def value(self, v: Dict) -> None:
+        # Remove all current entries
+        children_to_destroy = list(self._entries_frame.children.values())
+        for child in children_to_destroy:
+            child.destroy()
+        self._entries.clear()
+        # Try to infer type for each value
+        for key, value in v.items():
+            value_type = None
+            if value is not None:
+                for t in self._types:
+                    if isinstance(value, t):
+                        value_type = t
+                        break
+            # If value_type is still None, default to first type
+            if value_type is None and self._types:
+                value_type = self._types[0]
+            self._add_entry(key, value, value_type)
+
+    def _on_value_change(self, *_args):
+        self._callback(self.value)
+
+    def bind_value_change(self, command: Callable[[Dict[str, str]], None]) -> None: 
+        self._callback = command
 
 
 class TupleFieldView(FieldViewBase[tuple]):

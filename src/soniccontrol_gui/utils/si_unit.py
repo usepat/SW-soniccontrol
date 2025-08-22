@@ -1,6 +1,6 @@
 
 from abc import ABCMeta
-from typing import Generic, TypeVar, cast
+from typing import Generic, TypeVar, cast, Optional
 import attrs
 from sonic_protocol.schema import SIUnit, SIPrefix
 
@@ -39,7 +39,7 @@ class SIVarMetaClass(ABCMeta):
 class SIVar(Generic[T], metaclass=SIVarMetaClass):
     value: T = attrs.field()
     si_prefix: SIPrefix = attrs.field()
-    meta: SIVarMeta = attrs.field(default=None)
+    meta: Optional[SIVarMeta] = attrs.field(default=None)
     
     # Type hint for the metaclass-added attribute (not an attrs field for subclasses)
     _si_meta: SIVarMeta = attrs.field(init=False, repr=False, default=None)
@@ -48,10 +48,25 @@ class SIVar(Generic[T], metaclass=SIVarMetaClass):
         # For subclasses with fixed metadata, use the class metadata
         if hasattr(self.__class__, '_si_meta') and self.__class__ is not SIVar:
             self.meta = self.__class__._si_meta
-        # For direct SIVar instantiation (e.g., during deserialization), meta must be provided
+        # For direct SIVar instantiation (e.g., during deserialization or DictFieldView), meta may be None in valid context
         elif self.meta is None:
-            raise ValueError("meta must be provided for direct SIVar instantiation")
-            
+            import inspect
+            frame = inspect.currentframe()
+            allow_none = False
+            while frame:
+                name_global = frame.f_globals.get('__name__')
+                if (
+                    'structure' in frame.f_code.co_name
+                    or 'converter' in str(frame.f_locals.get('self', ''))
+                    or 'create_value_field' in frame.f_code.co_name
+                    or (name_global is not None and 'DictFieldView' in name_global)
+                ):
+                    allow_none = True
+                    break
+                frame = frame.f_back
+            if not allow_none:
+                raise ValueError("meta must be provided for direct SIVar instantiation")
+
         if not isinstance(self.value, (int, float)) or isinstance(self.value, bool):
             raise TypeError("SIVar.value must be int|float (no bool)")
         # validate that current prefix is within min/max range
@@ -62,29 +77,40 @@ class SIVar(Generic[T], metaclass=SIVarMetaClass):
     def __subclasshook__(cls, subclass):
         # Prevent direct instantiation of SIVar in normal code
         if cls is SIVar and subclass is SIVar:
-            # Allow during deserialization but warn about direct use
+            # Allow during deserialization or from DictFieldView but warn about direct use
             import inspect
             frame = inspect.currentframe()
             while frame:
-                if 'structure' in frame.f_code.co_name or 'converter' in str(frame.f_locals.get('self', '')):
-                    return True  # Allow during deserialization
+                # Allow if called from deserialization or DictFieldView context
+                name_global = frame.f_globals.get('__name__')
+                if (
+                    'structure' in frame.f_code.co_name
+                    or 'converter' in str(frame.f_locals.get('self', ''))
+                    or 'create_value_field' in frame.f_code.co_name
+                    or (name_global is not None and 'DictFieldView' in name_global)
+                ):
+                    return True  # Allow during deserialization or DictFieldView
                 frame = frame.f_back
             raise TypeError("SIVar is abstract - use specific subclasses like TemperatureSIVar")
         return NotImplemented
 
     def allowed_prefix(self, prefix: SIPrefix) -> bool:
+        if self.meta is None:
+            return True  # Allow all prefixes if meta is None
         return self.meta.si_prefix_min <= prefix <= self.meta.si_prefix_max
 
     def get_min_value_in_prefix(self, target_prefix: SIPrefix) -> float:
         """Get the minimum allowed value converted to the target prefix."""
+        if self.meta is None:
+            return float('-inf')  # No lower bound if meta is None
         min_val, min_prefix = self.meta.min_value
-        # Convert from min_prefix to target_prefix
         return min_val * (min_prefix.factor / target_prefix.factor)
 
     def get_max_value_in_prefix(self, target_prefix: SIPrefix) -> float:
         """Get the maximum allowed value converted to the target prefix."""
+        if self.meta is None:
+            return float('inf')  # No upper bound if meta is None
         max_val, max_prefix = self.meta.max_value
-        # Convert from max_prefix to target_prefix
         return max_val * (max_prefix.factor / target_prefix.factor)
 
     def is_value_in_range(self, value: float, prefix: SIPrefix) -> bool:
