@@ -19,9 +19,6 @@ def convert_authors(x: Any) -> List[str]:
     raise ValueError("Expected type List[str] or str")
 
 
-
-TEMPERATURE_META = SIVarMeta(si_unit=SIUnit.CELSIUS, si_prefix_min=SIPrefix.MILLI, si_prefix_max=SIPrefix.NONE)
-# This here is in his own class, because it is used for the Form class directly.
 @attrs.define(auto_attribs=True)
 class ExperimentMetaData:
     experiment_name: str

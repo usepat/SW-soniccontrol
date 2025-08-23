@@ -1,13 +1,15 @@
 import copy
+import datetime
 import json
 from pathlib import Path
+import shutil
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import attrs
 import cattrs
 from sonic_protocol.schema import SIPrefix
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
-from soniccontrol.data_capturing.experiment import TEMPERATURE_META, ExperimentMetaData, convert_authors
+from soniccontrol.data_capturing.experiment import ExperimentMetaData, convert_authors
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.si_unit import MeterSIVar, SIVar, TemperatureSIVar
 from soniccontrol_gui.view import TkinterView, View
@@ -37,6 +39,25 @@ class ExperimentForm(UIComponent):
         super().__init__(parent, self._view )
 
         self._converter = create_cattrs_converter_for_basic_serialization()
+        def experiment_metadata_structure_hook(obj, _):
+            
+            additional = obj.pop('additional_metadata', {})
+            _converter = create_cattrs_converter_for_basic_serialization()
+            result = _converter.structure(obj, ExperimentMetaData)
+            
+            structured_additional = {}
+            for k, v in additional.items():
+                try:
+                    structured_additional[k] = self._converter.structure(v, SIVar)
+                except Exception:
+                    structured_additional[k] = v
+            obj['additional_metadata'] = additional
+            result.additional_metadata = structured_additional
+            return result
+        self._converter.register_structure_hook(
+            ExperimentMetaData,  # or Dict[str, Any] if using typing
+            experiment_metadata_structure_hook
+        )
         self._templates: List[Template] = []
         self._selected_template_index: Optional[int] = None
 
@@ -100,12 +121,10 @@ class ExperimentForm(UIComponent):
 
     def _create_backup_file(self, original_file: Path) -> Path:
         """Create a backup copy of the original file."""
-        import datetime
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_file = original_file.with_suffix(f".backup_{timestamp}.json")
         
         # Copy the original file to backup
-        import shutil
         shutil.copy2(original_file, backup_file)
         self._logger.info("Created backup file: %s", backup_file)
         return backup_file
