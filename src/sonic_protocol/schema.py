@@ -96,6 +96,9 @@ class SIPrefix(Enum):
         if isinstance(other, SIPrefix):
             return self.exponent < other.exponent
         return NotImplemented
+    
+    def __hash__(self):
+        return hash(self.exponent)
 
 class ConverterType(Enum):
     """!
