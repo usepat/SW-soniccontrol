@@ -69,24 +69,51 @@ class SIUnit(Enum):
 
 @total_ordering
 class SIPrefix(Enum):
-    NANO  = ('n', -9)
-    MICRO = ('u', -6)
-    MILLI = ('m', -3)
-    DECI  = ('d', -2)
-    CENTI = ('c', -1)
-    NONE  = ('' , 0) #(base unit, no prefix)
-    KILO  = ('k', 3)
-    MEGA  = ('M', 6)
-    GIGA  = ('G', 9)
+    NANO  = 'n'
+    MICRO = 'u'
+    MILLI = 'm'
+    DECI  = 'd'
+    CENTI = 'c'
+    NONE  = ''
+    KILO  = 'k'
+    MEGA  = 'M'
+    GIGA  = 'G'
 
-    def __init__(self, symbol: str, exponent: int) -> None:
+    def __init__(self, symbol: str) -> None:
         self.symbol = symbol
-        self.exponent = exponent
+
+    def _map_symbol_to_factor(self) -> int:
+        # Map each symbol to its exponent
+        match self.symbol:
+            case 'n':  # NANO
+                return -9
+            case 'u':  # MICRO
+                return -6
+            case 'm':  # MILLI
+                return -3
+            case 'd':  # DECI
+                return -2
+            case 'c':  # CENTI
+                return -1
+            case '':   # NONE
+                return 0
+            case 'k':  # KILO
+                return 3
+            case 'M':  # MEGA
+                return 6
+            case 'G':  # GIGA
+                return 9
+            case _:
+                raise ValueError(f"Unknown SI prefix symbol: {self.symbol}")
+
+    @property
+    def exponent(self):
+        return self._map_symbol_to_factor()
 
     @property
     def factor(self):
         return 1 if self.exponent == 0 else 10 ** self.exponent
-    
+
     def __eq__(self, other):
         if isinstance(other, SIPrefix):
             return self.exponent == other.exponent
@@ -96,7 +123,7 @@ class SIPrefix(Enum):
         if isinstance(other, SIPrefix):
             return self.exponent < other.exponent
         return NotImplemented
-    
+
     def __hash__(self):
         return hash(self.exponent)
 
@@ -138,7 +165,7 @@ class Procedure(Enum):
     DUTY_CYCLE = "duty_cycle"
 
 class Anomaly(Enum):
-    submerged = "submerged"
+    SUBMERGED = "submerged"
     AIR = "air"
     BUBBLES = "bubbles"
 
@@ -382,4 +409,4 @@ class Protocol:
     field_name_cls: type[IEFieldName] = attrs.field()
     command_contracts: Dict[ICommandCode, CommandContract] = attrs.field()
     consts: DeviceParamConstants= attrs.field(default=DeviceParamConstants())
-    
+

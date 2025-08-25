@@ -55,7 +55,7 @@ class Protocol_v2_1_0(ProtocolList):
         data_types.update(self._previous_protocol.custom_data_types)
 
         # We remove Input source, because we refactored it in the firmware into ControlMode and CommunicationChannel
-        data_types.pop("E_INPUT_SOURCE")
+        data_types["E_ANOMALY"] = Anomaly
         
         return data_types
 
