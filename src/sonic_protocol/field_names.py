@@ -48,6 +48,7 @@ class EFieldName(IEFieldName):
     PROCEDURE_ARG = auto()
     ERROR_CODE = auto()
     PASSWORD_HASHED = auto()
+    ANOMALY_DETECTION = auto()
 
     TIMING = auto()
 

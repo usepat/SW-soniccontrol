@@ -134,6 +134,12 @@ class Procedure(Enum):
     RAMP = "ramp"
     DUTY_CYCLE = "duty_cycle"
 
+class Anomaly(Enum):
+    submerged = "submerged"
+    AIR = "air"
+    BUBBLES = "bubbles"
+
+
 class Waveform(Enum):
     SINE = "sine"
     SQUARE = "square"
