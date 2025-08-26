@@ -878,8 +878,8 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                 self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
                 self._callback(self._value)
                 return
-
-            self._update_str_value_without_trace(str(value))
+            if value != 0:
+                self._update_str_value_without_trace(str(value))
 
             # Create or update SIVar
             if self._value:

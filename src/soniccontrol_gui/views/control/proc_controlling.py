@@ -114,7 +114,7 @@ class ProcControlling(UIComponent):
         try:
             proc_args_dict = self._model.procedure_args
             proc_class = self._proc_controller.proc_args_list[self._model.procedure_type]
-            proc_args = proc_class.from_dict(**proc_args_dict)
+            proc_args = proc_class.from_dict(False, **proc_args_dict)
             
             self._proc_controller.execute_proc(self._model.selected_procedure, proc_args)
         except Exception as e:

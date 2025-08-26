@@ -139,6 +139,30 @@ class SIVar(Generic[T], metaclass=SIVarMetaClass):
             self.value = cast(T, type(self.value)(result))
         self.si_prefix = prefix
 
+    def _valid_for_comparison(self, other):
+        if self.meta is None or other.meta is None:
+            raise TypeError("Can't compare SIVars with missing meta")
+        if self.meta.si_unit != other.meta.si_unit:
+            raise TypeError("Can't compare. SIMeta does not match")
+
+    def __eq__(self, other):
+        if isinstance(other, SIVar):
+            self._valid_for_comparison(other)
+            return self.value == other.to_prefix(self.si_prefix)
+        return NotImplemented
+
+    def __lt__(self, other):
+        if isinstance(other, SIVar):
+            self._valid_for_comparison(other)
+            return self.value < other.to_prefix(self.si_prefix)
+        return NotImplemented
+    
+    def __gt__(self, other):
+        if isinstance(other, SIVar):
+            self._valid_for_comparison(other)
+            return self.value > other.to_prefix(self.si_prefix)
+        return NotImplemented
+
 
 TEMPERATURE_META = SIVarMeta(
     si_unit=SIUnit.CELSIUS, 
@@ -168,7 +192,7 @@ class MeterSIVar(SIVar[float], si_meta=METER_META):
     def __init__(self, value: float = 0.0, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
-FREQUENCY_META = SIVarMeta(
+ABSOLUTE_FREQUENCY_META = SIVarMeta(
     si_unit=SIUnit.HERTZ, 
     si_prefix_min=SIPrefix.NONE, 
     si_prefix_max=SIPrefix.MEGA,
@@ -176,16 +200,46 @@ FREQUENCY_META = SIVarMeta(
     max_value=(10, SIPrefix.MEGA)       # 10MHz
 )
 
-class FrequencySIVar(SIVar[int], si_meta=FREQUENCY_META):
+class AbsoluteFrequencySIVar(SIVar[int], si_meta=ABSOLUTE_FREQUENCY_META):
     """Frequency variable for home UI with flexible range."""
     
     def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
+RELATIVE_FREQUENCY_META = SIVarMeta(
+    si_unit=SIUnit.HERTZ, 
+    si_prefix_min=SIPrefix.NONE, 
+    si_prefix_max=SIPrefix.MEGA,
+    min_value=(0, SIPrefix.NONE),        # 0Hz
+    max_value=(5, SIPrefix.MEGA)       # 5MHz
+)
+
+class RelativeFrequencySIVar(SIVar[int], si_meta=RELATIVE_FREQUENCY_META):
+    """Frequency variable for home UI with flexible range."""
+    
+    def __init__(self, value: int = 0, si_prefix: SIPrefix = SIPrefix.NONE):
+        super().__init__(value=value, si_prefix=si_prefix)
+
+
+    
+SWF_META = SIVarMeta(
+    si_unit=SIUnit.HERTZ, 
+    si_prefix_min=SIPrefix.NONE, 
+    si_prefix_max=SIPrefix.NONE,
+    min_value=(0, SIPrefix.NONE),
+    max_value=(25, SIPrefix.NONE)
+)
+
+class SwfSIVar(SIVar[int], si_meta=SWF_META):
+    """Frequency variable for home UI with flexible range."""
+    
+    def __init__(self, value: int = 5, si_prefix: SIPrefix = SIPrefix.NONE):
+        super().__init__(value=value, si_prefix=si_prefix)
+
 GAIN_META = SIVarMeta(
     si_unit=SIUnit.PERCENT, 
     si_prefix_min=SIPrefix.NONE, 
-    si_prefix_max=SIPrefix.NONE,  # Only use base unit (no prefix)
+    si_prefix_max=SIPrefix.NONE,
     min_value=(0, SIPrefix.NONE),        # 0%
     max_value=(150, SIPrefix.NONE)       # 150%
 )
@@ -197,7 +251,7 @@ class GainSIVar(SIVar[int], si_meta=GAIN_META):
         super().__init__(value=value, si_prefix=si_prefix)
 
 
-class AtfSiVar(SIVar[int], si_meta=FREQUENCY_META):
+class AtfSiVar(SIVar[int], si_meta=ABSOLUTE_FREQUENCY_META):
     """ATF frequency variable with fixed metadata."""
     
     def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):

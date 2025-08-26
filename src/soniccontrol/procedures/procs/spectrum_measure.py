@@ -5,10 +5,12 @@ import attrs
 from attrs import validators
 
 from sonic_protocol.python_parser import commands
+from sonic_protocol.schema import SIPrefix
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
-from soniccontrol.procedures.procedure import Procedure
+from soniccontrol.procedures.procedure import Procedure, custom_validator_factory
+from soniccontrol_gui.utils.si_unit import AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
 
 
 @attrs.define(auto_attribs=True)
@@ -19,34 +21,16 @@ class SpectrumMeasureArgs:
 This is very useful in an explorative study to find the optimal driving frequency.
 """
     
-    gain: int = attrs.field(
-        validator=[
-            validators.instance_of(int),
-            validators.ge(0),
-            validators.le(150)
-        ]
+    gain: GainSIVar = attrs.field()
+
+    f_start: AbsoluteFrequencySIVar = attrs.field()
+    
+    f_stop: AbsoluteFrequencySIVar = attrs.field()
+    
+    f_step: RelativeFrequencySIVar = attrs.field(
+        validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
     )
 
-    f_start: int = attrs.field(validator=[
-            validators.instance_of(int),
-            validators.ge(0),
-            validators.le(10_000_000)
-        ])
-    
-    f_stop: int = attrs.field(
-        validator=[
-            validators.instance_of(int),
-            validators.ge(0),
-            validators.le(10_000_000)
-        ]
-    )
-    f_step: int = attrs.field(
-        validator=[
-            validators.instance_of(int),
-            validators.ge(10),
-            validators.le(500_000)
-        ]
-    )
     t_on: HolderArgs = attrs.field(
         default=HolderArgs(100, "ms"),
         converter=convert_to_holder_args,
@@ -79,12 +63,12 @@ class SpectrumMeasure(Procedure):
         device: SonicDevice,
         args: SpectrumMeasureArgs
     ) -> None:
-        values = [args.f_start + i * args.f_step for i in range(int((args.f_stop - args.f_start) / args.f_step)) ]
+        values = [args.f_start.to_prefix(SIPrefix.NONE) + i * args.f_step.to_prefix(SIPrefix.NONE) for i in range(int((args.f_stop.to_prefix(SIPrefix.NONE) - args.f_start.to_prefix(SIPrefix.NONE)) / args.f_step.to_prefix(SIPrefix.NONE))) ]
 
         try:
             # await device.get_overview() # FIXME I dont think we need this
             # I am removing it for now because we can't send commands to the crystal device that have no command code
-            await device.execute_command(commands.SetGain(args.gain))
+            await device.execute_command(commands.SetGain(args.gain.to_prefix(SIPrefix.NONE)))
             await self._ramp(device, list(values), args.t_on, args.t_off, args.time_offset_measure)
         finally:
             await device.set_signal_off()

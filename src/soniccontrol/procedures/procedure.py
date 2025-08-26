@@ -6,9 +6,19 @@ import attrs
 
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.answer import Answer
+from sonic_protocol.schema import SIPrefix
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol_gui.utils.si_unit import SIVar
 
+def custom_validator_factory(data_type, min, max):
+    def custom_validator(instance, attribute, value):
+        if not isinstance(value, data_type):
+            raise TypeError(f"{attribute.name} must be of type {data_type}, got {type(value)}")
+        if value < min or value > max:
+            #TODO improve messsage
+            raise TypeError(f"{attribute.name} must be inside the range {min} - {max}. Got: {value}")
+    return custom_validator
 
 class ProcedureType(Enum):
     SPECTRUM_MEASURE = "Spectrum Measure"
@@ -80,7 +90,7 @@ class ProcedureArgs:
                     # Use all keys that match the nested class's fields
                     nested_field_names = {f.name for f in attrs.fields(field.type)}
                     nested_kwargs = {k: v for k, v in kwargs.items() if k in nested_field_names}
-                nested_instance = field.type(**nested_kwargs)
+                nested_instance = field.type.from_dict(use_enum_names, **nested_kwargs)
                 fields_dict[field.name] = nested_instance
             else:
                 enum = field.metadata.get("enum", None)
@@ -190,7 +200,8 @@ class ProcedureArgs:
                         continue
                     if field.type == HolderArgs:
                         value = HolderArgs(float(value), "ms") 
-
+                    if issubclass(field.type, SIVar):
+                        value = field.type(value=value, si_prefix=SIPrefix.NONE)
                     # Set the new key with the alias
                     arg_dict[prefix + field.name] = value
         return arg_dict
