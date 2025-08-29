@@ -251,9 +251,6 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self._value = v
         self._is_valid = True
         self._str_value.set(str(v))
-
-    def set_value_without_setting_str(self, v: PrimitiveT) -> None:
-        self._value = v
  
     def _parse_str_value(self, *_args):
         text = self._str_value.get()
@@ -819,21 +816,6 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                         self.si_prefix_combobox.set(lbl)
                         break
             
-            # Update optional widgets when value changes
-            if self._use_scale and hasattr(self, 'scale'):
-                self._update_scale_range()
-                self._updating_scale = True
-                try:
-                    self.scale.set(float(v.value))
-                finally:
-                    self._updating_scale = False
-            if self._use_spinbox and hasattr(self, 'spinbox'):
-                self._update_spinbox_range()
-
-    @value.setter
-    def set_value_without_setting_str(self, v: Union[SIVar, None]) -> None:
-        self._value = v
-        if v is not None:
             # Update optional widgets when value changes
             if self._use_scale and hasattr(self, 'scale'):
                 self._update_scale_range()
