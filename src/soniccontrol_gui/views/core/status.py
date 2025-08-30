@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Tuple
 import ttkbootstrap as ttk
-from sonic_protocol.schema import AnswerFieldDef, IEFieldName, Signal
+from sonic_protocol.schema import Anomaly, AnswerFieldDef, IEFieldName, Signal
 from sonic_protocol.python_parser.answer_field_converter import AnswerFieldToStringConverter
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import field_temperature_celsius
@@ -71,6 +71,20 @@ class StatusBar(UIComponent):
         }
 
         self._view.update_labels(status_field_text_representations)
+
+        # update background of anomaly detection label
+        if EFieldName.ANOMALY_DETECTION in status.keys():
+            background = ttk.PRIMARY
+            anomaly_val = status[EFieldName.ANOMALY_DETECTION]
+            match anomaly_val:
+                case Anomaly.SUBMERGED:
+                    background = ttk.SUCCESS
+                case Anomaly.AIR:
+                    background = ttk.WARNING
+                case Anomaly.BUBBLES:
+                    background = ttk.DANGER
+            self._view.set_label_background(EFieldName.ANOMALY_DETECTION, background)
+
         if self._status_panel_expanded:
             self._status_panel.on_update_status(status)
 
@@ -195,11 +209,18 @@ class StatusBarView(View):
         for label in self._status_field_labels.values():
             label.bind(events.CLICKED_EVENT, lambda _e: command())
 
-    def update_labels(self, field_texts: Dict[IEFieldName, str]):
+    def update_labels(self, field_texts: Dict[IEFieldName, str]) -> None:
         for status_field, text in field_texts.items():
             label = self._status_field_labels[status_field]
             label.configure(text=text)
+
         self.update()
+
+    def set_label_background(self, field_name: IEFieldName, color: str) -> None:
+        if field_name in self._status_field_labels:
+            label =  self._status_field_labels[field_name]
+            label.configure(background=color)
+
 
 
 class StatusPanelView(View):
@@ -227,7 +248,6 @@ class StatusPanelView(View):
             #Use DeviceParamConstants in kHz
             amountmin=100,
             amountmax=10000,
-
         )
         WidgetRegistry.register_widget(self._freq_meter, "freq_meter", tab_name)
 
