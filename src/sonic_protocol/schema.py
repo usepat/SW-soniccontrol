@@ -146,6 +146,13 @@ class InputSource(Enum):
     # MANUAL = "manual" #! control by the user pressing buttons on the device
     # Manual command should not be allowed to be send over serial
 
+
+class ControlMode(Enum):
+    REMOTE = "remote"
+    ANALOG = "analog"
+    DIGITAL = "digital"
+    AUTO = "auto"
+
 class CommunicationChannel(Enum):
     USB = "usb"
     RS485 = "rs485"

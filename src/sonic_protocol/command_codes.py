@@ -81,6 +81,7 @@ class CommandCode(ICommandCode):
     GET_WIPE = 340
     GET_AUTO = 350
     GET_ADC = 360
+    GET_CONTROL_MODE = 370
 
 
     # Setters with corresponding getters
