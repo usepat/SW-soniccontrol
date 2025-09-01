@@ -62,7 +62,7 @@ class EFieldName(IEFieldName):
     HARDWARE_VERSION = auto()
     FIRMWARE_VERSION = auto()
 
-    INPUT_SOURCE = auto()
+    CONTROL_MODE = auto()
     COMM_MODE = auto()
     COMMUNICATION_CHANNEL = auto()
     COMMUNICATION_PROTOCOL = auto()

@@ -55,6 +55,7 @@ class DeviceType(Enum):
     MVP_WORKER = "mvp_worker"
     CRYSTAL = "crystal"
     CONFIGURATOR = "configurator"
+    SIMULATION = "simulation"
 
 class SIUnit(Enum):
     METER = "m"

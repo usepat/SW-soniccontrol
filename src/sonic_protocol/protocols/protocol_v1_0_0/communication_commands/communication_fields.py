@@ -33,6 +33,6 @@ field_type_input_source = FieldType(
     converter_ref=ConverterType.ENUM
 )
 field_input_source = AnswerFieldDef(
-    field_name=EFieldName.INPUT_SOURCE,
+    field_name=EFieldName.CONTROL_MODE,
     field_type=field_type_input_source
 )

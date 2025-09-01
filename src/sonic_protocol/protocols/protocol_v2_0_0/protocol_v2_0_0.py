@@ -6,57 +6,11 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocols.protocol_v1_0_0.protocol_v1_0_0 import Protocol_v1_0_0
 from sonic_protocol.protocols.protocol_v2_0_0.commands import (
-    clear_errors, restart_device, get_adc, start_configurator
+    clear_errors, restart_device, get_adc, start_configurator, set_control_mode, get_control_mode
 )
 from sonic_protocol.protocols.protocol_v2_0_0.procedure_commands.procedure_commands import all_proc_commands
 
 # Move to protocol 3.0.0
-field_type_control_mode = FieldType(
-    field_type=ControlMode, 
-    converter_ref=ConverterType.ENUM
-)
-field_control_mode = AnswerFieldDef(
-    field_name=EFieldName.INPUT_SOURCE,
-    field_type=field_type_control_mode
-)
-
-set_control_mode = CommandContract(
-    code=CommandCode.SET_INPUT_SOURCE,
-    command_def=CommandDef(
-        setter_param=CommandParamDef(
-            name=EFieldName.INPUT_SOURCE,
-            param_type=field_type_control_mode
-        ),
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["!control", "!control_mode", "set_control_mode"]
-        )
-    ),
-    answer_def=AnswerDef(
-        fields=[field_control_mode]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to set the input source. Where to get commands from"
-    ),
-    is_release=True,
-    tags=["communication"]
-)
-
-get_control_mode = CommandContract(
-    code=CommandCode.GET_CONTROL_MODE,
-    command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(
-            string_identifier=["?control", "?control_mode", "get_control_mode"]
-        )
-    ),
-    answer_def=AnswerDef(
-        fields=[field_control_mode]
-    ),
-    user_manual_attrs=UserManualAttrs(
-        description="Command to get the input source. Where to get commands from"
-    ),
-    is_release=True,
-    tags=["communication"]
-)
 
 class Protocol_v2_0_0(ProtocolList):
     """
@@ -109,7 +63,7 @@ class Protocol_v2_0_0(ProtocolList):
 
         # setting the input source should be done in the configurator and not operator
         # Not really. But we changed to control mode?
-        command_contract_dict[CommandCode.SET_INPUT_SOURCE] = set_control_mode
+        command_contract_dict[CommandCode.SET_CONTROL_MODE] = set_control_mode
 
         return command_contract_dict
 

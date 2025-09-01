@@ -249,6 +249,16 @@ class ConnectionWindowView(ttk.Window, View):
         )
         WidgetRegistry.register_widget(self._start_configurator_box, "start_configurator_box", window_name)
 
+        self._use_firmware_gui = tk.BooleanVar()
+        self._use_firmware_gui_box = tk.Checkbutton(
+            self._simulation_frame, 
+            text=ui_labels.USE_FIRMWARE_GUI,
+            variable=self._use_firmware_gui, 
+            onvalue=1, 
+            offvalue=0
+        )
+        WidgetRegistry.register_widget(self._use_firmware_gui_box, "use_firmware_gui_box", window_name)
+
         # --- plugin container (NEW) ---
         self.plugins_container = ttk.Frame(self)
 
@@ -269,6 +279,7 @@ class ConnectionWindowView(ttk.Window, View):
             self._simulation_frame.pack(side=ttk.BOTTOM, fill=ttk.X, padx=sizes.SMALL_PADDING, pady=sizes.MEDIUM_PADDING)
             self._connect_to_simulation_button.pack(side=ttk.LEFT, fill=ttk.X, expand=True, padx=sizes.SMALL_PADDING)
             self._start_configurator_box.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
+            self._use_firmware_gui_box.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
 
         self._loading_label.pack(side=ttk.TOP, pady=sizes.MEDIUM_PADDING)
 
@@ -286,6 +297,10 @@ class ConnectionWindowView(ttk.Window, View):
     @property
     def should_start_configurator(self) -> bool:
         return self._should_start_configurator.get()
+    
+    @property
+    def use_firmware_gui(self) -> bool:
+        return self._use_firmware_gui.get()
     
     @loading_text.setter
     def loading_text(self, value: str) -> None:

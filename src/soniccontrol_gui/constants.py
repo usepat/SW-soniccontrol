@@ -267,6 +267,7 @@ class _UIStringsEN:
     FETCH_CONFIG_LABEL: Final[str] = "fetch configuration"
     WAITING_FOR_ANSWER: Final[str] = "Waiting for answer"
     START_CONFIGURATOR: Final[str] = "--start-configurator"
+    USE_FIRMWARE_GUI: Final[str] = "--gui"
     TODO: Final[str] = "In the future the INFO tab will provide all necessary information about the Sonic Control and the SonicAmp and furthermore will link a more detailed documentation about both the software and the device. For now if you have any questions feel free to contact us"
     CONTACT: Final[str] = "Contact"
     NEW_LINE: Final[str] = ""

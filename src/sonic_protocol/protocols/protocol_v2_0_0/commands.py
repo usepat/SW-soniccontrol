@@ -1,7 +1,7 @@
 from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import (
-    CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    CommandParamDef, ControlMode, ConverterType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract
 )
 from sonic_protocol.protocols.protocol_v1_0_0.flashing_commands.flashing_commands import field_success
@@ -80,4 +80,51 @@ start_configurator = CommandContract(
     ),
     is_release=True,
     tags=["debug"]
+)
+
+field_type_control_mode = FieldType(
+    field_type=ControlMode, 
+    converter_ref=ConverterType.ENUM
+)
+field_control_mode = AnswerFieldDef(
+    field_name=EFieldName.CONTROL_MODE,
+    field_type=field_type_control_mode
+)
+
+set_control_mode = CommandContract(
+    code=CommandCode.SET_CONTROL_MODE,
+    command_def=CommandDef(
+        setter_param=CommandParamDef(
+            name=EFieldName.CONTROL_MODE,
+            param_type=field_type_control_mode
+        ),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!control", "!control_mode", "set_control_mode"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[field_control_mode]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the input source. Where to get commands from"
+    ),
+    is_release=True,
+    tags=["communication"]
+)
+
+get_control_mode = CommandContract(
+    code=CommandCode.GET_CONTROL_MODE,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?control", "?control_mode", "get_control_mode"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[field_control_mode]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get the input source. Where to get commands from"
+    ),
+    is_release=True,
+    tags=["communication"]
 )

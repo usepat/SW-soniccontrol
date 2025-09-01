@@ -13,7 +13,7 @@ if __name__ == "__main__":
     simulation_exe_path = None
     if "FIRMWARE_BUILD_DIR_PATH" in os.environ:
         in_dev_env= True
-        simulation_exe_path = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/mvp_simulation/src/simulation/cli_simulation_mvp/cli_simulation_mvp")
+        simulation_exe_path = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/mvp_simulation/src/simulation/cli_simulation_device/cli_simulation_device")
 
         # We could do this somehow else. But this is easy and simple
         WidgetRegistry.set_up()

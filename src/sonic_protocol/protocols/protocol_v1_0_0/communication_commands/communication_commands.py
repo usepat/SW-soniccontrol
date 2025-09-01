@@ -57,10 +57,10 @@ set_comm_protocol = CommandContract(
 
 
 set_input_source = CommandContract(
-    code=CommandCode.SET_INPUT_SOURCE,
+    code=CommandCode.SET_CONTROL_MODE,
     command_def=CommandDef(
         setter_param=CommandParamDef(
-            name=EFieldName.INPUT_SOURCE,
+            name=EFieldName.CONTROL_MODE,
             param_type=field_type_input_source
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
