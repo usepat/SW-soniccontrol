@@ -80,6 +80,10 @@ class _Color:
     DARK_GREEN: Literal["green"] = "green"
     STATUS_MEDIUM_GREY: Literal["#c3c0ba"] = "#c3c0ba"
     STATUS_LIGHT_GREY: Literal["#f8f5f0"] = "#f8f5f0"
+    SUCCESS_GREEN: Literal["#28a745"] = "#28a745"
+    WARNING_ORANGE: Literal["#ffc107"] = "#ffc107"
+    DANGER_RED: Literal["#dc3545"] = "#dc3545"
+    PRIMARY_BLUE: Literal["#007bff"] = "#007bff"
 
 
 color: Final[_Color] = _Color()

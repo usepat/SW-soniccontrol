@@ -180,7 +180,11 @@ class ConnectionWindow(UIComponent):
         self._is_connecting = True
 
         bin_file = self._simulation_exe_path 
-        args = ["--start-configurator"] if self._view.should_start_configurator else []
+        args = []
+        if self._view.should_start_configurator:
+            args.append("--start-configurator")
+        if self._view.use_firmware_gui:
+            args.append("--gui")
 
         connection = CLIConnection(bin_file=bin_file, connection_name = "simulation", cmd_args=args)
         await self._attempt_connection(connection)

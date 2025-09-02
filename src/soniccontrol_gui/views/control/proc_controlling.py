@@ -59,8 +59,9 @@ class ProcControlling(UIComponent):
         self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._on_execution_state_changed)
         
         # setup view to have ramp as default 
-        self._view.selected_procedure = ProcedureType.RAMP.value 
-        self._on_proc_selected()
+        if ProcedureType.RAMP in proc_controller.proc_args_list:
+            self._view.selected_procedure = ProcedureType.RAMP.value 
+            self._on_proc_selected()
         self.on_procedure_stopped(None) # type: ignore
 
     def _on_execution_state_changed(self, e: PropertyChangeEvent) -> None:

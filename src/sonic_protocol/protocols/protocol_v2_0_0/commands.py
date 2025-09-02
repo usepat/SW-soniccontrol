@@ -128,3 +128,41 @@ get_control_mode = CommandContract(
     is_release=True,
     tags=["communication"]
 )
+
+error_message_field = AnswerFieldDef(EFieldName.ERROR_MESSAGE, FieldType(str))
+
+get_error_histo_size = CommandContract(
+    code=CommandCode.GET_ERROR_HISTO_SIZE,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?error_histo", "?error_histo_size"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[field_message]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get the size of error histogram logs"
+    ),
+    is_release=True,
+    tags=["errors"]
+)
+
+
+
+pop_error_histo_message = CommandContract(
+    code=CommandCode.POP_ERROR_HISTO_MESSAGE,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!pop_error_histo"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[error_message_field]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to pop error histogram messages from the error histogram log."
+    ),
+    is_release=True,
+    tags=["errors"]
+)

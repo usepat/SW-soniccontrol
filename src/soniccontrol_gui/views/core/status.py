@@ -74,15 +74,15 @@ class StatusBar(UIComponent):
 
         # update background of anomaly detection label
         if EFieldName.ANOMALY_DETECTION in status.keys():
-            background = ttk.PRIMARY
+            background = color.PRIMARY_BLUE
             anomaly_val = status[EFieldName.ANOMALY_DETECTION]
             match anomaly_val:
                 case Anomaly.SUBMERGED:
-                    background = ttk.SUCCESS
+                    background = color.SUCCESS_GREEN
                 case Anomaly.AIR:
-                    background = ttk.WARNING
+                    background = color.DANGER_RED
                 case Anomaly.BUBBLES:
-                    background = ttk.DANGER
+                    background = color.WARNING_ORANGE
             self._view.set_label_background(EFieldName.ANOMALY_DETECTION, background)
 
         if self._status_panel_expanded:

@@ -82,6 +82,9 @@ class CommandCode(ICommandCode):
     GET_AUTO = 350
     GET_ADC = 360
     GET_CONTROL_MODE = 370
+    GET_ERROR_HISTO_SIZE = 380
+
+
 
 
     # Setters with corresponding getters
@@ -145,6 +148,8 @@ class CommandCode(ICommandCode):
     SET_PHYS_COM_CHANNEL = 2020 
     SET_TERMINATION = 2030
     CLEAR_ERRORS = 2040  # clears all errors currently only used by the device internal but later we will make this a legit command
+    POP_ERROR_HISTO_MESSAGE = 2050
+    
 
     # commands that execute something
 
