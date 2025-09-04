@@ -171,6 +171,7 @@ class Procedure(Enum):
     WIPE = "wipe"
     RAMP = "ramp"
     DUTY_CYCLE = "duty_cycle"
+    ANOMALY_ROUTINE = "anomaly_routine"
 
 class Anomaly(Enum):
     SUBMERGED = "submerged"
