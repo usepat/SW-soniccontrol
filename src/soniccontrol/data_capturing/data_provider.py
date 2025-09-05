@@ -17,6 +17,10 @@ class DataProvider(EventManager):
     def data(self) -> pd.DataFrame:
         return self._data
     
+    def change_dataqueue_max_size(self, size: int) -> None:
+        old_data = list(self._dataqueue)
+        self._dataqueue = deque(old_data, maxlen=size)
+    
 
     def add_row(self, row: dict):
         self._dataqueue.append(row)      

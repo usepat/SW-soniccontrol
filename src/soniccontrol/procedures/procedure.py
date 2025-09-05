@@ -30,6 +30,7 @@ class ProcedureType(Enum):
     WIPE_LEGACY = "Wipe_Legacy"
     AUTO_LEGACY = "Auto_Legacy"
     DUTY_CYCLE = "DutyCycle"
+    ANOMALY_ROUTINE = "AnomalyRoutine"
 
 @attrs.define(init=False)
 class ProcedureArgs:

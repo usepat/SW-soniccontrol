@@ -60,7 +60,8 @@ class Measuring(UIComponent):
         self._time_figure = matplotlib.figure.Figure(dpi=100)
         self._time_subplot = self._time_figure.add_subplot(1, 1, 1)
         self._timeplot = PlotBuilder.create_timeplot_fuip(self._time_subplot)
-        self._timeplottab = Plotting(self, self._timeplot)
+        self._timeplottab = Plotting(self, self._timeplot, max_size_editable = True)
+        self._timeplottab.set_data_provider_size_change_callback(self._capture._data_provider.change_dataqueue_max_size)
 
         self._spectral_figure = matplotlib.figure.Figure(dpi=100)
         self._spectral_subplot = self._spectral_figure.add_subplot(1, 1, 1)
