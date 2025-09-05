@@ -142,7 +142,7 @@ def create_cattrs_converter_for_basic_serialization():
         return HolderArgs.to_holder_args(value)
 
     def holder_args_unstructure_hook(value: HolderArgs) -> float:
-        return value.duration_in_ms # ensure that time is displayed in ms
+        return value.duration_in_ms
     
     def version_structure_hook(value: Any, t: type) -> Version:
         return Version.to_version(value)

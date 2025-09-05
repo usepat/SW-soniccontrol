@@ -13,8 +13,6 @@ from soniccontrol_gui.utils.si_unit import SIVar
 
 def custom_validator_factory(data_type, min, max):
     def custom_validator(instance, attribute, value):
-        if not isinstance(value, data_type):
-            raise TypeError(f"{attribute.name} must be of type {data_type}, got {type(value)}")
         if value < min or value > max:
             #TODO improve messsage
             raise TypeError(f"{attribute.name} must be inside the range {min} - {max}. Got: {value}")

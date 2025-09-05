@@ -64,7 +64,7 @@ def convert_to_holder_args(obj: Any) -> HolderArgs:
         return HolderArgs(duration, unit)
     elif isinstance(obj, HolderArgs):
         return obj
-    elif isinstance(obj, int):
+    elif isinstance(obj, (int, float)):
         return HolderArgs(obj, "ms")
     else:
         raise TypeError(f"No known conversion from {type(obj)} to {HolderArgs}")

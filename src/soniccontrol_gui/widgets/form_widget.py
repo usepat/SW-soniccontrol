@@ -23,6 +23,7 @@ from soniccontrol.procedures.holder import HoldTuple, HolderArgs
 
 
 
+
 class EntryStyle(Enum):
     PRIMARY = "primary.TEntry"
     SUCCESS = "success.TEntry"
@@ -195,7 +196,7 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self._field_name = field_name
         self._default_value: PrimitiveT = _default_value 
         self._str_value: ttk.StringVar = ttk.StringVar(value=str(_default_value))
-        field_view_kwargs = kwargs.pop("field_view_kwargs", {}) # Others also rely on it so dont pop
+        field_view_kwargs = kwargs.pop("field_view_kwargs", {})
         self._si_unit_label = None
         self._si_unit = field_view_kwargs.get("SI_unit", None)
         self._value: PrimitiveT = _default_value
@@ -1280,6 +1281,100 @@ FieldHook = Callable[[type, "attrs.Attribute[Any]", TkinterView, Dict[str, Any]]
 
 FieldHookRegistry =  Dict[Tuple[type, str], FieldHook]
 
+class ExpandableFrame(FieldViewBase):
+    def __init__(self, master: TkinterView, field_name: str, field_type: type, field_view_factory: "DynamicFieldViewFactory", *args, **kwargs):
+        # Pop and store the parameters we need for the child
+        self._parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._top_scroll_frame = kwargs.pop("top_scroll_frame", None)
+        self._field_view_kwargs = kwargs.pop("field_view_kwargs", {}).copy()
+        
+        # Remove expandable flag to avoid infinite recursion
+        self._field_view_kwargs.pop("expandable", None)
+        
+        self._field_name = field_name
+        self._field_type = field_type
+        self._field_view_factory = field_view_factory
+        self._expanded = True  # Default to expanded
+        self._child_fieldview = None
+        
+        super().__init__(master, *args, **kwargs)
+
+    def _initialize_children(self):
+        # Use a triangle for expand/collapse: ▼ (down) and ▶ (right)
+        self._toggle_btn = ttk.Button(self, text='▼', width=2, command=self._toggle)
+        self._label = ttk.Label(self, text=self._field_name)
+        # Create a container frame for the child to handle layout properly
+        self._child_container = ttk.Frame(self)
+        
+        # Create the child FieldView using the factory - similar to ObjectFieldView
+        self._child_fieldview = ObjectFieldView(
+            self._child_container, 
+            self._field_name, 
+            self._field_type, 
+            self._field_view_factory, 
+            parent_widget_name=self._parent_widget_name, 
+            top_scroll_frame=self._top_scroll_frame,
+            field_view_kwargs=self._field_view_kwargs
+        )
+
+    def _initialize_publish(self):
+        # Configure the ExpandableFrame to expand within its grid cell
+        self.grid_columnconfigure(0, weight=0, minsize=30)  # Button column
+        self.grid_columnconfigure(1, weight=1)              # Label column
+        self.grid_rowconfigure(0, weight=0)                 # Header row
+        self.grid_rowconfigure(1, weight=1)                 # Child container row should expand
+        
+        # Place button and label in row 0
+        self._toggle_btn.grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        self._label.grid(row=0, column=1, padx=5, pady=5, sticky='w')
+        
+        # Grid the container frame and grid the child inside it if it exists
+        self._child_container.grid(row=1, column=0, columnspan=2, sticky='nsew', padx=5, pady=5)
+        self._child_container.grid_columnconfigure(0, weight=1)
+        self._child_container.grid_rowconfigure(0, weight=1)
+        
+        if self._child_fieldview:
+            self._child_fieldview.grid(row=0, column=0, sticky='nsew')
+        
+        if not self._expanded:
+            self._child_container.grid_remove()
+
+    def _toggle(self):
+        if self._expanded:
+            self._child_container.grid_remove()
+            self._toggle_btn.config(text='▶')
+            self._expanded = False
+        else:
+            self._child_container.grid(row=1, column=0, columnspan=2, sticky='nsew', padx=5, pady=5)
+            self._toggle_btn.config(text='▼')
+            self._expanded = True
+
+    @property
+    def field_name(self):
+        return self._field_name
+
+    @property
+    def valid(self):
+        return self._child_fieldview.valid if self._child_fieldview else True
+
+    @property
+    def default(self):
+        return self._child_fieldview.default if self._child_fieldview else None
+
+    @property
+    def value(self):
+        return self._child_fieldview.value if self._child_fieldview else None
+
+    @value.setter
+    def value(self, v):
+        if self._child_fieldview:
+            self._child_fieldview.value = v
+
+    def bind_value_change(self, command):
+        if self._child_fieldview:
+            self._child_fieldview.bind_value_change(command)
+
+
 class DynamicFieldViewFactory:
     def __init__(self, converter: cattrs.Converter, field_hooks: FieldHookRegistry):
         self._converter = converter
@@ -1352,9 +1447,21 @@ class DynamicFieldViewFactory:
         elif get_origin(field_type) is tuple or field_type is tuple:
             return TupleFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type and attrs.has(field_type):
-            # for the case that the type is a nested attrs class.
+            field_view_kwargs = kwargs.get("field_view_kwargs", {})
             kwargs.pop("default_value", None) # We do not use default values here. We deduce them later through attrs.Attribute
-            return ObjectFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
+            if field_view_kwargs.get("expandable", False):
+                return ExpandableFrame(
+                    slot, 
+                    field_name,
+                    field_type,
+                    self,  # Pass the factory instance
+                    parent_widget_name=parent_widget_name, 
+                    top_scroll_frame=top_scroll_frame,
+                    **kwargs
+                )
+            else:
+                # Create ObjectFieldView directly
+                return ObjectFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         else:
             raise TypeError(f"The field with name {field_name} has the type {field_type}, which is not supported")
 
@@ -1648,7 +1755,9 @@ class ObjectFieldView(FieldViewBase[dict]):
         self._field_view_factory = field_view_factory
         self._widget_name = parent_widget_name + "." + self._field_name
         self._fields: Dict[str, FieldViewBase] = {}
+        field_view_kwargs = kwargs.pop("field_view_kwargs", {}) # Others also rely on it so dont pop
         super().__init__(master, *args, **kwargs)
+        kwargs["field_view_kwargs"] = field_view_kwargs
             
 
     def _initialize_children(self) -> None:
