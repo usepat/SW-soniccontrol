@@ -77,7 +77,8 @@ class RobotRemoteController:
     
     @keyword('Disconnect')
     def disconnect(self) -> None:
-        self._loop.run_until_complete(self._controller.disconnect())
+        if self._loop.is_running():
+            self._loop.run_until_complete(self._controller.disconnect())
 
     @keyword("Sleep for ${time_ms} ms")
     def sleep(self, time_ms: int) -> None:
