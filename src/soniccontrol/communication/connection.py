@@ -5,6 +5,8 @@ import attrs
 from typing import List, Tuple
 
 from serial_asyncio import open_serial_connection
+import logging
+
 
 @attrs.define()
 class Connection(abc.ABC):
@@ -75,18 +77,49 @@ class CLIConnection(Connection):
         assert(self.process.stdout is not None)
         self.process.stdin.close()
         await self.process.stdin.wait_closed()
+        
         # Flush output or else process can't terminate
         # Drain stdout and stderr concurrently
-        await asyncio.gather(
-            self.process.stdout.read(),  # or readlines()
-            self.process.stderr.read() if self.process.stderr else asyncio.sleep(0),
-        )
         try:
-            self.process.terminate()  # or kill(), one of them
-        except:
+            await asyncio.wait_for(
+                asyncio.gather(
+                    self.process.stdout.read(),
+                    self.process.stderr.read() if self.process.stderr else asyncio.sleep(0),
+                ),
+                timeout=2.0
+            )
+        except asyncio.TimeoutError:
+            pass
+        
+        # Try graceful termination first
+        try:
+            self.process.terminate()
+        except ProcessLookupError:
+            # Process already terminated
+            return
+        except Exception:
             pass
 
-        await self.process.wait()
+        # Wait with timeout for graceful termination
+        try:
+            await asyncio.wait_for(self.process.wait(), timeout=3.0)
+        except asyncio.TimeoutError:
+            # Force kill if terminate didn't work
+            try:
+                self.process.kill()
+            except ProcessLookupError:
+                # Process already terminated
+                return
+            except Exception:
+                pass
+            
+            # Wait with timeout for force kill
+            try:
+                await asyncio.wait_for(self.process.wait(), timeout=2.0)
+            except asyncio.TimeoutError:
+                # If even kill() doesn't work, log and move on
+                logging.warning(f"Process {self.process.pid} did not terminate even after kill()")
+                # Don't wait indefinitely - the process is likely in an unrecoverable state
 
 
 @attrs.define()

@@ -46,11 +46,11 @@ class RobotRemoteController:
 
     @keyword('Send Command ')
     def send_command(self, command_str: str) -> Tuple[str, dict, bool]:
-        if command_str == "!restart":
-            self._loop.run_until_complete(self._controller.stop_updater())
+        # if command_str == "!restart":
+        #     self._loop.run_until_complete(self._controller.stop_updater())
         answer = self._loop.run_until_complete(self._controller.send_command(command_str))
-        if command_str == "!restart":
-            self._loop.run_until_complete(self._controller.disconnect())
+        # if command_str == "!restart":
+        #     self._loop.run_until_complete(self._controller.disconnect())
         return self._convert_answer(answer)
 
     @keyword('Deduce list of command examples')
@@ -77,8 +77,7 @@ class RobotRemoteController:
     
     @keyword('Disconnect')
     def disconnect(self) -> None:
-        if self._loop.is_running():
-            self._loop.run_until_complete(self._controller.disconnect())
+        self._loop.run_until_complete(self._controller.disconnect())
 
     @keyword("Sleep for ${time_ms} ms")
     def sleep(self, time_ms: int) -> None:
@@ -98,24 +97,28 @@ def main():
         raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
     path = (
         firmware_dir
-        + "/linux/mvp_simulation/src/simulation/cli_simulation_mvp/cli_simulation_mvp"
+        + "/linux/mvp_simulation/src/simulation/cli_simulation_device/cli_simulation_device"
     )
     robotController.connect_via_process(path, ["--start-configurator"])
     print(f"Connected: {robotController.is_connected()}")
-    # robotController.send_command("!ramp_f_start=100000")
-    # robotController.send_command("!ramp_f_stop=150000")
-    # robotController.send_command("!ramp_f_step=10000")
-    # robotController.send_command("!ramp_t_on=2000")
-    # robotController.send_command("!ramp_t_off=0")
-    # robotController.send_command("!ramp")
-    
-    for cmd in robotController.deduce_command_examples():
-        robotController.send_command(cmd)
-    # robotController.send_command("!ramp=activated")
-    # robotController.send_command("!ramp=deactivated")
-    # robotController.send_command("!temperature=activated")
+    robotController.send_command("!device=mvp_worker")
+    robotController.send_command("!ramp=activated")
+    robotController.send_command("!proc=ramp")
+    robotController.send_command("!init_from_flash=activated")
+    robotController.send_command("!service_button=activated")
+    robotController.send_command("!digital_pins=deactivated")
+    robotController.send_command("!digital_piano=deactivated")
+    robotController.send_command("!analog=deactivated")
+    robotController.send_command("!error_pin=deactivated")
+    robotController.send_command("!reset_pin=deactivated")
+    robotController.send_command("!save")
+    robotController.send_command("!restart")
+    robotController.reconnect_to_device()
+    robotController.send_command("!sonic_force")
+    print(robotController.send_command("-"))
     # robotController.send_command("!temperature=deactivated")
     robotController.disconnect()
+    robotController.connect_via_process(path, ["--start-configurator"])
 
 if __name__ == "__main__":
     main()
