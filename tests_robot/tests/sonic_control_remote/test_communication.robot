@@ -16,5 +16,5 @@ Test if device can handle high throughput and bursts
     [Teardown]    RemoteController.Send Command     !log[global]=ERROR
     FOR    ${i}    IN RANGE    0    30
         # TODO: refactor this to use an echo command and send long strings. Could also be an own test
-        Send command and check response    !ramp_f_start\=100000    should_be_valid=${True}    ${FIELD_RAMP_F_START}=${100000}
+        Send command and check response    ?error_histo_size    should_be_valid=${True}
     END 

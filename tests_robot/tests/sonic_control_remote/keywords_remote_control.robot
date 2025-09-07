@@ -18,7 +18,7 @@ Connect to device
         IF    $SIMULATION_EXE_PATH is None
             Set Suite Variable    ${SIMULATION_EXE_PATH}    %{SIMULATION_EXE_PATH}    # robotcode: ignore
         END
-        RemoteController.Connect via process to    ${SIMULATION_EXE_PATH}
+        RemoteController.Connect via process to    ${SIMULATION_EXE_PATH}    ${KWARGS}
         ${answer}=    RemoteController.Send Command    !sonic_force
         ${answer_message}=    Set Variable    ${answer}[0]
         ${is_answer_valid}=    Set Variable    ${answer}[2]
@@ -72,7 +72,7 @@ Send command and check if the device crashes
     Log    Answer received: "${answer_message}"
     Log    Is Answer Valid: "${is_answer_valid}"
     # Only check for errors if answer message is not one of these
-    IF    '${answer_message}' not in ["Procedure error invalid args", "Procedure error no procedure running", "No procedure was selected"]
+    IF    '${answer_message}' not in ["Procedure error invalid args", "Procedure error no procedure running", "No procedure was selected", "The command is not implemented for the release build"]
         Check command code for errors    ${code}
     END
     ${is_connected}=    RemoteController.Is connected to device

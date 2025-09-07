@@ -75,6 +75,8 @@ class CLIConnection(Connection):
     async def close_connection(self):
         assert(self.process.stdin is not None)
         assert(self.process.stdout is not None)
+        
+        # Close stdin first to signal end of input
         self.process.stdin.close()
         await self.process.stdin.wait_closed()
         
@@ -91,35 +93,58 @@ class CLIConnection(Connection):
         except asyncio.TimeoutError:
             pass
         
-        # Try graceful termination first
+        # Try graceful termination with SIGINT first (like Ctrl+C)
+        try:
+            import signal
+            self.process.send_signal(signal.SIGINT)
+        except ProcessLookupError:
+            # Process already terminated
+            return
+        except Exception as e:
+            logging.debug(f"Failed to send SIGINT: {e}")
+
+        # Wait with timeout for graceful termination
+        try:
+            await asyncio.wait_for(self.process.wait(), timeout=3.0)
+            logging.debug("Process terminated gracefully after SIGINT")
+            return
+        except asyncio.TimeoutError:
+            logging.debug("Process did not respond to SIGINT, trying SIGTERM")
+        
+        # Try SIGTERM if SIGINT didn't work
         try:
             self.process.terminate()
         except ProcessLookupError:
             # Process already terminated
             return
-        except Exception:
-            pass
+        except Exception as e:
+            logging.debug(f"Failed to send SIGTERM: {e}")
 
-        # Wait with timeout for graceful termination
+        # Wait with timeout for SIGTERM
         try:
             await asyncio.wait_for(self.process.wait(), timeout=3.0)
+            logging.debug("Process terminated after SIGTERM")
+            return
         except asyncio.TimeoutError:
-            # Force kill if terminate didn't work
-            try:
-                self.process.kill()
-            except ProcessLookupError:
-                # Process already terminated
-                return
-            except Exception:
-                pass
+            logging.warning("Process did not respond to SIGTERM, force killing")
             
-            # Wait with timeout for force kill
-            try:
-                await asyncio.wait_for(self.process.wait(), timeout=2.0)
-            except asyncio.TimeoutError:
-                # If even kill() doesn't work, log and move on
-                logging.warning(f"Process {self.process.pid} did not terminate even after kill()")
-                # Don't wait indefinitely - the process is likely in an unrecoverable state
+        # Force kill if terminate didn't work
+        try:
+            self.process.kill()
+        except ProcessLookupError:
+            # Process already terminated
+            return
+        except Exception as e:
+            logging.debug(f"Failed to kill process: {e}")
+        
+        # Wait with timeout for force kill
+        try:
+            await asyncio.wait_for(self.process.wait(), timeout=2.0)
+            logging.debug("Process force killed")
+        except asyncio.TimeoutError:
+            # If even kill() doesn't work, log and move on
+            logging.warning(f"Process {self.process.pid} did not terminate even after kill()")
+            # Don't wait indefinitely - the process is likely in an unrecoverable state
 
 
 @attrs.define()

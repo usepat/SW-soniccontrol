@@ -13,7 +13,7 @@ ${MIN_FREQUENCY}    ${100000}
 ${MAX_FREQUENCY}    ${10000000}
 
 ${MIN_GAIN}    ${0}
-${MAX_GAIN}    ${150}
+${MAX_GAIN}    ${100}
 
 ${MIN_INDEX}    ${1}
 ${MAX_INDEX}    ${4}
@@ -112,11 +112,12 @@ Send Example Commands
                 Run Keyword and Continue on Failure    Send command and check if the device crashes    ${command_example} 
                 Reconnect if disconnected
                 
+
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !log[global]=ERROR
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !stop
                 Run Keyword and Continue on Failure    RemoteController.Send Command    !sonic_force
                 Run Keyword And Continue On Failure    RemoteController.Send Command    !clear_errors
-                Run Keyword and Continue on Failure    RemoteController.Send Command    !input_source=external
+                Run Keyword and Continue on Failure    RemoteController.Send Command    !control_mode=remote
 
                 Log To Console    Progress: Completed ${${i} + 1}/${num_iterations} iterations
             ELSE
