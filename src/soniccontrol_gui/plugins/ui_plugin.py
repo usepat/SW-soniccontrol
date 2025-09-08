@@ -26,6 +26,11 @@ class UIComponentFactory(abc.ABC):
     def __call__(self, master, parent: UIComponent, *args, **kwargs) -> UIComponent:
         ...
 
+    @abc.abstractmethod
+    def get_name(self) -> str:
+        ...
+    
+
 
 class UIPluginSlotView(View):
     """
@@ -62,7 +67,7 @@ class UIPluginSlotView(View):
                 if isinstance(img, tk.PhotoImage):  # or ttkbootstrap Image if you use that wrapper
                     kwargs["image"] = img
 
-                title = getattr(comp, "tab_title", getattr(widget, "tab_title", "Plugin"))
+                title = getattr(comp, "tab_title", getattr(widget, "tab_title", factory.get_name()))
                 self._notebook.add(widget, text=title, **kwargs)
 
         else:
