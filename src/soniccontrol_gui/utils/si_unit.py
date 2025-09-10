@@ -192,6 +192,10 @@ class MeterSIVar(SIVar[float], si_meta=METER_META):
     def __init__(self, value: float = 0.0, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
+class MilliMeterSIVar(MeterSIVar):
+    def __init__(self, value: float = 0.0, si_prefix: SIPrefix = SIPrefix.MILLI):
+        super().__init__(value=value, si_prefix=si_prefix)
+
 ABSOLUTE_FREQUENCY_META = SIVarMeta(
     si_unit=SIUnit.HERTZ, 
     si_prefix_min=SIPrefix.NONE, 
