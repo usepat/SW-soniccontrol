@@ -6,7 +6,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocols.protocol_v1_0_0.protocol_v1_0_0 import Protocol_v1_0_0
 from sonic_protocol.protocols.protocol_v2_0_0.commands import (
-    clear_errors, restart_device, get_adc, start_configurator, set_control_mode, get_control_mode, pop_error_histo_message, get_error_histo_size
+    get_info, clear_errors, restart_device, get_adc, start_configurator, set_control_mode, get_control_mode, pop_error_histo_message, get_error_histo_size
 )
 from sonic_protocol.protocols.protocol_v2_0_0.procedure_commands.procedure_commands import all_proc_commands
 
@@ -64,6 +64,8 @@ class Protocol_v2_0_0(ProtocolList):
         # setting the input source should be done in the configurator and not operator
         # Not really. But we changed to control mode?
         command_contract_dict[CommandCode.SET_CONTROL_MODE] = set_control_mode
+        command_contract_dict[CommandCode.GET_INFO] = get_info
+        
 
         return command_contract_dict
 

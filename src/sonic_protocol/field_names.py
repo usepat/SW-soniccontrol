@@ -61,6 +61,7 @@ class EFieldName(IEFieldName):
     BUILD_HASH = auto()
     HARDWARE_VERSION = auto()
     FIRMWARE_VERSION = auto()
+    SNR = auto()
 
     CONTROL_MODE = auto()
     COMM_MODE = auto()

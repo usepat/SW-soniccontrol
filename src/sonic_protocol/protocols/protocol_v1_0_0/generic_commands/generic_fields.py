@@ -23,6 +23,7 @@ build_hash_field = AnswerFieldDef(
     field_type=FieldType(str)
 )
 
+
 error_code_field = AnswerFieldDef(
     field_name=EFieldName.ERROR_CODE,
     field_type=FieldType(field_type=np.uint16)

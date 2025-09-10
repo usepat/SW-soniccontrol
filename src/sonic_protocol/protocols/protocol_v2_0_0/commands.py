@@ -1,3 +1,4 @@
+import copy
 from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import (
@@ -6,7 +7,27 @@ from sonic_protocol.schema import (
 )
 from sonic_protocol.protocols.protocol_v1_0_0.flashing_commands.flashing_commands import field_success
 from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_fields import field_message
+import sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_commands as cmds
 from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.schema import SonicTextAnswerFieldAttrs
+
+
+snr_field = AnswerFieldDef(
+    field_name=EFieldName.SNR,
+    field_type=FieldType(str)
+)
+
+get_info = copy.deepcopy(cmds.get_info)
+get_info.answer_def.fields.append(snr_field)
+
+# Set prefix for hardware version field
+for field in get_info.answer_def.fields:
+    if field.field_name == EFieldName.HARDWARE_VERSION:
+        field.sonic_text_attrs = SonicTextAnswerFieldAttrs(prefix="Hw: ")
+    if field.field_name == EFieldName.FIRMWARE_VERSION:
+        field.sonic_text_attrs = SonicTextAnswerFieldAttrs(prefix="Fw: ")
+
+
 
 clear_errors = CommandContract(
     code=CommandCode.CLEAR_ERRORS,
