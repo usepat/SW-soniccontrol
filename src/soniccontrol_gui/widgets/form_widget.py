@@ -1,6 +1,7 @@
 import abc
 from enum import Enum
 import inspect
+from tkinter.ttk import Style
 from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, TypeVar, Union, get_args, get_origin
 
 import copy
@@ -17,6 +18,7 @@ from soniccontrol_gui.constants import ui_labels, sizes
 from soniccontrol_gui.widgets.file_browse_button import FileBrowseButtonView
 
 import ttkbootstrap as ttk
+import tkinter as tk
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from soniccontrol.procedures.holder import HoldTuple, HolderArgs
@@ -38,6 +40,7 @@ class FieldViewBase(abc.ABC, Generic[T], View):
         """
         if top_scroll_frame is None:
             return
+
         def _on_focus_in(event):
             try:
                 # Respect input method: only scroll automatically when last input was keyboard
@@ -45,7 +48,6 @@ class FieldViewBase(abc.ABC, Generic[T], View):
                 # If last input was mouse, do not auto-scroll (user probably clicked)
                 if last == 'mouse':
                     return
-
                 # Ensure the scrolled frame exposes the helper
                 if hasattr(top_scroll_frame, 'ensure_widget_visible'):
                     # Use after_idle to allow geometry updates from the focus event to settle
@@ -55,6 +57,59 @@ class FieldViewBase(abc.ABC, Generic[T], View):
                 return
 
         widget.bind('<FocusIn>', _on_focus_in, '+')
+
+    def resubscribe_focus(self, top_scroll_frame) -> None:
+        """
+        Ensure all interactive child widgets of this FieldView are subscribed to
+        automatic scrolling on focus. This is intended to be called after a
+        view is re-attached to a visible scrolled frame (for example after an
+        expand/collapse cycle).
+        """
+        # store new top scroll frame
+        self._top_scroll_frame = top_scroll_frame
+        if top_scroll_frame is None:
+            return
+
+        # Bind focus for all descendant Tk widgets
+        def _is_interactive_widget(w) -> bool:
+            """Return True for widgets that should receive focus->scroll bindings."""
+            try:
+                # Prefer isinstance checks for common ttk widgets
+                if isinstance(w, (ttk.Entry, ttk.Checkbutton, ttk.Combobox, ttk.Spinbox, ttk.Scale)):
+                    return True
+            except Exception:
+                # Some objects may not be Tk widgets; fall back to class name check
+                pass
+            try:
+                cls = w.winfo_class()
+                if cls in ('TEntry', 'Entry', 'TCheckbutton', 'Checkbutton', 'TCombobox', 'Combobox', 'TSpinbox', 'Spinbox', 'TScale', 'Scale'):
+                    return True
+            except Exception:
+                return False
+            return False
+
+        def _bind_descendants(w):
+            # Only try to subscribe interactive input widgets; recurse into all children
+            try:
+                if _is_interactive_widget(w):
+                    try:
+                        self.subscribe_focus_to_scroll(w, top_scroll_frame)
+                    except Exception:
+                        pass
+            except Exception:
+                # defensive: if any introspection fails, skip this widget
+                pass
+            # Recurse into children regardless so deeper interactive widgets are handled
+            try:
+                for child in w.winfo_children():
+                    _bind_descendants(child)
+            except Exception:
+                pass
+
+        try:
+            _bind_descendants(self)
+        except Exception:
+            pass
             
     def __init__(self, master: TkinterView, *args, top_scroll_frame: Optional["ScrolledFrame"] = None, **kwargs):
         self._top_scroll_frame: Optional["ScrolledFrame"] = top_scroll_frame
@@ -857,20 +912,28 @@ class BooleanFieldView(FieldViewBase[bool]):
     def __init__(self, master: TkinterView, field_name: str, *args, default_value: bool = False, **kwargs):
         self._field_name = field_name
         self._default_value = default_value
-        self._var = ttk.BooleanVar(value=self._default_value)
+        # Use tkinter Variable so it works with tk.Checkbutton
+        self._var = tk.BooleanVar(value=self._default_value)
         self._callback: Callable[[bool], None] = lambda _: None
 
         # Extract field_view_kwargs for checkbutton configuration
         field_view_kwargs = kwargs.pop("field_view_kwargs", {})
         self._checkbutton_kwargs = field_view_kwargs  # Store for use in _initialize_children
-        
+
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
 
         super().__init__(master, *args, **kwargs)
         # Restore field_view_kwargs for potential reuse
         kwargs['field_view_kwargs'] = field_view_kwargs
-        self._var.trace_add("write", self._on_change)
+        # trace_add may not exist on very old tkinter; try both
+        try:
+            self._var.trace_add("write", self._on_change)
+        except Exception:
+            try:
+                self._var.trace('w', self._on_change)
+            except Exception:
+                pass
 
     def _initialize_children(self) -> None:
         # Create checkbutton with additional kwargs from field_view_kwargs
@@ -880,14 +943,24 @@ class BooleanFieldView(FieldViewBase[bool]):
         }
         # Add any additional configuration from field_view_kwargs
         checkbutton_config.update(self._checkbutton_kwargs)
-        
-        self._checkbutton = ttk.Checkbutton(self, **checkbutton_config)
+        _style = Style()
+        # Use proper ttk style naming: "Variant.Class", e.g. 'Selected.TCheckbutton'
+        _style.map('Selected.TCheckbutton', foreground=[
+            ('selected', 'blue'),
+            ('!selected', 'blue')
+        ])
+        self._checkbutton = ttk.Checkbutton(self, style='Selected.TCheckbutton', **checkbutton_config)
         WidgetRegistry.register_widget(self._checkbutton, "checkbutton", self._widget_name)
         self._checkbutton.bind("<Return>", lambda e: self._var.set(not self._var.get()))
-        
         # Subscribe checkbutton to scroll on focus
         if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame:
             self.subscribe_focus_to_scroll(self._checkbutton, self._top_scroll_frame)
+        # Update style on focus in/out using the proper style names
+        self._checkbutton.bind("<FocusIn>", lambda _e: self._checkbutton.configure(style='Selected.TCheckbutton'))
+        self._checkbutton.bind("<FocusOut>", lambda _e: self._checkbutton.configure(style='TCheckbutton'))
+
+
+
 
     def _initialize_publish(self) -> None:
         self.grid_rowconfigure(0, weight=1)                     # Allow vertical expansion
@@ -1220,7 +1293,6 @@ class ExpandableFrame(FieldViewBase):
     def __init__(self, master: TkinterView, field_name: str, field_type: type, field_view_factory: "DynamicFieldViewFactory", *args, **kwargs):
         # Pop and store the parameters we need for the child
         self._parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._top_scroll_frame = kwargs.pop("top_scroll_frame", None)
         self._field_view_kwargs = kwargs.pop("field_view_kwargs", {}).copy()
         
         # Remove expandable flag to avoid infinite recursion
@@ -1283,6 +1355,13 @@ class ExpandableFrame(FieldViewBase):
             self._child_container.grid(row=1, column=0, columnspan=2, sticky='nsew', padx=5, pady=5)
             self._toggle_btn.config(text='▼')
             self._expanded = True
+            # After expanding, ensure any interactive descendants re-subscribe
+            # to focus-to-scroll on the configured top scroll frame.
+            try:
+                if self._child_fieldview and hasattr(self._child_fieldview, 'resubscribe_focus'):
+                    self._child_fieldview.resubscribe_focus(self._top_scroll_frame)
+            except Exception:
+                pass
 
     @property
     def field_name(self):
@@ -1863,64 +1942,152 @@ class FormWidgetView(View):
                     root = sf.winfo_toplevel()
                     # bind_all on root so we capture input anywhere in the app
                     root.bind_all('<Button>', _mouse_event, add=True)
+                    # General keypress handler
                     root.bind_all('<KeyPress>', _key_event, add=True)
+                    root.bind_all('<KeyRelease>', _key_event, add=True)
+
                 except Exception:
                     pass
 
             _install_input_method_tracking(self._content_frame)
+            try:
+                # Report the concrete ScrolledFrame type and which expected
+                # attributes it exposes so we can remove fallbacks safely.
+                attrs = []
+                for name in ('interior', 'frame', 'inner', 'frame_interior', 'container', 'canvas', '_canvas', 'canvas_widget'):
+                    attrs.append(f"{name}={'yes' if hasattr(self._content_frame, name) else 'no'}")
+                print(f"[SCROLL-INFO] content_frame={type(self._content_frame)}; " + ", ".join(attrs))
+            except Exception:
+                pass
 
             # Attach a helper to the instance that will try to scroll a child widget
             # into view. We try several possible attribute names for inner frame and canvas
             # so this works with different ScrolledFrame implementations.
             def ensure_widget_visible(widget, threshold: float = 2/3):
                 try:
-                    sf = self._content_frame
-                    sf.update_idletasks()
+                    # Minimal robust implementation that uses the ScrolledFrame.container
+                    # and animates the scroller when necessary. This is the user's
+                    # requested straightforward approach.
+                    top_scroll_frame = self._content_frame
+                    widget.update_idletasks()
+                    top_scroll_frame.update_idletasks()
 
-                    # Find inner frame (the full content) and the canvas used for scrolling
-                    inner = None
-                    for name in ('interior', 'frame', 'inner', 'frame_interior', 'container'):
-                        if hasattr(sf, name):
-                            inner = getattr(sf, name)
-                            break
-                    # Try common attribute names for canvas
-                    canvas = None
-                    for name in ('canvas', '_canvas', 'canvas_widget'):
-                        if hasattr(sf, name):
-                            canvas = getattr(sf, name)
-                            break
+                    # the content frame is this object (its visible container is `.container`).
+                    if hasattr(top_scroll_frame, 'yview_moveto'):
+                        # content height (inner) and container (visible) are available via
+                        # top_scroll_frame.winfo_height() and top_scroll_frame.container.winfo_height()
+                        content_height = top_scroll_frame.winfo_height()
+                        container_height = getattr(top_scroll_frame, 'container', top_scroll_frame).winfo_height()
+                        # nothing to do if sizes are not positive
+                        if content_height <= 0 or container_height <= 0:
+                            return
 
-                    # If we have both, compute widget offset relative to inner and move view by fraction
-                    if inner is not None and canvas is not None and hasattr(canvas, 'yview_moveto'):
-                        widget_top = widget.winfo_rooty() - inner.winfo_rooty()
-                        inner_h = max(1, inner.winfo_height())
-                        visible_height = sf.winfo_height()
+                        # widget position relative to visible container (to check lower-third)
+                        # Walk up the widget.master chain and sum winfo_y() to get a reliable
+                        # position inside the scrolled content (more robust than rooty diffs
+                        # when the content is placed/moved).
+                        def _relative_y_in_ancestor(wdg, ancestor):
+                            y = 0
+                            w = wdg
+                            while w is not None and w != ancestor:
+                                try:
+                                    y += w.winfo_y()
+                                except Exception:
+                                    # if a widget isn't mapped or raises, fall back
+                                    return None
+                                w = getattr(w, 'master', None)
+                            return y
 
-                        # compute visible top in inner coords by asking canvas for current y offset
+                        # precompute root positions as fallbacks
+                        widget_root = None
+                        container_top = None
+                        content_top = None
                         try:
-                            visible_top = canvas.canvasy(0)
+                            widget_root = widget.winfo_rooty()
                         except Exception:
-                            visible_top = 0
+                            widget_root = None
+                        try:
+                            container_top = top_scroll_frame.container.winfo_rooty()
+                        except Exception:
+                            container_top = None
+                        try:
+                            content_top = top_scroll_frame.winfo_rooty()
+                        except Exception:
+                            content_top = None
 
-                        # If widget is above visible top or below threshold*visible_height, scroll it to top
-                        if widget_top < visible_top or widget_top > visible_top + threshold * visible_height:
-                            fraction = widget_top / inner_h
-                            fraction = max(0.0, min(1.0, fraction))
-                            canvas.after_idle(lambda: canvas.yview_moveto(fraction))
-                        return
+                        pos_in_container = _relative_y_in_ancestor(widget, top_scroll_frame.container)
+                        # fallback to rooty difference if parent-walk failed and we have values
+                        if pos_in_container is None:
+                            if widget_root is None or container_top is None:
+                                return
+                            pos_in_container = widget_root - container_top
 
-                    # Fallback: try to use sf.yview_moveto if present by computing fraction relative to sf height
-                    if hasattr(sf, 'yview_moveto'):
-                        widget_top = widget.winfo_rooty() - sf.winfo_rooty()
-                        inner_h = max(1, sf.winfo_height())
-                        fraction = widget_top / inner_h
-                        fraction = max(0.0, min(1.0, fraction))
-                        # call via getattr to avoid static attribute complaints
-                        sf.after_idle(lambda: getattr(sf, 'yview_moveto')(fraction))
-                        return
-                except Exception:
-                    # Best-effort: ignore errors so focus still works
-                    return
+                        # If the widget is visible and in the higher (top) third of the visible area, skip scrolling.
+                        # If pos_in_container < 0 the widget is above the visible area and we should scroll.
+                        if pos_in_container >= 0 and pos_in_container <= (1.0 / 3.0) * container_height:
+                            return
+
+                        # Otherwise compute fraction within the full content and scroll so the widget
+                        # appears at the top of the visible area. Use animation to avoid jumps.
+                        if widget_root is not None and content_top is not None:
+                            offset_in_content = widget_root - content_top
+                        else:
+                            # fallback: use position inside container as approximation
+                            offset_in_content = pos_in_container
+                        desired_fraction = offset_in_content / float(content_height)
+                        desired_fraction = max(0.0, min(1.0, desired_fraction))
+
+                        # current fraction (try via scrollbar); fallback to 0.0
+                        try:
+                            current_fraction = top_scroll_frame.vscroll.get()[0]
+                        except Exception:
+                            current_fraction = 0.0
+
+                        # if already close to desired, don't animate
+                        if abs(current_fraction - desired_fraction) < 0.01:
+                            return
+
+                        # cancel any running animation
+                        try:
+                            existing = getattr(top_scroll_frame, '_scroll_anim_id', None)
+                            if existing:
+                                top_scroll_frame.after_cancel(existing)
+                        except Exception:
+                            pass
+
+                        # animate in a few steps
+
+                        direction = (desired_fraction - current_fraction)
+                        if direction < 0:
+                            # scrolling up: fewer steps and shorter duration
+                            steps = 2
+                            duration_ms = 20
+                        else:
+                            # scrolling down: slightly smoother animation
+                            steps = 8
+                            duration_ms = 160
+                        step_time = max(1, int(duration_ms / steps))
+                        delta = (desired_fraction - current_fraction) / float(steps)
+
+                        i = 0
+                        def _animate():
+                            nonlocal i, current_fraction
+                            i += 1
+                            current_fraction = current_fraction + delta
+                            # clamp
+                            frac = max(0.0, min(1.0, current_fraction))
+                            try:
+                                top_scroll_frame.yview_moveto(frac)
+                            except Exception:
+                                return
+                            if i < steps:
+                                top_scroll_frame._scroll_anim_id = top_scroll_frame.after(step_time, _animate)
+                            else:
+                                top_scroll_frame._scroll_anim_id = None
+
+                        _animate()
+                except Exception as e:
+                    print(f"Error in scroll handler: {e}")
 
             # attach to instance
             try:
