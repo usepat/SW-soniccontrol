@@ -83,6 +83,7 @@ class CommandCode(ICommandCode):
     GET_ADC = 360
     GET_CONTROL_MODE = 370
     GET_ERROR_HISTO_SIZE = 380
+    GET_DAC = 390
 
 
 
@@ -142,6 +143,8 @@ class CommandCode(ICommandCode):
     SET_WIPE_T_OFF = 1344
     SET_WIPE_T_PAUSE = 1345
     SET_WIPE_GAIN = 1346
+
+    SET_DAC = 1390
     
     SET_CONTROL_MODE = 2000
     SET_COM_PROT = 2010

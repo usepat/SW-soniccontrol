@@ -1,7 +1,7 @@
 from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import (
-    CommandParamDef, ControlMode, ConverterType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    CommandParamDef, ControlMode, ConverterType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract
 )
 from sonic_protocol.protocols.protocol_v1_0_0.flashing_commands.flashing_commands import field_success
@@ -165,4 +165,64 @@ pop_error_histo_message = CommandContract(
     ),
     is_release=True,
     tags=["errors"]
+)
+
+
+
+field_type_dac_voltage = FieldType(
+    field_type=float,
+    min_value=0,
+    max_value=3.3, 
+    si_unit=SIUnit.VOLTAGE,
+    si_prefix=SIPrefix.NONE,
+)
+
+param_dac_voltage = CommandParamDef(
+    name=EFieldName.VOLTAGE,
+    param_type=field_type_dac_voltage
+)
+
+field_dac_voltage = AnswerFieldDef(
+    field_name=EFieldName.VOLTAGE,
+    field_type=field_type_dac_voltage,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(
+        prefix="DAC Voltage: "
+    )
+)
+
+
+
+set_dac = CommandContract(
+    code=CommandCode.SET_DAC,
+    command_def=CommandDef(
+        setter_param=param_dac_voltage,
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!dac"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[field_dac_voltage]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the dac voltage."
+    ),
+    is_release=True,
+    tags=["DAC"]
+)
+
+get_dac = CommandContract(
+    code=CommandCode.GET_DAC,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?dac"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[field_dac_voltage]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to get the currently set dac voltage"
+    ),
+    is_release=True,
+    tags=["DAC"]
 )
