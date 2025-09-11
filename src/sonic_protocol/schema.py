@@ -5,6 +5,7 @@ import numpy as np
 
 import re
 from functools import total_ordering
+from datetime import datetime
 
 
 VersionTuple = Tuple[int, int, int]
@@ -216,8 +217,20 @@ class Timestamp():
     month: int = attrs.field()
     year: int = attrs.field()
     def __str__(self) -> str:
-        return f"{self.hour}:{self.minute}:{self.second} {self.day}.{self.month}.{self.year}"
+        return f"{self.hour}:{self.minute}:{self.second}-{self.day}.{self.month}.{self.year}"
     
+    @staticmethod
+    def now() -> "Timestamp":
+        now = datetime.now()
+        return Timestamp(
+            hour=now.hour,
+            minute=now.minute,
+            second=now.second,
+            day=now.day,
+            month=now.month,
+            year=now.year
+        )
+
     @staticmethod
     def to_timestamp(x: Any) -> "Timestamp":
         if isinstance(x, Timestamp):

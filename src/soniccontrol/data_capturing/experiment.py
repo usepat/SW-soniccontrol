@@ -6,7 +6,7 @@ import datetime
 from sonic_protocol.schema import SIPrefix, SIUnit, Version
 from soniccontrol.data_capturing.capture_target import CaptureTargets
 from soniccontrol.device_data import FirmwareInfo
-from soniccontrol_gui.utils.si_unit import MeterSIVar, SIVar, SIVarMeta, TemperatureSIVar
+from soniccontrol_gui.utils.si_unit import MeterSIVar, MilliMeterSIVar, SIVar, SIVarMeta, TemperatureSIVar
 
 
 def convert_authors(x: Any) -> List[str]:
@@ -33,7 +33,7 @@ class ExperimentMetaData:
     description: str = ""
 
     medium_temperature: Optional[TemperatureSIVar] = None
-    gap: Optional[MeterSIVar] = None
+    gap: Optional[MilliMeterSIVar] = None
     reflector: Optional[str] = None
     cable_length: Optional[MeterSIVar] = None
     cable_type: Optional[str] = None

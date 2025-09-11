@@ -14,7 +14,7 @@ class Command:
 
     @property
     def args(self) -> Dict[str, Any]:
-        return attrs.asdict(self)
+        return attrs.asdict(self, recurse=False)
 
 
 # Commands used for the operator

@@ -290,7 +290,7 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
         self._field_view_kwargs = field_view_kwargs 
         self._si_var_class = field_view_kwargs.get("si_var_class", None)
         self._abstract_si_var = False
-
+        self._default_si_prefix = SIPrefix.NONE
         # Determine if this is an optional field based on type hint information
         if "is_optional" in field_view_kwargs:
             self._is_optional = field_view_kwargs["is_optional"]
@@ -321,7 +321,20 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             if hasattr(self._si_var_class, '__orig_bases__'):
                 for base in self._si_var_class.__orig_bases__:
                     if hasattr(base, '__args__') and len(base.__args__) > 0:
+                        # value_type is the generic argument (int|float)
                         self._value_type = base.__args__[0]
+                        # Try to introspect the si_prefix default from the SIVar subclass __init__
+                        try:
+                            sig = inspect.signature(self._si_var_class.__init__)
+                            param = sig.parameters.get('si_prefix')
+                            if param is not None and param.default is not inspect._empty:
+                                self._default_si_prefix = param.default
+                            else:
+                                # fallback to NONE if no explicit default is present
+                                self._default_si_prefix = SIPrefix.NONE
+                        except Exception:
+                            # conservative fallback
+                            self._default_si_prefix = SIPrefix.NONE
                         break
                 else:
                     raise ValueError(f"Could not determine value type from {self._si_var_class}")
@@ -333,11 +346,11 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             display_value = ""
         else:
             display_value = str(default_value.value)
-            
+
         self._str_value: ttk.StringVar = ttk.StringVar(value=display_value)
         self._value: Union[SIVar, None] = _default_value
-        self._is_valid: bool = True 
-        
+        self._is_valid: bool = True
+
         # Extract optional UI elements from kwargs
         self._use_scale = field_view_kwargs.get("use_scale", False)
         self._use_spinbox = field_view_kwargs.get("use_spinbox", False)
@@ -346,7 +359,7 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
         # Example usage in attrs field metadata:
         # metadata={"field_view_kwargs": {"treat_zero_as_none": True}}
         self._treat_zero_as_none = field_view_kwargs.get("treat_zero_as_none", False)
-        
+
         parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
@@ -355,10 +368,10 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
         kwargs['field_view_kwargs'] = field_view_kwargs
         self._callback: Callable[[Union[SIVar, None]], None] = lambda _: None
         self._trace_id = self._str_value.trace_add("write", self._parse_str_value)
-        
+
         # Track timer for visual feedback to avoid multiple overlapping timers
         self._style_reset_timer = None
-        
+
         # Flag to prevent recursive scale updates
         self._updating_scale = False
 
@@ -800,10 +813,30 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
     
     @value.setter
     def value(self, v: Union[SIVar, None]) -> None:
+        # Enforce optional-ness: if the field is not optional, reject None assignments
+        if v is None and not getattr(self, '_is_optional', False):
+            # don't overwrite current value; mark as invalid and update UI
+            try:
+                self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+            except Exception:
+                pass
+            self._is_valid = False
+            return
+
         self._value = v
-        
+
         if v is None:
             self._update_str_value_without_trace("")
+            # If value is None and we have a known default si_prefix, try to set combobox to that prefix
+            try:
+                if self.si_prefix_combobox is not None and self._default_si_prefix is not None:
+                    # find label for default prefix
+                    for lbl, p in self._prefix_map.items():
+                        if p == self._default_si_prefix:
+                            self.si_prefix_combobox.set(lbl)
+                            break
+            except Exception:
+                pass
         else:
             # Maybe check if meta matches(si_unit)
             
