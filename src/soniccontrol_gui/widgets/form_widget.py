@@ -40,117 +40,19 @@ class FieldViewBase(abc.ABC, Generic[T], View):
             return
         def _on_focus_in(event):
             try:
-                widget.update_idletasks()
-                top_scroll_frame.update_idletasks()
+                # Respect input method: only scroll automatically when last input was keyboard
+                last = getattr(top_scroll_frame, '_last_input_method', None)
+                # If last input was mouse, do not auto-scroll (user probably clicked)
+                if last == 'mouse':
+                    return
 
-                # the content frame is this object (its visible container is `.container`).
-                if hasattr(top_scroll_frame, 'yview_moveto'):
-                    # content height (inner) and container (visible) are available via
-                    # top_scroll_frame.winfo_height() and top_scroll_frame.container.winfo_height()
-                    content_height = top_scroll_frame.winfo_height()
-                    container_height = getattr(top_scroll_frame, 'container', top_scroll_frame).winfo_height()
-                    # nothing to do if sizes are not positive
-                    if content_height <= 0 or container_height <= 0:
-                        return
-
-                    # widget position relative to visible container (to check lower-third)
-                    # Walk up the widget.master chain and sum winfo_y() to get a reliable
-                    # position inside the scrolled content (more robust than rooty diffs
-                    # when the content is placed/moved).
-                    def _relative_y_in_ancestor(wdg, ancestor):
-                        y = 0
-                        w = wdg
-                        while w is not None and w != ancestor:
-                            try:
-                                y += w.winfo_y()
-                            except Exception:
-                                # if a widget isn't mapped or raises, fall back
-                                return None
-                            w = getattr(w, 'master', None)
-                        return y
-
-                    # precompute root positions as fallbacks
-                    widget_root = None
-                    container_top = None
-                    content_top = None
-                    try:
-                        widget_root = widget.winfo_rooty()
-                    except Exception:
-                        widget_root = None
-                    try:
-                        container_top = top_scroll_frame.container.winfo_rooty()
-                    except Exception:
-                        container_top = None
-                    try:
-                        content_top = top_scroll_frame.winfo_rooty()
-                    except Exception:
-                        content_top = None
-
-                    pos_in_container = _relative_y_in_ancestor(widget, top_scroll_frame.container)
-                    # fallback to rooty difference if parent-walk failed and we have values
-                    if pos_in_container is None:
-                        if widget_root is None or container_top is None:
-                            return
-                        pos_in_container = widget_root - container_top
-
-                    # If the widget is visible and in the higher (top) third of the visible area, skip scrolling.
-                    # If pos_in_container < 0 the widget is above the visible area and we should scroll.
-                    if pos_in_container >= 0 and pos_in_container <= (1.0 / 3.0) * container_height:
-                        return
-
-                    # Otherwise compute fraction within the full content and scroll so the widget
-                    # appears at the top of the visible area. Use animation to avoid jumps.
-                    if widget_root is not None and content_top is not None:
-                        offset_in_content = widget_root - content_top
-                    else:
-                        # fallback: use position inside container as approximation
-                        offset_in_content = pos_in_container
-                    desired_fraction = offset_in_content / float(content_height)
-                    desired_fraction = max(0.0, min(1.0, desired_fraction))
-
-                    # current fraction (try via scrollbar); fallback to 0.0
-                    try:
-                        current_fraction = top_scroll_frame.vscroll.get()[0]
-                    except Exception:
-                        current_fraction = 0.0
-
-                    # if already close to desired, don't animate
-                    if abs(current_fraction - desired_fraction) < 0.01:
-                        return
-
-                    # cancel any running animation
-                    try:
-                        existing = getattr(top_scroll_frame, '_scroll_anim_id', None)
-                        if existing:
-                            top_scroll_frame.after_cancel(existing)
-                    except Exception:
-                        pass
-
-                    # animate in a few steps
-                    steps = 8
-                    duration_ms = 160
-                    step_time = max(1, int(duration_ms / steps))
-                    delta = (desired_fraction - current_fraction) / float(steps)
-
-                    i = 0
-                    def _animate():
-                        nonlocal i, current_fraction
-                        i += 1
-                        current_fraction = current_fraction + delta
-                        # clamp
-                        frac = max(0.0, min(1.0, current_fraction))
-                        try:
-                            top_scroll_frame.yview_moveto(frac)
-                        except Exception:
-                            return
-                        if i < steps:
-                            top_scroll_frame._scroll_anim_id = top_scroll_frame.after(step_time, _animate)
-                        else:
-                            top_scroll_frame._scroll_anim_id = None
-
-                    _animate()
-            except Exception as e:
-                print(f"Error in scroll handler: {e}")
+                # Ensure the scrolled frame exposes the helper
+                if hasattr(top_scroll_frame, 'ensure_widget_visible'):
+                    # Use after_idle to allow geometry updates from the focus event to settle
+                    top_scroll_frame.after_idle(lambda: top_scroll_frame.ensure_widget_visible(widget))
+            except Exception:
+                # swallow any scrolling errors to not interfere with normal focus behavior
+                return
 
         widget.bind('<FocusIn>', _on_focus_in, '+')
             
@@ -1945,6 +1847,86 @@ class FormWidgetView(View):
         
         if self._use_scroll:
             self._content_frame = ScrolledFrame(self)
+            # Install input-method tracking on the scrolled frame so we can
+            # ignore mouse-initiated focus when auto-scrolling.
+            def _install_input_method_tracking(sf: ScrolledFrame):
+                try:
+                    setattr(sf, '_last_input_method', None)
+
+                    def _mouse_event(_ev):
+                        setattr(sf, '_last_input_method', 'mouse')
+
+                    def _key_event(_ev):
+                        # treat any keypress as keyboard input; you may narrow this to Tab only
+                        setattr(sf, '_last_input_method', 'keyboard')
+
+                    root = sf.winfo_toplevel()
+                    # bind_all on root so we capture input anywhere in the app
+                    root.bind_all('<Button>', _mouse_event, add=True)
+                    root.bind_all('<KeyPress>', _key_event, add=True)
+                except Exception:
+                    pass
+
+            _install_input_method_tracking(self._content_frame)
+
+            # Attach a helper to the instance that will try to scroll a child widget
+            # into view. We try several possible attribute names for inner frame and canvas
+            # so this works with different ScrolledFrame implementations.
+            def ensure_widget_visible(widget, threshold: float = 2/3):
+                try:
+                    sf = self._content_frame
+                    sf.update_idletasks()
+
+                    # Find inner frame (the full content) and the canvas used for scrolling
+                    inner = None
+                    for name in ('interior', 'frame', 'inner', 'frame_interior', 'container'):
+                        if hasattr(sf, name):
+                            inner = getattr(sf, name)
+                            break
+                    # Try common attribute names for canvas
+                    canvas = None
+                    for name in ('canvas', '_canvas', 'canvas_widget'):
+                        if hasattr(sf, name):
+                            canvas = getattr(sf, name)
+                            break
+
+                    # If we have both, compute widget offset relative to inner and move view by fraction
+                    if inner is not None and canvas is not None and hasattr(canvas, 'yview_moveto'):
+                        widget_top = widget.winfo_rooty() - inner.winfo_rooty()
+                        inner_h = max(1, inner.winfo_height())
+                        visible_height = sf.winfo_height()
+
+                        # compute visible top in inner coords by asking canvas for current y offset
+                        try:
+                            visible_top = canvas.canvasy(0)
+                        except Exception:
+                            visible_top = 0
+
+                        # If widget is above visible top or below threshold*visible_height, scroll it to top
+                        if widget_top < visible_top or widget_top > visible_top + threshold * visible_height:
+                            fraction = widget_top / inner_h
+                            fraction = max(0.0, min(1.0, fraction))
+                            canvas.after_idle(lambda: canvas.yview_moveto(fraction))
+                        return
+
+                    # Fallback: try to use sf.yview_moveto if present by computing fraction relative to sf height
+                    if hasattr(sf, 'yview_moveto'):
+                        widget_top = widget.winfo_rooty() - sf.winfo_rooty()
+                        inner_h = max(1, sf.winfo_height())
+                        fraction = widget_top / inner_h
+                        fraction = max(0.0, min(1.0, fraction))
+                        # call via getattr to avoid static attribute complaints
+                        sf.after_idle(lambda: getattr(sf, 'yview_moveto')(fraction))
+                        return
+                except Exception:
+                    # Best-effort: ignore errors so focus still works
+                    return
+
+            # attach to instance
+            try:
+                setattr(self._content_frame, 'ensure_widget_visible', ensure_widget_visible)
+            except Exception:
+                pass
         else:
             self._content_frame = ttk.Frame(self)
 
