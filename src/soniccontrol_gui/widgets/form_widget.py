@@ -1229,14 +1229,14 @@ class ExpandableFrame(FieldViewBase):
         self._field_name = field_name
         self._field_type = field_type
         self._field_view_factory = field_view_factory
-        self._expanded = True  # Default to expanded
+        self._expanded = False  # Default to expanded
         self._child_fieldview = None
         
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self):
         # Use a triangle for expand/collapse: ▼ (down) and ▶ (right)
-        self._toggle_btn = ttk.Button(self, text='▼', width=2, command=self._toggle)
+        self._toggle_btn = ttk.Button(self, text='▶', width=2, command=self._toggle)
         self._label = ttk.Label(self, text=self._field_name)
         # Create a container frame for the child to handle layout properly
         self._child_container = ttk.Frame(self)

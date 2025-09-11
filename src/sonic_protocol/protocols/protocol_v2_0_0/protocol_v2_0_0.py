@@ -6,7 +6,8 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocols.protocol_v1_0_0.protocol_v1_0_0 import Protocol_v1_0_0
 from sonic_protocol.protocols.protocol_v2_0_0.commands import (
-    get_info, clear_errors, restart_device, get_adc, start_configurator, set_control_mode, get_control_mode, pop_error_histo_message, get_error_histo_size
+    get_info, clear_errors, restart_device, get_adc, start_configurator, set_control_mode, get_control_mode, pop_error_histo_message, 
+    get_error_histo_size, get_dac, set_dac
 )
 from sonic_protocol.protocols.protocol_v2_0_0.procedure_commands.procedure_commands import all_proc_commands
 
@@ -54,7 +55,7 @@ class Protocol_v2_0_0(ProtocolList):
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
         command_contract_list: List[CommandContract] = [clear_errors, restart_device, start_configurator, get_control_mode, pop_error_histo_message, get_error_histo_size]
         if protocol_type.device_type == DeviceType.DESCALE:
-            command_contract_list.extend([get_adc])
+            command_contract_list.extend([get_adc, get_dac, set_dac])
         if protocol_type.device_type == DeviceType.MVP_WORKER:
             command_contract_list.extend(all_proc_commands)
         command_contract_dict: Dict[ICommandCode, CommandContract | None] = {

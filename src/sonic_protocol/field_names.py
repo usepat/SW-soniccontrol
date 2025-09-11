@@ -49,6 +49,7 @@ class EFieldName(IEFieldName):
     ERROR_CODE = auto()
     PASSWORD_HASHED = auto()
     ANOMALY_DETECTION = auto()
+    VOLTAGE = auto()
 
     TIMING = auto()
 
