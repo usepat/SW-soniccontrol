@@ -11,7 +11,7 @@ from pathlib import Path
 from sonic_protocol.schema import SIPrefix, SIUnit
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_forms
 from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.utils.si_unit import SIVar, SIVarMeta
+from sonic_protocol.si_unit import SIVar, SIVarMeta
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TkinterView, View
 from soniccontrol_gui.constants import ui_labels, sizes

@@ -4,7 +4,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from sonic_protocol.schema import DeviceType, SIPrefix
 from sonic_protocol.python_parser import commands
 from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.utils.si_unit import AbsoluteFrequencySIVar, GainSIVar
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.sonic_device import SonicDevice

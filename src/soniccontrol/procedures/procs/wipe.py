@@ -10,7 +10,7 @@ from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, custom_validator_factory
 from sonic_protocol.command_codes import CommandCode
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
-from soniccontrol_gui.utils.si_unit import AbsoluteFrequencySIVar, RelativeFrequencySIVar, GainSIVar
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, RelativeFrequencySIVar, GainSIVar
 
 
 @attrs.define(auto_attribs=True)

@@ -11,7 +11,7 @@ from sonic_protocol.schema import SIPrefix
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
 from soniccontrol.data_capturing.experiment import ExperimentMetaData, convert_authors
 from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.utils.si_unit import MeterSIVar, SIVar, TemperatureSIVar
+from sonic_protocol.si_unit import MeterSIVar, SIVar, TemperatureSIVar
 from soniccontrol_gui.view import TkinterView, View
 from soniccontrol_gui.constants import files, sizes, ui_labels
 

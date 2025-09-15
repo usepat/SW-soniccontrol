@@ -11,7 +11,7 @@ from sonic_protocol.schema import SIPrefix
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
-from soniccontrol_gui.utils.si_unit import GainSIVar, RelativeFrequencySIVar
+from sonic_protocol.si_unit import GainSIVar, RelativeFrequencySIVar
 
 
 @attrs.define(auto_attribs=True)

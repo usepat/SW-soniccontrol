@@ -9,7 +9,7 @@ from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.schema import SIPrefix
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol_gui.utils.si_unit import SIVar
+from sonic_protocol.si_unit import SIVar
 
 def custom_validator_factory(data_type, min, max):
     def custom_validator(instance, attribute, value):

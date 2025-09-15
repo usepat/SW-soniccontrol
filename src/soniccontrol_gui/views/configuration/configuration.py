@@ -15,7 +15,7 @@ from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol.updater import Updater
 from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.utils.si_unit import AtfSiVar, AttSiVar, SIVar, SIVarMeta
+from sonic_protocol.si_unit import AtfSiVar, AttSiVar, SIVar, SIVarMeta
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
 from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade

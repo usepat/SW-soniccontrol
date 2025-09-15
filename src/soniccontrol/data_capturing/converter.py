@@ -6,7 +6,7 @@ import cattrs
 from sonic_protocol.schema import SIPrefix, SIUnit, Version
 from soniccontrol.data_capturing.experiment import ExperimentMetaData, convert_authors
 from soniccontrol.procedures.holder import HolderArgs
-from soniccontrol_gui.utils.si_unit import SIVar, SIVarMeta, TemperatureSIVar, AtfSiVar
+from sonic_protocol.si_unit import SIVar, SIVarMeta, TemperatureSIVar, AtfSiVar
 
 def is_sivar(cls: Any) -> bool:
     # Check for SIVar subclasses (including generic instances like SIVar[float])
