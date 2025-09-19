@@ -9,8 +9,13 @@ from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_commands import (
     get_update_worker
 ) 
+from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.descaler_commands import (
+    get_update_descale
+)
 
 get_update_worker_v2_1_0 = copy.deepcopy(get_update_worker)
+get_update_descale_v2_1_0 = copy.deepcopy(get_update_descale)
+
 
 field_anomaly_detection = AnswerFieldDef(
     field_name=EFieldName.ANOMALY_DETECTION,
@@ -28,12 +33,17 @@ field_transducer_state = AnswerFieldDef(
 )
 
 get_update_worker_v2_1_0.answer_def.fields.extend([
-    field_anomaly_detection, field_transducer_state
+    field_anomaly_detection, field_system_state
+])
+
+get_update_descale_v2_1_0.answer_def.fields.extend([
+    field_system_state
 ])
 
 for idx, field in enumerate(get_update_worker_v2_1_0.answer_def.fields):
     if field.field_name == EFieldName.ERROR_CODE:
         get_update_worker_v2_1_0.answer_def.fields[idx] = field_transducer_state
+        get_update_descale_v2_1_0.answer_def.fields[idx] = field_transducer_state
         break
 
 
@@ -81,6 +91,8 @@ class Protocol_v2_1_0(ProtocolList):
         command_contract_list: List[CommandContract] = []
         if protocol_type.device_type == DeviceType.MVP_WORKER:
             command_contract_list.extend([get_update_worker_v2_1_0])
+        if protocol_type.device_type == DeviceType.DESCALE:
+            command_contract_list.extend([get_update_descale_v2_1_0])
         command_contract_dict: Dict[ICommandCode, CommandContract | None] = {
             command_contract.code: command_contract for command_contract in command_contract_list 
         } 
