@@ -69,7 +69,7 @@ class Protocol_v2_1_0(ProtocolList):
 
         # We remove Input source, because we refactored it in the firmware into ControlMode and CommunicationChannel
         data_types["E_ANOMALY"] = Anomaly
-        data_types["E_TRANSDUCERSTATE"] = TransducerState
+        data_types["E_TRANSDUCER_STATE"] = TransducerState
         data_types["E_SYSTEM_STATE"] = SystemState
         
         return data_types
