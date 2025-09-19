@@ -62,10 +62,10 @@ class TransducerState(Enum):
     IDLE = "idle"
     BUSY = "busy"
     TRANSDUCER_NOT_CONNECTED = "not connected"
-    ERR_TRANSDUCER_TOO_HOT = "too hot"
-    ERR_TRANSDUCER_SHORTED = "shorted"
-    ERR_TRANSDUCER_NOT_SUBMERGED = "not submerged"
-    ERR_TRANSDUCER_CHARACTERISTICS_CHANGED = "characteristics changed"
+    TRANSDUCER_TOO_HOT = "too hot"
+    TRANSDUCER_SHORTED = "shorted"
+    TRANSDUCER_NOT_SUBMERGED = "not submerged"
+    TRANSDUCER_CHARACTERISTICS_CHANGED = "characteristics changed"
 
 class SystemState(Enum):
     OK = "ok"
