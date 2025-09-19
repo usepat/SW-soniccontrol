@@ -58,6 +58,22 @@ class DeviceType(Enum):
     CONFIGURATOR = "configurator"
     SIMULATION = "simulation"
 
+class TransducerState(Enum):
+    IDLE = "idle"
+    BUSY = "busy"
+    TRANSDUCER_NOT_CONNECTED = "not connected"
+    ERR_TRANSDUCER_TOO_HOT = "too hot"
+    ERR_TRANSDUCER_SHORTED = "shorted"
+    ERR_TRANSDUCER_NOT_SUBMERGED = "not submerged"
+    ERR_TRANSDUCER_CHARACTERISTICS_CHANGED = "characteristics changed"
+
+class SystemState(Enum):
+    OK = "ok"
+    RECOVERED = "recovered"
+    NO_COMM = "no comm"
+    COMPONENT_DAMAGED = "damaged"
+
+
 class SIUnit(Enum):
     METER = "m"
     SECONDS = "s"

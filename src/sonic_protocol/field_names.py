@@ -50,6 +50,8 @@ class EFieldName(IEFieldName):
     PASSWORD_HASHED = auto()
     ANOMALY_DETECTION = auto()
     VOLTAGE = auto()
+    TRANSDUCER_STATE = auto()
+    SYSTEM_STATE = auto()
 
     TIMING = auto()
 

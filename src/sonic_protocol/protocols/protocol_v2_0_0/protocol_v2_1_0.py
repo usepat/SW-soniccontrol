@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any, Dict, List
 from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.protocols.protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
-from sonic_protocol.schema import Anomaly, AnswerFieldDef, CommandContract, ConverterType, DeviceParamConstantType, DeviceType, FieldType, IEFieldName, ProtocolType, Version
+from sonic_protocol.schema import Anomaly, AnswerFieldDef, CommandContract, ConverterType, DeviceParamConstantType, DeviceType, FieldType, IEFieldName, ProtocolType, SystemState, TransducerState, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_commands import (
@@ -17,11 +17,24 @@ field_anomaly_detection = AnswerFieldDef(
     field_type=FieldType(field_type=Anomaly, converter_ref=ConverterType.ENUM),
 )
 
-
-
-get_update_worker_v2_1_0.answer_def.fields.append(
-    field_anomaly_detection
+field_system_state = AnswerFieldDef(
+    field_name=EFieldName.TRANSDUCER_STATE,
+    field_type=FieldType(SystemState, converter_ref=ConverterType.ENUM),
 )
+
+field_transducer_state = AnswerFieldDef(
+    field_name=EFieldName.SYSTEM_STATE,
+    field_type=FieldType(TransducerState, converter_ref=ConverterType.ENUM),
+)
+
+get_update_worker_v2_1_0.answer_def.fields.extend([
+    field_anomaly_detection, field_transducer_state
+])
+
+for idx, field in enumerate(get_update_worker_v2_1_0.answer_def.fields):
+    if field.field_name == EFieldName.ERROR_CODE:
+        get_update_worker_v2_1_0.answer_def.fields[idx] = field_transducer_state
+        break
 
 
 class Protocol_v2_1_0(ProtocolList):
