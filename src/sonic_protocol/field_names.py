@@ -11,6 +11,7 @@ class BaseFieldName(IEFieldName):
     MESSAGE = 3
 
     UNKNOWN_ANSWER = 4
+    SUCCESS = 5
 
 
 @unique
@@ -22,7 +23,7 @@ class EFieldName(IEFieldName):
     MESSAGE = BaseFieldName.MESSAGE.value
     UNKNOWN_ANSWER = BaseFieldName.UNKNOWN_ANSWER.value
 
-    SUCCESS = auto()
+    SUCCESS = BaseFieldName.SUCCESS.value
 
     HELP = auto()
 

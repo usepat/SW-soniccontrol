@@ -42,6 +42,10 @@ class SerialCommunicator(Communicator):
     def connection_opened(self) -> asyncio.Event:
         return self._connection_opened
     
+
+    def set_device_log_handler(self, handler: logging.Handler) -> None:
+        self._message_fetcher._device_logger.addHandler(handler)
+
     async def open_communication(
         self, connection: Connection,
         baudrate = 9600
