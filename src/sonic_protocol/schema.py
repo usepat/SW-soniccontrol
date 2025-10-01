@@ -51,10 +51,11 @@ class BuildType(Enum):
     RELEASE = "RELEASE"
 
 class DeviceType(Enum):
-    UNKNOWN = "unknown"
     DESCALE = "descale"
     MVP_WORKER = "mvp_worker"
+    POSTMAN = "postman"
     CRYSTAL = "crystal"
+    UNKNOWN = "unknown"
     CONFIGURATOR = "configurator"
     SIMULATION = "simulation"
 
