@@ -22,14 +22,14 @@ field_anomaly_detection = AnswerFieldDef(
     field_type=FieldType(field_type=Anomaly, converter_ref=ConverterType.ENUM),
 )
 
-field_system_state = AnswerFieldDef(
+field_transducer_state = AnswerFieldDef(
     field_name=EFieldName.TRANSDUCER_STATE,
-    field_type=FieldType(SystemState, converter_ref=ConverterType.ENUM),
+    field_type=FieldType(TransducerState, converter_ref=ConverterType.ENUM),
 )
 
-field_transducer_state = AnswerFieldDef(
+field_system_state = AnswerFieldDef(
     field_name=EFieldName.SYSTEM_STATE,
-    field_type=FieldType(TransducerState, converter_ref=ConverterType.ENUM),
+    field_type=FieldType(SystemState, converter_ref=ConverterType.ENUM),
 )
 
 get_update_worker_v2_1_0.answer_def.fields.extend([
