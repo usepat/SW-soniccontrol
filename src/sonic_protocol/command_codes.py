@@ -19,6 +19,7 @@ class BaseCommandCode(ICommandCode):
     E_SYNTAX_ERROR = 20005
     E_INVALID_VALUE = 20006
     E_PARSING_ERROR = 20007 
+    E_TIMEOUT_ERROR = 20008
 
 
 @unique
@@ -199,6 +200,7 @@ class CommandCode(ICommandCode):
     E_SYNTAX_ERROR = BaseCommandCode.E_SYNTAX_ERROR.value
     E_INVALID_VALUE = BaseCommandCode.E_INVALID_VALUE.value
     E_PARSING_ERROR = BaseCommandCode.E_PARSING_ERROR.value
+    E_TIMEOUT_ERROR = BaseCommandCode.E_TIMEOUT_ERROR.value
 
 
     # Legacy commands. They are not really used for anything but for the device to select the correct command class
