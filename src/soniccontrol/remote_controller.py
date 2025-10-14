@@ -71,7 +71,7 @@ class RemoteController:
 
     def start_updater(self):
         assert self._updater is not None
-        if not self._updater.running:
+        if not self._updater.running.set():
             self._updater.start()
 
     """
@@ -159,6 +159,11 @@ class RemoteController:
 
         assert self._device is None
         assert self._updater is None
+
+    @property
+    def updater(self):
+        assert self._updater
+        return self._updater
 
 
 
