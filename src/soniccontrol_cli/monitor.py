@@ -42,7 +42,7 @@ class Monitor(Cmd):
         return False
 
     def do_help(self, arg: str) -> bool | None:
-        manual_compiler = MarkdownManualCompiler(protocol)
+        manual_compiler = MarkdownManualCompiler()
         manual: str = manual_compiler.compile_manual_for_specific_device(self._info.device_type, self._info.protocol_version, self._info.is_release)
         click.echo_via_pager(manual)
 

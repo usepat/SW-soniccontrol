@@ -78,7 +78,7 @@ class MarkdownManualCompiler(ManualCompiler):
         if isinstance(description_attrs, UserManualAttrs):
             description = description_attrs.description
 
-        param_entry = self.create_field_type_entry(param_def.name.value, param_def.param_type, description)
+        param_entry = self.create_field_type_entry(str(param_def.name.value), param_def.param_type, description)
         return param_entry
 
 
@@ -88,7 +88,7 @@ class MarkdownManualCompiler(ManualCompiler):
         if isinstance(description_attrs, UserManualAttrs):
             description = description_attrs.description
 
-        field_entry = self.create_field_type_entry(field_def.field_name.value, field_def.field_type, description)
+        field_entry = self.create_field_type_entry(str(field_def.field_name.value), field_def.field_type, description)
 
         return field_entry
 

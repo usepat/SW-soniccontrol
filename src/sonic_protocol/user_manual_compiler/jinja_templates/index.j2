@@ -1,0 +1,62 @@
+{% import "modbus_api.j2" as modbus %}
+{% import "sonic_protocol.j2" as sonic %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UsePAT Remote Procedure Protocol Documentation</title>
+</head>
+<body>
+    <h1>UsePAT Remote Procedure Protocol Documentation</h1>
+
+    <h2>Introduction</h2>
+
+        <h3>Simple Types</h3>
+            
+        <h3>Complex Types</h3>
+
+    <h2>Commands</h2>
+
+        {% for command_contract in pure_command_contracts %} 
+            {# pure_command_contracts should only contain command contracts that are not notifications or errors #}
+            <h3>{{ command_contract.code.value }}: {{ command_contract.code.name }}</h3>
+
+            <p>{{user_manual_attrs.description}}</p>
+
+            <h4>Parameters:</h4>
+            <ol>
+            {% for command_param in [command_contract.command_def.index_param, command_contract.command_def.setter_param] %}
+                <li>
+                    <h5>{{ command_param.name.name }}</h5>
+                    <p>type: <b>{{ command_param.param_type.field_type.__name__ }}</b></p>
+                    <p>unit: </p>
+                    {% if command_param.user_manual_attrs is not None %}
+                        <p>{{ command_param.user_manual_attrs.description }}</p>
+                    {% endif %}
+                </li>
+            {% endfor %}
+
+            <h4>Answer fields:</h4>
+
+
+            <h4>Modbus API</h4>
+
+            <h4>Text-based API</h4>
+
+            </ol>
+        {% endfor %}
+
+    <h2>Errors</h2>
+
+        {% for error_message in error_messages %}
+            
+        {% endfor %}
+
+    <h2>Notifications</h2>
+
+        {% for notification in notification_messages %}
+            
+        {% endfor %}
+</body>
+</html>

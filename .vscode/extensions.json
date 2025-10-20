@@ -36,7 +36,10 @@
 		"streetsidesoftware.code-spell-checker-british-english",
 
 		// for robot framework
-		"d-biehl.robotcode"
+		"d-biehl.robotcode",
+
+		// for jinja syntax highlighting
+		"wholroyd.jinja"
 
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
