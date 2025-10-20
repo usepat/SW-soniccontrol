@@ -12,6 +12,7 @@ from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_com
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.descaler_commands import (
     get_update_descale
 )
+from .modbus_commands import broadcast_modbus_server_id
 
 get_update_worker_v2_1_0 = copy.deepcopy(get_update_worker)
 get_update_descale_v2_1_0 = copy.deepcopy(get_update_descale)
@@ -90,7 +91,7 @@ class Protocol_v2_1_0(ProtocolList):
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
         command_contract_list: List[CommandContract] = []
         if protocol_type.device_type == DeviceType.MVP_WORKER:
-            command_contract_list.extend([get_update_worker_v2_1_0])
+            command_contract_list.extend([get_update_worker_v2_1_0, broadcast_modbus_server_id])
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_update_descale_v2_1_0])
         command_contract_dict: Dict[ICommandCode, CommandContract | None] = {

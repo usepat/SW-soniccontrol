@@ -115,4 +115,6 @@ class EFieldName(IEFieldName):
     LEGACY_F_CENTER = auto()
     LEGACY_POLL = auto()
 
+    MODBUS_SERVER_ID = auto()
+
 
