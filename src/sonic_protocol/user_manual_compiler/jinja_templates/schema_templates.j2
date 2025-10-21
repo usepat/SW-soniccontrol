@@ -1,0 +1,125 @@
+{% import "modbus_api.j2" as modbus %}
+{% import "sonic_protocol.j2" as sonic %}
+
+
+{% macro field_entry(field_name, field_type, description) %}
+    <h5>{{ field_name.name }}</h5>
+
+    <p>type: 
+        <b>
+        {% if field_type.converter_ref == ConverterType.ENUM %}
+            enum
+        {% elif field_type.converter_ref != ConverterType.PRIMITIVE %}
+            struct
+        {% endif %}
+        {{ field_type.field_type.__name__ }}
+        </b>
+    </p>
+
+    {% set unit_prefix = field_type.si_prefix.value if field_type.si_prefix is not none else "" %}
+    {% set si_unit = field_type.si_unit.value if field_type.si_unit is not none else "" %}
+    {% set unit = unit_prefix ~ si_unit %}
+    {% if unit != "" %}
+        <p>unit: <b>{{ unit }}</b></p>
+    {% endif %}
+    
+    <p>
+        {% set has_min_value = field_type.min_value is not none %}
+        {% set has_max_value = field_type.max_value is not none %}
+        {% set has_constraints = has_min_value or has_max_value or field_type.allowed_values is not none %}
+
+        {% if has_constraints %}
+            allowed values:<br/>
+
+            {% if has_max_value or field_type.max_value is not none %}
+                Range 
+                from {{ protocol_constants[field_type.min_value.value] if has_min_value else "[type dependent min value]" }}
+                to {{ protocol_constants[field_type.max_value.value] if has_max_value else "[type dependent max value]" }} 
+                <br/>
+            {% endif %}
+            {% if field_type.allowed_values is not none %}
+                <ul>    
+                    {% for value in field_type.allowed_values %}
+                        <li>{{ value }}</li>
+                    {% endfor %}
+                <ul>
+            {% endif %}
+        {% endif %}
+    </p>
+
+    {% if description is not none %}
+        <p>{{ description }}</p>
+    {% endif %}
+    {# TODO: add allowed values, min, max #}
+{% endmacro %}
+
+
+{% macro param_entry(command_param) %}
+    {{ field_entry(command_param.name, command_param.param_type, command_param.user_manual_attrs.description) }}
+{% endmacro %}
+
+{% macro answer_field_entry(answer_field_def) %}
+    {{ field_entry(answer_field_def.field_name, answer_field_def.field_type, answer_field_def.user_manual_attrs.description) }}
+{% endmacro %}
+
+
+{% macro command_contract_entry(command_contract) %}
+    <h3>{{ command_contract.code.value }}: {{ command_contract.code.name }}</h3>
+    <p>{{command_contract.user_manual_attrs.description}}</p>
+
+    {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] %}
+    {% if any(command_parameters) %}
+        <h4>Parameters:</h4>
+        <ol>
+        {% for command_param in command_parameters %}
+            {% if command_param is not none %}
+                <li>
+                    {{ param_entry(command_param) }}
+                </li>
+            {% endif %}
+        {% endfor %}
+        </ol>
+    {% endif %}
+
+    <h4>Answer fields:</h4>
+    <ol>
+    {% for answer_field_def in command_contract.answer_def.fields %}
+        <li>
+            {{ answer_field_entry(answer_field_def) }}
+        </li>
+    {% endfor %}
+    </ol>
+
+    <h4>Modbus API</h4>
+    {% set is_notification = command_contract.command_def is none and command_contract.code.value < 20000 %}
+    {% if is_notification %}
+        Notification messages are not supported for MODBUS.
+    {% else %}
+        <p>Command Call Memory Layout:</p>
+        {% if command_contract.command_def is not none %}
+            {{ modbus.modbus_layout(command_contract.code, command_contract.command_def.field_defs()) }}
+        {% endif %}
+
+        <p>Answer Memory Layout:</p>
+        {{ modbus.modbus_layout(command_contract.code, command_contract.answer_def.field_defs()) }}
+    {% endif %}
+
+    <h4>Text-based API</h4>
+{% endmacro %}
+
+
+{% macro enum_class_entry(enum_class) %}
+    <table>
+        <caption>{{ enum_class.__name__ }}</caption>
+        <tr>
+            <th>Index</th>
+            <th>Name</th>
+        </tr>
+        {% for i, enum_member in enumerate(enum_class) %}
+            <tr>
+                <td>{{ i }}</td>
+                <td>{{ enum_member.name }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endmacro %}

@@ -104,7 +104,7 @@ class MarkdownManualCompiler(ManualCompiler):
         type_header += "  \n"
 
 
-        possible_values = None if field_type.allowed_values is None else field_type.allowed_values
+        possible_values = field_type.allowed_values
         if possible_values is None and field_type.converter_ref == ConverterType.ENUM:
             assert issubclass(field_type.field_type, Enum)
             possible_values = [ enum_member.value for enum_member in field_type.field_type ]

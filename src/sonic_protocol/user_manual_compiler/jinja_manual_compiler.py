@@ -1,5 +1,6 @@
 from enum import Enum
 
+import attrs
 import numpy as np
 from sonic_protocol.protocol import protocol_list
 from sonic_protocol.schema import ConverterType, DeviceType, ProtocolType, Timestamp, Version
@@ -39,6 +40,7 @@ class BetterManualCompiler(ManualCompiler):
             "Version": Version,
             "Enum": Enum,
             "Timestamp": Timestamp,
+            "protocol_constants": attrs.asdict(protocol.consts)
         }) # export functions and classes to jinja environment. So we can use it inside the templates
 
         template = environment.get_template("index.j2")

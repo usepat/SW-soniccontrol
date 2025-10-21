@@ -1,5 +1,4 @@
-{% import "modbus_api.j2" as modbus %}
-{% import "sonic_protocol.j2" as sonic %}
+{% import "schema_templates.j2" as schema_templates %}
 
 {# 
   Expected variables:
@@ -7,151 +6,81 @@
     - error_messages: List[CommandContract]
     - notification_messages: List[CommandContract]
     - custom_enums: List[Type[Enum]]
+
+ Expected globals:
+    - protocol_constants: Dict[str, Any]
 #}
-
-
-{% macro field_entry(field_name, field_type, description) %}
-    <h5>{{ field_name.name }}</h5>
-
-    <p>type: 
-        <b>
-        {% if field_type.converter_ref == ConverterType.ENUM %}
-            enum
-        {% elif field_type.converter_ref != ConverterType.PRIMITIVE %}
-            struct
-        {% endif %}
-        {{ field_type.field_type.__name__ }}
-        </b>
-    </p>
-
-    {% set unit_prefix = field_type.si_prefix.value if field_type.si_prefix is not none else "" %}
-    {% set si_unit = field_type.si_unit.value if field_type.si_unit is not none else "" %}
-    {% set unit = unit_prefix ~ si_unit %}
-    {% if unit != "" %}
-        <p>unit: <b>{{ unit }}</b></p>
-    {% endif %}
-
-    {% if description is not none %}
-        <p>{{ description }}</p>
-    {% endif %}
-
-    {# TODO: add allowed values, min, max #}
-{% endmacro %}
-
-
-{% macro param_entry(command_param) %}
-    {{ field_entry(command_param.name, command_param.param_type, command_param.user_manual_attrs.description) }}
-{% endmacro %}
-
-{% macro answer_field_entry(answer_field_def) %}
-    {{ field_entry(answer_field_def.field_name, answer_field_def.field_type, answer_field_def.user_manual_attrs.description) }}
-{% endmacro %}
-
-
-{% macro command_contract_entry(command_contract) %}
-    <h3>{{ command_contract.code.value }}: {{ command_contract.code.name }}</h3>
-    <p>{{command_contract.user_manual_attrs.description}}</p>
-
-    {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] %}
-    {% if any(command_parameters) %}
-        <h4>Parameters:</h4>
-        <ol>
-        {% for command_param in command_parameters %}
-            {% if command_param is not none %}
-                <li>
-                    {{ param_entry(command_param) }}
-                </li>
-            {% endif %}
-        {% endfor %}
-        </ol>
-    {% endif %}
-
-    <h4>Answer fields:</h4>
-    <ol>
-    {% for answer_field_def in command_contract.answer_def.fields %}
-        <li>
-            {{ answer_field_entry(answer_field_def) }}
-        </li>
-    {% endfor %}
-    </ol>
-
-    <h4>Modbus API</h4>
-    {% set is_notification = command_contract.command_def is none and command_contract.code.value < 20000 %}
-    {% if is_notification %}
-        Notification messages are not supported for MODBUS.
-    {% else %}
-        <p>Command Call Memory Layout:</p>
-        {% if command_contract.command_def is not none %}
-            {{ modbus.modbus_layout(command_contract.code, command_contract.command_def.field_defs()) }}
-        {% endif %}
-
-        <p>Answer Memory Layout:</p>
-        {{ modbus.modbus_layout(command_contract.code, command_contract.answer_def.field_defs()) }}
-    {% endif %}
-
-    <h4>Text-based API</h4>
-{% endmacro %}
-
-
-{% macro enum_class_entry(enum_class) %}
-    <table>
-        <caption>{{ enum_class.__name__ }}</caption>
-        <tr>
-            <th>Index</th>
-            <th>Name</th>
-        </tr>
-        {% for i, enum_member in enumerate(enum_class) %}
-            <tr>
-                <td>{{ i }}</td>
-                <td>{{ enum_member.name }}</td>
-            </tr>
-        {% endfor %}
-    </table>
-{% endmacro %}
-
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UsePAT Remote Procedure Protocol Documentation</title>
+    <title>UsePAT API Documentation</title>
 </head>
 <body>
-    <h1>UsePAT Remote Procedure Protocol Documentation</h1>
+    <h1>UsePAT API Documentation</h1>
 
     <h2>Introduction</h2>
+        <h3>How this API is structured</h3>
+            Our Application Programming Interface (API) is designed to be a Remote Procedure Protocol (RPC).  
+            That means that we define a set of functions (called commands in this documentation) that our devices can execute.
+            Those commands, can be invoked by sending a command call over a request.
+            As response the device will then return an appropriate answer object. 
+            Such an answer object consists of single fields, that have a type, a name and a value.
+            If the device fails executing the command, it will return an error as answer.
 
-        <h3>Simple Types</h3>
-            
-        <h3>Complex Types</h3>
-            <h4>Enums</h4>
-                {% for enum_class in enum_classes %}
-                    {{ enum_class_entry(enum_class) }}
-                {% endfor %}
+            The device is also able to produce logs and notification messages and send them directly to the remote controller. 
+            However Logs and notification messages are not sent, when a master-slave-based protocol like MODBUS is used. 
 
-            <h4>Structs</h4>
-                <h5>Version</h5>
+            The API can be used with various underlying protocols. 
+            There exists a text-based human-readable protocol that is used together with our in-house Software Sonic Control. 
+            The only other protocol supported (so far) is MODBUS-RTU.
 
-                <h5>Timestamp</h5>
+        <h3>MODBUS API</h3>
+            MODBUS is a protocol that defines how a master client reads and writes memory buffers on a slave server.
 
-        <h3>Modbus API</h3>
+            We use a "mailbox" system to implement our RPC protocol. A mailbox is a memory section to that can be written or read. 
+            We define a command call mailbox, to that the command call has to be written and an answer mailbox, in that the device will put the answer. 
+
+            TODO: should we use a execute_command flag, for command call mailbox? 
+            TODO: describe pending flag, etc. for answer.
+            TODO: what about a length field in answer mailbox?
+
+            Therefore we support only the MODBUS functions write multiple holding registers (0x10) and read input registers (0x04). 
+            And we only allow to read and write from the mailboxes. Where the answer mailbox is read only.
 
         <h3>Text-based API</h3>
+
+    <h2>Types</h2>
+        The primitive types used by the API are bool, uint8, uint16, uint32, int16, float. 
+        Complex types used are strings, enums and structs for Version and Timestamp, which are explained here in more detail.
+
+        <h4>Version</h4>
+            Version consists of the member variables major_version, minor_version and patch_version.  
+            It follows the conventional versioning schema.
+
+        <h4>Timestamp</h4>
+            The timestamp consists of the members variables: hour, minute, seconds, day, month and year.
+
+        <h4>Enums</h4>
+            {% for enum_class in enum_classes %}
+                {{ schema_templates.enum_class_entry(enum_class) }}
+            {% endfor %}
 
     <h2>Commands</h2>
         {% for command_contract in pure_command_contracts | sort(attribute="code") %} 
             {# pure_command_contracts should only contain command contracts that are not notifications or errors #}
-            {{ command_contract_entry(command_contract )}}
+            {{ schema_templates.command_contract_entry(command_contract )}}
         {% endfor %}
 
     <h2>Errors</h2>
         {% for error_message in error_messages | sort(attribute="code") %}
-            {{ command_contract_entry(error_message )}}
+            {{ schema_templates.command_contract_entry(error_message )}}
         {% endfor %}
 
     <h2>Notifications</h2>
         {% for notification in notification_messages | sort(attribute="code") %}
-            {{ command_contract_entry(notification )}}
+            {{ schema_templates.command_contract_entry(notification )}}
         {% endfor %}
 </body>
 </html>
