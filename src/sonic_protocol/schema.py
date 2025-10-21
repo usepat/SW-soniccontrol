@@ -364,6 +364,17 @@ def to_field_type(value: Any) -> FieldType:
         return value
     return FieldType(value)
 
+"""
+    CommandParamDef and AnswerFieldDef should be merged in the future.
+    However to refactor that is quite a lot of work. 
+    Therefore this class is used instead to provide a better interface.
+"""
+@attrs.define(auto_attribs=True)
+class FieldDef:
+    name: IEFieldName = attrs.field()
+    field_type: FieldType = attrs.field(converter=to_field_type)
+    user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
+
 @attrs.define(auto_attribs=True)
 class CommandParamDef():
     name: IEFieldName = attrs.field()
@@ -372,6 +383,9 @@ class CommandParamDef():
     def __hash__(self):
         return hash((self.name, self.param_type.field_type, self.param_type.converter_ref, self.param_type.si_unit, self.param_type.si_prefix, self.param_type.max_value, self.param_type.min_value))
 
+    def to_field_def(self) -> FieldDef:
+        return FieldDef(name=self.name, field_type=self.param_type, user_manual_attrs=self.user_manual_attrs)
+        
 
 @attrs.define(auto_attribs=True)
 class CommandDef():
@@ -385,6 +399,15 @@ class CommandDef():
     setter_param: Optional[CommandParamDef] = attrs.field(default=None)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
 
+    def field_defs(self) -> List[FieldDef]:
+        result: List[FieldDef] = []
+
+        if self.index_param:
+            result.append(self.index_param.to_field_def())
+        if self.setter_param:
+            result.append(self.setter_param.to_field_def())
+
+        return result
 
 @attrs.define(auto_attribs=True)
 class AnswerFieldDef():
@@ -399,7 +422,8 @@ class AnswerFieldDef():
     def __hash__(self):
         return hash((self.field_name, self.field_type.field_type, self.field_type.converter_ref, self.field_type.si_unit, self.field_type.si_prefix, self.field_type.max_value, self.field_type.min_value))
 
-
+    def to_field_def(self) -> FieldDef:
+        return FieldDef(name=self.field_name, field_type=self.field_type, user_manual_attrs=self.user_manual_attrs)
 
 @attrs.define(auto_attribs=True)
 class AnswerDef():
@@ -410,6 +434,9 @@ class AnswerDef():
     fields: List[AnswerFieldDef] = attrs.field()
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
     sonic_text_attrs: SonicTextAnswerAttrs = attrs.field(default=SonicTextAnswerAttrs())
+
+    def field_defs(self) -> List[FieldDef]:
+        return [ answer_field.to_field_def() for answer_field in self.fields ]
 
 
 @attrs.define(auto_attribs=True)

@@ -1,0 +1,198 @@
+
+{% macro uint8_layout(field_name, address) %}
+<tr>
+    <td>{{ field_name}}</td>
+    <td>uint8</td>
+    <td>{{ address }}</td>
+    <td>0x00</td>
+    <td><b>value</b></td>
+</tr>
+{% endmacro %}
+
+{% macro uint16_layout(field_name, address) %}
+<tr>
+    <td>{{ field_name}}</td>
+    <td>uint16</td>
+    <td>{{ address }}</td>
+    <td colspan="2"><b>value</b></td>
+</tr>
+{% endmacro %}
+
+{% macro int16_layout(field_name, address) %}
+<tr>
+    <td>{{ field_name}}</td>
+    <td>int16</td>
+    <td>{{ address }}</td>
+    <td colspan="2"><b>value</b></td>
+</tr>
+{% endmacro %}
+
+{% macro uint32_layout(field_name, address) %}
+<tr>
+    <td rowspan="2">{{ field_name}}</td>
+    <td rowspan="2">uint32</td>
+    <td>{{ address }}</td>
+    <td colspan="2">high word</td>
+</tr>
+<tr>
+    <td>{{ address + 1 }}</td>
+    <td colspan="2">low word</td>
+</tr>
+{% endmacro %}
+
+{% macro float_layout(field_name, address) %}
+<tr>
+    <td rowspan="2">{{ field_name}}</td>
+    <td rowspan="2">float32 IEEE-754</td>
+    <td>{{ address }}</td>
+    <td colspan="2">high word</td>
+</tr>
+<tr>
+    <td>{{ address + 1 }}</td>
+    <td colspan="2">low word</td>
+</tr>
+{% endmacro %}
+
+{% macro bool_layout(field_name, address) %}
+<tr>
+    <td>{{ field_name}}</td>
+    <td>bool</td>
+    <td>{{ address }}</td>
+    <td>0x00</td>
+    <td><b>value</b></td>
+</tr>
+{% endmacro %}
+
+{% macro string64_layout(field_name, address) %}
+<tr>
+    <td rowspan="4">{{ field_name }}</td>
+    <td rowspan="4">str</td>
+    <td>{{ address }}</td>
+    <td colspan="2">string length</td>
+</tr>
+<tr>
+    <td>{{ address + 1}}</td>
+    <td>char 0</td>
+    <td>char 1</td>
+</tr>
+<tr>
+    <td>...</td>
+    <td>...</td>
+    <td>...</td>
+</tr>
+<tr>
+    <td>{{ address + 31}}</td>
+    <td>char 60</td>
+    <td>char 61</td>
+</tr>
+{% endmacro %}
+
+{% macro enum_layout(field_name, enum_name, address) %}
+<tr>
+    <td>{{ field_name }}</td>
+    <td>enum {{ enum_name }}</td>
+    <td>{{ address }}</td>
+    <td colspan="2"><b>index of enum member</b></td>
+</tr>
+{% endmacro %}
+
+{% macro timestamp_layout(field_name, address) %}
+<tr>
+    <td rowspan="4">{{ field_name }}</td>
+    <td rowspan="4">timestamp (posix time, int64)</td>
+    <td>{{ address }}</td>
+    <td colspan="2">highest word</td>
+</tr>
+<tr>
+    <td>{{ address + 1 }}</td>
+    <td colspan="2">second highest word</td>
+</tr>
+<tr>
+    <td>{{ address + 2 }}</td>
+    <td colspan="2">second lowest word</td>
+</tr>
+<tr>
+    <td>{{ address + 3 }}</td>
+    <td colspan="2">lowest word</td>
+</tr>
+{% endmacro %}
+
+{% macro version_layout(field_name, address) %}
+<tr>
+    <td rowspan="2">{{ field_name}}</td>
+    <td rowspan="2">struct Version</td>
+    <td>{{ address }}</td>
+    <td>major version (uint8)</td>
+    <td>minor version (uint8)</td>
+</tr>
+<tr>
+    <td>patch version (uint8)</td>
+    <td>0x00</td>
+</tr>
+{% endmacro %}
+
+
+{% macro modbus_layout(command_code, fields, start_address=0) %}
+    <table>
+        <colgroup>
+            <col/>
+            <col/>
+            <col style="border-right: 3px solid black;"/>
+            <col/>
+            <col/>
+        </colgroup>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Register Address</th>
+            <th colspan="2">Register Memory</th>
+        </tr>
+        <tr>
+            <td>CommandCode</td>
+            <td>int16</td>
+            <td>{{ start_address }}</td>
+            <td colspan="2">{{ command_code.value }}</td>
+        </tr>
+        {% set ns = namespace(address=start_address + 1) %}
+        {% for field in fields %}
+            {% set field_name = field.name.name %}
+            {% set field_type = field.field_type.field_type %}
+
+            {% if field_type == bool %}    
+                {{ bool_layout(field_name, ns.address) }}
+                {% set ns.address = ns.address + 1 %}
+            {% elif field_type == np.uint8 %}    
+                {{ uint8_layout(field_name, ns.address) }}
+                {% set ns.address = ns.address + 1 %}
+            {% elif field_type == np.uint16 %}    
+                {{ uint16_layout(field_name, ns.address) }}
+                {% set ns.address = ns.address + 2 %}
+            {% elif field_type == np.int16 %}    
+                {{ int16_layout(field_name, ns.address) }}
+                {% set ns.address = ns.address + 2 %}
+            {% elif field_type == np.uint32 or field_type == int %}    
+                {{ uint32_layout(field_name, ns.address) }}
+                {% set ns.address = ns.address + 4 %}
+            {% elif field_type == float %}    
+                {{ float_layout(field_name, ns.address) }}
+                {% set ns.address = ns.address + 4 %}
+            {% elif field_type == str %}    
+                {{ string64_layout(field_name, ns.address) }}
+                {% set ns.address = ns.address + 32 %}
+            {% elif issubclass(field_type, Enum) %}    
+                {{ enum_layout(field_name, field_type, ns.address) }}
+                {% set ns.address = ns.address + 1 %}
+            {% elif field_type == Timestamp %}    
+                {{ timestamp_layout(field_name, ns.address) }}
+                {% set ns.address = ns.address + 4 %}
+            {% elif field_type == Version %}    
+                {{ version_layout(field_name, ns.address) }}
+                {% set ns.address = ns.address + 2 %}
+            {% else %}
+                <tr>
+                    <td colspan="5">Missing documentation</td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+    </table>
+{% endmacro %}

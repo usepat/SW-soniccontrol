@@ -1,6 +1,13 @@
+from enum import Enum
+
+import numpy as np
 from sonic_protocol.protocol import protocol_list
-from sonic_protocol.schema import DeviceType, ProtocolType, Version
+from sonic_protocol.schema import ConverterType, DeviceType, ProtocolType, Timestamp, Version
 from sonic_protocol.user_manual_compiler.manual_compiler import ManualCompiler
+import sonic_protocol
+
+import importlib.resources as rs
+import jinja2
 
 
 class BetterManualCompiler(ManualCompiler):
@@ -9,5 +16,52 @@ class BetterManualCompiler(ManualCompiler):
             protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
         except Exception as e:
             return "Error constructing manual: " + str(e)
+        
+        error_code_begin = 20000 # all command codes greater than 20000 are error codes
+        pure_command_contracts = [ elem for elem in protocol.command_contracts.values() if elem.command_def is not None ]
+        error_messages = [ elem for elem in protocol.command_contracts.values() if elem.command_def is None and elem.code.value >= error_code_begin ]
+        notification_messages = [ elem for elem in protocol.command_contracts.values() if elem.command_def is None and elem.code.value < error_code_begin ]
+        enum_classes = [ elem for elem in protocol.custom_data_types.values() if issubclass(elem, Enum) ]
 
-        return "" 
+        template_path = rs.files(sonic_protocol).joinpath("user_manual_compiler/jinja_templates")
+        environment = jinja2.Environment(loader=jinja2.FileSystemLoader(str(template_path)))
+        environment.globals.update({ 
+            "any": any,
+            "enumerate": enumerate,
+            "issubclass": issubclass,
+            "isinstance": isinstance,
+            "bool": bool,
+            "int": int,
+            "str": str,
+            "float": float,
+            "np": np, # needed for np.uint8, etc.
+            "ConverterType": ConverterType,
+            "Version": Version,
+            "Enum": Enum,
+            "Timestamp": Timestamp,
+        }) # export functions and classes to jinja environment. So we can use it inside the templates
+
+        template = environment.get_template("index.j2")
+        content = template.render(
+            pure_command_contracts=pure_command_contracts, 
+            error_messages=error_messages,
+            notification_messages=notification_messages,
+            enum_classes=enum_classes
+        )
+
+        return content 
+    
+
+def main():
+    manual_compiler = BetterManualCompiler()
+    manual = manual_compiler.compile_manual_for_specific_device(
+        DeviceType.MVP_WORKER, 
+        Version(2, 1, 0), 
+        True
+    )
+
+    with open("./output/manual.html", "w") as file:
+        file.write(manual)
+
+if __name__ == "__main__":
+    main()

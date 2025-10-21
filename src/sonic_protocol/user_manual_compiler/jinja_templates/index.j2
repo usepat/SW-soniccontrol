@@ -1,6 +1,115 @@
 {% import "modbus_api.j2" as modbus %}
 {% import "sonic_protocol.j2" as sonic %}
 
+{# 
+  Expected variables:
+    - pure_command_contracts: List[CommandContract]
+    - error_messages: List[CommandContract]
+    - notification_messages: List[CommandContract]
+    - custom_enums: List[Type[Enum]]
+#}
+
+
+{% macro field_entry(field_name, field_type, description) %}
+    <h5>{{ field_name.name }}</h5>
+
+    <p>type: 
+        <b>
+        {% if field_type.converter_ref == ConverterType.ENUM %}
+            enum
+        {% elif field_type.converter_ref != ConverterType.PRIMITIVE %}
+            struct
+        {% endif %}
+        {{ field_type.field_type.__name__ }}
+        </b>
+    </p>
+
+    {% set unit_prefix = field_type.si_prefix.value if field_type.si_prefix is not none else "" %}
+    {% set si_unit = field_type.si_unit.value if field_type.si_unit is not none else "" %}
+    {% set unit = unit_prefix ~ si_unit %}
+    {% if unit != "" %}
+        <p>unit: <b>{{ unit }}</b></p>
+    {% endif %}
+
+    {% if description is not none %}
+        <p>{{ description }}</p>
+    {% endif %}
+
+    {# TODO: add allowed values, min, max #}
+{% endmacro %}
+
+
+{% macro param_entry(command_param) %}
+    {{ field_entry(command_param.name, command_param.param_type, command_param.user_manual_attrs.description) }}
+{% endmacro %}
+
+{% macro answer_field_entry(answer_field_def) %}
+    {{ field_entry(answer_field_def.field_name, answer_field_def.field_type, answer_field_def.user_manual_attrs.description) }}
+{% endmacro %}
+
+
+{% macro command_contract_entry(command_contract) %}
+    <h3>{{ command_contract.code.value }}: {{ command_contract.code.name }}</h3>
+    <p>{{command_contract.user_manual_attrs.description}}</p>
+
+    {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] %}
+    {% if any(command_parameters) %}
+        <h4>Parameters:</h4>
+        <ol>
+        {% for command_param in command_parameters %}
+            {% if command_param is not none %}
+                <li>
+                    {{ param_entry(command_param) }}
+                </li>
+            {% endif %}
+        {% endfor %}
+        </ol>
+    {% endif %}
+
+    <h4>Answer fields:</h4>
+    <ol>
+    {% for answer_field_def in command_contract.answer_def.fields %}
+        <li>
+            {{ answer_field_entry(answer_field_def) }}
+        </li>
+    {% endfor %}
+    </ol>
+
+    <h4>Modbus API</h4>
+    {% set is_notification = command_contract.command_def is none and command_contract.code.value < 20000 %}
+    {% if is_notification %}
+        Notification messages are not supported for MODBUS.
+    {% else %}
+        <p>Command Call Memory Layout:</p>
+        {% if command_contract.command_def is not none %}
+            {{ modbus.modbus_layout(command_contract.code, command_contract.command_def.field_defs()) }}
+        {% endif %}
+
+        <p>Answer Memory Layout:</p>
+        {{ modbus.modbus_layout(command_contract.code, command_contract.answer_def.field_defs()) }}
+    {% endif %}
+
+    <h4>Text-based API</h4>
+{% endmacro %}
+
+
+{% macro enum_class_entry(enum_class) %}
+    <table>
+        <caption>{{ enum_class.__name__ }}</caption>
+        <tr>
+            <th>Index</th>
+            <th>Name</th>
+        </tr>
+        {% for i, enum_member in enumerate(enum_class) %}
+            <tr>
+                <td>{{ i }}</td>
+                <td>{{ enum_member.name }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endmacro %}
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,48 +124,34 @@
         <h3>Simple Types</h3>
             
         <h3>Complex Types</h3>
+            <h4>Enums</h4>
+                {% for enum_class in enum_classes %}
+                    {{ enum_class_entry(enum_class) }}
+                {% endfor %}
+
+            <h4>Structs</h4>
+                <h5>Version</h5>
+
+                <h5>Timestamp</h5>
+
+        <h3>Modbus API</h3>
+
+        <h3>Text-based API</h3>
 
     <h2>Commands</h2>
-
-        {% for command_contract in pure_command_contracts %} 
+        {% for command_contract in pure_command_contracts | sort(attribute="code") %} 
             {# pure_command_contracts should only contain command contracts that are not notifications or errors #}
-            <h3>{{ command_contract.code.value }}: {{ command_contract.code.name }}</h3>
-
-            <p>{{user_manual_attrs.description}}</p>
-
-            <h4>Parameters:</h4>
-            <ol>
-            {% for command_param in [command_contract.command_def.index_param, command_contract.command_def.setter_param] %}
-                <li>
-                    <h5>{{ command_param.name.name }}</h5>
-                    <p>type: <b>{{ command_param.param_type.field_type.__name__ }}</b></p>
-                    <p>unit: </p>
-                    {% if command_param.user_manual_attrs is not None %}
-                        <p>{{ command_param.user_manual_attrs.description }}</p>
-                    {% endif %}
-                </li>
-            {% endfor %}
-
-            <h4>Answer fields:</h4>
-
-
-            <h4>Modbus API</h4>
-
-            <h4>Text-based API</h4>
-
-            </ol>
+            {{ command_contract_entry(command_contract )}}
         {% endfor %}
 
     <h2>Errors</h2>
-
-        {% for error_message in error_messages %}
-            
+        {% for error_message in error_messages | sort(attribute="code") %}
+            {{ command_contract_entry(error_message )}}
         {% endfor %}
 
     <h2>Notifications</h2>
-
-        {% for notification in notification_messages %}
-            
+        {% for notification in notification_messages | sort(attribute="code") %}
+            {{ command_contract_entry(notification )}}
         {% endfor %}
 </body>
 </html>
