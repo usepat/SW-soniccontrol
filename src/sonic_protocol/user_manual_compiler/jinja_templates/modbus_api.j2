@@ -1,11 +1,12 @@
 
+
 {% macro uint8_layout(field_name, address) %}
 <tr>
     <td>{{ field_name}}</td>
     <td>uint8</td>
     <td>{{ address }}</td>
     <td>0x00</td>
-    <td><b>value</b></td>
+    <td>value</td>
 </tr>
 {% endmacro %}
 
@@ -14,7 +15,7 @@
     <td>{{ field_name}}</td>
     <td>uint16</td>
     <td>{{ address }}</td>
-    <td colspan="2"><b>value</b></td>
+    <td colspan="2">value</td>
 </tr>
 {% endmacro %}
 
@@ -23,7 +24,7 @@
     <td>{{ field_name}}</td>
     <td>int16</td>
     <td>{{ address }}</td>
-    <td colspan="2"><b>value</b></td>
+    <td colspan="2">value</td>
 </tr>
 {% endmacro %}
 
@@ -59,7 +60,7 @@
     <td>bool</td>
     <td>{{ address }}</td>
     <td>0x00</td>
-    <td><b>value</b></td>
+    <td>value</td>
 </tr>
 {% endmacro %}
 
@@ -92,7 +93,7 @@
     <td>{{ field_name }}</td>
     <td>enum {{ enum_name }}</td>
     <td>{{ address }}</td>
-    <td colspan="2"><b>index of enum member</b></td>
+    <td colspan="2">index of enum member</td>
 </tr>
 {% endmacro %}
 
@@ -126,98 +127,101 @@
     <td>minor version (uint8)</td>
 </tr>
 <tr>
-    <td>patch version (uint8)</td>
+    <td>{{ address + 1 }}</td>
+     <td>patch version (uint8)</td>
     <td>0x00</td>
 </tr>
 {% endmacro %}
 
 
-{% macro modbus_layout(command_code, fields, start_address=0) %}
-    <table>
+{% macro memory_layout_table(content) %}
+    <table class="w-full text-sm border-collapse table-fixed">
         <colgroup>
-            <col/>
-            <col/>
-            <col style="border-right: 3px solid black;"/>
-            <col/>
-            <col/>
+            <col class="w-[15%]" />
+            <col class="w-[35%]" />
+            <col class="w-[12%] bg-slate-50 pl-4 border-l-2 border-slate-200" />
+            <col class="w-[14%] bg-slate-50" />
+            <col class="w-[14%] bg-slate-50" />
         </colgroup>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Register Address</th>
-            <th colspan="2">Register Memory</th>
-        </tr>
-        <tr>
-            <td>CommandCode</td>
-            <td>int16</td>
-            <td>{{ start_address }}</td>
-            <td colspan="2">{{ command_code.value }}</td>
-        </tr>
-        {% set ns = namespace(address=start_address + 1) %}
-        {% for field in fields %}
-            {% set field_name = field.name.name %}
-            {% set field_type = field.field_type.field_type %}
-
-            {% if field_type == bool %}    
-                {{ bool_layout(field_name, ns.address) }}
-                {% set ns.address = ns.address + 1 %}
-            {% elif field_type == np.uint8 %}    
-                {{ uint8_layout(field_name, ns.address) }}
-                {% set ns.address = ns.address + 1 %}
-            {% elif field_type == np.uint16 %}    
-                {{ uint16_layout(field_name, ns.address) }}
-                {% set ns.address = ns.address + 2 %}
-            {% elif field_type == np.int16 %}    
-                {{ int16_layout(field_name, ns.address) }}
-                {% set ns.address = ns.address + 2 %}
-            {% elif field_type == np.uint32 or field_type == int %}    
-                {{ uint32_layout(field_name, ns.address) }}
-                {% set ns.address = ns.address + 4 %}
-            {% elif field_type == float %}    
-                {{ float_layout(field_name, ns.address) }}
-                {% set ns.address = ns.address + 4 %}
-            {% elif field_type == str %}    
-                {{ string64_layout(field_name, ns.address) }}
-                {% set ns.address = ns.address + 32 %}
-            {% elif issubclass(field_type, Enum) %}    
-                {{ enum_layout(field_name, field_type, ns.address) }}
-                {% set ns.address = ns.address + 1 %}
-            {% elif field_type == Timestamp %}    
-                {{ timestamp_layout(field_name, ns.address) }}
-                {% set ns.address = ns.address + 4 %}
-            {% elif field_type == Version %}    
-                {{ version_layout(field_name, ns.address) }}
-                {% set ns.address = ns.address + 2 %}
-            {% else %}
-                <tr>
-                    <td colspan="5">Missing documentation</td>
-                </tr>
-            {% endif %}
-        {% endfor %}
+        <thead>
+            <tr>
+                <th class="text-left text-xs font-medium text-slate-600 py-2">Name</th>
+                <th class="text-left text-xs font-medium text-slate-600 py-2">Type</th>
+                <th class="text-left text-xs font-medium text-slate-600 py-2">Register Address</th>
+                <th class="text-left text-xs font-medium text-slate-600 py-2" colspan="2">Register Memory</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ content }}
+        </tbody>
     </table>
 {% endmacro %}
 
-{% macro error_memory_layout() %}
-    <table>
-        <colgroup>
-            <col/>
-            <col/>
-            <col style="border-right: 3px solid black;"/>
-            <col/>
-            <col/>
-        </colgroup>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Register Address</th>
-            <th colspan="2">Register Memory</th>
-        </tr>
-        <tr>
-            <td>Error Code</td>
-            <td>int16</td>
-            <td>0</td>
-            <td colspan="2"><b>error code value</b></td>
-        </tr>
-        {{  string64_layout("error message", 1) }}
-    </table>
+
+{% macro modbus_layout_fields(command_code, fields, start_address=0) %}
+    <tr class="border-t border-slate-100">
+        <td>CommandCode</td>
+        <td>int16</td>
+        <td>{{ start_address }}</td>
+        <td colspan="2">{{ command_code.value }}</td>
+    </tr>
+    {% set ns = namespace(address=start_address + 1) %}
+    {% for field in fields %}
+        {% set field_name = field.name.name %}
+        {% set field_type = field.field_type.field_type %}
+
+        {% if field_type == bool %}    
+            {{ bool_layout(field_name, ns.address) }}
+            {% set ns.address = ns.address + 1 %}
+        {% elif field_type == np.uint8 %}    
+            {{ uint8_layout(field_name, ns.address) }}
+            {% set ns.address = ns.address + 1 %}
+        {% elif field_type == np.uint16 %}    
+            {{ uint16_layout(field_name, ns.address) }}
+            {% set ns.address = ns.address + 2 %}
+        {% elif field_type == np.int16 %}    
+            {{ int16_layout(field_name, ns.address) }}
+            {% set ns.address = ns.address + 2 %}
+        {% elif field_type == np.uint32 or field_type == int %}    
+            {{ uint32_layout(field_name, ns.address) }}
+            {% set ns.address = ns.address + 4 %}
+        {% elif field_type == float %}    
+            {{ float_layout(field_name, ns.address) }}
+            {% set ns.address = ns.address + 4 %}
+        {% elif field_type == str %}    
+            {{ string64_layout(field_name, ns.address) }}
+            {% set ns.address = ns.address + 32 %}
+        {% elif issubclass(field_type, Enum) %}    
+            {{ enum_layout(field_name, field_type, ns.address) }}
+            {% set ns.address = ns.address + 1 %}
+        {% elif field_type == Timestamp %}    
+            {{ timestamp_layout(field_name, ns.address) }}
+            {% set ns.address = ns.address + 4 %}
+        {% elif field_type == Version %}    
+            {{ version_layout(field_name, ns.address) }}
+            {% set ns.address = ns.address + 2 %}
+        {% else %}
+            <tr>
+                <td colspan="5">Missing documentation</td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{% macro modbus_layout(command_code, fields, start_address=0) %}
+    {{ memory_layout_table(modbus_layout_fields(command_code, fields, start_address)) }}
+{% endmacro %}
+
+{% macro error_memory_layout_fields() %}
+    <tr class="border-t border-slate-100">
+        <td>Error Code</td>
+        <td>int16</td>
+        <td>0</td>
+        <td colspan="2"><b>error code value</b></td>
+    </tr>
+    {{  string64_layout("error message", 1) }}
+{% endmacro %}
+
+{% macro error_memory_layout(command_code, fields, start_address=0) %}
+    {{ memory_layout_table(error_memory_layout_fields()) }}
 {% endmacro %}

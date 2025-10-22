@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 
 import attrs
@@ -31,6 +32,7 @@ class HtmlManualCompiler(ManualCompiler):
             "enumerate": enumerate,
             "issubclass": issubclass,
             "isinstance": isinstance,
+            "now": datetime.now,
             "bool": bool,
             "int": int,
             "str": str,
