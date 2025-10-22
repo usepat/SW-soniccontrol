@@ -155,7 +155,7 @@
             </h2>
             <div>
                 {% for error_code in error_codes | sort(attribute="value") %}
-                    <h3>{{ error_code.value }}: {{ error_code.name }}</h3>
+                    {{ schema_templates.command_code_headline(error_code) }}
                 {% endfor %}
             </div>
 

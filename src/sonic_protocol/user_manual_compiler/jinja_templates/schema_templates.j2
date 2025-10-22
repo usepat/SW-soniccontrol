@@ -64,12 +64,16 @@
 {% endmacro %}
 
 
+{% macro command_code_headline(command_code) %}
+    <h3 class="text-base font-semibold text-slate-800 mb-3">
+        <span class="inline-block font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mr-3">{{ command_code.value }}</span>
+        <span>{{ command_code.name }}</span>
+    </h3>
+{% endmacro %}
+
 {% macro command_contract_entry(command_contract) %}
     <article class="bg-white border border-slate-100 rounded-lg p-4 shadow-sm mb-6">
-        <h3 class="text-base font-semibold text-slate-800 mb-3">
-            <span class="inline-block font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mr-3">{{ command_contract.code.value }}</span>
-            <span>{{ command_contract.code.name }}</span>
-        </h3>
+        {{ command_code_headline(command_contract.code) }}
         
         {% if command_contract.tags|count != 0 %}
             <div class="mt-2 flex items-center gap-3">
