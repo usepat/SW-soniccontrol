@@ -11,7 +11,7 @@ import importlib.resources as rs
 import jinja2
 
 
-class BetterManualCompiler(ManualCompiler):
+class HtmlManualCompiler(ManualCompiler):
     def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True) -> str:
         try:
             protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
@@ -20,7 +20,7 @@ class BetterManualCompiler(ManualCompiler):
         
         error_code_begin = 20000 # all command codes greater than 20000 are error codes
         pure_command_contracts = [ elem for elem in protocol.command_contracts.values() if elem.command_def is not None ]
-        error_messages = [ elem for elem in protocol.command_contracts.values() if elem.command_def is None and elem.code.value >= error_code_begin ]
+        error_codes = [ code for code in protocol.command_code_cls if code >= error_code_begin ]
         notification_messages = [ elem for elem in protocol.command_contracts.values() if elem.command_def is None and elem.code.value < error_code_begin ]
         enum_classes = [ elem for elem in protocol.custom_data_types.values() if issubclass(elem, Enum) ]
 
@@ -40,13 +40,13 @@ class BetterManualCompiler(ManualCompiler):
             "Version": Version,
             "Enum": Enum,
             "Timestamp": Timestamp,
-            "protocol_constants": attrs.asdict(protocol.consts)
-        }) # export functions and classes to jinja environment. So we can use it inside the templates
+            "protocol_constants": attrs.asdict(protocol.consts) # FIXME: It would be better to pass this as render variable, but I am lazy
+        }) # export functions and classes to jinja environment. So we can use them inside the templates
 
         template = environment.get_template("index.j2")
         content = template.render(
             pure_command_contracts=pure_command_contracts, 
-            error_messages=error_messages,
+            error_codes=error_codes,
             notification_messages=notification_messages,
             enum_classes=enum_classes
         )
@@ -55,7 +55,7 @@ class BetterManualCompiler(ManualCompiler):
     
 
 def main():
-    manual_compiler = BetterManualCompiler()
+    manual_compiler = HtmlManualCompiler()
     manual = manual_compiler.compile_manual_for_specific_device(
         DeviceType.MVP_WORKER, 
         Version(2, 1, 0), 

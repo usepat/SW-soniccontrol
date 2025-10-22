@@ -335,7 +335,17 @@ class SonicTextAnswerAttrs:
 
 @attrs.define(auto_attribs=True)
 class SonicTextCommandAttrs:
-    string_identifier: Union[str, List[str]] = attrs.field() #! The string identifier is used to identify the command
+    @staticmethod
+    def str_identifier_convert_func(x: Any):
+        if isinstance(x, str):
+            return [x]
+        elif isinstance(x, list):
+            return x
+        else:
+            raise TypeError("Value cannot be converted into a list of str")
+
+
+    string_identifier: List[str] = attrs.field(converter=str_identifier_convert_func) #! The string identifier is used to identify the command
     kwargs: Dict[str, Any] = attrs.field(default={}) #! The kwargs are passed to the communicator. Needed for the old legacy communicator
 
 @attrs.define(auto_attribs=True)

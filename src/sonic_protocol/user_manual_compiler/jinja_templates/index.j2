@@ -1,9 +1,10 @@
 {% import "schema_templates.j2" as schema_templates %}
+{% import "modbus_api.j2" as modbus %}
 
 {# 
   Expected variables:
     - pure_command_contracts: List[CommandContract]
-    - error_messages: List[CommandContract]
+    - error_codes: List[CommandCode]
     - notification_messages: List[CommandContract]
     - custom_enums: List[Type[Enum]]
 
@@ -15,10 +16,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UsePAT API Documentation</title>
+    <title>UsePAT API Reference</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 <body>
-    <h1>UsePAT API Documentation</h1>
+    <h1>UsePAT API Reference</h1>
 
     <h2>Introduction</h2>
         <h3>How this API is structured</h3>
@@ -41,28 +43,61 @@
 
             We use a "mailbox" system to implement our RPC protocol. A mailbox is a memory section to that can be written or read. 
             We define a command call mailbox, to that the command call has to be written and an answer mailbox, in that the device will put the answer. 
-
-            TODO: should we use a execute_command flag, for command call mailbox? 
-            TODO: describe pending flag, etc. for answer.
-            TODO: what about a length field in answer mailbox?
+            A command call consists of the code for the specific command, followed by the arguments passed.  
+            Similarly the answer consists of the same code followed by data fields. In case of an error, the code is not the same command code,
+            but an error code. Error codes are in the range from 20000 to 32767 (int16 maximum value). Additionally an error message is supplied afterwards.
 
             Therefore we support only the MODBUS functions write multiple holding registers (0x10) and read input registers (0x04). 
             And we only allow to read and write from the mailboxes. Where the answer mailbox is read only.
 
-        <h3>Text-based API</h3>
+            The start of the command mailbox contains an "execute command" flag, that has to be set to 1, after the command call has been written. 
+            This is needed to signal to the device, that it can read and execute the command now. 
+            The flag and command call can be written in a single MODBUS write multiple registers function call.
 
+            The start of the answer mailbox contains  a "status" flag. This can either be "busy" or "idle/done". 
+            Also this flag is followed by a answer length field. This is handy, because answers vary in size.
+
+            # TODO: Maybe add a mutex flag, that contains the id of the master that is currently holding the session. For multiple master support.
+
+        <h3>Text-based API</h3>
+            The text-based API is used by our in house Software Sonic Control. 
+            It is good for debugging, because of the human readable messages. 
+            Also with it the device can be directly controlled over a serial monitor like minicom.
+
+            In general for each command exists a command name (often also multiple aliases, like a short form and a long form). 
+            The signs "?", "!", "-", "=" can be the first character of a command name. For example "?frequency" for getting the current frequency of the transducer.
+            Some commands require an index argument that has to be written inside brackets "command_name[arg]".
+            Some commands require a setter argument, that has to be written after an equal sign "command_name=arg".
+            Some commands require both args "command_name[arg_index]=arg_setter".
+            Some commands require none "command_name".
+
+            To signal the end of a command call "\n\r" is used. The same goes for answers.
+
+            Answers consists of their fields separated by a single sharp sign "#". The first field always contains the corresponding command code or error code.
+            For example the answer for the "?frequency" command would be "<COMMAND CODE>#Freq: <FREQUENCY VALUE>Hz".
+            
+            Notifications have the completely same format as answers. 
+            The format of logs is subject to change in the future.
+
+            Each message is preceded by a message type prefix.
+            - "LOG=" for logs
+            - "NOTIFY=" for notification messages
+            - "COM#<ID>=" for command calls. (It is allowed to omit this, in that case ID is set to 0).
+            - "ANS#<ID>=" for answers. The ID matches that of the command call. Useful for async code.
+            The ID is used by the Software "Sonic Control" to find out which answer belongs to which command call (useful for async code).
+            
     <h2>Types</h2>
         The primitive types used by the API are bool, uint8, uint16, uint32, int16, float. 
         Complex types used are strings, enums and structs for Version and Timestamp, which are explained here in more detail.
 
-        <h4>Version</h4>
+        <h3>Version</h3>
             Version consists of the member variables major_version, minor_version and patch_version.  
             It follows the conventional versioning schema.
 
-        <h4>Timestamp</h4>
+        <h3>Timestamp</h3>
             The timestamp consists of the members variables: hour, minute, seconds, day, month and year.
 
-        <h4>Enums</h4>
+        <h3>Enums</h3>
             {% for enum_class in enum_classes %}
                 {{ schema_templates.enum_class_entry(enum_class) }}
             {% endfor %}
@@ -74,9 +109,13 @@
         {% endfor %}
 
     <h2>Errors</h2>
-        {% for error_message in error_messages | sort(attribute="code") %}
-            {{ schema_templates.command_contract_entry(error_message )}}
+        {% for error_code in error_codes | sort(attribute="value") %}
+            <h3>{{ error_code.value }}: {{ error_code.name }}</h3>
         {% endfor %}
+
+        <h3>Modbus API</h3>
+            <p>Memory Layout:</p>
+            {{ modbus.error_memory_layout() }}
 
     <h2>Notifications</h2>
         {% for notification in notification_messages | sort(attribute="code") %}

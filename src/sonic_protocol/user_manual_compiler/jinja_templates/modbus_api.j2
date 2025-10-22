@@ -196,3 +196,28 @@
         {% endfor %}
     </table>
 {% endmacro %}
+
+{% macro error_memory_layout() %}
+    <table>
+        <colgroup>
+            <col/>
+            <col/>
+            <col style="border-right: 3px solid black;"/>
+            <col/>
+            <col/>
+        </colgroup>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Register Address</th>
+            <th colspan="2">Register Memory</th>
+        </tr>
+        <tr>
+            <td>Error Code</td>
+            <td>int16</td>
+            <td>0</td>
+            <td colspan="2"><b>error code value</b></td>
+        </tr>
+        {{  string64_layout("error message", 1) }}
+    </table>
+{% endmacro %}

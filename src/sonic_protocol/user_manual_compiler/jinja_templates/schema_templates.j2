@@ -1,5 +1,4 @@
 {% import "modbus_api.j2" as modbus %}
-{% import "sonic_protocol.j2" as sonic %}
 
 
 {% macro field_entry(field_name, field_type, description) %}
@@ -65,20 +64,35 @@
 
 {% macro command_contract_entry(command_contract) %}
     <h3>{{ command_contract.code.value }}: {{ command_contract.code.name }}</h3>
+    
+    {% if command_contract.tags|count != 0 %}
+        <p>Tags:
+            <ul>
+            {% for tag in command_contract.tags %}
+                <li>{{ tag }}</li>
+            {% endfor %}
+            </ul>
+        </p>
+    {% endif %}
+    
     <p>{{command_contract.user_manual_attrs.description}}</p>
 
-    {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] %}
-    {% if any(command_parameters) %}
+    {% if command_contract.command_def is not none %}
         <h4>Parameters:</h4>
-        <ol>
-        {% for command_param in command_parameters %}
-            {% if command_param is not none %}
-                <li>
-                    {{ param_entry(command_param) }}
-                </li>
-            {% endif %}
-        {% endfor %}
-        </ol>
+        {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] %}
+        {% if any(command_parameters) %}
+            <ol>
+            {% for command_param in command_parameters %}
+                {% if command_param is not none %}
+                    <li>
+                        {{ param_entry(command_param) }}
+                    </li>
+                {% endif %}
+            {% endfor %}
+            </ol>
+        {% else %}
+            <p>Has no parameters</p>
+        {% endif %}
     {% endif %}
 
     <h4>Answer fields:</h4>
@@ -105,6 +119,16 @@
     {% endif %}
 
     <h4>Text-based API</h4>
+    {% if command_contract.command_def is not none %}
+        <p>Command names:
+            <ul>
+            {% for identifier in command_contract.command_def.sonic_text_attrs.string_identifier %}
+                <li>{{ identifier }}</li>
+            {% endfor %}
+            </ul>
+        </p>
+    {% endif %}
+
 {% endmacro %}
 
 
