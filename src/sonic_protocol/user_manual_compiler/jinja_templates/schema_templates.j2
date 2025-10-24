@@ -117,7 +117,7 @@
         {% endfor %}
         </ol>
 
-        <h4 class="text-sm font-medium text-slate-800 mb-2">Modbus API</h4>
+        <h4 class="text-sm font-medium text-slate-800 mb-2 mt-12">Modbus API</h4>
         {% set is_notification = command_contract.command_def is none and command_contract.code.value < 20000 %}
         {% if is_notification %}
             <p class="text-sm text-slate-600">Notification messages are not supported for MODBUS.</p>
@@ -135,7 +135,7 @@
             </div>
         {% endif %}
 
-        <h4 class="text-sm font-medium text-slate-800 mb-2">Text-based API</h4>
+        <h4 class="text-sm font-medium text-slate-800 mb-2 mt-12">Text-based API</h4>
         {% if command_contract.command_def is not none %}
             <p class="text-sm text-slate-600 mb-2">Command names:
                 <ul class="list-disc pl-6">
@@ -158,6 +158,10 @@
 
         <div class="overflow-x-auto">
             <table class="w-full text-sm border-collapse">
+            <colgroup>
+                <col class="w-[10%]" />
+                <col class="w-[90%]" />
+            </colgroup>
                 <thead class="text-left text-xs text-slate-600">
                     <tr>
                         <th class="pr-4">Index</th>

@@ -120,16 +120,21 @@
 
 {% macro version_layout(field_name, address) %}
 <tr>
-    <td rowspan="2">{{ field_name}}</td>
-    <td rowspan="2">struct Version</td>
+    <td rowspan="3">{{ field_name}}</td>
+    <td rowspan="3">struct version</td>
     <td>{{ address }}</td>
+    <td>0x00</td>
     <td>major version (uint8)</td>
-    <td>minor version (uint8)</td>
 </tr>
 <tr>
     <td>{{ address + 1 }}</td>
-     <td>patch version (uint8)</td>
-    <td>0x00</td>
+     <td>0x00</td>
+    <td>minor version (uint8)</td>
+</tr>
+<tr>
+    <td>{{ address + 2 }}</td>
+     <td>0x00</td>
+    <td>patch version (uint8)</td>
 </tr>
 {% endmacro %}
 
@@ -207,7 +212,7 @@
             {% set ns.address = ns.address + 4 %}
         {% elif field_type == Version %}    
             {{ version_layout(field_name, ns.address) }}
-            {% set ns.address = ns.address + 2 %}
+            {% set ns.address = ns.address + 3 %}
         {% else %}
             <tr>
                 <td colspan="5">Missing documentation</td>
