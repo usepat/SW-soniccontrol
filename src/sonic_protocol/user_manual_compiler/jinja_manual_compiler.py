@@ -1,3 +1,4 @@
+import abc
 from datetime import datetime
 from enum import Enum
 
@@ -5,8 +6,9 @@ import attrs
 import numpy as np
 from sonic_protocol.protocol import protocol_list
 from sonic_protocol.schema import ConverterType, DeviceType, ProtocolType, Timestamp, Version
-from sonic_protocol.user_manual_compiler.manual_compiler import ManualCompiler
 import sonic_protocol
+from sonic_protocol.user_manual_compiler.manual_compiler import ManualCompiler
+
 
 import importlib.resources as rs
 import jinja2

@@ -5,8 +5,6 @@ from pathlib import Path
 from sonic_protocol.schema import AnswerFieldDef, ICommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
 from sonic_protocol.protocol import protocol_list
 
-
-
 class ManualCompiler(abc.ABC):
     @abc.abstractmethod
     def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True) -> str: ...
@@ -126,31 +124,3 @@ class MarkdownManualCompiler(ManualCompiler):
             type_header += f"\t{description}  \n"
 
         return type_header
-
-
-def build_manual():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output-dir", type=Path, default=Path("./"))
-    parser.add_argument("--protocol-version", type=str,required=True)
-    parser.add_argument("--device-type", type=DeviceType, required=True)
-    parser.add_argument("--release", action="store_true")
-    args = parser.parse_args()
-
-    device_type: DeviceType = args.device_type
-    protocol_version: Version = Version.to_version(args.protocol_version)
-    is_release: bool = args.release
-    output_dir: Path = args.output_dir
-
-    version_str = args.protocol_version.replace('.', '_')
-    build_str = "release" if is_release else "debug"
-    file_name = output_dir / f"manual_{device_type.value}_{version_str}_{build_str}.md"
-    
-    if not output_dir.is_dir(): 
-        raise Exception(f"The output-dir must be a directory, but is instead a file: {str(output_dir)}")
-
-
-    manual_compiler = MarkdownManualCompiler()
-    manual = manual_compiler.compile_manual_for_specific_device(device_type, protocol_version, is_release)
-
-    with open(file_name, "w") as file:
-        file.write(manual)
