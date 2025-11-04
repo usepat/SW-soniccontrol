@@ -9,6 +9,7 @@ from sonic_protocol.schema import (
 from sonic_protocol.protocols.protocol_v1_0_0.flashing_commands.flashing_commands import field_success
 from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_fields import field_message
 import sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_commands as cmds
+from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import field_signal
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.schema import SonicTextAnswerFieldAttrs
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_commands import (
@@ -255,37 +256,6 @@ get_dac = CommandContract(
     tags=["DAC"]
 )
 
-class DeviceState(IntEnum):
-    OFF = 0
-    BROKEN = 1
-    READY = 2
-    SERVICE = 3
-    WAKE_UP = 4
-    EXIT_APP = 5
-
-field_type_device_state = FieldType(
-    field_type=DeviceState,
-)
-
-field_device_state = AnswerFieldDef(
-    EFieldName.DEVICE_TYPE, 
-    field_type_device_state, 
-    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="device state: ")
-)
-
-go_into_device_state = CommandContract(
-    code=CommandCode.GO_INTO_DEVICE_STATE,
-    command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(["go_into_device_state", "!device_state"]),
-        setter_param=CommandParamDef(
-            EFieldName.DEVICE_STATE,
-            field_type_device_state
-        )
-    ),
-    answer_def=AnswerDef([field_device_state]),
-    is_release=True
-)
-
 get_update_worker_v2_0_0 = copy.deepcopy(get_update_worker)
 get_update_descale_v2_0_0 = copy.deepcopy(get_update_descale)
 
@@ -318,3 +288,48 @@ for idx, field in enumerate(get_update_worker_v2_0_0.answer_def.fields):
         get_update_worker_v2_0_0.answer_def.fields[idx] = field_transducer_state
         get_update_descale_v2_0_0.answer_def.fields[idx] = field_transducer_state
         break
+
+
+class DeviceState(IntEnum):
+    OFF = 0
+    BROKEN = 1
+    READY = 2
+    SERVICE = 3
+    WAKE_UP = 4
+    EXIT_APP = 5
+
+field_type_device_state = FieldType(
+    field_type=DeviceState,
+)
+
+field_device_state = AnswerFieldDef(
+    EFieldName.DEVICE_TYPE, 
+    field_type_device_state, 
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="device state: ")
+)
+
+go_into_device_state = CommandContract(
+    code=CommandCode.GO_INTO_DEVICE_STATE,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(["go_into_device_state", "!device_state"]),
+        setter_param=CommandParamDef(
+            EFieldName.DEVICE_STATE,
+            field_type_device_state
+        )
+    ),
+    answer_def=AnswerDef([field_device_state]),
+    is_release=True
+)
+
+get_postman_update = CommandContract(
+    code=CommandCode.GET_POSTMAN_UPDATE,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(["get_postman_udpate"])
+    ),
+    answer_def=AnswerDef([
+        field_device_state,
+        field_transducer_state,
+        field_system_state
+    ]),
+    is_release=True
+)
