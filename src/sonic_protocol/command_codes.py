@@ -37,6 +37,7 @@ class CommandCode(ICommandCode):
     GET_HELP = 2
     GET_UPDATE = 3
     GET_PROG_STATE = 4 # readable version of update
+    GET_POSTMAN_UPDATE = 5 # update version for postman, needs only transducer state, signal, system_state, and device state
     
     # Those commands have a corresponding setter command
     GET_SWF = 10
@@ -187,6 +188,7 @@ class CommandCode(ICommandCode):
 
     INTERNAL_COMMAND = BaseCommandCode.INTERNAL_COMMAND.value
     SONIC_FORCE = 19040
+    GO_INTO_DEVICE_STATE = 19050
 
     # internal command of the device, that is not part of the protocol
     # the firmware uses this for internal commands, that should not be exposed to the user

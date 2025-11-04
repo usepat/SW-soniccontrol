@@ -8,11 +8,6 @@ field_device_type = AnswerFieldDef(
 	field_type=FieldType(DeviceType, converter_ref=ConverterType.ENUM),
 )
 
-field_device_type = AnswerFieldDef(
-    field_name=EFieldName.DEVICE_TYPE,
-    field_type=FieldType(DeviceType, converter_ref=ConverterType.ENUM),
-)
-
 build_date_field = AnswerFieldDef(
     field_name=EFieldName.BUILD_DATE,
     field_type=FieldType(str)

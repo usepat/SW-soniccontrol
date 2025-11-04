@@ -1,9 +1,8 @@
 import copy
-from enum import Enum
 from typing import Any, Dict, List
 from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.protocols.protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
-from sonic_protocol.schema import Anomaly, AnswerFieldDef, CommandContract, ConverterType, DeviceParamConstantType, DeviceType, FieldType, IEFieldName, ProtocolType, SystemState, TransducerState, Version
+from sonic_protocol.schema import Anomaly, AnswerDef, AnswerFieldDef, CommandContract, CommandDef, ConverterType, DeviceParamConstantType, DeviceType, FieldType, IEFieldName, ProtocolType, SonicTextCommandAttrs, SystemState, TransducerState, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_commands import (
@@ -13,6 +12,7 @@ from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.descaler_comma
     get_update_descale
 )
 from .modbus_commands import broadcast_modbus_server_id
+from .commands import field_device_state, go_into_device_state, DeviceState
 
 get_update_worker_v2_1_0 = copy.deepcopy(get_update_worker)
 get_update_descale_v2_1_0 = copy.deepcopy(get_update_descale)
@@ -32,6 +32,21 @@ field_system_state = AnswerFieldDef(
     field_name=EFieldName.SYSTEM_STATE,
     field_type=FieldType(SystemState, converter_ref=ConverterType.ENUM),
 )
+
+
+get_postman_update = CommandContract(
+    code=CommandCode.GET_POSTMAN_UPDATE,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(["get_postman_udpate"])
+    ),
+    answer_def=AnswerDef([
+        field_device_state,
+        field_transducer_state,
+        field_system_state
+    ]),
+    is_release=True
+)
+
 
 get_update_worker_v2_1_0.answer_def.fields.extend([
     field_anomaly_detection, field_system_state
@@ -82,6 +97,7 @@ class Protocol_v2_1_0(ProtocolList):
         data_types["E_ANOMALY"] = Anomaly
         data_types["E_TRANSDUCER_STATE"] = TransducerState
         data_types["E_SYSTEM_STATE"] = SystemState
+        data_types["E_DEVICE_STATE"] = DeviceState
         
         return data_types
 
@@ -89,7 +105,10 @@ class Protocol_v2_1_0(ProtocolList):
         return self._previous_protocol.supports_device_type(device_type)
 
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
-        command_contract_list: List[CommandContract] = []
+        command_contract_list: List[CommandContract] = [
+            go_into_device_state,
+            get_postman_update
+        ]
         if protocol_type.device_type == DeviceType.MVP_WORKER:
             command_contract_list.extend([get_update_worker_v2_1_0, broadcast_modbus_server_id])
         if protocol_type.device_type == DeviceType.DESCALE:

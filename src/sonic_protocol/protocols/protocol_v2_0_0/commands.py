@@ -1,4 +1,5 @@
 import copy
+from enum import Enum, IntEnum
 from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import (
@@ -247,3 +248,37 @@ get_dac = CommandContract(
     is_release=True,
     tags=["DAC"]
 )
+
+
+class DeviceState(IntEnum):
+    OFF = 0
+    BROKEN = 1
+    READY = 2
+    SERVICE = 3
+    WAKE_UP = 4
+    EXIT_APP = 5
+
+field_type_device_state = FieldType(
+    field_type=DeviceState,
+)
+
+field_device_state = AnswerFieldDef(
+    EFieldName.DEVICE_TYPE, 
+    field_type_device_state, 
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="device state: ")
+)
+
+go_into_device_state = CommandContract(
+    code=CommandCode.GO_INTO_DEVICE_STATE,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(["go_into_device_state", "!device_state"]),
+        setter_param=CommandParamDef(
+            EFieldName.DEVICE_STATE,
+            field_type_device_state
+        )
+    ),
+    answer_def=AnswerDef([field_device_state]),
+    is_release=True
+)
+
+

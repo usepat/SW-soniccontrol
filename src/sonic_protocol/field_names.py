@@ -117,4 +117,6 @@ class EFieldName(IEFieldName):
 
     MODBUS_SERVER_ID = auto()
 
+    DEVICE_STATE = auto()
+
 
