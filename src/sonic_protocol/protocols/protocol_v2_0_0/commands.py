@@ -4,13 +4,19 @@ from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import (
     CommandParamDef, ControlMode, ConverterType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
-    AnswerFieldDef, CommandContract
+    AnswerFieldDef, CommandContract, SystemState, TransducerState, Anomaly
 )
 from sonic_protocol.protocols.protocol_v1_0_0.flashing_commands.flashing_commands import field_success
 from sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_fields import field_message
 import sonic_protocol.protocols.protocol_v1_0_0.generic_commands.generic_commands as cmds
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.schema import SonicTextAnswerFieldAttrs
+from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_commands import (
+    get_update_worker
+) 
+from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.descaler_commands import (
+    get_update_descale
+)
 
 
 snr_field = AnswerFieldDef(
@@ -249,7 +255,6 @@ get_dac = CommandContract(
     tags=["DAC"]
 )
 
-
 class DeviceState(IntEnum):
     OFF = 0
     BROKEN = 1
@@ -281,4 +286,35 @@ go_into_device_state = CommandContract(
     is_release=True
 )
 
+get_update_worker_v2_0_0 = copy.deepcopy(get_update_worker)
+get_update_descale_v2_0_0 = copy.deepcopy(get_update_descale)
 
+
+field_anomaly_detection = AnswerFieldDef(
+    field_name=EFieldName.ANOMALY_DETECTION,
+    field_type=FieldType(field_type=Anomaly, converter_ref=ConverterType.ENUM),
+)
+
+field_transducer_state = AnswerFieldDef(
+    field_name=EFieldName.TRANSDUCER_STATE,
+    field_type=FieldType(TransducerState, converter_ref=ConverterType.ENUM),
+)
+
+field_system_state = AnswerFieldDef(
+    field_name=EFieldName.SYSTEM_STATE,
+    field_type=FieldType(SystemState, converter_ref=ConverterType.ENUM),
+)
+
+get_update_worker_v2_0_0.answer_def.fields.extend([
+    field_anomaly_detection, field_system_state
+])
+
+get_update_descale_v2_0_0.answer_def.fields.extend([
+    field_system_state
+])
+
+for idx, field in enumerate(get_update_worker_v2_0_0.answer_def.fields):
+    if field.field_name == EFieldName.ERROR_CODE:
+        get_update_worker_v2_0_0.answer_def.fields[idx] = field_transducer_state
+        get_update_descale_v2_0_0.answer_def.fields[idx] = field_transducer_state
+        break
