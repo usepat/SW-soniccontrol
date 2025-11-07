@@ -152,6 +152,7 @@ class ConverterType(Enum):
     We only reference them in the protocol, instead of supplying the converters,
     because the converters need to be implemented once in the firmware and once in the remote_controller code.
     """
+    # TODO remove ConverterType. Its not needed. WE can deduce everything need form the Fieldtype
     VERSION = auto()
     ENUM = auto()
     PRIMITIVE = auto()

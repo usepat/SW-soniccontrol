@@ -300,6 +300,7 @@ class DeviceState(IntEnum):
 
 field_type_device_state = FieldType(
     field_type=DeviceState,
+    converter_ref=ConverterType.ENUM
 )
 
 field_device_state = AnswerFieldDef(
