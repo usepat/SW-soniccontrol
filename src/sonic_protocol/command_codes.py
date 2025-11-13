@@ -87,6 +87,7 @@ class CommandCode(ICommandCode):
     GET_ERROR_HISTO_SIZE = 380
     GET_DAC = 390
     # GET_MODBUS_SERVER_ID = 400
+    GET_ON_TIMER = 410
 
     # Setters with corresponding getters
     SET_SWF = 1010
@@ -155,6 +156,7 @@ class CommandCode(ICommandCode):
     CLEAR_ERRORS = 2040  # clears all errors currently only used by the device internal but later we will make this a legit command
     POP_ERROR_HISTO_MESSAGE = 2050
     BROADCAST_MODBUS_SERVER_ID = 2060
+    RESET_ON_TIMER = 2070
     
 
     # commands that execute something

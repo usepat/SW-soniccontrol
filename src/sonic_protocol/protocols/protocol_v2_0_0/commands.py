@@ -18,6 +18,7 @@ from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_com
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.descaler_commands import (
     get_update_descale
 )
+import numpy as np
 
 
 snr_field = AnswerFieldDef(
@@ -331,6 +332,51 @@ get_postman_update = CommandContract(
         field_device_state,
         field_transducer_state,
         field_system_state
+    ]),
+    is_release=True
+)
+
+
+
+
+field_minutes = AnswerFieldDef(
+    EFieldName.MINUTES, 
+    field_type=FieldType(field_type=np.uint8), 
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(postfix="m")
+)
+
+field_hours = AnswerFieldDef(
+    EFieldName.HOURS, 
+    field_type=FieldType(field_type=np.uint8), 
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(postfix="h")
+)
+
+field_days = AnswerFieldDef(
+    EFieldName.DAYS, 
+    field_type=FieldType(field_type=np.uint32), 
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(postfix="d")
+)
+
+get_on_timer = CommandContract(
+    code=CommandCode.GET_ON_TIMER,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(["?on_timer", "?on", "?ON"])
+    ),
+    answer_def=AnswerDef([
+        field_days,
+        field_hours,
+        field_minutes
+    ]),
+    is_release=True
+)
+
+reset_on_timer = CommandContract(
+    code=CommandCode.RESET_ON_TIMER,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(["!reset_on_timer"])
+    ),
+    answer_def=AnswerDef([
+        field_success,
     ]),
     is_release=True
 )

@@ -119,4 +119,8 @@ class EFieldName(IEFieldName):
 
     DEVICE_STATE = auto()
 
+    MINUTES = auto()
+    HOURS = auto()
+    DAYS = auto()
+
 
