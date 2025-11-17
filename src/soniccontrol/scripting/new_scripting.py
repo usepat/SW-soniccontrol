@@ -148,7 +148,7 @@ class Timer():
             else:
                 pass # TODO: throw error or log warning
         
-        return ExecutionStep(_func, self._line, f"waiting remaining time: {time_remaining} s")
+        return ExecutionStep(_func, self._line, f"waiting remaining time: {round(time_remaining, 3)} s")
     
 
 class Interpreter(RunnableScript):

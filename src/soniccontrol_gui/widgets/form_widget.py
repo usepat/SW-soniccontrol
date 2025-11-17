@@ -1491,7 +1491,10 @@ class DynamicFieldViewFactory:
 
         # Deduce kwargs for field from attrs.Attribute
         kwargs = {}
-        if field.default is not None and field.default != attrs.NOTHING:
+        # When default is set to SIVar, it throws and error if we try to compare it with attrs.NOTHING,
+        # because such a comparison is not defined
+        # Therefore we have to check for this case explicitly.
+        if isinstance(field.default, SIVar) or field.default != attrs.NOTHING:
             kwargs["default_value"] = field.default.factory() if hasattr(field.default, "factory") else field.default
 
         field_view_kwargs_name = "field_view_kwargs"
