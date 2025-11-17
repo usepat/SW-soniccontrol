@@ -106,6 +106,9 @@ class ProcedureArgs:
                 value = kwargs[key]
                 if field.converter is not None:
                     value = field.converter(value)
+                if issubclass(field.type, SIVar):
+                    value = field.type(value=value, si_prefix=SIPrefix.NONE)
+
                 if field.validator is not None:
                     field.validator(cls, field, value)
 
@@ -115,6 +118,9 @@ class ProcedureArgs:
 
     @classmethod
     def from_tuple(cls, args: tuple):
+        """
+            Gets used for scripting, because we get there the procedure args as a flattened tuple of function arguments
+        """
         if cls.count_args() != len(args):
             raise ValueError("Args count does not match")
         args_dict, _ = cls.tuple_to_dict(args)

@@ -1,6 +1,6 @@
 
 from abc import ABCMeta
-from typing import Generic, TypeVar, cast, Optional
+from typing import Generic, TypeVar, cast, Optional, get_args
 import attrs
 from sonic_protocol.schema import SIUnit, SIPrefix
 
@@ -93,6 +93,16 @@ class SIVar(Generic[T], metaclass=SIVarMetaClass):
                 frame = frame.f_back
             raise TypeError("SIVar is abstract - use specific subclasses like TemperatureSIVar")
         return NotImplemented
+
+    @classmethod
+    def underlying_type(cls) -> type[T]:
+        # look at the first generic base
+        orig = getattr(cls, "__orig_bases__", None)
+        if orig:
+            args = get_args(orig[0])
+            if args:
+                return args[0]
+        assert False, "this class should be a generic"
 
     def allowed_prefix(self, prefix: SIPrefix) -> bool:
         if self.meta is None:

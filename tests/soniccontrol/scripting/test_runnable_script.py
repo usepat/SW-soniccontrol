@@ -72,6 +72,12 @@ def test_interpreter_ignores_empty_lines_and_comments(command_mocks):
         
         on
 
+        loop 6 times
+        begin 
+            send "off"
+            // look at alle those empty lines in this block
+
+        end
     """
     runnable_script = NewScriptingFacade().parse_script(script)
     list(runnable_script) 
@@ -92,6 +98,23 @@ def test_interpreter_ignores_empty_lines_and_comments(command_mocks):
     """, 
     "5",   
     "\"string\"",   
+    """
+    section
+    begin
+       on 
+    end
+    """,
+    """
+    loop 5 times
+       on 
+    """,
+     """
+    loop 5 times
+    section lasts 5s
+    begin
+        on
+    end
+    """
 ])
 def test_interpreter_throws_if_wrong_syntax(script):
     with pytest.raises(ScriptException):

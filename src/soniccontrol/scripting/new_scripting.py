@@ -1,10 +1,12 @@
-from typing import Any, Dict, Tuple
+import time
+from typing import Any, Dict, Optional, Tuple
 import lark
 import attrs
 import abc
 import asyncio
 
 import sonic_protocol.python_parser.commands as cmds
+from sonic_protocol.si_unit import SIVar
 from soniccontrol.procedures.holder import convert_to_holder_args, HolderArgs
 from soniccontrol.procedures.legacy_procs.auto import AutoLegacyArgs
 from soniccontrol.procedures.legacy_procs.wipe import WipeLegacyArgs
@@ -124,6 +126,31 @@ class ProcedureCommand(Function):
         description = f"Executing {self._proc_type.value} { ' '.join([f'{k}={v}' for k, v in attrs.asdict(args).items() ]) }"
         return description, command
 
+
+class Timer():
+    def __init__(self, duration: HolderArgs, line):
+        self._line = line
+        self._duration_s = duration.duration_in_ms / 1000
+        self._time_passed: float = 0.
+
+    def wrap_command_func(self, func: CommandFunc) -> CommandFunc:
+        async def _func(device: SonicDevice, proc_controller: ProcedureController):
+            time_now = time.time()
+            await func(device, proc_controller)
+            self._time_passed += time.time() - time_now
+        return _func
+    
+    def create_wait_remaining_time_execution_step(self) -> ExecutionStep:
+        time_remaining = self._duration_s - self._time_passed
+        async def _func(device: SonicDevice, proc_controller: ProcedureController, time_remaining=time_remaining):
+            if time_remaining >= 0.:
+                await asyncio.sleep(time_remaining)
+            else:
+                pass # TODO: throw error or log warning
+        
+        return ExecutionStep(_func, self._line, f"waiting remaining time: {time_remaining} s")
+    
+
 class Interpreter(RunnableScript):
     FUNCTION_TABLE: Dict[str, Function] = {
         "send": SendCommand(),
@@ -158,15 +185,26 @@ class Interpreter(RunnableScript):
             yield from self._loop(tree.children[0])
         elif tree.data == "command":
             yield self._command(tree.children[0])
+        elif tree.data == "timed_section":
+            yield from self._timed_section(tree.children[0])
 
     def _loop(self, tree):
-        n_times, block = tree.children
+        n_times, statement = tree.children
         for _ in range(int(n_times)):
-            yield from self._code_block(block)
+            yield from self._code_block(statement)
 
     def _code_block(self, tree):
-        for child in tree.children:
-            yield from self._statement(child)
+        for statement in tree.children:
+            yield from self._statement(statement)
+
+    def _timed_section(self, tree):
+        timing_spec, statement = tree.children
+        duration_time = self._value(timing_spec)
+        timer = Timer(duration_time, tree.meta.line) # type: ignore
+        for execution_step in self._code_block(statement):
+            execution_step.command = timer.wrap_command_func(execution_step.command) # type: ignore
+            yield execution_step
+        yield timer.create_wait_remaining_time_execution_step()
 
     def _command(self, tree: lark.Tree):
         command_name, *args = tree.children
@@ -193,8 +231,9 @@ class Interpreter(RunnableScript):
             token = args[i]
             assert isinstance(token, lark.Token)
 
-            if not isinstance(value, param.type_):
-                raise ScriptException(f"The command {command_name} expected the type {param.type_.__name__} for its parameter {param.name}, but got {type(value).__name__}", 
+            parameter_type = param.type_.underlying_type() if issubclass(param.type_, SIVar) else param.type_
+            if not isinstance(value, parameter_type):
+                raise ScriptException(f"The command {command_name} expected the type {parameter_type.__name__} for its parameter {param.name}, but got {type(value).__name__}", 
                                       line_begin=token.line, col_begin=token.column) #type: ignore
 
         # convert args and create command
@@ -216,7 +255,7 @@ class Interpreter(RunnableScript):
 
 
 class NewScriptingFacade(ScriptingFacade):
-    GRAMMAR = """
+    GRAMMAR = r"""
         // ignore whitespace and comments
 
         %import common.WS_INLINE
@@ -229,7 +268,9 @@ class NewScriptingFacade(ScriptingFacade):
         %ignore SH_COMMENT
         %ignore C_COMMENT
         %ignore CPP_COMMENT
-
+        
+        // ignore multiline C comments
+        %ignore /(?s)\/\*(\*(?!\/)|[^*])*\*\//
         
         // define grammar
 
@@ -238,23 +279,28 @@ class NewScriptingFacade(ScriptingFacade):
         %import common.NUMBER
         %import common.LETTER
         %import common.ESCAPED_STRING
-        %import common.CNAME    -> IDENTIFIER
 
-        start: statement+
+        start:  _statement+
 
-        statement:  loop        -> loop
-                |   command     -> command
-                | empty_line    -> empty_line
+        _statement: _NEW_LINE* statement _NEW_LINE*
+        
+        statement:  loop            -> loop
+                |   timed_section   -> timed_section
+                |   command         -> command
 
-        loop: "loop" INT "times" "\\n" code_block
+        loop: "loop" INT "times" _NEW_LINE code_block
 
-        code_block: "begin" "\\n" statement+ "end" "\\n" 
+        timed_section: "section" "lasts" TIME _NEW_LINE code_block
 
-        command: IDENTIFIER _arg* "\\n"
+        code_block: "begin" _NEW_LINE (_statement)+ "end" _NEW_LINE 
 
-        empty_line: "\\n"
+        command: IDENTIFIER _arg* _NEW_LINE
 
+        %import common.CNAME -> IDENTIFIER
+        
         _arg: _constant
+
+        _NEW_LINE: /\s*\n/
 
         _constant: INT | ESCAPED_STRING | BOOL | TIME
 
@@ -280,13 +326,18 @@ def main():
     test_script = """
         send "!freq=100000"
         gain 100
+
         loop 5 times
         begin
-            send "!ON"
-            hold 2s
-            off
-            hold 500ms
-            ramp 100000 200000 10000 1s 500ms
+            section lasts 60s
+            begin
+
+                send "!ON"
+                hold 2s
+                off
+                hold 500ms
+                ramp 100000 200000 10000 1s 500ms
+            end
         end
     """ 
     scripting = NewScriptingFacade()
