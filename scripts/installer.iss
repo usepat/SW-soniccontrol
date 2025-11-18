@@ -19,7 +19,7 @@ Source: "..\dist\SonicControl\*"; DestDir: "{app}"; Flags: ignoreversion recurse
 
 ; Define the icons to create
 [Icons]
-Name: "{group}\SonicControl"; Filename: "{app}\SonicControl.exe"; IconFilename: "{app}\soniccontrol_gui\resources\icons\usepat_logo.ico"
+Name: "{group}\SonicControl"; Filename: "{app}\SonicControl.exe"; IconFilename: "{app}\soniccontrol_gui\resources\icons\usepat_logo_neu.ico"
 
 ; Define how to run the application after installation
 [Run]
