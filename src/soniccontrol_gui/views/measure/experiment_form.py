@@ -185,9 +185,14 @@ class ExperimentForm(UIComponent):
 
     @selected_template_index.setter
     def selected_template_index(self, value: Optional[int]) -> None: 
-        if value != self._selected_template_index:
-            self._selected_template_index = value
-            self._change_template()
+        self._selected_template_index = value
+        if value is None:
+            self._view.selected_template = ""
+        else:
+            selected_template = self._templates[value]
+            self._metadata_form.attrs_object = selected_template.form_data
+            self._view.template_name = selected_template.name
+            self._view.selected_template = selected_template.name
 
     def _create_metadata_form(self):
         if hasattr(self, '_metadata_form'):
@@ -218,17 +223,21 @@ class ExperimentForm(UIComponent):
         with open(files.EXPERIMENT_TEMPLATES_JSON, "w") as file:
             data_dict = self._converter.unstructure(self._templates, List[Template])
             json.dump(data_dict, file)
-        self.selected_template_index = 0 if len(self._templates) > 0 else None
 
     def _on_save_template(self):
-        template = Template(self._view.template_name, self._metadata_form.attrs_object)
-        if not self._validate_template_data(template):
+        try:
+            template = Template(self._view.template_name, self._metadata_form.attrs_object)
+            if not self._validate_template_data(template):
+                return
+        except ValueError:
+            MessageBox.show_error(self.view.root, "The form contains invalid fields, marked in red.")
             return
         
-        if self.selected_template_index is None:
+        if self._is_current_template_not_chosen():
             self._templates.append(template)
             self.selected_template_index = len(self._templates) - 1
         else:
+            assert self.selected_template_index is not None
             self._templates[self.selected_template_index] = template
 
         self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
@@ -252,15 +261,19 @@ class ExperimentForm(UIComponent):
         self.selected_template_index = None
 
     def _on_delete_template(self):
-        if self.selected_template_index is None:
+        if self._is_current_template_not_chosen():
             return
 
+        assert self.selected_template_index is not None
         template = self._templates.pop(self.selected_template_index)
         self._logger.info("Delete template %s", template.name)
         self._save_templates_to_file()
 
+        if len(self._templates) == 0:
+            self._on_new_template()
+
         self._view.set_template_menu_items(map(lambda template: template.name, self._templates))
-        self.selected_template_index = None if len(self._templates) == 0 else 0
+        self.selected_template_index = 0
 
     def _on_select_template(self):
         for i, template in enumerate(self._templates):
@@ -268,15 +281,13 @@ class ExperimentForm(UIComponent):
                 self.selected_template_index = i
                 break
 
-    def _change_template(self):
+    def _is_current_template_not_chosen(self):
+        # if the user changes the name of the template, it becomes a totally new template and does not overwrite the old one
         if self.selected_template_index is None:
-            self._on_new_template()
-            self._view.selected_template = ""
-        else:
-            selected_template = self._templates[self.selected_template_index]
-            self._metadata_form.attrs_object = selected_template.form_data
-            self._view.template_name = selected_template.name
-            self._view.selected_template = selected_template.name
+            return True
+        if len(self._templates) == 0:
+            return True
+        return self._templates[self.selected_template_index].name != self._view.template_name
 
     def get_metadata(self):
         if self.selected_template_index is None:
