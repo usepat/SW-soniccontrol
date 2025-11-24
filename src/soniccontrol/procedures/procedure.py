@@ -107,7 +107,11 @@ class ProcedureArgs:
                 if field.converter is not None:
                     value = field.converter(value)
                 if issubclass(field.type, SIVar):
-                    value = field.type(value=value.value, si_prefix=SIPrefix.NONE)
+                    # No idea, why this is needed to lazy to debug this 
+                    if isinstance(value, SIVar):
+                        value = field.type(value=value.value, si_prefix=SIPrefix.NONE)
+                    else:
+                        value = field.type(value=value, si_prefix=SIPrefix.NONE)
 
                 if field.validator is not None:
                     field.validator(cls, field, value)
