@@ -6,6 +6,7 @@ import abc
 import asyncio
 
 import sonic_protocol.python_parser.commands as cmds
+from sonic_protocol.schema import Version
 from sonic_protocol.si_unit import SIVar
 from soniccontrol.procedures.holder import convert_to_holder_args, HolderArgs
 from soniccontrol.procedures.legacy_procs.auto import AutoLegacyArgs
@@ -170,6 +171,7 @@ class Interpreter(RunnableScript):
     }
 
     def __init__(self, ast):
+        self._version = Version(1, 0, 0)
         self._ast = ast
         self._function_table = Interpreter.FUNCTION_TABLE.copy()
 
@@ -178,7 +180,18 @@ class Interpreter(RunnableScript):
         
     def _start(self, tree):
         for child in tree.children:
+            if child.data == "header":
+                self._header(child)
+                continue
             yield from self._statement(child)
+
+    def _header(self, tree):
+        version_str = self._value(tree.children[0])
+        version = Version.to_version(version_str)
+
+        if version > self._version:
+            raise ScriptException(f"The interpreter is of version {self._version} and may not understand the script of version {version} correctly.", 
+                                  line_begin=tree.meta.line, col_begin=tree.meta.column)
 
     def _statement(self, tree):
         if tree.data == "loop":
@@ -280,7 +293,9 @@ class NewScriptingFacade(ScriptingFacade):
         %import common.LETTER
         %import common.ESCAPED_STRING
 
-        start:  _statement+
+        start: header? _statement+
+
+        header: _NEW_LINE* "%script_version" ESCAPED_STRING _NEW_LINE+
 
         _statement: _NEW_LINE* statement _NEW_LINE*
         
@@ -324,6 +339,8 @@ class NewScriptingFacade(ScriptingFacade):
 
 def main():
     test_script = """
+        %script_version "v1.0.0"
+
         send "!freq=100000"
         gain 100
 

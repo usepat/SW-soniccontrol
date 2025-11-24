@@ -9,7 +9,7 @@ from typing import Callable, List, Iterable, Optional, Tuple, Any, cast
 import ttkbootstrap as ttk
 import json
 from sonic_protocol.python_parser import commands
-from sonic_protocol.schema import SIPrefix, SIUnit
+from sonic_protocol.schema import SIPrefix, SIUnit, Version
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
@@ -52,10 +52,10 @@ class ATConfig:
 @attrs.define(auto_attribs=True)
 class TransducerConfig():
     # the name should not be stored inside the json file, but should be retrieved from the file name
+    version: Version = attrs.field(default=Version(1, 0, 0))
     name: str = attrs.field(default="no name")
     init_script_path: Optional[Path] = attrs.field(default=None, metadata={"field_view_kwargs": file_dialog_opts.SONIC_SCRIPT})
     atconfigs: Tuple[ATConfig, ATConfig, ATConfig, ATConfig] = attrs.field(factory=lambda: tuple(ATConfig() for _ in range(4))) #type: ignore
-
 
 class Configuration(UIComponent):
     CONFIGURATION_TASK_NAME = "configuring"

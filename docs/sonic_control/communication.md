@@ -27,6 +27,8 @@ In future also a connection with tcp or udp over a server could be added.
 
 @see soniccontrol.communication.message_protocol.SonicMessageProtocol
 
+> Currently this is version v2.0.0 of the SonicMessageProtocol. Do keep track of changes here and document them well. Because else they will be forgotten and not be traceable anymore.
+
 This protocol class is responsible for parsing the messages received by the communicator, as well for defining a terminator for a message.  
 There a currently three types of messages defined:
 - COM#{ID}={COMMAND}: Command. With a unique id (different for each message sent).
