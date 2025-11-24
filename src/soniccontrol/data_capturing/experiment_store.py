@@ -1,5 +1,6 @@
 import abc
 import datetime
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, cast
 
@@ -13,6 +14,7 @@ from sonic_protocol.schema import Version
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.device_data import FirmwareInfo
+
 
 
 class ExperimentWriter(abc.ABC):
@@ -31,6 +33,7 @@ class ExperimentReader(abc.ABC):
 
     @abc.abstractmethod
     def read_data(self) -> pd.DataFrame: ...
+
 
 
 class HDF5SerializationHelper:
@@ -87,6 +90,7 @@ _cols = {
 DataTable = type("DataTable", (tb.IsDescription, ), _cols)
 
 
+
 class HDF5ExperimentWriter(ExperimentWriter):
     def __init__(self, file_path: Path):
         file_extension = ".h5"
@@ -94,7 +98,12 @@ class HDF5ExperimentWriter(ExperimentWriter):
         if not self._file_path_posix.endswith(file_extension):
             self._file_path_posix += ".h5" # add extension
         self._file = tb.open_file(self._file_path_posix, "w")
+        self._write_version(Version(1, 0, 0))
         self._data_table = self._file.create_table("/", "data", cast(tb.Description, DataTable))
+
+    def _write_version(self, version: Version):
+        group = cast(tb.Group, self._file.get_node("/", classname='Group'))
+        group._v_attrs["version"] = str(version)
         
 
     def write_metadata(self, experiment: Experiment) -> None:
@@ -106,7 +115,7 @@ class HDF5ExperimentWriter(ExperimentWriter):
         del data["metadata"]
         # pytables cannot store as an attribute a list of variable length strings.
         # So we need to convert authors to a string. This is already implemented as a hook
-
+        
         group = self._file.create_group("/", "metadata")
         HDF5SerializationHelper.serialize_attribute_tree(self._file, group, data)
         self._file.flush()
@@ -114,8 +123,8 @@ class HDF5ExperimentWriter(ExperimentWriter):
         
     def add_row(self, data: Dict[str, Any]) -> None:
         data = data.copy() # make a copy, so that we do not transform the original data
-        timestamp_col = EFieldName.TIMESTAMP.name
-        data[timestamp_col] = data[EFieldName.TIMESTAMP.name].isoformat()  # convert the time to a string for direct readability in storage
+        timestamp_col = EFieldName.TIMESTAMP.name.lower()
+        data[timestamp_col] = data[timestamp_col].isoformat()  # convert the time to a string for direct readability in storage
         # filter data, so that it only contains the columns of the table
         filtered_data = { k.lower(): v for k, v in data.items() if k.lower() in self._data_table.colnames }
         HDF5SerializationHelper.add_rows_to_table(self._file, self._data_table, [filtered_data])
@@ -125,11 +134,28 @@ class HDF5ExperimentWriter(ExperimentWriter):
             self._file.close()
 
 
+
 class HDF5ExperimentReader(ExperimentReader):
     def __init__(self, file_path: Path):
         self._file_path = file_path
+        self._version = self._read_version()
 
+        if self._version is None:
+            logging.getLogger("hdf5_serialization").warning("The schema of the hdf5 file is not versionized")
 
+    def _read_version(self) -> Version | None:
+        with tb.open_file(self._file_path.as_posix(), "r") as file_:
+            try:
+                root_node = cast(tb.Group, file_.get_node('/', classname='Group')) 
+                version_str = root_node._v_attrs["version"]
+                return Version.to_version(version_str)
+            except tb.NoSuchNodeError:
+                return None
+            except KeyError:
+                return None
+            except ValueError:
+                return None
+    
     def read_metadata(self) -> Experiment:
         data = None
         with tb.open_file(self._file_path.as_posix(), "r") as file_:
@@ -149,7 +175,6 @@ class HDF5ExperimentReader(ExperimentReader):
             
         return experiment
     
-
     def read_data(self) -> pd.DataFrame:
         records = None
         with tb.open_file(self._file_path.as_posix(), "r") as file_:
@@ -198,4 +223,3 @@ if __name__ == "__main__":
     print(metadata)
     data = reader.read_data()
     print(data)
-
