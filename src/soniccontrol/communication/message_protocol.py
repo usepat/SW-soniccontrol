@@ -4,6 +4,8 @@ from typing import Any
 import abc
 import attrs
 
+from sonic_protocol.schema import Version
+
 
 class ProtocolType(Enum):
     SONIC_MESSAGE_PROTOCOL = "Sonic Message Protocol"
@@ -24,7 +26,7 @@ class CommunicationProtocol:
 
     @property
     @abc.abstractmethod
-    def major_version(self) -> int: ...
+    def version(self) -> Version: ...
 
 
 class DeviceLogLevel(Enum):
@@ -103,6 +105,6 @@ class SonicMessageProtocol(CommunicationProtocol):
 
     @property
     @abc.abstractmethod
-    def major_version(self) -> int:
-        return 2
+    def version(self) -> Version:
+        return Version(2, 0, 0)
 
