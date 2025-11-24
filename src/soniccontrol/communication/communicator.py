@@ -1,9 +1,10 @@
 
 import abc
 import asyncio
+import logging
 
-from soniccontrol.communication.connection_factory import ConnectionFactory
-from soniccontrol.communication.package_protocol import CommunicationProtocol
+from soniccontrol.communication.connection import Connection
+from soniccontrol.communication.message_protocol import CommunicationProtocol
 from soniccontrol.events import EventManager
 
 
@@ -13,15 +14,6 @@ class Communicator(abc.ABC, EventManager):
     def __init__(self) -> None:
         super().__init__()
 
-    @property 
-    @abc.abstractmethod
-    def writer(self) -> asyncio.StreamWriter: ...
-
-    @property 
-    @abc.abstractmethod
-    def reader(self) -> asyncio.StreamReader: ...
-
-    @property
     @abc.abstractmethod
     def protocol(self) -> CommunicationProtocol: ...
 
@@ -31,15 +23,11 @@ class Communicator(abc.ABC, EventManager):
 
     @abc.abstractmethod
     async def open_communication(
-        self, connection_factory: ConnectionFactory, baudrate: int
+        self, connection: Connection, baudrate: int
     ): ...
 
     @abc.abstractmethod
     async def close_communication(self, restart: bool = False) -> None: ...
-
-    @property
-    @abc.abstractmethod
-    def handshake_result(self) -> str: ...
 
     @abc.abstractmethod
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str: ...
@@ -49,3 +37,13 @@ class Communicator(abc.ABC, EventManager):
 
     @abc.abstractmethod
     async def change_baudrate(self, baudrate: int) -> None: ...
+
+    def set_device_log_handler(self, handler: logging.Handler) -> None:
+        """Optional hook for installing a device log handler.
+
+        Subclasses that have a message fetcher or device logger can override
+        this to attach the provided `logging.Handler`. The default
+        implementation is a no-op so callers don't need to check for support.
+        """
+        return None
+

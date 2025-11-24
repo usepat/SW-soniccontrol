@@ -3,16 +3,22 @@ import abc
 import ttkbootstrap as ttk
 
 
+TkinterView = ttk.tk.Widget | ttk.Window | ttk.Frame | ttk.LabelFrame
+
 class View(ttk.Frame):
-    def __init__(self, master: ttk.tk.Widget | ttk.Window, *args, **kwargs) -> None:
+    def __init__(self, master: TkinterView, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
-        self._master: ttk.tk.Widget | ttk.Window = master
+        self._master: TkinterView = master
         self._initialize_children()
         self._initialize_publish()
 
     @property
-    def parent(self) -> ttk.tk.Widget | ttk.Window:
+    def parent(self) -> TkinterView:
         return self._master
+    
+    @property
+    def root(self):
+        return self.winfo_toplevel()
 
     @abc.abstractmethod
     def _initialize_children(self) -> None:
@@ -24,7 +30,7 @@ class View(ttk.Frame):
 
 
 class TabView(View):
-    def __init__(self, master: ttk.tk.Widget | ttk.Window, *args, **kwargs) -> None:
+    def __init__(self, master: TkinterView, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
 
     @property

@@ -8,48 +8,46 @@
 
 ## Brief Description
 
-SonicControl communicates with the device connected to the computer.
+SonicControl communicates with the device connected to the computer. The communication package is responsible for sending and receiving messages.
+
+# Diagram
 
 @startuml
 !include soniccontrol/class_communication.puml
 @enduml
+
+# Implementation
 
 ## Connection
 
 The connection is established by the [ConnectionFactory](@ref soniccontrol.communication.connection_factory.ConnectionFactory) and can either be to a serial port or to a process (that simulates the device).
 In future also a connection with tcp or udp over a server could be added. 
 
-## Protocol
+## SonicMessageProtocol
 
-@subpage PackageProtocol
+@see soniccontrol.communication.message_protocol.SonicMessageProtocol
 
-We made a custom protocol to send the commands and device logs.
-The protocol is defined like that that single packages are always send, instead of single commands directly. This offers more flexibility.
-In the code the protocol is encapsulated in the [SonicProtocol](@ref soniccontrol.communication.sonic_protocol.SonicProtocol) class.
-This class gets used by the Communicator and PackageFetcher to read and send messages.
+This protocol class is responsible for parsing the messages received by the communicator, as well for defining a terminator for a message.  
+There a currently three types of messages defined:
+- COM#{ID}={COMMAND}: Command. With a unique id (different for each message sent).
+- ANS#{ID}={ANSWER}: Answer. With the id of the command, the answer responds to.
+- LOG={LOG}: Device Log.
+- NOTIFY={NOTIFY_MESSAGE}: For notifications. Messages that are send by pushing not pulling. Similar to logs but can be interpreted
+Commands are sent by SonicControl and Answers and Logs by the device.
 
 ## Communicator
 
-@see soniccontrol.interfaces.Communicator
+@see soniccontrol.communication.communicator.Communicator
 
 The Communicator is responsible for establishing and also putting down a connection with the [ConnectionFactory](@ref soniccontrol.communication.connection_factory.ConnectionFactory).
-Over the Communicator Commands can be send and answers received. It offers mainly two methods for that:
-- [send_and_wait_for_answer](@ref soniccontrol.interfaces.Communicator.send_and_wait_for_answer): for sending a command an getting the corresponding answer
-- [read_message](@ref soniccontrol.interfaces.Communicator.read_message): for fetching whatever message just got read by the Communicator
+Over the Communicator Messages can be send and received. It offers mainly two methods for that:
+- [send_and_wait_for_answer](@ref soniccontrol.communication.communicator.Communicator.send_and_wait_for_response): for sending a request and waiting then for the response.
+- [read_message](@ref soniccontrol.communication.communicator.Communicator.read_message): for fetching whatever message just got read by the Communicator
 So we have a method that pushes and waits and a method for pulling.
 
 ### New Communicator
 
-The new communicator uses internally a [PackageFetcher](@ref package_fetcher.PackageFetcher) that runs in the background and constantly reads packages from the input stream.  
-It also uses the new Package protocol, that is set up like that, that each command is send in a own package with an unique id and the package with the corresponding answer has the same id.
-So we know exactly which answer belongs to which command and no race conditions what so ever can occur.
+The new communicator uses internally a [MessageFetcher](@ref soniccontrol.communication.message_fetcher.MessageFetcher) that runs in the background and constantly reads messages from the input stream. It stores then the messages in a dictionary (Key is the ID of the answer). The Communicator can then get the answer via [get_answer_of_request](@ref soniccontrol.communication.message_fetcher.MessageFetcher.get_answer_of_request). The method is awaitable. So we can support like this concurrency.
 
-### Legacy
-
-The legacy communicator just reads blindly the input line for line. Very error prone.
-
-### Determining which one to use
-
-The [CommunicatorBuilder](@ref soniccontrol.communication.communicator_builder.CommunicatorBuilder) tries out to establish a connection with both versions and then uses the one that works and returns it.
 
 @}

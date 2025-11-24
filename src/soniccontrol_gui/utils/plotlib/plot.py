@@ -1,3 +1,4 @@
+import logging
 import matplotlib
 from matplotlib.figure import Figure
 import pandas as pd
@@ -20,6 +21,7 @@ class Plot(EventManager):
         self._dataAttrNameXAxis = dataAttrNameXAxis
         self._lines: Dict[str, matplotlib.lines.Line2D] = {}
         self._axes: Dict[str, matplotlib.axes.Axes] = {}
+        self._logger = logging.getLogger(__name__)
         self._plot.legend(
             loc="upper left",
             handles=[]
@@ -107,10 +109,20 @@ class Plot(EventManager):
         for _, axis in self._axes.items():
             axis.relim()
             axis.autoscale_view()
+
            
 
     def update_data(self, data: pd.DataFrame):
+        #print(f"📦 update_data received timestamp dtype: {data['timestamp'].dtype} | id={id(data)}")
+        if self._dataAttrNameXAxis in data.columns:
+            timestamp_col = data[self._dataAttrNameXAxis]
+            # If it's object, check for actual types inside
+            if timestamp_col.dtype == 'object':
+                self._logger.error("Timestamp column is of type object instead of type datetime64[ns]")
+                raise TypeError("Timestamp column is of type object instead of type datetime64[ns]")
+
         for attrName, line in self._lines.items():
-            line.set_data(data[self._dataAttrNameXAxis], data[attrName])
+                # print(f"data[{self._dataAttrNameXAxis}]:{data[self._dataAttrNameXAxis]}    data[{attrName}]:{data[attrName]}")
+                line.set_data(data[self._dataAttrNameXAxis], data[attrName])
         self.update_plot()
         self.emit(PropertyChangeEvent("plot", self._plot, self._plot))

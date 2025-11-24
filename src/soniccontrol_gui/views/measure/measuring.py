@@ -1,48 +1,67 @@
+from enum import Enum, auto
 import logging
-from typing import Dict, Iterable, List
+from typing import Any, Dict, Iterable, List
 from async_tkinter_loop import async_handler
+
 import matplotlib.figure
-from ttkbootstrap.dialogs import Messagebox
-from soniccontrol_gui.state_fetching.capture_target import CaptureTarget, CaptureTargets
-from soniccontrol_gui.state_fetching.spectrum_measure import SpectrumMeasure, SpectrumMeasureModel
+from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
+from soniccontrol.data_capturing.capture_target import CaptureTarget, CaptureTargets
+from soniccontrol.data_capturing.experiment import Experiment
+from soniccontrol.device_data import FirmwareInfo
 from soniccontrol_gui.ui_component import UIComponent
+from soniccontrol_gui.utils.file_explorer import open_file_explorer
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 import tkinter as tk
 import ttkbootstrap as ttk
 import matplotlib
 
-from soniccontrol_gui.widgets.procedure_widget import ProcedureWidget
-from soniccontrol_gui.state_fetching.capture import Capture
+from soniccontrol_gui.views.measure.experiment_form import ExperimentForm
+from soniccontrol_gui.widgets.message_box import MessageBox
+from soniccontrol_gui.widgets.notebook import Notebook
+from soniccontrol.data_capturing.capture import Capture
 from soniccontrol_gui.views.measure.csv_table import CsvTable
 matplotlib.use("TkAgg")
 
-from soniccontrol_gui.constants import sizes, ui_labels
+from soniccontrol_gui.constants import sizes, ui_labels, files
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.measure.plotting import Plotting
 from soniccontrol_gui.utils.plotlib.plot_builder import PlotBuilder
 
 
+class ExperimentExecutionState(Enum):
+    FILL_IN_METADATA = 0
+    CHOOSE_CAPTURE_TARGET = auto()
+    READY = auto()
+    CAPTURING = auto()
+    FINISHED = auto()
+
 class Measuring(UIComponent):
-    def __init__(self, parent: UIComponent, capture: Capture, capture_targets: Dict[CaptureTargets, CaptureTarget], spectrum_measure_model: SpectrumMeasureModel):
+    def __init__(self, parent: UIComponent, capture: Capture, capture_targets: Dict[CaptureTargets, CaptureTarget], firmware_info: FirmwareInfo):
         self._logger = logging.getLogger(parent.logger.name + "." + Measuring.__name__)
 
         self._logger.debug("Create SonicMeasure")
+        self._experiment_execution_state = ExperimentExecutionState.FINISHED
+        self._selected_target: CaptureTargets = CaptureTargets.FREE 
         self._capture = capture # TODO: move this to device window
         self._capture_targets = capture_targets
-        
-        # ensures that capture ends if a target completes
-        for target in self._capture_targets.values():
-            target.subscribe(CaptureTarget.COMPLETED_EVENT, lambda _e: self._capture.capture_target_completed_callback())
- 
+        self._firmware_info = firmware_info
+
         self._view = MeasuringView(parent.view)
         super().__init__(parent, self._view, self._logger)
+
+
+        self._experiment_form = ExperimentForm(
+            self,
+            self._view._metadata_form_frame
+        )
 
         self._time_figure = matplotlib.figure.Figure(dpi=100)
         self._time_subplot = self._time_figure.add_subplot(1, 1, 1)
         self._timeplot = PlotBuilder.create_timeplot_fuip(self._time_subplot)
-        self._timeplottab = Plotting(self, self._timeplot)
+        self._timeplottab = Plotting(self, self._timeplot, max_size_editable = True)
+        self._timeplottab.set_data_provider_size_change_callback(self._capture._data_provider.change_dataqueue_max_size)
 
         self._spectral_figure = matplotlib.figure.Figure(dpi=100)
         self._spectral_subplot = self._spectral_figure.add_subplot(1, 1, 1)
@@ -51,17 +70,6 @@ class Measuring(UIComponent):
         
         self._csv_table = CsvTable(self)
 
-        
-        self._spectrum_measure_widget = ProcedureWidget(
-            self, 
-            self._view.spectrum_measure_frame, 
-            "Spectrum Measure", 
-            SpectrumMeasure.get_args_class(),
-            spectrum_measure_model.form_fields
-        )
-
-        self._view.set_capture_button_command(lambda: self._on_toggle_capture())
-        self._view.set_capture_button_label(ui_labels.START_CAPTURE)
         self._view.add_tabs({
             ui_labels.LIVE_PLOT: self._timeplottab.view, 
             ui_labels.SONIC_MEASURE_LABEL: self._spectralplottab.view, 
@@ -69,30 +77,109 @@ class Measuring(UIComponent):
         })
         target_strs = map(lambda k: k.value, self._capture_targets.keys())
         self._view.set_target_combobox_items(target_strs)
+        self._view.set_guide_button_command(self._on_open_guide)
+        self._view.set_open_measurements_button_command(self._on_open_measurements)
 
-        self._capture.data_provider.subscribe_property_listener("data", lambda e: self._timeplot.update_data(e.new_value))
-        self._capture.data_provider.subscribe_property_listener("data", lambda e: self._spectralplot.update_data(e.new_value))
-        self._capture.data_provider.subscribe_property_listener("data", lambda e: self._csv_table.on_update_data(e))
+        self._capture.data_provider.subscribe_property_listener(
+            "data", lambda e: self._timeplot.update_data(e.new_value))
+        self._capture.data_provider.subscribe_property_listener(
+            "data", lambda e: self._spectralplot.update_data(e.new_value))
+        self._capture.data_provider.subscribe_property_listener(
+            "data", lambda e: self._csv_table.on_update_data(e.new_value))
 
-        self._capture.subscribe(Capture.START_CAPTURE_EVENT, lambda _e: self._view.set_capture_button_label(ui_labels.END_CAPTURE))
-        self._capture.subscribe(Capture.END_CAPTURE_EVENT, lambda _e: self._view.set_capture_button_label(ui_labels.START_CAPTURE))
+        self._capture.subscribe(Capture.START_CAPTURE_EVENT, 
+                                lambda _e: setattr(self, "experiment_execution_state", ExperimentExecutionState.CAPTURING))
+        self._capture.subscribe(Capture.END_CAPTURE_EVENT, 
+                                lambda _e: setattr(self, "experiment_execution_state", ExperimentExecutionState.FINISHED))
+
+        self.experiment_execution_state = ExperimentExecutionState.FINISHED
+
+    @property
+    def experiment_execution_state(self) -> ExperimentExecutionState:
+        return self._experiment_execution_state
+    
+    @experiment_execution_state.setter
+    def experiment_execution_state(self, v: ExperimentExecutionState) -> None:
+        self._experiment_execution_state = v
+        
+        self._view.set_metadata_form_frame_visibility(False)
+        self._view.set_choose_target_frame_visibility(False)
+        self._view.set_capture_frame_visibility(False)
+        match self._experiment_execution_state:
+            case ExperimentExecutionState.FILL_IN_METADATA:
+                self._view.set_metadata_form_frame_visibility(True)
+                self._view.set_control_button_label(ui_labels.FINISH_LABEL)
+                self._view.set_control_button_command(self._on_metadata_filled_in)
+            case ExperimentExecutionState.CHOOSE_CAPTURE_TARGET:
+                self._view.set_choose_target_frame_visibility(True)
+                self._view.set_control_button_label(ui_labels.SELECTED)
+                self._view.set_control_button_command(self._on_continue_select_target)
+            case ExperimentExecutionState.READY:
+                self._view.set_capture_frame_visibility(True)
+                self._view.set_control_button_label(ui_labels.START_CAPTURE)
+                self._view.set_control_button_command(self._on_start_capture)
+            case ExperimentExecutionState.CAPTURING:
+                self._view.set_capture_frame_visibility(True)
+                self._view.set_control_button_label(ui_labels.END_CAPTURE)
+                self._view.set_control_button_command(self._on_stop_capture)
+            case ExperimentExecutionState.FINISHED:
+                self._view.set_capture_frame_visibility(True)
+                self._view.set_control_button_label(ui_labels.NEW_EXPERIMENT)
+                self._view.set_control_button_command(self._on_new_experiment)
+
+    def _on_new_experiment(self):
+        self.experiment_execution_state = ExperimentExecutionState.FILL_IN_METADATA
+
+    def _on_metadata_filled_in(self):
+        try:
+            self._experiment_metadata = self._experiment_form.get_metadata()
+        except Exception as e:
+            MessageBox.show_error(self.view.root, str(e))
+        else:
+            self.experiment_execution_state = ExperimentExecutionState.CHOOSE_CAPTURE_TARGET
+
+    def _on_continue_select_target(self):
+        target_str = self._view.selected_target
+        self._selected_target = CaptureTargets(target_str)
+
+        self.experiment_execution_state = ExperimentExecutionState.READY
 
     @async_handler
-    async def _on_toggle_capture(self):
-        if self._capture.is_capturing:
-            await self._capture.end_capture()
-        else:
-            try:
-                target_str = self._view.selected_target
-                if target_str == "": # return if empty
-                    return
-                target = self._capture_targets[CaptureTargets(target_str)]
-                await self._capture.start_capture(target)
-            except Exception as e:
-                self._show_err_msg(e)
+    async def _on_start_capture(self):
+        assert (hasattr(self, "_experiment_metadata"))
 
-    def _show_err_msg(self, e: Exception):
-        Messagebox.show_error(f"{e.__class__.__name__}: {str(e)}")
+        experiment = Experiment(
+            metadata=self._experiment_metadata, firmware_info=self._firmware_info, 
+            sonic_control_version=SOFTWARE_VERSION, operating_system=PLATFORM.value,
+            capture_target=self._selected_target
+        )
+        try:
+            target = self._capture_targets[self._selected_target]
+            await self._capture.start_capture(experiment, target)
+        except Exception as e:
+            MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
+
+         # The execution state gets set as callback for capture. This is needed, because a capture can end automatically (Procedure finished for example)
+
+    @async_handler
+    async def _on_stop_capture(self):
+        await self._capture.end_capture()
+
+        # The execution state gets set as callback for capture. This is needed, because a capture can end automatically (Procedure finished for example)
+
+    def _on_open_guide(self):
+        description = """SonicMeasure is a functionality of our amplifier to measure applied voltage, current and phase while driving the ultrasound transducer.
+This feature is usually used to measure a spectrum, to find the optimal driving frequency for the intended application. It is recommended to use the "New experiment" button to create
+an experiment file, where all the data and metadata is saved. 
+"""
+        MessageBox(self.view.root, description, "Guide", [])
+
+    def _on_open_measurements(self):
+        try:
+            open_file_explorer(files.MEASUREMENTS_DIR)
+        except Exception as e:
+            MessageBox.show_error(self.view.root, str(e))
+
 
 class MeasuringView(TabView):
     def __init__(self, master: ttk.Window, *args, **kwargs) -> None:
@@ -102,54 +189,61 @@ class MeasuringView(TabView):
         tab_name = "measuring"
         self._main_frame: ttk.Frame = ttk.Frame(self)
         
+        self._control_frame = ttk.Frame(self._main_frame)
+        self._capture_btn_text = tk.StringVar()
+        self._control_btn: ttk.Button = ttk.Button(
+            self._control_frame,
+            textvariable=self._capture_btn_text
+        )
+        self._open_measurements_button = ttk.Button(
+            self._control_frame,
+            text=ui_labels.GO_TO_MEASUREMENTS
+        )
+        self._guide_button = ttk.Button(
+            self._control_frame, 
+            text=ui_labels.GUIDE_LABEL,
+            style=ttk.INFO,
+            image=ImageLoader.load_image_resource(images.INFO_ICON_WHITE, (13, 13)),
+            compound=ttk.LEFT
+        )
+
+        self._metadata_form_frame = ttk.Frame(self._main_frame)
+        self._choose_target_frame = ttk.Frame(self._main_frame)
         self._capture_frame: ttk.Frame = ttk.Frame(self._main_frame)
 
+        self._choose_target_label = ttk.Label(self._choose_target_frame, text=ui_labels.CHOOSE_A_CAPTURE_TARGET)
         self._selected_target_var = ttk.StringVar()
         self._target_combobox = ttk.Combobox(
-            self._main_frame, 
+            self._choose_target_frame, 
             textvariable=self._selected_target_var,
             state="readonly"
         )
+
+        self._notebook: Notebook = Notebook(self._capture_frame, "measuring")
+
+        WidgetRegistry.register_widget(self._control_btn, "control_button", tab_name)
         WidgetRegistry.register_widget(self._target_combobox, "target_combobox", tab_name)
 
-        self._capture_btn_text = tk.StringVar()
-        self._capture_btn: ttk.Button = ttk.Button(
-            self._capture_frame,
-            textvariable=self._capture_btn_text
-        )
-        WidgetRegistry.register_widget(self._capture_btn, "capture_button", tab_name)
-
-        self._notebook: ttk.Notebook = ttk.Notebook(self._main_frame)
-
-        self._spectrum_measure_frame = ttk.Frame(self._main_frame)
 
     def _initialize_publish(self) -> None:
         self._main_frame.pack(expand=True, fill=ttk.BOTH)
         
-        self._capture_frame.pack(fill=ttk.X, padx=3, pady=3)
-        self._target_combobox.pack(fill=ttk.X, padx=sizes.SMALL_PADDING)
-        self._capture_btn.pack(fill=ttk.X, padx=sizes.SMALL_PADDING)
+        self._control_frame.pack(fill=ttk.X, side=ttk.TOP, padx=3, pady=3)
+        self._guide_button.pack(padx=sizes.SMALL_PADDING, side=ttk.RIGHT)
+        self._open_measurements_button.pack(padx=sizes.SMALL_PADDING, side=ttk.RIGHT)
+        self._control_btn.pack(padx=sizes.SMALL_PADDING, side=ttk.LEFT, fill=ttk.X, expand=True)
 
+        self._metadata_form_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
+        self._metadata_form_frame.pack_forget()
+
+        self._choose_target_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
+        self._choose_target_label.pack(fill=ttk.X)
+        self._target_combobox.pack(fill=ttk.X)
+        self._choose_target_frame.pack_forget()
+
+        self._capture_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
         self._notebook.pack(expand=True, fill=ttk.BOTH)
-
-        self._spectrum_measure_frame.pack(side=ttk.BOTTOM, fill=ttk.X, padx=3, pady=3)
-
-    def add_tabs(self, tabs: Dict[str, View]) -> None:
-        for (title, tabview) in tabs.items():
-            self._notebook.add(tabview, text=title)
-
-    def set_capture_button_label(self, label: str):
-        self._capture_btn_text.set(label)
-
-    def set_capture_button_command(self, command):
-        self._capture_btn.configure(command=command)
-
-    def set_target_combobox_items(self, items: Iterable[str] | List[str]) -> None:
-        if not isinstance(items, list):
-            items = list(items)
-            
-        self._target_combobox["values"] = items
-        self._selected_target_var.set(items[0])
+        self._capture_frame.pack_forget()
 
     @property
     def image(self) -> ttk.ImageTk.PhotoImage:
@@ -158,13 +252,54 @@ class MeasuringView(TabView):
     @property
     def tab_title(self) -> str:
         return ui_labels.SONIC_MEASURE_LABEL
+
+    def add_tabs(self, tabs: Dict[str, View]) -> None:
+        for (title, tabview) in tabs.items():
+            self._notebook.add(tabview, text=title)
+
+    def set_metadata_form_frame_visibility(self, is_visible: bool) -> None:
+        if is_visible:
+            self._metadata_form_frame.pack(expand=True, fill=ttk.BOTH)
+        else: 
+            self._metadata_form_frame.pack_forget()
+
+    def set_choose_target_frame_visibility(self, is_visible: bool) -> None:
+        if is_visible:
+            self._choose_target_frame.pack(expand=True, fill=ttk.BOTH)
+        else: 
+            self._choose_target_frame.pack_forget()
+
+    def set_capture_frame_visibility(self, is_visible: bool) -> None:
+        if is_visible:
+            self._capture_frame.pack(expand=True, fill=ttk.BOTH)
+        else: 
+            self._capture_frame.pack_forget()
+
+    def set_control_button_label(self, label: str):
+        self._capture_btn_text.set(label)
+
+    def set_control_button_command(self, command):
+        self._control_btn.configure(command=command)
+
+    def set_guide_button_command(self, command):
+        self._guide_button.configure(command=command)
+
+    def set_open_measurements_button_command(self, command):
+        self._open_measurements_button.configure(command=command)
     
     @property
     def selected_target(self) -> str:
         return self._selected_target_var.get()
     
+    def set_target_combobox_items(self, items: Iterable[str] | List[str]) -> None:
+        if not isinstance(items, list):
+            items = list(items)
+            
+        self._target_combobox["values"] = items
+        self._selected_target_var.set(items[0])
+    
     @property
-    def spectrum_measure_frame(self) -> ttk.Frame:
-        return self._spectrum_measure_frame
+    def metadata_form_frame(self) -> ttk.Frame:
+        return self._metadata_form_frame
 
 

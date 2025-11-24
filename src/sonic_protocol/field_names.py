@@ -1,70 +1,126 @@
-from enum import Enum
 
+from enum import unique, auto
+from sonic_protocol.schema import IEFieldName
 
-class EFieldName(Enum):
-    UNDEFINED = "undefined"
-    UNKNOWN_ANSWER = "unknown_answer"
-    COMMAND_CODE = "command_code"
-    SUCCESS = "success"
+@unique
+class BaseFieldName(IEFieldName):
+    UNDEFINED = 0
+    COMMAND_CODE = 1
     
-    HELP = "help"
+    ERROR_MESSAGE = 2
+    MESSAGE = 3
 
-    FREQUENCY = "freq"
-    SWF = "swf"
-    GAIN = "gain"
-    TEMPERATURE = "temp"
-    SIGNAL = "signal"
-    URMS = "urms"
-    IRMS = "irms"
-    PHASE = "phase"
-    TS_FLAG = "ts_flag"
-    PROCEDURE = "procedure"
-    PROCEDURE_ARG = "procedure_arg"
-    ERROR_CODE = "error_code"
-    ERROR_MESSAGE = "error_message"
-    TIMING = "timing"
-    MESSAGE = "message"
+    UNKNOWN_ANSWER = 4
+    SUCCESS = 5
 
-    ATF = "atf"
-    ATK = "atk"
-    ATT = "att"
-    ATON = "aton"
 
-    DEVICE_TYPE = "device_type"
-    PROTOCOL_VERSION = "protocol_version"
-    IS_RELEASE = "is_release"
-    ADDITIONAL_OPTIONS = "additional_options"
+@unique
+class EFieldName(IEFieldName):
+    UNDEFINED = BaseFieldName.UNDEFINED.value
+    COMMAND_CODE = BaseFieldName.COMMAND_CODE.value
+    
+    ERROR_MESSAGE = BaseFieldName.ERROR_MESSAGE.value
+    MESSAGE = BaseFieldName.MESSAGE.value
+    UNKNOWN_ANSWER = BaseFieldName.UNKNOWN_ANSWER.value
 
-    BUILD_DATE = "build_date"
-    BUILD_HASH = "build_hash"
-    HARDWARE_VERSION = "hardware_version"
-    FIRMWARE_VERSION = "firmware_version"
+    SUCCESS = BaseFieldName.SUCCESS.value
 
-    INPUT_SOURCE = "input_source"
-    COMM_MODE = "communication_mode"
-    COMMUNICATION_CHANNEL = "communication_channel"
-    COMMUNICATION_PROTOCOL = "communication_protocol"
-    TERMINATION = "termination"
+    HELP = auto()
 
-    TIME_STAMP = "time_stamp"
-    INDEX = "index"
+    DEVICE_TYPE = auto()
+    PROTOCOL_VERSION = auto()
+    IS_RELEASE = auto()
+    ADDITIONAL_OPTIONS = auto()
 
-    SCAN_F_RANGE = "scan_f_range"
-    SCAN_F_STEP = "scan_f_step"
-    SCAN_T_STEP = "scan_t_step"
-    TUNE_F_STEP = "tune_f_step"
-    TUNE_T_TIME = "tune_t_time"
-    TUNE_T_STEP = "tune_t_step"
-    WIPE_F_RANGE = "wipe_f_range"
-    WIPE_F_STEP = "wipe_f_step"
-    WIPE_T_ON = "wipe_t_on"
-    WIPE_T_OFF = "wipe_t_off"
-    WIPE_T_PAUSE = "wipe_t_pause"
-    RAMP_F_START = "ramp_f_start"
-    RAMP_F_STOP = "ramp_f_stop"
-    RAMP_F_STEP = "ramp_f_step"
-    RAMP_T_ON = "ramp_t_on"
-    RAMP_T_OFF = "ramp_t_off"
-    DUTY_CYCLE_T_OFF = "duty_cycle_t_off"
-    DUTY_CYCLE_T_ON = "duty_cycle_t_on"
+    INDEX = auto()
+
+    TRANSDUCER_ID = auto()
+    FREQUENCY = auto()
+    SWF = auto()
+    GAIN = auto()
+    TEMPERATURE = auto()
+    SIGNAL = auto()
+    WAVEFORM = auto()
+    URMS = auto()
+    IRMS = auto()
+    PHASE = auto()
+    TS_FLAG = auto()
+    PROCEDURE = auto()
+    PROCEDURE_ARG = auto()
+    ERROR_CODE = auto()
+    PASSWORD_HASHED = auto()
+    ANOMALY_DETECTION = auto()
+    VOLTAGE = auto()
+    TRANSDUCER_STATE = auto()
+    SYSTEM_STATE = auto()
+
+    TIMING = auto()
+
+    ATF = auto()
+    ATK = auto()
+    ATT = auto()
+    ATON = auto()
+
+    BUILD_DATE = auto()
+    BUILD_HASH = auto()
+    HARDWARE_VERSION = auto()
+    FIRMWARE_VERSION = auto()
+    SNR = auto()
+
+    CONTROL_MODE = auto()
+    COMM_MODE = auto()
+    COMMUNICATION_CHANNEL = auto()
+    COMMUNICATION_PROTOCOL = auto()
+    TERMINATION = auto()
+
+    TIMESTAMP = auto()
+
+    SCAN_F_CENTER = auto()
+    SCAN_F_RANGE = auto()
+    SCAN_F_STEP = auto()
+    SCAN_F_SHIFT = auto()
+    SCAN_T_STEP = auto()
+    SCAN_GAIN = auto()
+    TUNE_F_STEP = auto()
+    TUNE_F_SHIFT = auto()
+    TUNE_T_TIME = auto()
+    TUNE_T_STEP = auto()
+    TUNE_N_STEPS = auto()
+    TUNE_GAIN = auto()
+    WIPE_F_RANGE = auto()
+    WIPE_F_STEP = auto()
+    WIPE_T_ON = auto()
+    WIPE_T_OFF = auto()
+    WIPE_T_PAUSE = auto()
+    WIPE_GAIN = auto()
+    RAMP_F_START = auto()
+    RAMP_F_STOP = auto()
+    RAMP_F_STEP = auto()
+    RAMP_T_ON = auto()
+    RAMP_T_OFF = auto()
+    DUTY_CYCLE_T_OFF = auto()
+    DUTY_CYCLE_T_ON = auto()
+
+    LOG_LEVEL = auto()
+    LOGGER_NAME = auto()
+
+    # Legacy Fields
+    LEGACY_RANG = auto()
+    LEGACY_STEP = auto()
+    LEGACY_SING = auto()
+    LEGACY_PAUS = auto()
+    LEGACY_TUST = auto()
+    LEGACY_TUTM = auto()
+    LEGACY_SCST = auto()
+    LEGACY_F_CENTER = auto()
+    LEGACY_POLL = auto()
+
+    MODBUS_SERVER_ID = auto()
+
+    DEVICE_STATE = auto()
+
+    MINUTES = auto()
+    HOURS = auto()
+    DAYS = auto()
+
 

@@ -1,9 +1,7 @@
 from typing import Any, Callable, Coroutine, Generic, Iterable, Optional, TypeVar
 import asyncio
 import itertools
-
 from async_tkinter_loop import async_handler
-
 
 class DotAnimationSequence:
     def __init__(self, label="", num_dots=3):

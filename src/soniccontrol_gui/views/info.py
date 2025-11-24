@@ -16,26 +16,33 @@ class Info(UIComponent):
         # Todo implement markdown parser instead of doing this
         content=[
             ui_labels.HOME_HELP_INTRODUCTION,
-            ImageLoader.load_image_resource(images.HOME_CONTROL_PANEL, (300, 200)),
-            ui_labels.HOME_HELP_CONTROL_PANEL,
+            # ImageLoader.load_image_resource(images.HOME_CONTROL_PANEL, (300, 200)),
+            #ui_labels.HOME_HELP_CONTROL_PANEL,
             Text(ui_labels.FREQUENCY, font=fonts.QTYPE_OT_CONDLIGHT),
             ui_labels.HOME_HELP_FREQUENCY,
             Text(ui_labels.GAIN, font=fonts.QTYPE_OT_CONDLIGHT),
             ui_labels.HOME_HELP_GAIN,
-            Text(ui_labels.CATCH_MODE_LABEL, font=fonts.QTYPE_OT_CONDLIGHT),
-            ui_labels.HOME_HELP_CATCH,
-            Text(ui_labels.WIPE_MODE_LABEL, font=fonts.QTYPE_OT_CONDLIGHT),
-            ui_labels.HOME_HELP_WIPE,
+            # Text(ui_labels.CATCH_MODE_LABEL, font=fonts.QTYPE_OT_CONDLIGHT),
+            # ui_labels.HOME_HELP_CATCH,
+            # Text(ui_labels.WIPE_MODE_LABEL, font=fonts.QTYPE_OT_CONDLIGHT),
+            # ui_labels.HOME_HELP_WIPE,
+            Text(ui_labels.SEND_LABEL, font=fonts.QTYPE_OT_CONDLIGHT),
             ui_labels.HOME_HELP_SET_VALUES,
-            ui_labels.HOME_HELP_OUTPUT,
-            Image(images.HOME_SIGNAL_CONTROL_PANEL, (400, 35)),
-            ui_labels.HOME_HELP_SIGNAL_CONTROL_PANEL,
-            Text(ui_labels.SIGNAL_ON, font=fonts.QTYPE_OT_CONDLIGHT),
-            ui_labels.HOME_HELP_ON,
-            Text(ui_labels.SIGNAL_OFF, font=fonts.QTYPE_OT_CONDLIGHT),
-            ui_labels.HOME_HELP_OFF,
-            Text(ui_labels.AUTO_LABEL, font=fonts.QTYPE_OT_CONDLIGHT),
-            ui_labels.HOME_HELP_AUTO,
+            #ui_labels.HOME_HELP_OUTPUT,
+            # Image(images.HOME_SIGNAL_CONTROL_PANEL, (400, 35)),
+            #ui_labels.HOME_HELP_SIGNAL_CONTROL_PANEL,
+            # Text(ui_labels.SIGNAL_ON, font=fonts.QTYPE_OT_CONDLIGHT),
+            # ui_labels.HOME_HELP_ON,
+            # Text(ui_labels.SIGNAL_OFF, font=fonts.QTYPE_OT_CONDLIGHT),
+            # ui_labels.HOME_HELP_OFF,
+            # Text(ui_labels.AUTO_LABEL, font=fonts.QTYPE_OT_CONDLIGHT),
+            # ui_labels.HOME_HELP_AUTO,
+            ui_labels.NEW_LINE,
+            ui_labels.NEW_LINE,
+            ui_labels.TODO,
+            Text(ui_labels.CONTACT, font=fonts.QTYPE_OT_CONDLIGHT),
+            Text("Stefan Schöller: stefan.schoeller@usepat.com", font=fonts.QTYPE_OT_CONDLIGHT, selectable=True),
+            Text("Christoph Gasser: christoph.gasser@usepat.com", font=fonts.QTYPE_OT_CONDLIGHT, selectable=True),
         ]
         self._view = InfoView(parent.view, self, content)
         super().__init__(parent, self._view)
@@ -102,7 +109,8 @@ class InfoView(TabView):
         self._company_name: ttk.Label = ttk.Label(
             self._footer_frame, text=ui_labels.COMPANY_NAME, anchor=ttk.CENTER
         )
-        __version__= "asdhasdfh" # TODO: fix the version problem
+        # TODO create the exe inside a github task, and then just fetch the release version
+        __version__= "v2.4.0-rc" # TODO: fix the version problem
         self._version: ttk.Label = ttk.Label(
             self._footer_frame,
             text=f"{ui_labels.VERSION_LABEL}: {__version__}",

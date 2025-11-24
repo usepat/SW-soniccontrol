@@ -19,16 +19,20 @@ There should be a graph of the captured data points.
 
 There should be generated a csv table for each measurement.
 
+
 ## Implementation
 
-An [Updater](@ref soniccontrol_gui.state_fetching.updater.Updater) runs in the backgrounds and fetches the whole time the device status over the dash command. 
+@see data_capturing
 
-### Starting and Stopping Captures
+The MeasuringTab enforces you to first create an experiment, then select the target (procedure, scripting, free, sonic_measure), then insert meta data and then you can finally start capturing.  
+Because of this whole sequence of states, Measuring Tab is kind of a little state machine.  
+For creating the meta data form, the [FormWidget](@ref soniccontrol_gui.widgets.form_widget.FormWidget) class is used, that deduces it automatically from the [ExperimentMetaData](@ref soniccontrol.data_capturing.experiment.ExperimentMetaDAta) class over attrs introspection.
 
-There exists a [Capture](@ref soniccontrol_gui.state_fetching.capture.Capture) class that is responsible for turning on and off the capturing  and sets up and tears down the [Capture Target](@ref soniccontrol_gui.state_fetching.capture_target.CaptureTarget). It gets the updates form the Updater over events.
-The captured data points are then propagated through events to the [CsvWriter](@ref soniccontrol_gui.state_fetching.csv_writer.CsvWriter) and the [DataProvider](@ref soniccontrol_gui.state_fetching.data_provider.DataProvider).  
-- CsvWriter is responsible for writing the csv file
-- The data provider saves only the last 100 data points and provides them to the plots.
+## Spectrum Measure
+
+@see soniccontrol.procedures.procs.specrum_measure.SpectrumMeasure
+
+SpectrumMeasure is implemented as a local procedure. It deactivates the Updater, so that it stops to fetch automatically in the background. Then after setting each frequency, it uses the updater to force an update. I wanted it to use the updater to enforce updating all its dependent subscribers and therefore updating the rest of the application.
 
 ### Plotting
 

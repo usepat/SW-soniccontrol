@@ -98,4 +98,13 @@ or
 ```
 All puml-files need to lie inside *docs/diagrams*, because this is specified as a lookup path for doxygen with `PLANTUML_INCLUDE_PATH`.
 
+You can directly generate automatically puml files from the python code using 
+```
+pyreverse -o plantuml -p SonicControl ./src/soniccontrol
+```
+This will generate you a class and a package diagram. Note that it will not make relationships for attributes, if they use unions.
+
+> *NOTE*: when you build the documentation it creates a cache file for plantuml in the output folder. 
+> Because of that it can happen, that diagrams do not get updated.
+
 @}

@@ -1,15 +1,13 @@
 
 
-import logging
 import re
-import sys
-from typing import Any, Callable, Dict, List,  Optional
+from typing import Any, Callable, Dict, List,  Optional, Type
 
 import attrs
 
-from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser.converters import Converter
-from sonic_protocol.defs import CommandCode, EFieldName
+from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.field_names import IEFieldName
 
 
 @attrs.define()    
@@ -19,15 +17,12 @@ class Answer:
     valid: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
     was_validated: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
     command_code: CommandCode | None = attrs.field(default=None)
-    field_value_dict: Dict[EFieldName, Any] = attrs.field(default={})
+    field_value_dict: Dict[IEFieldName, Any] = attrs.field(default={})
     # received_timestamp: float = attrs.field(factory=time.time, init=False, on_setattr=attrs.setters.NO_OP)
 
+    @property
     def is_error_msg(self) -> bool:
         return self.command_code is not None and self.command_code.value >= 20000
-
-    @property
-    def value_dict(self) -> Dict[str, Any]:
-        return { k.value: v for k, v in self.field_value_dict.items() }
 
 
 @attrs.define()
@@ -39,17 +34,18 @@ class AfterConverter:
 @attrs.define()
 class AnswerValidator:
     pattern: str = attrs.field(on_setattr=attrs.setters.NO_OP)
+    field_name_enum: type[IEFieldName] = attrs.field(on_setattr=attrs.setters.NO_OP)
     _named_pattern: str = attrs.field(init=False)
-    _converters: Dict[EFieldName, Converter] = attrs.field(init=False, repr=False)
-    _after_converters: Dict[EFieldName, AfterConverter] = attrs.field(init=False, repr=False)
+    _converters: Dict[IEFieldName, Converter] = attrs.field(init=False, repr=False)
+    _after_converters: Dict[IEFieldName, AfterConverter] = attrs.field(init=False, repr=False)
     _compiled_pattern: re.Pattern[str] = attrs.field(init=False, repr=False)
-    _field_names: Dict[str, EFieldName] = attrs.field(init=False, default={})
 
 
     def __init__(
         self,
         pattern: str,
-        field_converters: Dict[EFieldName, Converter | AfterConverter] = {},
+        field_name_enum: type[IEFieldName],
+        field_converters: Dict[IEFieldName, Converter | AfterConverter] = {},
     ) -> None:
         """
         Initializes the CommandValidator instance with the specified pattern and converters.
@@ -81,8 +77,8 @@ class AnswerValidator:
         Returns:
             None
         """
-        workers: dict[EFieldName, Converter] = dict()
-        after_workers: dict[EFieldName, AfterConverter] = dict()
+        workers: dict[IEFieldName, Converter] = dict()
+        after_workers: dict[IEFieldName, AfterConverter] = dict()
 
         for keyword, worker in field_converters.items():
             if isinstance(worker, AfterConverter):
@@ -92,12 +88,13 @@ class AnswerValidator:
             workers[keyword] = worker
         
         self.pattern = pattern
+        self.field_name_enum = field_name_enum
         self._converters = workers
         self._after_converters = after_workers
-        self._field_names = [field_name.value for field_name in self._converters.keys()]
+        field_names = [field_name.name for field_name in self._converters.keys()]
             
         self._named_pattern = self.generate_named_pattern(
-            pattern=self.pattern, keywords=self._field_names
+            pattern=self.pattern, keywords=field_names
         )
         self._compiled_pattern = re.compile(
             pattern=self._named_pattern,
@@ -135,6 +132,9 @@ class AnswerValidator:
         
         keyword_iter = iter(keywords)
         segments = re.split(r"(\(.*?\))", pattern)
+        if len(segments) != (2 * len(keywords)) + 1:
+            # TODO @Thomas add documentation why this is needed
+            segments = AnswerValidator.split_top_level_groups(pattern)
         processed = "".join(
             (
                 f"(?P<{next(keyword_iter)}>{segment[1:-1]})"
@@ -147,6 +147,39 @@ class AnswerValidator:
         assert (next(keyword_iter, None) is None)
 
         return processed
+    
+    @staticmethod
+    def split_top_level_groups(pattern):
+        segments = []
+        buffer = ''
+        depth = 0
+
+        for i, char in enumerate(pattern):
+            if char == '(':
+                if depth == 0 and buffer:
+                    segments.append(buffer)
+                    buffer = ''
+                depth += 1
+            elif char == ')':
+                depth -= 1
+            elif char == '#' and depth == 0:
+                if buffer:
+                    segments.append(buffer)
+                    buffer = ''
+                segments.append('#')
+                continue
+
+            buffer += char
+
+        if buffer:
+            segments.append(buffer)
+
+        # Ensure the pattern starts and ends with ''
+        segments = [''] + segments
+        segments.append('')
+
+        return segments
+
 
     def validate(self, data: str) -> Answer:
         """
@@ -160,13 +193,14 @@ class AnswerValidator:
             bool: True if the data matches the pattern and conversions are successful, False otherwise.
         """
 
+        #logging.info("Searching: %s", data)
         result: Optional[re.Match] = self._compiled_pattern.search(data)
         if result is None:
             return Answer(data, False, True)
 
-        result_dict: Dict[EFieldName, Any] = {}
+        result_dict: Dict[IEFieldName, Any] = {}
         for keyword, value in result.groupdict().items():
-            field_name = EFieldName(keyword)
+            field_name = self.field_name_enum[keyword.upper()]
             converter = self._converters[field_name]
 
             if not converter.validate_str(value):
@@ -182,5 +216,5 @@ class AnswerValidator:
             result_dict[field_name] = worker.convert_func(kwargs)
 
         answer = Answer(data, True, True, field_value_dict=result_dict)
-
+        #logging.info("AnswerValidator: %s", answer)
         return answer

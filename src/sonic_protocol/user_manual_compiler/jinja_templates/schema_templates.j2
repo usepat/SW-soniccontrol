@@ -1,0 +1,182 @@
+{% import "modbus_api.j2" as modbus %}
+
+
+{% macro field_entry(field_name, field_type, description) %}
+    <div class="bg-white border border-slate-100 rounded-lg p-4 mb-4">
+        <h5 class="text-sm font-semibold text-slate-800 mb-1">{{ field_name.name }}</h5>
+
+        <p class="text-sm text-slate-600 mb-1">type:
+            <b class="text-slate-800">
+            {% if field_type.converter_ref == ConverterType.ENUM %}
+                enum
+            {% elif field_type.converter_ref != ConverterType.PRIMITIVE %}
+                struct
+            {% endif %}
+            {{ field_type.field_type.__name__ }}
+            </b>
+        </p>
+
+        {% set unit_prefix = field_type.si_prefix.value if field_type.si_prefix is not none else "" %}
+        {% set si_unit = field_type.si_unit.value if field_type.si_unit is not none else "" %}
+        {% set unit = unit_prefix ~ si_unit %}
+        {% if unit != "" %}
+            <p class="text-sm text-slate-600 mb-2">unit: <b class="text-slate-800">{{ unit }}</b></p>
+        {% endif %}
+        
+        <div class="text-sm text-slate-600 mb-2">
+            {% set has_min_value = field_type.min_value is not none %}
+            {% set has_max_value = field_type.max_value is not none %}
+            {% set has_constraints = has_min_value or has_max_value or field_type.allowed_values is not none %}
+
+            {% if has_constraints %}
+                <div class="mb-2 font-medium text-slate-700">allowed values:</div>
+
+                {% if has_max_value or field_type.max_value is not none %}
+                    <div class="mb-1">
+                        Range
+                        from <span class="font-mono text-slate-800">{{ protocol_constants[field_type.min_value.value] if has_min_value else "[type dependent min value]" }}</span>
+                        to <span class="font-mono text-slate-800">{{ protocol_constants[field_type.max_value.value] if has_max_value else "[type dependent max value]" }}</span>
+                    </div>
+                {% endif %}
+                {% if field_type.allowed_values is not none %}
+                    <ul class="list-disc pl-6">
+                        {% for value in field_type.allowed_values %}
+                            <li class="text-sm">{{ value }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        {% if description is not none %}
+            <p class="text-sm text-slate-600 mt-2">{{ description }}</p>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+
+{% macro param_entry(command_param) %}
+    {{ field_entry(command_param.name, command_param.param_type, command_param.user_manual_attrs.description) }}
+{% endmacro %}
+
+{% macro answer_field_entry(answer_field_def) %}
+    {{ field_entry(answer_field_def.field_name, answer_field_def.field_type, answer_field_def.user_manual_attrs.description) }}
+{% endmacro %}
+
+
+{% macro command_code_headline(command_code) %}
+    <h3 class="text-base font-semibold text-slate-800 mb-3">
+        <span class="inline-block font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mr-3">{{ command_code.value }}</span>
+        <span>{{ command_code.name }}</span>
+    </h3>
+{% endmacro %}
+
+{% macro command_contract_entry(command_contract) %}
+    <article class="bg-white border border-slate-100 rounded-lg p-4 shadow-sm mb-6">
+        {{ command_code_headline(command_contract.code) }}
+        
+        {% if command_contract.tags|count != 0 %}
+            <div class="mt-2 flex items-center gap-3">
+                <div class="text-sm text-slate-600 whitespace-nowrap">Tags:</div>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                    {% for tag in command_contract.tags %}
+                        <span class="whitespace-nowrap text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if command_contract.user_manual_attrs.description is not none %}
+            <p class="text-sm text-slate-600 mb-3">{{command_contract.user_manual_attrs.description}}</p>
+        {% endif %}
+
+        {% if command_contract.command_def is not none %}
+            <h4 class="text-sm font-medium text-slate-800 mb-2">Parameters:</h4>
+            {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] %}
+            {% if any(command_parameters) %}
+                <ol class="list-decimal pl-6 mb-3">
+                {% for command_param in command_parameters %}
+                    {% if command_param is not none %}
+                        <li class="mb-2">
+                            {{ param_entry(command_param) }}
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                </ol>
+            {% else %}
+                <p class="text-sm text-slate-600 mb-3">Has no parameters</p>
+            {% endif %}
+        {% endif %}
+
+        <h4 class="text-sm font-medium text-slate-800 mb-2">Answer fields:</h4>
+        <ol class="list-decimal pl-6 mb-4">
+        {% for answer_field_def in command_contract.answer_def.fields %}
+            <li class="mb-3">
+                {{ answer_field_entry(answer_field_def) }}
+            </li>
+        {% endfor %}
+        </ol>
+
+        <h4 class="text-sm font-medium text-slate-800 mb-2 mt-12">Modbus API</h4>
+        {% set is_notification = command_contract.command_def is none and command_contract.code.value < 20000 %}
+        {% if is_notification %}
+            <p class="text-sm text-slate-600">Notification messages are not supported for MODBUS.</p>
+        {% else %}
+            <div class="mb-12">
+                <p class="text-sm text-slate-600 mb-2">Command Call Memory Layout:</p>
+                {% if command_contract.command_def is not none %}
+                    {{ modbus.modbus_layout(command_contract.code, command_contract.command_def.field_defs()) }}
+                {% endif %}
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 mt-4">
+                <p class="text-sm text-slate-600 mb-2">Answer Memory Layout:</p>
+                {{ modbus.modbus_layout(command_contract.code, command_contract.answer_def.field_defs()) }}
+            </div>
+        {% endif %}
+
+        <h4 class="text-sm font-medium text-slate-800 mb-2 mt-12">Text-based API</h4>
+        {% if command_contract.command_def is not none %}
+            <p class="text-sm text-slate-600 mb-2">Command names:
+                <ul class="list-disc pl-6">
+                {% for identifier in command_contract.command_def.sonic_text_attrs.string_identifier %}
+                    <li>{{ identifier }}</li>
+                {% endfor %}
+                </ul>
+            </p>
+        {% endif %}
+    </article>
+{% endmacro %}
+
+
+{% macro enum_class_entry(enum_class) %}
+    <section class="bg-white border border-slate-100 rounded-lg p-4 mb-6 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <h4 class="text-sm font-semibold text-slate-800">{{ enum_class.__name__ }}</h4>
+            <span class="text-xs text-slate-500">{{ enum_class|length }} entries</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+            <colgroup>
+                <col class="w-[10%]" />
+                <col class="w-[90%]" />
+            </colgroup>
+                <thead class="text-left text-xs text-slate-600">
+                    <tr>
+                        <th class="pr-4">Index</th>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i, enum_member in enumerate(enum_class) %}
+                        <tr class="border-t border-slate-100">
+                            <td class="py-2 pr-4 font-mono text-slate-800">{{ i }}</td>
+                            <td class="py-2 text-slate-800">{{ enum_member.name }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endmacro %}

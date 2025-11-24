@@ -15,6 +15,7 @@ class Text:
     text: str = attrs.field()
     font: str = attrs.field(default=fonts.QTYPE_OT)
     font_size: int = attrs.field(default=fonts.TEXT_SIZE)
+    selectable: bool = attrs.field(default=False)
 
 @attrs.define()
 class Image:
@@ -60,14 +61,30 @@ class DocumentView(View):
                     justify=ttk.LEFT
                 )
             elif isinstance(element, Text):
-                uielement = ttk.Label(
-                    self, 
-                    text=element.text,
-                    font=(element.font, element.font_size),
-                    wraplength=self._wraplength,
-                    anchor=ttk.W,
-                    justify=ttk.LEFT
-                )
+                if element.selectable:
+                    # Create a read-only Text widget for selectable/copyable text
+                    uielement = ttk.Text(
+                        self,
+                        height=1,  # Single line height
+                        wrap=ttk.WORD,
+                        state=ttk.NORMAL,
+                        cursor="xterm",  # Text cursor to indicate selectability
+                        font=(element.font, element.font_size),
+                        relief=ttk.FLAT,  # Remove border to look like a label
+                        borderwidth=0,
+                        highlightthickness=0
+                    )
+                    uielement.insert("1.0", element.text)
+                    uielement.configure(state=ttk.DISABLED)  # Make read-only after inserting text
+                else:
+                    uielement = ttk.Label(
+                        self, 
+                        text=element.text,
+                        font=(element.font, element.font_size),
+                        wraplength=self._wraplength,
+                        anchor=ttk.W,
+                        justify=ttk.LEFT
+                    )
             elif isinstance(element, Image):
                 uielement = ttk.Label(
                     self, 
@@ -75,7 +92,7 @@ class DocumentView(View):
                     wraplength=self._wraplength,
                     anchor=ttk.CENTER,
                     justify=ttk.CENTER,
-                    image=ImageLoader.load_image_resource(element.image_path, element.image_size)
+                    image=ImageLoader.load_image_resource(str(element.image_path), element.image_size)
                 )
             uielement.grid(
                 row=index + 1,

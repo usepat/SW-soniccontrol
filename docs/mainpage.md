@@ -5,7 +5,9 @@
 - [README](../README.md)
 - @subpage ProjectSetup
 - @subpage Requirements
+- @subpage Tutorial
 - @subpage SonicControl
-- @subpage SonicControlGui
-- @subpage SonicControlCli
 - @subpage SonicProtocol
+- @subpage SonicControlGui
+- @subpage sonic_control_cli
+- @subpage Testing

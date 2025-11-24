@@ -10,7 +10,6 @@ class _Resources:
     PICTURES = rs.files("soniccontrol_gui.resources.pictures")
     FONTS = rs.files("soniccontrol_gui.resources.fonts")
     TEXTS = rs.files("soniccontrol_gui.resources.texts")
-    HELPTEXT_SONIC_V1 = Path(str(TEXTS.joinpath("helpttext_sonic_v1.md")))
     HELPTEXT_INTERNAL_COMMANDS = Path(str(TEXTS.joinpath("helptext_internal_commands.md")))
 
 
@@ -49,7 +48,7 @@ class _Images:
     END_ICON_WHITE = "end_icon_white.png"
     END_ICON_BLACK = "end_icon_black.png"
     
-    LOGO = "usepat_logo.png"
+    LOGO = "usepat_neu-4c-mSL.png"
 
     HOME_CONTROL_PANEL = "home_control_panel.png"
     HOME_SIGNAL_CONTROL_PANEL = "home_signal_control_panel.png"

@@ -3,132 +3,106 @@
 set separator . 
 top to bottom direction
 
-class "ConnectionFactory" as soniccontrol.communication.connection_factory.ConnectionFactory {
-  {abstract}open_connection() -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]
-}
 
 class "CLIConnectionFactory" as soniccontrol.communication.connection_factory.CLIConnectionFactory {
   open_connection() -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]
 }
 
-class "SerialConnectionFactory" as soniccontrol.communication.connection_factory.SerialConnectionFactory {
-  open_connection() -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]
-}
 
-class "EventManager" as soniccontrol.events.EventManager {
-  emit(event: Event) -> None
-  subscribe(event_type: str, listener: Callable[[Event], None]) -> None
-  subscribe_property_listener(property_name: str, listener: Callable[[PropertyChangeEvent], None]) -> None
+class "CommunicationProtocol" as soniccontrol.communication.message_protocol.CommunicationProtocol {
+  major_version
+  separator
+  {abstract}parse_request(request: str, request_id: int) -> Any
+  {abstract}parse_response(response: str) -> Any
+  {abstract}prot_type() -> ProtocolType
 }
-
 class "Communicator" as soniccontrol.communication.communicator.Communicator {
   DISCONNECTED_EVENT : str
   connection_opened
   handshake_result
   protocol
-  {abstract}close_communication() -> None
-  {abstract}open_communication(connection_factory: ConnectionFactory)
+  reader
+  writer
+  {abstract}change_baudrate(baudrate: int) -> None
+  {abstract}close_communication(restart: bool) -> None
+  {abstract}open_communication(connection_factory: ConnectionFactory, baudrate: int)
   {abstract}read_message() -> str
-  {abstract}send_and_wait_for_answer(message: Sendable) -> None
+  {abstract}send_and_wait_for_response(request: str) -> str
+}
+class "CommunicatorBuilder" as soniccontrol.communication.communicator_builder.CommunicatorBuilder {
+  build(connection_factory: ConnectionFactory, logger: logging.Logger) -> Communicator
+}
+class "ConnectionFactory" as soniccontrol.communication.connection_factory.ConnectionFactory {
+  {abstract}open_connection() -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]
 }
 
+class "LegacyProtocol" as soniccontrol.communication.message_protocol.LegacyProtocol {
+  major_version
+  separator
+  parse_request(request: str, request_id: int) -> Any
+  parse_response(response: str) -> str
+  {abstract}prot_type() -> ProtocolType
+}
 class "LegacySerialCommunicator" as soniccontrol.communication.serial_communicator.LegacySerialCommunicator {
-  BAUDRATE : int
   connection_closed
   connection_opened
   handshake_result
   protocol
-  close_communication() -> None
-  open_communication(connection_factory: ConnectionFactory) -> None
-  read_long_message(response_time: float, reading_time: float) -> List[str]
+  reader
+  writer
+  change_baudrate(baudrate: int) -> None
+  close_communication(restart: bool) -> None
+  open_communication(connection_factory: ConnectionFactory, baudrate: int) -> None
+  read_long_message(response_time: float, reading_time: float) -> str
   read_message() -> str
-  send_and_wait_for_answer(command: Command) -> None
+  send_and_wait_for_response(request: str) -> str
 }
-
-class "PackageFetcher" as soniccontrol.communication.package_fetcher.PackageFetcher {
+class "MessageFetcher" as soniccontrol.communication.message_fetcher.MessageFetcher {
   is_running
-  get_answer_of_package(package_id: int) -> str
+  get_answer_of_request(request_id: int) -> str
   pop_message() -> str
   run() -> None
   stop() -> None
 }
 
 class "SerialCommunicator" as soniccontrol.communication.serial_communicator.SerialCommunicator {
-  BAUDRATE : int
+  MESSAGE_ID_MAX_CLIENT : Final[int]
   connection_opened
   handshake_result
   protocol
-  close_communication() -> None
-  open_communication(connection_factory: ConnectionFactory, loop) -> None
+  reader
+  writer
+  change_baudrate(baudrate: int) -> None
+  close_communication(restart: bool) -> None
+  open_communication(connection_factory: ConnectionFactory, baudrate) -> None
   read_message() -> str
-  send_and_wait_for_answer(command: Command) -> None
+  send_and_wait_for_response(request: str) -> str
 }
-
-class "CommunicationProtocol" as soniccontrol.communication.sonicprotocol.CommunicationProtocol {
-  end_symbol
-  major_version
-  max_bytes
-  start_symbol
-  {abstract}parse_request(request: str, request_id: int) -> Any
-  {abstract}parse_response(response: str) -> Any
-  {abstract}prot_type() -> ProtocolType
+class "SerialConnectionFactory" as soniccontrol.communication.connection_factory.SerialConnectionFactory {
+  open_connection() -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]
 }
-
-class "LegacySonicProtocol" as soniccontrol.communication.sonicprotocol.LegacySonicProtocol {
-  end_symbol
-  major_version
-  max_bytes
-  start_symbol
-  parse_request(request: str, request_id: int) -> Any
-  parse_response(response: str) -> str
-  {abstract}prot_type() -> ProtocolType
-}
-
-class "SonicProtocol" as soniccontrol.communication.sonicprotocol.SonicProtocol {
+class "SonicMessageProtocol" as soniccontrol.communication.message_protocol.SonicMessageProtocol {
+  ANSWER_PREFIX : str
+  COMMAND_PREFIX : str
   LOG_PREFIX : str
-  end_symbol
   major_version
-  max_bytes
-  start_symbol
+  separator
   parse_request(request: str, request_id: int) -> str
-  parse_response(response: str) -> tuple[int, str]
+  parse_response(response: str) -> tuple[int, str | None]
   {abstract}prot_type() -> ProtocolType
 }
-
-class "PackageParser" as soniccontrol.communication.package_parser.PackageParser {
-  end_symbol : str
-  max_bytes : int
-  start_symbol : str
-  parse_package(data: str) -> Package
-  write_package(package: Package) -> str
-}
-
-class "Package" as soniccontrol.communication.package_parser.Package {
-  content : str
-  destination : str
-  identifier : int
-  length
-  source : str
-}
-
-class "CommunicatorBuilder" as soniccontrol.communication.communicator_builder.CommunicatorBuilder {
-  build(connection_factory: ConnectionFactory, logger: logging.Logger) -> tuple[Communicator, Union[CommandSet, CommandSetLegacy]]
-}
-
-soniccontrol.communication.connection_factory.CLIConnectionFactory -d-|> soniccontrol.communication.connection_factory.ConnectionFactory
-soniccontrol.communication.connection_factory.SerialConnectionFactory -d-|> soniccontrol.communication.connection_factory.ConnectionFactory
-soniccontrol.communication.serial_communicator.LegacySerialCommunicator -d-|> soniccontrol.communication.communicator.Communicator
-soniccontrol.communication.serial_communicator.SerialCommunicator -d-|> soniccontrol.communication.communicator.Communicator
-soniccontrol.communication.sonicprotocol.LegacySonicProtocol -d-|> soniccontrol.communication.sonicprotocol.CommunicationProtocol
-soniccontrol.communication.sonicprotocol.SonicProtocol -d-|> soniccontrol.communication.sonicprotocol.CommunicationProtocol
-soniccontrol.communication.communicator.Communicator -d-|> soniccontrol.events.EventManager
-soniccontrol.communication.serial_communicator.SerialCommunicator *-u- soniccontrol.communication.package_fetcher.PackageFetcher : _package_fetcher
-soniccontrol.communication.serial_communicator.LegacySerialCommunicator *-u- soniccontrol.communication.sonicprotocol.LegacySonicProtocol : _protocol
-soniccontrol.communication.serial_communicator.SerialCommunicator *-u- soniccontrol.communication.sonicprotocol.SonicProtocol : _protocol
-soniccontrol.communication.package_fetcher.PackageFetcher o-u- soniccontrol.communication.sonicprotocol.SonicProtocol : _protocol
-soniccontrol.communication.communicator.Communicator *-l- soniccontrol.communication.connection_factory.ConnectionFactory
-soniccontrol.communication.communicator.Communicator <.l. soniccontrol.communication.communicator_builder.CommunicatorBuilder
-soniccontrol.communication.connection_factory.ConnectionFactory <.[hidden]. soniccontrol.communication.communicator_builder.CommunicatorBuilder
-soniccontrol.communication.sonicprotocol.SonicProtocol .u.> soniccontrol.communication.package_parser.PackageParser
-
+soniccontrol.communication.connection_factory.CLIConnectionFactory --|> soniccontrol.communication.connection_factory.ConnectionFactory
+soniccontrol.communication.connection_factory.SerialConnectionFactory --|> soniccontrol.communication.connection_factory.ConnectionFactory
+soniccontrol.communication.message_protocol.LegacyProtocol --|> soniccontrol.communication.message_protocol.CommunicationProtocol
+soniccontrol.communication.message_protocol.SonicMessageProtocol --|> soniccontrol.communication.message_protocol.CommunicationProtocol
+soniccontrol.communication.serial_communicator.LegacySerialCommunicator --|> soniccontrol.communication.communicator.Communicator
+soniccontrol.communication.serial_communicator.SerialCommunicator --|> soniccontrol.communication.communicator.Communicator
+soniccontrol.communication.message_fetcher.MessageFetcher --* soniccontrol.communication.serial_communicator.SerialCommunicator : _package_fetcher
+soniccontrol.communication.message_protocol.CommunicationProtocol --* soniccontrol.communication.serial_communicator.LegacySerialCommunicator : _protocol
+soniccontrol.communication.message_protocol.CommunicationProtocol --* soniccontrol.communication.serial_communicator.SerialCommunicator : _protocol
+soniccontrol.communication.message_protocol.SonicMessageProtocol --* soniccontrol.communication.serial_communicator.SerialCommunicator : _protocol
+soniccontrol.communication.connection_factory.ConnectionFactory --o soniccontrol.communication.serial_communicator.LegacySerialCommunicator : _connection_factory
+soniccontrol.communication.connection_factory.ConnectionFactory --o soniccontrol.communication.serial_communicator.SerialCommunicator : _connection_factory
+soniccontrol.communication.message_protocol.SonicMessageProtocol --o soniccontrol.communication.message_fetcher.MessageFetcher : _protocol
+soniccontrol.communication.communicator_builder.CommunicatorBuilder .r.> soniccontrol.communication.communicator.Communicator
 @enduml

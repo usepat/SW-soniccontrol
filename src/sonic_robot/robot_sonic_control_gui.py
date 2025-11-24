@@ -7,15 +7,23 @@ import ttkbootstrap as ttk
 from robot.api.deco import keyword, library
 import robot.api.logger as logger
 from ttkbootstrap.utility import enable_high_dpi_awareness
+from soniccontrol_gui.plugins.device_plugin import register_device_plugins
+from soniccontrol_gui.view import TabView
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
-from soniccontrol.system import PLATFORM, System
+from soniccontrol.app_config import PLATFORM, System
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry, get_text_of_widget, set_text_of_widget
+from soniccontrol_gui.widgets.notebook import Notebook
 
 
+# We want Suite as scope, so that the gui can be used across tests
+# Because opening the app is time consuming
 @library(auto_keywords=False, scope="SUITE")
 class RobotSonicControlGui:
     def __init__(self):
+        register_device_plugins()
         self._root: Optional[tk.Tk | tk.Toplevel] = None
+        # Because robot is sync and the gui async, 
+        # we have to embed the gui calls in the asyncio event loop
         self._loop = asyncio.get_event_loop()
 
     @keyword('Open app')
@@ -35,10 +43,11 @@ class RobotSonicControlGui:
         self._loop.run_until_complete(WidgetRegistry.clean_up()) # Maybe we can do this better. But Idk
         self._root.destroy()
 
-    @keyword('Let the app run free for "${time_ms}" ms')
-    def run_free(self, time_ms: int):
+    @keyword('Let the app update for "${time_ms}" ms')
+    def sleep_update(self, time_ms: int):
         """
-        This shit is needed, because the sleep function of the robot framework pauses the whole application
+        This shit is needed, because the sleep function of the robot framework pauses the whole application,
+        also the execution of the asyncio event loop
         """
         self._loop.run_until_complete(asyncio.sleep(time_ms / 1000))
 
@@ -90,4 +99,27 @@ class RobotSonicControlGui:
         else:
             raise TypeError(f"The registered object '{name_widget}' is not a button")
         
+    @keyword('Switch to tab "${tab_widget}"')
+    def switch_to_tab(self, tab_widget: str) -> None:
+        tab_view = WidgetRegistry.get_widget(tab_widget)
+        if not isinstance(tab_view, TabView):
+            raise TypeError(f"The registered object '{tab_widget}' is not a tab view")
+
+        parent_name = tab_widget.split(".")[0]
+        notebook = WidgetRegistry.get_widget(parent_name)
+        if not isinstance(notebook, (Notebook, ttk.Notebook)):
+            raise TypeError(f"The registered object '{parent_name}' is not a notebook")
+        notebook.select(tab_view)
+
+    @keyword('Get text of "${index_child}"th child of widget "${name_widget}"')
+    def get_text_of_widget_child(self, index_child: int, name_widget: str) -> str:   
+        """
+            @brief gets the text of the ith child of the widget.
+            @usage Useful for inspecting the monitor tab.
+        """      
+        widget = WidgetRegistry.get_widget(name_widget)
+        assert isinstance(widget, tk.Widget), "widget has to be an instance or subclass of tk.Widget"
+        child = widget.winfo_children()[index_child]
+        return get_text_of_widget(child)             
+
 

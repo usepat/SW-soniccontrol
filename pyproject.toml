@@ -25,14 +25,18 @@ dynamic = ["version", "dependencies"]
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
-[project.gui-scripts]
-soniccontrol = "soniccontrol_gui:start_gui"
+[project.scripts]
+soniccontrol_cli = "soniccontrol_cli:cli"
+sonic_api_manual_builder = "sonic_protocol:build_manual"
+
+[project.gui-scripts] # makes only a difference for windows. (Does not open a terminal, when executing the exe file)
+soniccontrol_gui = "soniccontrol_gui:start_gui"
 
 [build-system]
 requires = [
-    "setuptools>=42", 
+    "setuptools>=61.0", 
     "wheel", 
-    "setuptools-git-versioning>=2.0,<3",
+    "setuptools-git-versioning>=2.0,<3"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -47,11 +51,10 @@ where = ["src"]
 [tool.setuptools.package-data]
 "*" = ["*.*"] 
 
+
 # We use this to automatically get the version from the git tags
 [tool.setuptools-git-versioning]
 enabled = true
-
-# Setup testing
 
 [project.optional-dependencies]
 testing = [

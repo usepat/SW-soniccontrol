@@ -1,0 +1,197 @@
+{% import "schema_templates.j2" as schema_templates %}
+{% import "modbus_api.j2" as modbus %}
+
+{# 
+  Expected variables:
+    - pure_command_contracts: List[CommandContract]
+    - error_codes: List[CommandCode]
+    - notification_messages: List[CommandContract]
+    - custom_enums: List[Type[Enum]]
+
+ Expected globals:
+    - protocol_constants: Dict[str, Any]
+#}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UsePAT API Reference</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+    <header class="bg-white border-b border-slate-200">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-indigo-600 text-white font-bold rounded flex items-center justify-center">UP</div>
+                <div>
+                    <h1 class="text-lg font-semibold">UsePAT API Reference</h1>
+                    <p class="text-sm text-slate-500">Remote Procedure Protocol</p>
+                </div>
+            </div>
+            <nav class="text-sm text-slate-600 space-x-4">
+                <a class="hover:text-indigo-600" href="#introduction">Introduction</a>
+                <a class="hover:text-indigo-600" href="#modbus">MODBUS API</a>
+                <a class="hover:text-indigo-600" href="#text-api">Text-based API</a>
+                <a class="hover:text-indigo-600" href="#types">Types</a>
+                <a class="hover:text-indigo-600" href="#commands">Commands</a>
+                <a class="hover:text-indigo-600" href="#errors">Errors</a>
+                <a class="hover:text-indigo-600" href="#notifications">Notifications</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        <section id="introduction" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+            <h2 class="flex items-center text-2xl font-semibold gap-3">
+                <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Introduction</span>
+            </h2>
+
+            <h3 class="flex items-center text-lg font-semibold gap-3 mt-4">
+                <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>How this API is structured</span>
+            </h3>
+            <p><strong>Our Application Programming Interface (API) is designed to be a Remote Procedure Protocol (RPC).</strong></p>
+            <p>That means that we define a set of functions (called commands in this documentation) that our devices can execute. Those commands, can be invoked by sending a command call over a request. As response the device will then return an appropriate answer object. Such an answer object consists of single fields, that have a type, a name and a value. If the device fails executing the command, it will return an error as answer.</p>
+
+            <p>The device is also able to produce logs and notification messages and send them directly to the remote controller. However Logs and notification messages are not sent, when a master-slave-based protocol like MODBUS is used.</p>
+
+            <p>The API can be used with various underlying protocols. There exists a text-based human-readable protocol that is used together with our in-house Software Sonic Control. The only other protocol supported (so far) is MODBUS-RTU.</p>
+        </section>
+
+        <section id="modbus" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+            <h3 class="flex items-center text-lg font-semibold gap-3">
+                <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>MODBUS API</span>
+            </h3>
+            <p><strong>MODBUS is a protocol that defines how a master client reads and writes memory buffers on a slave server.</strong></p>
+
+            <p>We use a "mailbox" system to implement our RPC protocol. A mailbox is a memory section to that can be written or read. We define a command call mailbox, to that the command call has to be written and an answer mailbox, in that the device will put the answer. A command call consists of the code for the specific command, followed by the arguments passed. Similarly the answer consists of the same code followed by data fields. In case of an error, the code is not the same command code, but an error code. Error codes are in the range from 20000 to 32767 (int16 maximum value). Additionally an error message is supplied afterwards.</p>
+
+            <p>Therefore we support only the MODBUS functions write multiple holding registers (0x10) and read input registers (0x04). And we only allow to read and write from the mailboxes. Where the answer mailbox is read only.</p>
+
+            <p>The start of the command mailbox contains an "execute command" flag, that has to be set to 1, after the command call has been written. This is needed to signal to the device, that it can read and execute the command now. The flag and command call can be written in a single MODBUS write multiple registers function call.</p>
+
+            <p>The start of the answer mailbox contains a "status" flag. This can either be "busy" or "idle/done". Also this flag is followed by a answer length field. This is handy, because answers vary in size.</p>
+        </section>
+
+        <section id="text-api" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+            <h3 class="flex items-center text-lg font-semibold gap-3">
+                <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Text-based API</span>
+            </h3>
+            <p><strong>The text-based API is used by our in house Software Sonic Control.</strong></p>
+
+            <p>It is good for debugging, because of the human readable messages. Also with it the device can be directly controlled over a serial monitor like minicom.</p>
+
+            <p>In general for each command exists a command name (often also multiple aliases, like a short form and a long form). The signs "?", "!", "-", "=" can be the first character of a command name. For example "?frequency" for getting the current frequency of the transducer. Some commands require an index argument that has to be written inside brackets "command_name[arg]". Some commands require a setter argument, that has to be written after an equal sign "command_name=arg". Some commands require both args "command_name[arg_index]=arg_setter". Some commands require none "command_name".</p>
+
+            <p>To signal the end of a command call "\n\r" is used. The same goes for answers.</p>
+
+            <p>Answers consists of their fields separated by a single sharp sign "#". The first field always contains the corresponding command code or error code. For example the answer for the "?frequency" command would be "&lt;COMMAND CODE&gt;#Freq: &lt;FREQUENCY VALUE&gt;Hz".</p>
+
+            <p>Notifications have the completely same format as answers. The format of logs is subject to change in the future.</p>
+
+            <p>Each message is preceded by a message type prefix.</p>
+            <ul class="list-disc pl-6">
+                <li><code>LOG=</code> for logs</li>
+                <li><code>NOTIFY=</code> for notification messages</li>
+                <li><code>COM#&lt;ID&gt;=</code> for command calls. (It is allowed to omit this, in that case ID is set to 0).</li>
+                <li><code>ANS#&lt;ID&gt;=</code> for answers. The ID matches that of the command call. Useful for async code.</li>
+            </ul>
+
+            <p>The ID is used by the Software "Sonic Control" to find out which answer belongs to which command call (useful for async code).</p>
+        </section>
+
+        <section id="types" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+            <h2 class="flex items-center text-2xl font-semibold gap-3">
+                <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Types</span>
+            </h2>
+            <p>The primitive types used by the API are bool, uint8, uint16, uint32, int16, float. Complex types used are strings, enums and structs for Version and Timestamp, which are explained here in more detail.</p>
+
+            <h3 class="flex items-center text-lg font-semibold gap-3">
+                <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Version</span>
+            </h3>
+            <p>Version consists of the member variables major_version, minor_version and patch_version. It follows the conventional versioning schema.</p>
+
+            <h3 class="flex items-center text-lg font-semibold gap-3">
+                <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Timestamp</span>
+            </h3>
+            <p>The timestamp consists of the members variables: hour, minute, seconds, day, month and year.</p>
+
+            <h3 class="flex items-center text-lg font-semibold gap-3">
+                <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Enums</span>
+            </h3>
+            <div>
+                {% for enum_class in enum_classes %}
+                    {{ schema_templates.enum_class_entry(enum_class) }}
+                {% endfor %}
+            </div>
+        </section>
+
+        <section id="commands" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+            <h2 class="flex items-center text-2xl font-semibold gap-3">
+                <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Commands</span>
+            </h2>
+            <div>
+                {% for command_contract in pure_command_contracts | sort(attribute="code") %} 
+                    {# pure_command_contracts should only contain command contracts that are not notifications or errors #}
+                    {{ schema_templates.command_contract_entry(command_contract )}}
+                {% endfor %}
+            </div>
+        </section>
+
+        <section id="errors" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+            <h2 class="flex items-center text-2xl font-semibold gap-3">
+                <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Errors</span>
+            </h2>
+            <div>
+                {% for error_code in error_codes | sort(attribute="value") %}
+                    {{ schema_templates.command_code_headline(error_code) }}
+                {% endfor %}
+            </div>
+
+            <h3 class="flex items-center text-lg font-semibold gap-3 mt-4">
+                <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Modbus API</span>
+            </h3>
+            <p>Memory Layout:</p>
+            <div>
+                {{ modbus.error_memory_layout() }}
+            </div>
+        </section>
+
+        <section id="notifications" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+            <h2 class="flex items-center text-2xl font-semibold gap-3">
+                <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Notifications</span>
+            </h2>
+            <div>
+                {% for notification in notification_messages | sort(attribute="code") %}
+                    {{ schema_templates.command_contract_entry(notification )}}
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <footer class="max-w-6xl mx-auto px-6 py-6 text-sm text-slate-500">
+        <div class="flex justify-between items-center">
+            <div>Generated by UsePAT</div>
+            <div>&copy; {{ now().year }}</div>
+        </div>
+    </footer>
+
+    <style>
+        pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Source Code Pro", monospace; }
+        .prose code { background: rgba(15,23,42,0.05); padding: .1rem .3rem; border-radius: .25rem; }
+    </style>
+</body>
+</html>

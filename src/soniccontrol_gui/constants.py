@@ -2,7 +2,7 @@ from typing import Final, List, Literal
 
 import attrs
 
-from soniccontrol.system import PLATFORM, create_appdata_directory
+from soniccontrol.app_config import APP_DATA_DIR, SONIC_CONTROL_BASE_DIR
 from soniccontrol_gui.utils.types import ScriptingGuideCardDataDict
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol.procedures.procedure_controller import ProcedureController
@@ -22,12 +22,27 @@ tk_const: Final[_TkinterConstants] = _TkinterConstants()
 
 @attrs.frozen
 class _Files:
-    DATA_DIR =  create_appdata_directory(PLATFORM, "SonicControl")
+    DATA_DIR =  APP_DATA_DIR
     LOG_DIR = DATA_DIR / "logs"
-    TRANSDUCDER_CONFIG_JSON = DATA_DIR / "transducer_configs.json"
+    MEASUREMENTS_DIR = DATA_DIR / "measurements"
+    TRANSDUCER_CONFIG_FOLDER = DATA_DIR / "transducer_configs"
+    LEGACY_TRANSDUCER_CONFIG_FOLDER = DATA_DIR / "legacy_transducer_configs"
+    LEGACY_TRANSDUCER_CONFIG_JSON = LEGACY_TRANSDUCER_CONFIG_FOLDER / "template.json"
+    TRANSDUCER_CONFIG_JSON = TRANSDUCER_CONFIG_FOLDER / "template.json"
+    EXPERIMENT_TEMPLATES_JSON = DATA_DIR / "experiment_templates.json"
     SONICCONTROL_LOG = LOG_DIR / "soniccontrol.log"
+    SCRIPT_DIR = DATA_DIR / "scripts"
+    EXAMPLE_SCRIPT = SCRIPT_DIR / "example_script"
+    EXAMPLE_SCRIPT_DIR = SONIC_CONTROL_BASE_DIR / "sonic_script_examples"
 
 files: _Files = _Files()
+
+@attrs.frozen
+class _FileDialogOpts:
+    JSON = {"defaultextension": ".json", "filetypes": [("JSON files", "*.json")]} 
+    SONIC_SCRIPT = {"defaultextension": ".sonic", "filetypes": [("Sonic Script files", "*.sonic"), ("Text files", "*.txt")]}
+
+file_dialog_opts = _FileDialogOpts()
 
 @attrs.frozen
 class _Fonts:
@@ -65,6 +80,10 @@ class _Color:
     DARK_GREEN: Literal["green"] = "green"
     STATUS_MEDIUM_GREY: Literal["#c3c0ba"] = "#c3c0ba"
     STATUS_LIGHT_GREY: Literal["#f8f5f0"] = "#f8f5f0"
+    SUCCESS_GREEN: Literal["#28a745"] = "#28a745"
+    WARNING_ORANGE: Literal["#ffc107"] = "#ffc107"
+    DANGER_RED: Literal["#dc3545"] = "#dc3545"
+    PRIMARY_BLUE: Literal["#007bff"] = "#007bff"
 
 
 color: Final[_Color] = _Color()
@@ -89,9 +108,13 @@ style: Final[_Style] = _Style()
 
 @attrs.frozen
 class _UIStringsEN:
+    CONFIGURATION_TAB: Final[str] = "Configuration"
+    UPDATER_INTERVAL_LABEL: Final[str] = "Updater Interval (ms):"
+    IS_LEGACY_DEVICE_LABEL: Final[str] = "SonicCrystal"
     HOME_CONTROL_LABEL: Final[str] = "Manual Control"
     FREQ_PLACEHOLDER: Final[str] = "Set Frequency..."
     GAIN_PLACEHOLDER: Final[str] = "Set Gain..."
+    APPLY_SETTINGS: Final[str] = "Apply Settings"
     SAVE_LABEL: Final[str] = "Save"
     SAVE_AS_LABEL: Final[str] = "Save As"
     SAVE_PLOT_LABEL: Final[str] = "Save Plot"
@@ -121,7 +144,9 @@ class _UIStringsEN:
     FLASHER_LABEL: Final[str] = "Flasher"
     PROCEDURES_LABEL: Final[str] = "Procedures"
     SONIC_LABEL: Final[str] = "sonic"
+    SPECTRUM_MEASURE_TITLE: Final[str] = "Spectrum Measure"
     SONIC_MEASURE_LABEL: Final[str] = "Sonic Measure"
+    NEW_EXPERIMENT: Final[str] = "New Experiment"
     SPECIFY_PATH_LABEL: Final[str] = "Specify Path"
     SEARCH: Final[str] = "Search:"
     SET_FREQUENCY_LABEL: Final[str] = "Set Frequency"
@@ -139,8 +164,10 @@ class _UIStringsEN:
     GUIDE_LABEL: Final[str] = "Guide"
     SCRIPT_EDITOR_LABEL: Final[str] = "Script Editor"
     LOAD_LABEL: Final[str] = "Load File"
+    LOAD_EXAMPLE_LABEL: Final[str] = "Load Example"
     SEND_LABEL: Final[str] = "Send"
     DELETE_LABEL: Final[str] = "Delete"
+    FINISH_LABEL: Final[str] = "Finish"
     THEME: Final[str] = "sandstone"
     IDLE_TITLE: Final[str] = "Sonic Control"
     AUTO_READ_LABEL: Final[str] = "Auto Read"
@@ -149,6 +176,7 @@ class _UIStringsEN:
     SONICAMP_SETTINGS_LABEL: Final[str] = "SonicDevice Settings"
     SONICCONTROL_SETTINGS_LABEL: Final[str] = "SonicControl Settings"
     SUBMIT_LABEL: Final[str] = "Submit"
+    SELECTED: Final[str] = "Selected"
     CONTROL_LABEL: Final[str] = "control"
     COMPANY_NAME: Final[str] = "usePAT G.m.b.H"
     VERSION_LABEL: Final[str] = "Version"
@@ -178,7 +206,7 @@ class _UIStringsEN:
     END: Final[str] = "End"
     LIVE_PLOT: Final[str] = "Live Plot"
     URMS: Final[str] = "Urms"
-    IRMS: Final[str] = "Irms"
+    IRMS: Final[str] = "Irms"  
     PHASE: Final[str] = "Phase"
     START_LIVE_PLOT: Final[str] = f"{START_LABEL} {LIVE_PLOT}"
     START_VALUE: Final[str] = "Start value:"
@@ -189,33 +217,35 @@ class _UIStringsEN:
     USE_SCRIPTING_INSTEAD: Final[str] = "Use scripting instead"
     COMMAND_SET: Final[str] = "Command set"
     NEW_LABEL: Final[str] = "New"
+    IMPORT_LABEL: Final[str] = "Import"
     DATA_VISUALIZER: Final[str] = "Data Visualizer"
     REFRESH: Final[str] = "Refresh"
     VISUALIZE: Final[str] = "Visualize"
     HOME_HELP_INTRODUCTION: Final[
         str
-    ] = "The Home tab is used to set the most important parameters of a Sonicamp device manually."
+    ] = "The Home tab is used to manually control the most basic aspects of the sonic amp"
     HOME_HELP_CONTROL_PANEL: Final[
         str
     ] = "The Manual Control Panel contains entries to set the named parameters. Based on your Sonicamp those parameters may differ from the shown image."
     HOME_HELP_FREQUENCY: Final[
         str
-    ] = "Here should be a description of the frequency entry."
-    HOME_HELP_GAIN: Final[str] = "Here should be a description of the gain entry."
-    HOME_HELP_CATCH: Final[str] = "Here should be a description of the catch entry."
-    HOME_HELP_WIPE: Final[str] = "Here should be a description of the wipe entry."
+    ] = "The frequency ranges from 100kHz to 10MHz"#"Here should be a description of the frequency entry."
+    HOME_HELP_GAIN: Final[str] = "The gain ranges from 0% to 150%"#"Here should be a description of the gain entry."
+    HOME_HELP_CATCH: Final[str] = ""#"Here should be a description of the catch entry."
+    HOME_HELP_WIPE: Final[str] = ""#"Here should be a description of the wipe entry."
     HOME_HELP_SET_VALUES: Final[
         str
-    ] = "The 'Set Values' button sets all currently configured parameters."
+    ] = "The 'Send' button sets all currently configured parameters."
     HOME_HELP_OUTPUT: Final[
         str
     ] = "The Sonicamp device sends it's answer to the requested configuration in the Feedback frame."
     HOME_HELP_SIGNAL_CONTROL_PANEL: Final[
         str
     ] = "The signal of the Sonicamp device can be set to ON, AUTO or OFF."
-    HOME_HELP_ON: Final[str] = "Here should be a description of the on entry."
-    HOME_HELP_AUTO: Final[str] = "Here should be a description of the auto entry."
-    HOME_HELP_OFF: Final[str] = "Here should be a description of the off entry."
+    HOME_HELP_ON: Final[str] = ""#"Here should be a description of the on entry."
+    HOME_HELP_AUTO: Final[str] = ""#"Here should be a description of the auto entry."
+    HOME_HELP_OFF: Final[str] = ""#"Here should be a description of the off entry."
+    CHOOSE_A_CAPTURE_TARGET: Final[str] = "Choose a capture target"
     START_CAPTURE: Final[str] = "Start Capture"
     END_CAPTURE: Final[str] = "End Capture"
     PROC_RUNNING: Final[str] = "Procedure [{}] is running..."
@@ -233,7 +263,18 @@ class _UIStringsEN:
     FLASH_UART_SLOW: Final[str] = "FLASH_UART_SLOW"
     FLASH_UART_FAST: Final[str] = "FLASH_UART_FAST"
     FLASH_USB: Final[str] = "FLASH_USB"
-
+    FLASH: Final[str] = "FLASH"
+    OPEN_LOGS: Final[str] = "Open Logs"
+    GO_TO_MEASUREMENTS: Final[str] = "Go to Measurements"
+    FORM_ADD_ENTRY: Final[str] = "Add Entry"
+    CONFIGURING_LABEL: Final[str] = "configure device"
+    FETCH_CONFIG_LABEL: Final[str] = "fetch configuration"
+    WAITING_FOR_ANSWER: Final[str] = "Waiting for answer"
+    START_CONFIGURATOR: Final[str] = "--start-configurator"
+    USE_FIRMWARE_GUI: Final[str] = "--gui"
+    TODO: Final[str] = "In the future the INFO tab will provide all necessary information about the Sonic Control and the SonicAmp and furthermore will link a more detailed documentation about both the software and the device. For now if you have any questions feel free to contact us"
+    CONTACT: Final[str] = "Contact"
+    NEW_LINE: Final[str] = ""
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()
 
@@ -271,18 +312,6 @@ events: Final[_Events] = _Events()
 
 scripting_cards_data: Final[List[ScriptingGuideCardDataDict]] = [
     {
-        "keyword": "startloop",
-        "arguments": "times: optional uint",
-        "description": "Starts a loop and loops until an endloop was found. \nIf no argument was passed, \nthen the loop turns to a 'While True loop'",
-        "example": "startloop 5",
-    },
-    {
-        "keyword": "endloop",
-        "arguments": "None",
-        "description": "Ends the last started loop",
-        "example": "endloop",
-    },
-    {
         "keyword": "on",
         "arguments": "None",
         "description": "Sets the signal to ON",
@@ -293,12 +322,6 @@ scripting_cards_data: Final[List[ScriptingGuideCardDataDict]] = [
         "arguments": "None",
         "description": "Set the signal to OFF",
         "example": "off",
-    },
-    {
-        "keyword": "auto",
-        "arguments": "None",
-        "description": "Turns the auto mode on.\nIt is important to hold after that \ncommand to stay in auto mode.\nIn the following example the \nauto mode is turned on for 5 seconds",
-        "example": "auto\nhold 5s",
     },
     {
         "keyword": "frequency",
@@ -314,14 +337,77 @@ scripting_cards_data: Final[List[ScriptingGuideCardDataDict]] = [
     },
     {
         "keyword": "hold",
-        "arguments": "hold: int,\nunit: 'ms' or 's'",
-        "description": "Hold the state of the device\nfor a certain amount of time",
-        "example": "hold 10s",
+        "arguments": "hold: time",
+        "description": "holds execution for an amount of time",
+        "example": "hold 500ms",
+    },
+        {
+        "keyword": "send",
+        "arguments": "command_string: str",
+        "description": "Sends a command to the device, directly over the serial communication",
+        "example": "send \"!frequency=100000\"",
     },
     {
-        "keyword": "ramp_freq",
-        "arguments": "start: uint,\nstop: uint,\nstep: int,\non_signal_hold: uint,\nunit: 'ms' or 's',\noff_signal_hold: uint,\nunit: 'ms' or 's'",
-        "description": "Ramp up the frequency from\none point to another",
-        "example": "ramp_freq 1000000 2000000 1000 100ms 100ms",
+        "keyword": "loop",
+        "arguments": "n: uint",
+        "description": "Repeats a block of code n times",
+        "example": 
+"""loop 5 times
+begin
+    # code
+end""",
+    },   
+    {
+        "keyword": "breakpoint",
+        "arguments": "None",
+        "description": "Pauses execution. Nice for debugging",
+        "example": """loop 5 times
+begin
+    on
+    breakpoint // pauses execution
+    off
+end""",
+    },
+    {
+        "keyword": "ramp",
+        "arguments": "f_start: uint\nf_stop: uint\nf_step: uint\nt_on: time\nt_off: time",
+        "description": "Executes the ramp procedure",
+        "example": "ramp 1000000 2000000 100000 1s 500ms",
+    },
+    {
+        "keyword": "wipe",
+        "arguments": "f_range: uint\nf_step: uint\nt_on: time\nt_off: time\nt_pause: time",
+        "description": "Executes the wipe procedure",
+        "example": "wipe 8000 1000 500ms 20ms 2s",
+    },
+    {
+        "keyword": "scan",
+        "arguments": "f_center: uint\ngain: uint\nf_range: uint\nf_step: uint\nf_shift: uint\nt_step: time",
+        "description": "Executes the scan procedure",
+        "example": "scan 1000000 20 8000 1000 0 100ms",
+    },
+    {
+        "keyword": "tune",#TODO add gain for the next procotol version
+        "arguments": "f_step: uint\nt_time: time\nn_steps: uint\nf_shift: uint\nt_step: time",
+        "description": "Executes the tune procedure",
+        "example": "tune 1000 5000ms 3 0 100ms",
+    },
+    {
+        "keyword": "auto",
+        "arguments": "scan_f_center: uint\nscan_gain: uint\nscan_f_range: uint\nscan_f_step: uint\nscan_f_shift: uint\nscan_t_step: time\ntune_f_step: uint\ntune_t_time: time\ntune_n_steps: uint\ntune_f_shift: uint\ntune_t_step: time",
+        "description": "Executes the auto procedure",
+        "example": "auto 1000000 20 8000 1000 0 100ms 1000 5000ms 3 0 100ms",
+    },
+    {
+        "keyword": "auto_legacy",
+        "arguments": "f_center: uint\ntust: uint\ntutm: time\nscst: uint\n",
+        "description": "Executes the auto procedure",
+        "example": "auto_legacy 1000000 500 10000ms 1000",
+    },
+    {
+        "keyword": "wipe_legacy",
+        "arguments": "step: uint\nsing: time\npaus: time\nrang: uint",
+        "description": "Executes the wipe procedure",
+        "example": "wipe_legacy 500 500ms 1000ms 8000",
     },
 ]

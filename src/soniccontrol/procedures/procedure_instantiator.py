@@ -6,14 +6,17 @@ from soniccontrol.procedures.procs.ramper import Ramper, RamperLocal, RamperRemo
 from soniccontrol.procedures.procs.scan import ScanProc
 from soniccontrol.procedures.procs.tune import TuneProc
 from soniccontrol.procedures.procs.wipe import WipeProc
+from soniccontrol.procedures.legacy_procs.auto import AutoLegacyProc
+from soniccontrol.procedures.legacy_procs.wipe import WipeLegacyProc
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 
 
 class ProcedureInstantiator:
     def instantiate_ramp(self, device: SonicDevice) -> Optional[Ramper]:
-        if device.command_executor.has_command(commands.GetSwf()):
+        if device.has_command(commands.GetSwf()):
             return None # Transducers that have switching frequencies cannot execute the ramp
-        elif device.command_executor.has_command(commands.SetRamp()):
+        elif device.has_command(commands.SetRamp()):
             return RamperRemote()
         else:
             return RamperLocal()
@@ -25,17 +28,25 @@ class ProcedureInstantiator:
         if ramp:
             procedures[ProcedureType.RAMP] = ramp
 
-        if device.command_executor.has_command(commands.SetScan()):
+        if device.has_command(commands.SetScan()):
             procedures[ProcedureType.SCAN] = ScanProc()
 
-        if device.command_executor.has_command(commands.SetAuto()):
+        if device.has_command(commands.SetAuto()):
             procedures[ProcedureType.AUTO] = AutoProc()
 
-        if device.command_executor.has_command(commands.SetTune()):
+        if device.has_command(commands.SetTune()):
             procedures[ProcedureType.TUNE] = TuneProc()
 
-        if device.command_executor.has_command(commands.SetWipe()):
+        if device.has_command(commands.SetWipe()):
             procedures[ProcedureType.WIPE] = WipeProc()
+
+        if device.has_command(commands.SetWipeLegacy()):
+            procedures[ProcedureType.WIPE_LEGACY] = WipeLegacyProc()
+
+        if device.has_command(commands.SetAutoLegacy()):
+            procedures[ProcedureType.AUTO_LEGACY] = AutoLegacyProc()
+
+
 
         return procedures
         

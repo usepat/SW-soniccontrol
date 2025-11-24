@@ -3,29 +3,10 @@
 set separator . 
 top to bottom direction
 
-class "RemoteController" as soniccontrol.remote_controller.RemoteController {
-  NOT_CONNECTED : str
-  connect_via_process(process_file: Path) -> None
-  connect_via_serial(url: Path) -> None
-  disconnect() -> None
-  execute_procedure(procedure: ProcedureType, args: dict) -> None
-  execute_ramp(ramp_args: RamperArgs) -> None
-  execute_script(text: str) -> None
-  get_attr(attr: str) -> str
-  send_command(command_str: str) -> str
-  set_attr(attr: str, val: str) -> str
-  stop_procedure() -> None
-}
 
-class "ProcedureController" as soniccontrol.procedures.procedure_controller.ProcedureController {
-  PROCEDURE_STOPPED : Literal['<<ProcedureStopped>>']
-  is_proc_running
-  proc_args_list
-  running_proc_type
-  execute_proc(proc_type: ProcedureType, args: Any) -> None
-  ramp_freq(freq_center: int, half_range: int, step: int, hold_on_time: float, hold_on_unit: Literal['ms', 's'], hold_off_time: float, hold_off_unit: Literal['ms', 's']) -> None
-  ramp_freq_range(start: int, stop: int, step: int, hold_on_time: float, hold_on_unit: Literal['ms', 's'], hold_off_time: float, hold_off_unit: Literal['ms', 's']) -> None
-  stop_proc() -> None
+class "ScriptingFacade" as soniccontrol.scripting.legacy_scripting.ScriptingFacade {
+  lint_text(text: str) -> str
+  parse_script(text: str) -> LegacySequencer
 }
 
 class "Communicator" as soniccontrol.communication.communicator.Communicator {
@@ -33,62 +14,80 @@ class "Communicator" as soniccontrol.communication.communicator.Communicator {
   connection_opened
   handshake_result
   protocol
-  {abstract}close_communication() -> None
-  {abstract}open_communication(connection_factory: ConnectionFactory)
+  reader
+  writer
+  {abstract}change_baudrate(baudrate: int) -> None
+  {abstract}close_communication(restart: bool) -> None
+  {abstract}open_communication(connection_factory: ConnectionFactory, baudrate: int)
   {abstract}read_message() -> str
-  {abstract}send_and_wait_for_answer(message: Sendable) -> None
-}
-
-class "Answer" as soniccontrol.command.Answer {
-  lines
-  measured_response
-  received
-  received_timestamp
-  string
-  valid
-  receive_answer(answer: Iterable[str] | str) -> None
-  reset() -> None
-}
-class "Command" as soniccontrol.command.Command {
-  byte_message
-  full_message
-  status_result
-  validators
-  add_validators(validators: Union[CommandValidator, Iterable[CommandValidator]]) -> None
-  execute(argument: Any, connection: Optional[Communicator]) -> tuple[Answer, dict[str, Any]]
-  get_dict() -> dict
-  set_argument(argument: Any) -> None
-  validate() -> bool
+  {abstract}send_and_wait_for_response(request: str) -> str
 }
 
 class "SonicDevice" as soniccontrol.sonic_device.SonicDevice {
-  commands
-  info
-  serial
-  status
-  add_command(message: Union[str, Command], validators: Optional[CommandValitors]) -> None
-  add_commands(commands: Iterable[Command]) -> None
   disconnect() -> None
-  execute_command(message: Union[str, Command], argument: Any) -> str
-  get_remote_proc_finished_event() -> asyncio.Event
-  has_command(command: Union[str, Command]) -> bool
-  send_message(message: str, argument: Any) -> str
+  execute_command(command: Command | str, should_log: bool, try_deduce_command_if_str: bool) -> Answer
+  get_overview() -> Answer
+  has_command(command: CommandCode | Command) -> bool
+  set_signal_off() -> Answer
+  set_signal_on() -> Answer
 }
 
-class "LegacyScriptingFacade" as soniccontrol.scripting.legacy_scripting.LegacyScriptingFacade {
-  lint_text(text: str) -> str
-  parse_script(text: str) -> LegacySequencer
+class "Updater" as soniccontrol.updater.Updater {
+  running
+  start() -> None
+  stop() -> None
+  update() -> None
 }
 
-soniccontrol.procedures.procedure_controller.ProcedureController -u-* soniccontrol.remote_controller.RemoteController
-soniccontrol.procedures.procedure_controller.ProcedureController *-u- soniccontrol.sonic_device.SonicDevice
-soniccontrol.sonic_device.SonicDevice -r-* soniccontrol.remote_controller.RemoteController
-soniccontrol.remote_controller.RemoteController *-u- soniccontrol.scripting.legacy_scripting.LegacyScriptingFacade
-soniccontrol.sonic_device.SonicDevice -l- soniccontrol.scripting.legacy_scripting.LegacyScriptingFacade
+class "ProcedureController" as soniccontrol.procedures.procedure_controller.ProcedureController {
+  PROCEDURE_RUNNING : Literal['<<PROCEDURE_RUNNING>>']
+  PROCEDURE_STOPPED : Literal['<<PROCEDURE_STOPPED>>']
+  is_proc_running
+  proc_args_list
+  execute_proc(proc_type: ProcedureType, args: Any) -> None
+  execute_procedure(procedure: Procedure, proc_type: ProcedureType, args: Any)
+  ramp_freq(start: int, stop: int, step: int, hold_on_time: float, hold_on_unit: Literal['ms', 's'], hold_off_time: float, hold_off_unit: Literal['ms', 's']) -> None
+  ramp_freq_range(freq_center: int, half_range: int, step: int, hold_on_time: float, hold_on_unit: Literal['ms', 's'], hold_off_time: float, hold_off_unit: Literal['ms', 's']) -> None
+  stop_proc() -> None
+}
 
-soniccontrol.sonic_device.SonicDevice *-u- soniccontrol.command.Command : _commands
-soniccontrol.sonic_device.SonicDevice .u.> soniccontrol.command.Answer
-soniccontrol.command.Command .l.> soniccontrol.command.Answer
-soniccontrol.command.Command -u- soniccontrol.communication.communicator.Communicator
+class "RemoteController" as soniccontrol.remote_controller.RemoteController {
+  execute_procedure(procedure: ProcedureType, args: dict) -> None
+  execute_ramp(ramp_args: RamperArgs) -> None
+  send_command(command: str | Command) -> Tuple[str, Dict[EFieldName, Any], bool]
+  start_updater()
+  stop_procedure() -> None
+  stop_updater()
+}
+
+class "InterpreterEngine" as soniccontrol.scripting.interpreter_engine.InterpreterEngine {
+  INTERPRETATION_ERROR : str
+  PROPERTY_CURRENT_TARGET : str
+  PROPERTY_INTERPRETER_STATE : str
+  interpreter_state
+  script
+  pause()
+  single_step()
+  start()
+  stop()
+}
+
+soniccontrol.sonic_device.SonicDevice o-- soniccontrol.communication.communicator.Communicator : _serial
+
+soniccontrol.updater.Updater --|> soniccontrol.events.EventManager
+soniccontrol.sonic_device.SonicDevice --o soniccontrol.updater.Updater : _device
+
+soniccontrol.procedures.procedure_controller.ProcedureController --|> soniccontrol.events.EventManager
+soniccontrol.sonic_device.SonicDevice -l-o soniccontrol.procedures.procedure_controller.ProcedureController : _device
+
+soniccontrol.remote_controller.RemoteController o-- soniccontrol.procedures.procedure_controller.ProcedureController
+soniccontrol.remote_controller.RemoteController o-- soniccontrol.sonic_device.SonicDevice
+soniccontrol.remote_controller.RemoteController o-- soniccontrol.updater.Updater
+
+soniccontrol.scripting.legacy_scripting.ScriptingFacade --* soniccontrol.remote_controller.RemoteController : _scripting
+soniccontrol.procedures.procedure_controller.ProcedureController --o soniccontrol.scripting.legacy_scripting.ScriptingFacade : _proc_controller
+soniccontrol.sonic_device.SonicDevice --o soniccontrol.scripting.legacy_scripting.ScriptingFacade : _device
+
+soniccontrol.scripting.interpreter_engine.InterpreterEngine --|> soniccontrol.events.EventManager
 
 @enduml

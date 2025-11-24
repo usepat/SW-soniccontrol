@@ -1,0 +1,71 @@
+@startuml classes_sonic_protocol
+set separator . 
+top to bottom direction
+
+class "Answer" as sonic_protocol.python_parser.answer.Answer {
+  value_dict
+  is_error_msg() -> bool
+}
+
+class "Command" as sonic_protocol.python_parser.commands.Command {
+  args
+  code
+}
+class "CommandCode" as sonic_protocol.command_codes.CommandCode {
+  name
+}
+package sonic_protocol.defs {
+    class AnswerDef {
+    }
+    class "CommandContract" {
+    }
+    class "CommandDef" {
+    }
+
+    class "Protocol" {
+    }
+
+
+    Protocol *-- CommandContract : command_contracts
+    CommandContract o-- CommandDef : command_defs
+    CommandContract o-- AnswerDef : answer_defs
+    CommandContract o-- CommandCode : code
+  
+}
+
+class "CommandLookUp" as sonic_protocol.protocol_builder.CommandLookUp {
+}
+
+class "CppTransCompiler" as sonic_protocol.cpp_trans_compiler.cpp_trans_compiler.CppTransCompiler {
+  generate_sonic_protocol_lib(output_dir: Path)
+  generate_transpiled_protocol(protocol: Protocol, protocol_versions: List[ProtocolVersion], output_dir: Path)
+}
+
+class "ProtocolBuilder" as sonic_protocol.protocol_builder.ProtocolBuilder {
+  build(device_type: DeviceType, version: Version, release: bool) -> CommandLookUpTable
+}
+
+class "DeviceBuilder" as soniccontrol.builder.DeviceBuilder {
+  build_amp(comm: Communicator, logger: logging.Logger, use_fallback_protocol: bool) -> SonicDevice
+}
+
+class "SonicDevice" as soniccontrol.sonic_device.SonicDevice {
+  disconnect() -> None
+  execute_command(command: Command | str, should_log: bool, try_deduce_command_if_str: bool) -> Answer
+  has_command(command: CommandCode | Command) -> bool
+}
+
+sonic_protocol.protocol_builder.ProtocolBuilder -u-* sonic_protocol.cpp_trans_compiler.cpp_trans_compiler.CppTransCompiler : _protocol_builder
+sonic_protocol.command_codes.CommandCode -r-o sonic_protocol.python_parser.commands.Command : _code
+Protocol --o sonic_protocol.protocol_builder.ProtocolBuilder : _protocol
+soniccontrol.sonic_device.SonicDevice ..> sonic_protocol.python_parser.answer.Answer
+soniccontrol.sonic_device.SonicDevice ..> sonic_protocol.python_parser.commands.Command
+soniccontrol.sonic_device.SonicDevice o-r- sonic_protocol.protocol_builder.CommandLookUp : lookup_table
+soniccontrol.builder.DeviceBuilder ..> sonic_protocol.protocol_builder.ProtocolBuilder
+soniccontrol.builder.DeviceBuilder .d.> soniccontrol.sonic_device.SonicDevice :: <<builds>>
+sonic_protocol.protocol_builder.ProtocolBuilder ..> sonic_protocol.protocol_builder.CommandLookUp : <<generates lookups>>
+sonic_protocol.protocol_builder.CommandLookUp ..> CommandCode: <<Key>>
+sonic_protocol.protocol_builder.CommandLookUp o-l- CommandDef: command_def
+sonic_protocol.protocol_builder.CommandLookUp o-l- AnswerDef: answer_def
+
+@enduml

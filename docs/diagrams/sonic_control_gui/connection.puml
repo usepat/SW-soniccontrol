@@ -32,14 +32,14 @@ class "SonicDevice" as soniccontrol.sonic_device.SonicDevice {
   disconnect() -> None
 }
 
-class "Updater" as soniccontrol_gui.state_fetching.updater.Updater {
+class "Updater" as soniccontrol.updater.Updater {
   running
   execute() -> None
   stop_execution() -> None
 }
 
 class "AppState" as soniccontrol_gui.views.core.app_state.AppState {
-  EXECUTION_STATE_PROP_NAME : str
+  APP_EXECUTION_CONTEXT_PROP_NAME : str
   execution_state
 }
 class "RescueWindow" as soniccontrol_gui.views.core.device_window.RescueWindow {
@@ -68,7 +68,7 @@ soniccontrol_gui.views.core.connection_window.ConnectionWindow --|> soniccontrol
 soniccontrol_gui.views.core.device_window.DeviceWindow --|> soniccontrol_gui.ui_component.UIComponent
 soniccontrol_gui.views.core.device_window.KnownDeviceWindow --|> soniccontrol_gui.views.core.device_window.DeviceWindow
 soniccontrol_gui.views.core.device_window.RescueWindow --|> soniccontrol_gui.views.core.device_window.DeviceWindow
-soniccontrol_gui.state_fetching.updater.Updater --* soniccontrol_gui.views.core.device_window.KnownDeviceWindow : _updater
+soniccontrol.updater.Updater --* soniccontrol_gui.views.core.device_window.KnownDeviceWindow : _updater
 soniccontrol_gui.views.core.connection_window.DeviceWindowManager --* soniccontrol_gui.views.core.connection_window.ConnectionWindow : _device_window_manager
 soniccontrol_gui.views.core.device_window.DeviceWindow -l-> soniccontrol_gui.views.core.app_state.AppState : app_state
 

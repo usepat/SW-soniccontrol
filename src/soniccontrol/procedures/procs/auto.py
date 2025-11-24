@@ -1,56 +1,28 @@
-import asyncio
-from typing import Type
+from typing import Any, Type
 
 import attrs
-from attrs import validators
 
 from sonic_protocol.python_parser import commands
-from soniccontrol.interfaces import Scriptable
-from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
-from soniccontrol.procedures.procedure import Procedure
+from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
+from soniccontrol.procedures.procs.scan import ScanArgs, ScanProc
+from soniccontrol.procedures.procs.tune import TuneArgs, TuneProc
+from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
 
 
 @attrs.define(auto_attribs=True)
-class AutoArgs:
-    Scanning_f_center_Hz: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(100000),
-        validators.le(10000000)
-    ])
-    Scanning_gain: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(150)
-    ])
-    Scanning_f_range_Hz: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    Scanning_f_step_Hz: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    Scanning_t_step_ms: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
-    )
-    Tuning_f_step_Hz: int = attrs.field(
-        default=1000,
-        validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    Tuning_time_ms: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
-    )
+class AutoArgs(ProcedureArgs):    
+    @classmethod
+    def get_description(cls) -> str:
+        return """The AUTO procedure starts by executing the SCAN procedure, and when finished, immediately starts the TUNE procedure.
+        """
 
-    Tuning_t_step_ms: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
+    scan_arg: ScanArgs = attrs.field(
+        default=ScanArgs(),
+        metadata={"prefix": "scan"},
+    )
+    tune_arg: TuneArgs = attrs.field(
+        default=TuneArgs(),
+        metadata={"prefix": "tune"},
     )
 
 
@@ -63,13 +35,23 @@ class AutoProc(Procedure):
     def is_remote(self) -> bool:
         return True
 
-    async def execute(self, device: Scriptable, args: AutoArgs) -> None:
-        await device.execute_command(commands.SetFrequency(args.Scanning_f_center_Hz))
-        await device.execute_command(f"!scan_gain={args.Scanning_gain}")
-        await device.execute_command(f"!scan_f_range={args.Scanning_f_range_Hz}")
-        await device.execute_command(f"!scan_f_step={args.Scanning_f_step_Hz}")
-        await device.execute_command(f"!scan_t_step={int(args.Scanning_t_step_ms.duration_in_ms)}")
-        await device.execute_command(f"!tune_f_step={args.Tuning_f_step_Hz}")
-        await device.execute_command(f"!tune_t_time={int(args.Tuning_time_ms.duration_in_ms)}")
-        await device.execute_command(f"!tune_t_step={int(args.Tuning_t_step_ms.duration_in_ms)}")
-        await device.execute_command("!auto")
+    async def execute(self, device: SonicDevice, args: AutoArgs, configure_only: bool = False) -> None:
+        scan = ScanProc()
+        # With True we only execute the arg setter
+        await scan.execute(device, args.scan_arg, True)
+
+        tune = TuneProc()
+        await tune.execute(device, args.tune_arg, True)
+        
+        if not configure_only:
+            await device.execute_command(commands.SetAuto())
+
+    async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
+        try:
+            # TODO ensure GetAuto returns a answer where all FieldName of both scan and tune are returned
+            answer = await device.execute_command(commands.GetAuto())
+        except (CommandValidationError, CommandExecutionError) as _:
+            return {}
+        args = AutoArgs.from_answer(answer)
+        # Returns nested dicts for the form widget
+        return args.to_dict()

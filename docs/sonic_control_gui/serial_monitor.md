@@ -37,6 +37,6 @@ Commands are sent via [send_and_wait_for_answer](@ref  soniccontrol.communicatio
 
 @see Communication
 
-If the read button is switched to on, that it starts the [MessageFetcher](@ref soniccontrol_gui.state_fetching.message_fetcher.MessageFetcher) and displays the messages received. It uses the [read_message](@ref soniccontrol.communication.communicator.Communicator.read_message) function of Communicator.
+If the read button is switched to on, that it starts the [MessageFetcher](@ref soniccontrol.state_fetching.message_fetcher.MessageFetcher) and displays the messages received. It uses the [read_message](@ref soniccontrol.communication.communicator.Communicator.read_message) function of Communicator.
 
 @}

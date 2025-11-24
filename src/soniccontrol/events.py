@@ -57,6 +57,11 @@ class EventManager:
         if self._listeners.get(event_type) is None:
             self._listeners[event_type] = set()
         self._listeners[event_type].add(listener)
+    
+    def unsubscribe(self, event_type: str, listener: Callable[[Event], None]) -> None:
+        if self._listeners.get(event_type) is None:
+            if listener in self._listeners[event_type]:
+                self._listeners[event_type].remove(listener)
 
     def subscribe_property_listener(self, property_name: str, listener: Callable[[PropertyChangeEvent], None]) -> None:
         if self._property_listeners.get(property_name) is None:

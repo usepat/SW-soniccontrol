@@ -1,4 +1,5 @@
 
+from sonic_protocol.field_names import EFieldName
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView
 from soniccontrol.events import PropertyChangeEvent
@@ -11,11 +12,14 @@ class CsvTable(UIComponent):
     def __init__(self, parent: UIComponent):
         super().__init__(parent, CsvTableView(parent.view))
 
-    def on_update_data(self, e: PropertyChangeEvent):
-        dataFrame: pd.DataFrame = e.new_value
-        dataFrame["timestamp"] = dataFrame["timestamp"].apply(lambda x: x.strftime('%Y/%m/%d-%H:%M:%S'))
-        columns = [{"text": column, "stretch": True} for column in dataFrame.columns]
-        row_data = dataFrame.to_records(index=False).tolist()
+    def on_update_data(self, dataFrame: pd.DataFrame):
+        df = dataFrame.copy()  # 🛡️ Prevents mutation of shared data
+        # The next line causes issues with timeplot and probably also spectralplot.
+        # the timestamp column that is coming from data_provider in add_row is indeed of type datetime64[ns]
+        # but when the next line is called, it changes to object type and this causes the timeplot to not work
+        df[EFieldName.TIMESTAMP.name] = df[EFieldName.TIMESTAMP.name].apply(lambda x: x.strftime('%Y/%m/%d-%H:%M:%S'))
+        columns = [{"text": column, "stretch": True} for column in df.columns]
+        row_data = df.to_records(index=False).tolist()
         self.view.set_csv_data(columns, row_data)
 
 

@@ -255,3 +255,7 @@ tests_robot/results/
 # Ignore doxygen generated documentation
 docs/output
 .github/workflows/ssh_workflow
+experiment_3.h5
+experiment_4.h5
+experiment_5.h5
+shorting_test.py

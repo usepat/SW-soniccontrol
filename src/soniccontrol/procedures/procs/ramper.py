@@ -1,38 +1,51 @@
-from typing import List, Type, Union
-import asyncio
+from typing import Any, Dict, List, Type, Union
 
 import attrs
 from attrs import validators
 
-from soniccontrol.interfaces import Scriptable
+from sonic_protocol.field_names import EFieldName
+from sonic_protocol.schema import SIPrefix
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
-from soniccontrol.procedures.procedure import Procedure
+from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, custom_validator_factory
+from sonic_protocol.python_parser import commands
+from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, RelativeFrequencySIVar
 
 
 @attrs.define(auto_attribs=True)
-class RamperArgs:
-    freq_center: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(10000000)
-    ])
-    half_range: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(0),
-        validators.le(5000000)
-    ])
-    step: int = attrs.field(validator=[
-        validators.instance_of(int),
-        validators.ge(10),
-        validators.le(500000)
-    ])
-    hold_on: HolderArgs = attrs.field(
-        default=HolderArgs(100, "ms"), 
-        converter=convert_to_holder_args
+class RamperArgs(ProcedureArgs):
+    @classmethod
+    def get_description(cls) -> str:
+        return """Ramp is a procedure that runs on the device. 
+It starts at a start frequency f_start and steps through frequencies in increments of f_step, 
+until it reaches the end frequency f_stop. 
+The duration for which the signal is turned on is determined by t_on,
+and the duration it remains off is determined by t_off. 
+You can set t_off to 0 if you want the signal to never be turned off."""
+
+    f_start: AbsoluteFrequencySIVar = attrs.field(
+        default=AbsoluteFrequencySIVar(1, SIPrefix.MEGA),
+        metadata={"enum": EFieldName.RAMP_F_START},
     )
-    hold_off: HolderArgs = attrs.field(
+    f_stop: AbsoluteFrequencySIVar = attrs.field(
+        default=AbsoluteFrequencySIVar(2, SIPrefix.MEGA),
+        metadata={"enum": EFieldName.RAMP_F_STOP},
+    )
+    f_step: RelativeFrequencySIVar = attrs.field(
+        default=RelativeFrequencySIVar(100, SIPrefix.KILO),
+        metadata={"enum": EFieldName.RAMP_F_STEP},
+        validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
+    )
+
+    t_on: HolderArgs = attrs.field(
+        default=HolderArgs(500, "ms"),
+        converter=convert_to_holder_args,
+        metadata={"enum": EFieldName.RAMP_T_ON}
+    )
+    t_off: HolderArgs = attrs.field(
         default=HolderArgs(0, "ms"),
-        converter=convert_to_holder_args
+        converter=convert_to_holder_args,
+        metadata={"enum": EFieldName.RAMP_T_OFF}
     )
 
 
@@ -51,18 +64,17 @@ class RamperLocal(Ramper):
 
     async def execute(
         self,
-        device: Scriptable,
+        device: SonicDevice,
         args: RamperArgs
     ) -> None:
-        start = args.freq_center - args.half_range
-        stop = args.freq_center + args.half_range + args.step # add a step to stop so that stop is inclusive
-        values = [start + i * args.step for i in range(int((stop - start) / args.step)) ]
+        values = [args.f_start.to_prefix(SIPrefix.NONE) + i * args.f_step.to_prefix(SIPrefix.NONE) for i in range(int((args.f_stop.to_prefix(SIPrefix.NONE) - args.f_start.to_prefix(SIPrefix.NONE)) / args.f_step.to_prefix(SIPrefix.NONE)) + 1) ]
 
-        await device.get_overview()
+        # await device.get_overview() # FIXME I dont think we need this
+        # I am removing it for now because we can't send commands to the crystal device that have no command code
         # TODO: Do we need those two lines?
         # await device.execute_command(f"!freq={start}")
         # await device.set_signal_on()
-        await self._ramp(device, list(values), args.hold_on, args.hold_off)
+        await self._ramp(device, list(values), args.t_on, args.t_off)
     
         await device.set_signal_off()
 
@@ -72,16 +84,17 @@ class RamperLocal(Ramper):
 
     async def _ramp(
         self,
-        device: Scriptable,
+        device: SonicDevice,
         values: List[Union[int, float]],
         hold_on: HolderArgs,
         hold_off: HolderArgs,
     ) -> None:
         i: int = 0
+        await device.set_signal_on()
         while i < len(values):
             value = values[i]
 
-            await device.execute_command(f"!f={value}") # FIXME use internal freq command of device
+            await device.execute_command(commands.SetFrequency(int(value))) 
             if hold_off.duration:
                 await device.set_signal_on()
             await Holder.execute(hold_on)
@@ -91,6 +104,9 @@ class RamperLocal(Ramper):
                 await Holder.execute(hold_off)
 
             i += 1
+
+    async def fetch_args(self, device: SonicDevice) -> Dict[str, Any]:
+        return {}
 
 
 class RamperRemote(Ramper):
@@ -103,15 +119,28 @@ class RamperRemote(Ramper):
 
     async def execute(
         self,
-        device: Scriptable,
-        args: RamperArgs
+        device: SonicDevice,
+        args: RamperArgs,
+        configure_only: bool = False,
     ) -> None:
-        start = args.freq_center - args.half_range
-        stop = args.freq_center + args.half_range + args.step
+        await device.execute_command(commands.SetRampFStart(args.f_start.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetRampFStop(args.f_stop.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetRampFStep(args.f_step.to_prefix(SIPrefix.NONE)))
+        # When the args are retrieved from the Form Widget, the HolderArgs are tuples instead
+        t_on_duration = int(args.t_on.duration_in_ms)
+        t_off_duration = int(args.t_off.duration_in_ms)
 
-        await device.execute_command(f"!ramp_f_start={start}")
-        await device.execute_command(f"!ramp_f_stop={stop}")
-        await device.execute_command(f"!ramp_f_step={args.step}")
-        await device.execute_command(f"!ramp_t_on={int(args.hold_on.duration_in_ms)}")
-        await device.execute_command(f"!ramp_t_off={int(args.hold_off.duration_in_ms)}")
-        await device.execute_command(f"!ramp")
+        await device.execute_command(commands.SetRampTOn(t_on_duration))
+        await device.execute_command(commands.SetRampTOff(t_off_duration))
+
+        if not configure_only:
+            await device.execute_command(commands.SetRamp())
+
+    async def fetch_args(self, device: SonicDevice) -> Dict[str, Any]:
+        try:
+            answer = await device.execute_command(commands.GetRamp(), raise_exception=False)
+        except (CommandValidationError, CommandExecutionError) as _:
+            return {}
+        args = RamperArgs.from_answer(answer)
+        # Returns nested dicts for the form widget
+        return args.to_dict()

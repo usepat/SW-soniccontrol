@@ -23,16 +23,26 @@ class Updater(EventManager):
         self._task = asyncio.create_task(self._loop())
 
     async def stop(self) -> None:
-        assert self._task is not None
         self._running.clear()
-        await self._task
+        if self._task is not None:
+            await self._task
+
+    def get_update_interval(self) -> int:
+        return self._time_waiting_between_updates_ms
+
+    def set_update_interval(self, time_waiting_between_updates_ms: int) -> None:
+        self._time_waiting_between_updates_ms = time_waiting_between_updates_ms
 
     async def update(self) -> None:
         # HINT: If ever needed to update different device attributes, we can do that, by checking what components the device has
         # and then additionally call other commands to get this information
-        answer = await self._device.execute_command(commands.GetUpdate(), should_log=False)
-        if answer.valid:
-            self.emit(Event("update", status=answer.field_value_dict))
+        if self._device.has_command(commands.GetUpdate()):
+            # Configurator does not have update but uses Device so for now I fix it like this
+            answer = await self._device.execute_command(commands.GetUpdate(), should_log=False, raise_exception=False)
+            if answer.valid:
+                self.emit(Event("update", status=answer.field_value_dict))
+        else:
+            self._running.clear()
 
     async def _loop(self) -> None:
         try:
@@ -40,7 +50,9 @@ class Updater(EventManager):
             while self._running.is_set() and open_connection_flag.is_set():
                 await self.update()
                 if self._time_waiting_between_updates_ms > 0:
-                    await asyncio.sleep(self._time_waiting_between_updates_ms)
+                    await asyncio.sleep(self._time_waiting_between_updates_ms / 1000)
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
             raise
         

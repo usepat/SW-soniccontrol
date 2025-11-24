@@ -8,13 +8,7 @@
             "name": "Python Debugger: Soniccontrol",
             "type": "debugpy",
             "request": "launch",
-            "module": "soniccontrol_gui"
-        },
-        {
-            "name": "Python Debugger: Run Simulation",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/scripts/run_simulation.py",
+            "module": "soniccontrol_gui",
             "console": "integratedTerminal"
         },
         {

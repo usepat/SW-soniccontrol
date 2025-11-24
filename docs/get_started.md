@@ -76,7 +76,9 @@ You can create a `requirements.txt` with `pip freeze > requirements.txt`. Do thi
 
 ## Running Soniccontrol
 
-To run soniccontrol, either run `soniccontrol` as a command in the cli or execute *src/soniccontrol_gui/__main__.py*.
+To run soniccontrol GUI, either run `soniccontrol_gui` as a command in the cli or execute *src/soniccontrol_gui/__main__.py*.
+
+For the cli version of soniccontrol run `soniccontrol' as a command in the cli.
 
 ### Running SonicControl with a simulation
 

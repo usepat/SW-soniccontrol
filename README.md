@@ -32,7 +32,6 @@ The project is divided into single python packages in the *src* folder:
 - *soniccontrol_cli* **Work in progress**: This is a cli version of soniccontrol.
 - *sonicprotocol* **Work in progress**: This package contains preprocessor scripts to generate html, c++ and python code for the custom protocol used by the software and the devices to communicate with each other.
 - *sonic_robot*: This package is a library for the robot framework. It is used for system testing.
-- *sonic_test_parrot* **Work in progress**: This is a custom testing program that works with recorded logs. 
 
 Please read the rest of the documentation for a better understanding on how everything works and fits together.
 

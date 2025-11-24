@@ -10,7 +10,6 @@
 		// github and git
 		"github.vscode-github-actions",
 		"github.vscode-pull-request-github",
-		"mhutchie.git-graph",
 
 		// for serial communication
 		"ms-vscode.vscode-serial-monitor",
@@ -37,7 +36,10 @@
 		"streetsidesoftware.code-spell-checker-british-english",
 
 		// for robot framework
-		"d-biehl.robotcode"
+		"d-biehl.robotcode",
+
+		// for jinja syntax highlighting
+		"wholroyd.jinja"
 
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.

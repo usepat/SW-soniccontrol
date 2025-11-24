@@ -1,0 +1,2 @@
+# This is an example command for running a procedure
+ramp 1000000 2000000 100000 1s 500ms

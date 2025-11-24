@@ -1,0 +1,21 @@
+output-dir="./tests_robot/results"
+languages = ["en"]
+default-profiles = "worker"
+skip-teardown-on-exit = true
+
+
+[profiles.worker]
+variables = { TARGET = "url", URL = { expr="'/dev/ttyUSB0' if platform.system() == 'Linux' else 'COM22'" }}
+excludes = [ "descale" ]
+
+[profiles.descaler]
+variables = { TARGET = "url", URL = { expr="'/dev/ttyUSB0' if platform.system() == 'Linux' else 'COM22'" }}
+excludes = [ "worker" ]
+
+[profiles.simulation_mvp]
+variables = { TARGET = "simulation", KWARGS = { expr="['--worker']" }, SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/platform_linux/src/device/device_main'"} }
+excludes = [ "descale" ]
+
+[profiles.simulation_descale]
+variables = { TARGET = "simulation", KWARGS = { expr="['--descale']" }, SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/platform_linux/src/device/device_main'"} }
+excludes = [ "worker" ]
