@@ -6,7 +6,7 @@ from sonic_protocol.schema import AnswerDef, AnswerFieldDef, CommandContract, Co
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_fields as fields
 from sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_commands import generate_procedure_arg_setter_contract
-from sonic_protocol.protocols.protocol_v2_0_0.procedure_commands.procedure_fields import (
+from sonic_protocol.protocols.protocol_v2_0_0.fields.procedure_fields import (
     field_wipe_gain
 )
 

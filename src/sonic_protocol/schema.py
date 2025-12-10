@@ -94,6 +94,8 @@ class SIPrefix(Enum):
     DECI  = 'd'
     CENTI = 'c'
     NONE  = ''
+    DEKA  = 'da'
+    HECTO = 'h'
     KILO  = 'k'
     MEGA  = 'M'
     GIGA  = 'G'
@@ -116,6 +118,10 @@ class SIPrefix(Enum):
                 return -1
             case '':   # NONE
                 return 0
+            case 'da': # DEKA
+                return 1
+            case 'h':  # HECTO
+                return 2
             case 'k':  # KILO
                 return 3
             case 'M':  # MEGA
