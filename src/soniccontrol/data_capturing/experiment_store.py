@@ -98,7 +98,7 @@ class HDF5ExperimentWriter(ExperimentWriter):
         if not self._file_path_posix.endswith(file_extension):
             self._file_path_posix += ".h5" # add extension
         self._file = tb.open_file(self._file_path_posix, "w")
-        self._write_version(Version(1, 0, 0))
+        self._write_version(Version(2, 0, 0))
         self._data_table = self._file.create_table("/", "data", cast(tb.Description, DataTable))
 
     def _write_version(self, version: Version):
