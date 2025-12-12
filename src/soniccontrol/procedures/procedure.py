@@ -109,7 +109,7 @@ class ProcedureArgs:
                 if issubclass(field.type, SIVar):
                     # No idea, why this is needed to lazy to debug this 
                     if isinstance(value, SIVar):
-                        value = field.type(value=value.value, si_prefix=SIPrefix.NONE)
+                        value = field.type(value=value.to_prefix(SIPrefix.NONE), si_prefix=SIPrefix.NONE)
                     else:
                         value = field.type(value=value, si_prefix=SIPrefix.NONE)
 

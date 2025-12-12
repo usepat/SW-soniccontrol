@@ -94,7 +94,7 @@ class Home(UIComponent):
 
     @property 
     def freq(self) -> int:
-        return self._form_widget.attrs_object.frequency.to_prefix(SIPrefix.NONE)
+        return int(self._form_widget.attrs_object.frequency.to_prefix(SIPrefix.NONE))
     
     @property
     def gain(self) -> int:

@@ -65,9 +65,9 @@ class TuneProc(Procedure):
         return True
 
     async def execute(self, device: SonicDevice, args: TuneArgs, configure_only: bool = False) -> None:
-        await device.execute_command(commands.SetTuneFShift(args.f_shift.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetTuneFShift(int(args.f_shift.to_prefix(SIPrefix.NONE))))
         await device.execute_command(commands.SetTuneNSteps(args.n_steps))
-        await device.execute_command(commands.SetTuneFStep(args.f_step.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetTuneFStep(int(args.f_step.to_prefix(SIPrefix.NONE))))
         t_time_duration = int(args.t_time.duration_in_ms) if isinstance(args.t_time, HolderArgs) else int(args.t_time[0])
         t_step_duration = int(args.t_step.duration_in_ms) if isinstance(args.t_step, HolderArgs) else int(args.t_step[0])
 

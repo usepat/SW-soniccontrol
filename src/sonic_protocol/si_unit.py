@@ -214,7 +214,7 @@ ABSOLUTE_FREQUENCY_META = SIVarMeta(
     max_value=(10, SIPrefix.MEGA)       # 10MHz
 )
 
-class AbsoluteFrequencySIVar(SIVar[int], si_meta=ABSOLUTE_FREQUENCY_META):
+class AbsoluteFrequencySIVar(SIVar[float], si_meta=ABSOLUTE_FREQUENCY_META):
     """Frequency variable for home UI with flexible range."""
     
     def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
@@ -228,7 +228,7 @@ RELATIVE_FREQUENCY_META = SIVarMeta(
     max_value=(5, SIPrefix.MEGA)       # 5MHz
 )
 
-class RelativeFrequencySIVar(SIVar[int], si_meta=RELATIVE_FREQUENCY_META):
+class RelativeFrequencySIVar(SIVar[float], si_meta=RELATIVE_FREQUENCY_META):
     """Frequency variable for home UI with flexible range."""
     
     def __init__(self, value: int = 0, si_prefix: SIPrefix = SIPrefix.NONE):
@@ -265,7 +265,7 @@ class GainSIVar(SIVar[int], si_meta=GAIN_META):
         super().__init__(value=value, si_prefix=si_prefix)
 
 
-class AtfSiVar(SIVar[int], si_meta=ABSOLUTE_FREQUENCY_META):
+class AtfSiVar(SIVar[float], si_meta=ABSOLUTE_FREQUENCY_META):
     """ATF frequency variable with fixed metadata."""
     
     def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
