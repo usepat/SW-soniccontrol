@@ -13,9 +13,17 @@ variables = { TARGET = "url", URL = { expr="'/dev/ttyUSB0' if platform.system() 
 excludes = [ "worker" ]
 
 [profiles.simulation_mvp]
-variables = { TARGET = "simulation", KWARGS = { expr="['--worker']" }, SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/platform_linux/src/device/device_main'"} }
 excludes = [ "descale" ]
+[profiles.simulation_mvp.variables] 
+TARGET = "simulation"
+KWARGS = { expr="['--product-type=worker', '--name=test_worker', '--port=4000', f'--data-dir={Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'data'}']" } 
+SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/platform_linux/src/device/device_main'"} 
+
 
 [profiles.simulation_descale]
-variables = { TARGET = "simulation", KWARGS = { expr="['--descale']" }, SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/platform_linux/src/device/device_main'"} }
 excludes = [ "worker" ]
+[profiles.simulation_descale.variables] 
+TARGET = "simulation"
+KWARGS = { expr="['--product-type=descale', '--name=test_descale', '--port=4000', f'--data-dir={Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'data'}']" } 
+SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/platform_linux/src/device/device_main'"} 
+

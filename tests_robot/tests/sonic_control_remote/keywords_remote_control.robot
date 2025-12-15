@@ -54,7 +54,7 @@ Reconnect
 
 Check command code for errors
     [Arguments]    ${command_code}
-    @{my_list} =    Create List    ${CODE_E_INTERNAL_DEVICE_ERROR}    ${CODE_E_COMMAND_NOT_KNOWN}    ${CODE_E_COMMAND_NOT_PERMITTED}    ${CODE_E_PARSING_ERROR} 
+    @{my_list} =    Create List    ${CODE_E_INTERNAL_DEVICE_ERROR}    ${CODE_E_COMMAND_NOT_KNOWN}    ${CODE_E_SYNTAX_ERROR}    ${CODE_E_PARSING_ERROR}
     Collections.List Should Not Contain Value    ${my_list}    ${command_code}
 
     

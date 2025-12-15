@@ -2,7 +2,7 @@
 
 Resource    keywords_remote_control.robot
 
-Suite Setup    Connect to device
+Suite Setup    Connect device and deduce consts
 Suite Teardown    RemoteController.Disconnect
 
 Test Setup    Reconnect if disconnected
@@ -17,6 +17,19 @@ ${MAX_GAIN}    ${100}
 
 ${MIN_INDEX}    ${1}
 ${MAX_INDEX}    ${4}
+
+*** Keywords ***
+
+Connect device and deduce consts
+    # We need to deduce the constants from the protocol, because descale and worker use different limits.
+    Connect to device
+    ${consts}=    RemoteController.Get consts
+    Set Suite Variable    ${MIN_FREQUENCY}    ${consts['min_frequency']}
+    Set Suite Variable    ${MAX_FREQUENCY}    ${consts['max_frequency']}
+    Set Suite Variable    ${MIN_GAIN}         ${consts['min_gain']}
+    Set Suite Variable    ${MAX_GAIN}         ${consts['max_gain']}
+    Set Suite Variable    ${MIN_INDEX}        ${consts['min_transducer_index']}
+    Set Suite Variable    ${MAX_INDEX}        ${consts['max_transducer_index']}
 
 *** Test Cases ***
 

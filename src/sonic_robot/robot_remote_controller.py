@@ -6,13 +6,12 @@ from typing_extensions import List
 from robot.api.deco import keyword, library
 import robot.api.logger as logger
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.protocol_list import ProtocolList
-from sonic_protocol.schema import DeviceType
 from sonic_robot.deduce_command_examples import deduce_command_examples
 from soniccontrol.procedures.procedure_controller import ProcedureType
 from soniccontrol.procedures.procs.ramper import RamperArgs
 from soniccontrol.remote_controller import RemoteController
 from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry, register_device_plugins
+import attrs
 
 
 # Scope is set to suite, so that the same remote controller can be used across tests.
@@ -87,6 +86,10 @@ class RobotRemoteController:
         """
         self._loop.run_until_complete(asyncio.sleep(time_ms / 1000))
         print(f"Sleeping for {time_ms} ms")
+
+    @keyword("Get consts")
+    def get_consts(self) -> Dict[str, Any]:
+        return attrs.asdict(self._controller.protocol_consts)
 
 
 def main():

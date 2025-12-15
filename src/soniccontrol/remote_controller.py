@@ -162,30 +162,34 @@ class RemoteController:
         #
     
     @property
-    def updater(self) -> Updater:
-        assert self._updater
-        return self._updater
-
-    @property
     def updater(self):
         assert self._updater
         return self._updater
+    
+    @property 
+    def protocol_consts(self):
+        assert self._device
+        return self._device.protocol.consts
 
 
-
-from soniccontrol.remote_controller import RemoteController
-import sonic_protocol.python_parser.commands as cmds
-from sonic_protocol.field_names import EFieldName
 
 async def main():
+    from soniccontrol.remote_controller import RemoteController
+    import sonic_protocol.python_parser.commands as cmds
+    from sonic_protocol.field_names import EFieldName
+
     controller = RemoteController()
     #await controller.connect_via_serial(Path("/dev/ttyUSB0"))
     firmware_dir = environ.get('FIRMWARE_BUILD_DIR_PATH')
     if not firmware_dir:
         raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
-    #path = firmware_dir + '/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp'
-    path = firmware_dir + '/linux/mvp_simulation/test/simulation/cli_simulation_mvp_gui/cli_simulation_mvp_gui'
-    await controller.connect_via_process(Path(path))
+    exe_path = firmware_dir + '/linux/platform_linux/src/device/device_main'
+    await controller.connect_via_process(Path(exe_path), [
+        '--product-type=worker', 
+        '--name=test_worker', 
+        '--port=4000', 
+        f'--data-dir={firmware_dir + "/data"}'
+    ])
     answer_str, _, _ = await controller.send_command("?protocol")
     answer_str, _, _ = await controller.send_command(cmds.GetProtocol())
     answer_str, answer_dict, is_valid = await controller.send_command(cmds.SetAtf(1, 100000))
