@@ -67,7 +67,7 @@ class RamperLocal(Ramper):
         device: SonicDevice,
         args: RamperArgs
     ) -> None:
-        values = [args.f_start.to_prefix(SIPrefix.NONE) + i * args.f_step.to_prefix(SIPrefix.NONE) for i in range(int((args.f_stop.to_prefix(SIPrefix.NONE) - args.f_start.to_prefix(SIPrefix.NONE)) / args.f_step.to_prefix(SIPrefix.NONE)) + 1) ]
+        values = [int(args.f_start.to_prefix(SIPrefix.NONE)) + i * int(args.f_step.to_prefix(SIPrefix.NONE)) for i in range(int((int(args.f_stop.to_prefix(SIPrefix.NONE)) - int(args.f_start.to_prefix(SIPrefix.NONE))) / int(args.f_step.to_prefix(SIPrefix.NONE))) + 1) ]
 
         # await device.get_overview() # FIXME I dont think we need this
         # I am removing it for now because we can't send commands to the crystal device that have no command code
@@ -123,9 +123,9 @@ class RamperRemote(Ramper):
         args: RamperArgs,
         configure_only: bool = False,
     ) -> None:
-        await device.execute_command(commands.SetRampFStart(args.f_start.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetRampFStop(args.f_stop.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetRampFStep(args.f_step.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetRampFStart(int(args.f_start.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetRampFStop(int(args.f_stop.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetRampFStep(int(args.f_step.to_prefix(SIPrefix.NONE))))
         # When the args are retrieved from the Form Widget, the HolderArgs are tuples instead
         t_on_duration = int(args.t_on.duration_in_ms)
         t_off_duration = int(args.t_off.duration_in_ms)

@@ -98,7 +98,7 @@ class HDF5ExperimentWriter(ExperimentWriter):
         if not self._file_path_posix.endswith(file_extension):
             self._file_path_posix += ".h5" # add extension
         self._file = tb.open_file(self._file_path_posix, "w")
-        self._write_version(Version(1, 0, 0))
+        self._write_version(Version(2, 0, 0))
         self._data_table = self._file.create_table("/", "data", cast(tb.Description, DataTable))
 
     def _write_version(self, version: Version):
@@ -124,7 +124,7 @@ class HDF5ExperimentWriter(ExperimentWriter):
     def add_row(self, data: Dict[str, Any]) -> None:
         data = data.copy() # make a copy, so that we do not transform the original data
         timestamp_col = EFieldName.TIMESTAMP.name.lower()
-        data[timestamp_col] = data[timestamp_col].isoformat()  # convert the time to a string for direct readability in storage
+        data[timestamp_col] = data[EFieldName.TIMESTAMP.name].isoformat()  # convert the time to a string for direct readability in storage
         # filter data, so that it only contains the columns of the table
         filtered_data = { k.lower(): v for k, v in data.items() if k.lower() in self._data_table.colnames }
         HDF5SerializationHelper.add_rows_to_table(self._file, self._data_table, [filtered_data])

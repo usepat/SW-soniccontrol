@@ -15,7 +15,7 @@ class PlotBuilder:
         plot._plot.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M:%S"))
         
         plot.add_axis("frequency_axis", "Frequency / Hz")
-        plot.add_axis("phase_axis", "Phase / °")
+        plot.add_axis("phase_axis", "Phase / c°")
         plot.add_axis("urms_axis", "U$_{RMS}$ / mV")
         plot.add_axis("irms_axis", "I$_{RMS}$ / mA")
         # for k, ax in plot._axes.items():
@@ -57,7 +57,7 @@ class PlotBuilder:
     def create_spectralplot_uip(subplot: matplotlib.axes.Axes) -> Plot:
         plot = Plot(subplot, EFieldName.FREQUENCY.name, "Frequency / Hz")
         
-        plot.add_axis("phase_axis", "Phase / °")
+        plot.add_axis("phase_axis", "Phase / c°")
         plot.add_axis("urms_axis", "U$_{RMS}$ / mV")
         plot.add_axis("irms_axis", "I$_{RMS}$ / mA")
         

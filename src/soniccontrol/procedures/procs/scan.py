@@ -59,11 +59,11 @@ class ScanProc(Procedure):
         return True
 
     async def execute(self, device: SonicDevice, args: ScanArgs, configure_only: bool = False) -> None:
-        await device.execute_command(commands.SetFrequency(args.f_center.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetScanFShift(args.f_shift.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetFrequency(int(args.f_center.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetScanFShift(int(args.f_shift.to_prefix(SIPrefix.NONE))))
         await device.execute_command(commands.SetScanGain(args.gain.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetScanFRange(args.f_range.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetScanFStep(args.f_step.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetScanFRange(int(args.f_range.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetScanFStep(int(args.f_step.to_prefix(SIPrefix.NONE))))
         t_step = int(args.t_step.duration_in_ms) if isinstance(args.t_step, HolderArgs) else int(args.t_step[0])
         await device.execute_command(commands.SetScanTStep(t_step))
         if not configure_only:

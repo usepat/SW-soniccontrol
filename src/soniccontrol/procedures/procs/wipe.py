@@ -62,8 +62,8 @@ class WipeProc(Procedure):
 
     async def execute(self, device: SonicDevice, args: WipeArgs, configure_only: bool = False) -> None:
         self.f_step = RelativeFrequencySIVar(0) 
-        await device.execute_command(commands.SetWipeFRange(args.f_range.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetWipeFStep(args.f_step.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetWipeFRange(int(args.f_range.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetWipeFStep(int(args.f_step.to_prefix(SIPrefix.NONE))))
         t_on_duration = int(args.t_on.duration_in_ms) if isinstance(args.t_on, HolderArgs) else int(args.t_on[0])
         t_off_duration = int(args.t_off.duration_in_ms) if isinstance(args.t_off, HolderArgs) else int(args.t_off[0])
         t_pause_duration = int(args.t_pause.duration_in_ms) if isinstance(args.t_pause, HolderArgs) else int(args.t_pause[0])

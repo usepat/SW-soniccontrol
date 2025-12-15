@@ -296,7 +296,7 @@ class Configuration(UIComponent):
         for i, atconfig in enumerate(config.atconfigs):
             # i+1 because atfs start at 1 and not 0.
             # SIVar holds the primitive in .value; device commands expect primitives.
-            await self._device.execute_command(commands.SetAtf(i+1, atconfig.atf.to_prefix(SIPrefix.NONE) if atconfig.atf else 0))
+            await self._device.execute_command(commands.SetAtf(i+1, int(atconfig.atf.to_prefix(SIPrefix.NONE)) if atconfig.atf else 0))
             await self._device.execute_command(commands.SetAtk(i+1, atconfig.atk))
             await self._device.execute_command(commands.SetAtt(i+1, atconfig.att.to_prefix(SIPrefix.NONE)))
 

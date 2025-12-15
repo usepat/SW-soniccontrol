@@ -110,7 +110,7 @@ class InfoView(TabView):
             self._footer_frame, text=ui_labels.COMPANY_NAME, anchor=ttk.CENTER
         )
         # TODO create the exe inside a github task, and then just fetch the release version
-        __version__= "v2.4.0-rc" # TODO: fix the version problem
+        __version__= "v3.1.0-beta" # TODO: fix the version problem
         self._version: ttk.Label = ttk.Label(
             self._footer_frame,
             text=f"{ui_labels.VERSION_LABEL}: {__version__}",
