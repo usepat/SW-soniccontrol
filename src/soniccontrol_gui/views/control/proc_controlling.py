@@ -82,8 +82,12 @@ class ProcControlling(UIComponent):
         for proc_type, args_class in self._proc_controller.proc_args_list.items():
             proc_dict = {}
             proc_widget = FormWidget(
-                self, self._view.procedure_frame, 
-                proc_type.value, args_class, proc_dict,
+                self, 
+                self._view.procedure_frame, 
+                proc_type.value, 
+                args_class, 
+                "proc_controlling",
+                model_dict=proc_dict
             )
             proc_widget.view.hide()
             self._model.procedure_arg_dict[proc_type] = proc_dict

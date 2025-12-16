@@ -24,16 +24,17 @@ SPECTRUM_MEASURE_TAB = "left_notebook.Spectrum Measure_tab"
 CONNECTION_PORTS_COMBOBOX = 'connection.ports_combobox'
 CONNECTION_CONNECT_VIA_URL_BUTTON = 'connection.connect_via_url_button'
 CONNECTION_CONNECT_TO_SIMULATION_BUTTON = 'connection.connect_to_simulation_button'
+CONNECTION_SIMULATION_CMD_ARGS = 'connection.simulation_cmd_args'
 
 # Home constants
 HOME_DEVICE_TYPE_LABEL = 'home.device_type_label'
 HOME_FIRMWARE_VERSION_LABEL = 'home.firmware_version_label'
 HOME_PROTOCOL_VERSION_LABEL = 'home.protocol_version_label'
 HOME_DISCONNECT_BUTTON = 'home.disconnect_button'
-HOME_FREQUENCY_ENTRY = 'home.frequency_entry'
-HOME_SIGNAL_BUTTON = 'home.signal_button'
+HOME_FREQUENCY_ENTRY = 'home.Home Controls.frequency.entry_str'
+HOME_SIGNAL_BUTTON = 'home.Home Controls.signal.checkbutton'
 HOME_GAIN_VAR = 'home.gain_var'
-HOME_GAIN_ENTRY = 'home.gain_entry'
+HOME_GAIN_ENTRY = 'home.Home Controls.gain.entry_str'
 HOME_SEND_BUTTON = 'home.send_button'
 
 # Serial Monitor constants
@@ -76,28 +77,28 @@ CONFIGURATION_CONFIG_ENTRY = 'configuration.config_entry'
 CONFIGURATION_SAVE_CONFIG_BUTTON = 'configuration.save_config_button'
 CONFIGURATION_SUBMIT_CONFIG_BUTTON = 'configuration.submit_config_button'
 CONFIGURATION_DELETE_CONFIG_BUTTON = 'configuration.delete_config_button'
-CONFIGURATION_BROWSE_FILES_ENTRY = 'configuration.browse_files_entry'
-CONFIGURATION_BROWSE_FILES_BUTTON = 'configuration.browse_files_button'
+CONFIGURATION_BROWSE_FILES_ENTRY = 'configuration.Transducer Config.init_script_path.browse_files_entry'
+CONFIGURATION_BROWSE_FILES_BUTTON = 'configuration.Transducer Config.init_script_path.browse_files_button'
 
 # AT Configuration (Index 0)
-CONFIGURATION_AT_CONFIG_0_ATF_ENTRY = 'configuration.at_config.0.atf_entry'
-CONFIGURATION_AT_CONFIG_0_ATK_ENTRY = 'configuration.at_config.0.atk_entry'
-CONFIGURATION_AT_CONFIG_0_ATT_ENTRY = 'configuration.at_config.0.att_entry'
+CONFIGURATION_AT_CONFIG_0_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atf.entry_str'
+CONFIGURATION_AT_CONFIG_0_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atf.entry_str'
+CONFIGURATION_AT_CONFIG_0_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atk.entry_str'
 
 # AT Configuration (Index 1)
-CONFIGURATION_AT_CONFIG_1_ATF_ENTRY = 'configuration.at_config.1.atf_entry'
-CONFIGURATION_AT_CONFIG_1_ATK_ENTRY = 'configuration.at_config.1.atk_entry'
-CONFIGURATION_AT_CONFIG_1_ATT_ENTRY = 'configuration.at_config.1.att_entry'
+CONFIGURATION_AT_CONFIG_1_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atf.entry_str'
+CONFIGURATION_AT_CONFIG_1_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atf.entry_str'
+CONFIGURATION_AT_CONFIG_1_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atk.entry_str'
 
 # AT Configuration (Index 2)
-CONFIGURATION_AT_CONFIG_2_ATF_ENTRY = 'configuration.at_config.2.atf_entry'
-CONFIGURATION_AT_CONFIG_2_ATK_ENTRY = 'configuration.at_config.2.atk_entry'
-CONFIGURATION_AT_CONFIG_2_ATT_ENTRY = 'configuration.at_config.2.att_entry'
+CONFIGURATION_AT_CONFIG_2_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atf.entry_str'
+CONFIGURATION_AT_CONFIG_2_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atf.entry_str'
+CONFIGURATION_AT_CONFIG_2_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atk.entry_str'
 
 # AT Configuration (Index 3)
-CONFIGURATION_AT_CONFIG_3_ATF_ENTRY = 'configuration.at_config.3.atf_entry'
-CONFIGURATION_AT_CONFIG_3_ATK_ENTRY = 'configuration.at_config.3.atk_entry'
-CONFIGURATION_AT_CONFIG_3_ATT_ENTRY = 'configuration.at_config.3.att_entry'
+CONFIGURATION_AT_CONFIG_3_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atf.entry_str'
+CONFIGURATION_AT_CONFIG_3_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atf.entry_str'
+CONFIGURATION_AT_CONFIG_3_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atk.entry_str'
 
 # Procedure Controlling constants
 PROC_CONTROLLING_PROCEDURE_COMBOBOX = 'proc_controlling.procedure_combobox'
@@ -106,26 +107,25 @@ PROC_CONTROLLING_STOP_BUTTON = 'proc_controlling.stop_button'
 PROC_CONTROLLING_RUNNING_PROC_LABEL = 'proc_controlling.running_proc_label'
 
 # Ramp constants
-RAMP_F_START = 'Ramp.ramp_f_start.entry_str'
-RAMP_F_STOP = 'Ramp.ramp_f_stop.entry_str'
-RAMP_F_STEP = 'Ramp.ramp_f_step.entry_str'
-RAMP_T_ON_TIME = 'Ramp.ramp_t_on.time_str'
-RAMP_T_ON_UNIT = 'Ramp.ramp_t_on.unit_str'
-RAMP_T_OFF_TIME = 'Ramp.ramp_t_off.time_str'
-RAMP_T_OFF_UNIT = 'Ramp.ramp_t_off.unit_str'
+RAMP_F_START = 'proc_controlling.Ramp.f_start.entry_str'
+RAMP_F_STOP = 'proc_controlling.Ramp.f_stop.entry_str'
+RAMP_F_STEP = 'proc_controlling.Ramp.f_step.entry_str'
+RAMP_T_ON_TIME = 'proc_controlling.Ramp.t_on.time_str'
+RAMP_T_ON_UNIT = 'proc_controlling.Ramp.t_on.unit_str'
+RAMP_T_OFF_TIME = 'proc_controlling.Ramp.t_off.time_str'
+RAMP_T_OFF_UNIT = 'proc_controlling.Ramp.t_off.unit_str'
 
 # Spectrum Measure
-
-SPECTRUM_MEASURE_GAIN = "Spectrum Measure.gain.entry_str"
-SPECTRUM_MEASURE_F_START = "Spectrum Measure.f_start.entry_str"
-SPECTRUM_MEASURE_F_STOP = "Spectrum Measure.f_stop.entry_str"
-SPECTRUM_MEASURE_F_STEP = "Spectrum Measure.f_step.entry_str"
-SPECTRUM_MEASURE_T_ON_TIME = "Spectrum Measure.t_on.time_str"
-SPECTRUM_MEASURE_T_ON_UNIT = "Spectrum Measure.t_on.unit_str"
-SPECTRUM_MEASURE_T_OFF_TIME = "Spectrum Measure.t_off.time_str"
-SPECTRUM_MEASURE_T_OFF_UNIT = "Spectrum Measure.t_off.unit_str"
-SPECTRUM_MEASURE_T_OFFSET_TIME = "Spectrum Measure.time_offset_measure.time_str"
-SPECTRUM_MEASURE_T_OFFSET_UNIT = "Spectrum Measure.time_offset_measure.unit_str"
+SPECTRUM_MEASURE_GAIN = "spectrum_measure.Spectrum Measure.gain.entry_str"
+SPECTRUM_MEASURE_F_START = "spectrum_measure.Spectrum Measure.f_start.entry_str"
+SPECTRUM_MEASURE_F_STOP = "spectrum_measure.Spectrum Measure.f_stop.entry_str"
+SPECTRUM_MEASURE_F_STEP = "spectrum_measure.Spectrum Measure.f_step.entry_str"
+SPECTRUM_MEASURE_T_ON_TIME = "spectrum_measure.Spectrum Measure.t_on.time_str"
+SPECTRUM_MEASURE_T_ON_UNIT = "spectrum_measure.Spectrum Measure.t_on.unit_str"
+SPECTRUM_MEASURE_T_OFF_TIME = "spectrum_measure.Spectrum Measure.t_off.time_str"
+SPECTRUM_MEASURE_T_OFF_UNIT = "spectrum_measure.Spectrum Measure.t_off.unit_str"
+SPECTRUM_MEASURE_T_OFFSET_TIME = "spectrum_measure.Spectrum Measure.time_offset_measure.time_str"
+SPECTRUM_MEASURE_T_OFFSET_UNIT = "spectrum_measure.Spectrum Measure.time_offset_measure.unit_str"
 
 # Measuring
 MEASURING_TARGET_COMBOBOX = 'measuring.target_combobox'

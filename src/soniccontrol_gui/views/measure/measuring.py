@@ -54,7 +54,8 @@ class Measuring(UIComponent):
 
         self._experiment_form = ExperimentForm(
             self,
-            self._view._metadata_form_frame
+            "experiment",
+            self._view._metadata_form_frame,
         )
 
         self._time_figure = matplotlib.figure.Figure(dpi=100)

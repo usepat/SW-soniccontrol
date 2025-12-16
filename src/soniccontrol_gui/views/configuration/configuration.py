@@ -82,7 +82,13 @@ class Configuration(UIComponent):
         self._interpreter = InterpreterEngine(device, updater)
 
         self._view = ConfigurationView(parent.view, self, self._count_atk_atf)
-        self._form = FormWidget(self, self._view.form_slot, "Transducer Config", TransducerConfig)
+        self._form = FormWidget(
+            self, 
+            self._view.form_slot, 
+            "Transducer Config", 
+            TransducerConfig,
+            "configuration"
+        )
         super().__init__(parent, self._view, self._logger)
 
         def show_script_error(e):

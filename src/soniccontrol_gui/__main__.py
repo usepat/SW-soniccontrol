@@ -9,14 +9,12 @@ from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 if __name__ == "__main__":
     register_device_plugins()
 
-    in_dev_env = False
+    in_dev_env = "FIRMWARE_BUILD_DIR_PATH" in os.environ
     simulation_exe_path = None
-    if "FIRMWARE_BUILD_DIR_PATH" in os.environ:
-        in_dev_env= True
-        simulation_exe_path = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/platform_linux/src/device/device_main")
-
+    if in_dev_env:
         # We could do this somehow else. But this is easy and simple
         WidgetRegistry.set_up()
+        simulation_exe_path = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/platform_linux/src/device/device_main")
 
     start_gui(simulation_exe_path)
 

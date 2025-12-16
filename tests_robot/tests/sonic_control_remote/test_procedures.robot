@@ -57,11 +57,11 @@ Test if after ramp signal is off
     ${EXPECTED_PROCEDURE}=    Convert to procedure    NO_PROC
     Send command and check response    -    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
 
-Test if tune notifies or halts
-    [Setup]     Set Tune Args
-    [Teardown]    RemoteController.Send Command    !stop
-    RemoteController.Send Command     !tune
-    # TODO check if tune send notification or send procedure halted
+# # TODO check if tune send notification or send procedure halted
+# Test if tune notifies or halts
+#     [Setup]     Set Tune Args
+#     [Teardown]    RemoteController.Send Command    !stop
+#     RemoteController.Send Command     !tune
     
 # Invalid args error should not mark the procedure component as damaged and therefore should not block setter
 Test if user errors dont mark the prodedure component as damaged

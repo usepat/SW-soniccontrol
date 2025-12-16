@@ -38,6 +38,8 @@ Open device window
 
     IF  "${TARGET}" == "simulation"
         Delete simulation memory file
+        ${KWARGS_JOINED}=    Evaluate    ' '.join(${KWARGS})
+        Gui.Set text of widget "${CONNECTION_SIMULATION_CMD_ARGS}" to "${KWARGS_JOINED}"
         Gui.Press button "${CONNECTION_CONNECT_TO_SIMULATION_BUTTON}"
     ELSE IF    "${TARGET}" == "url"
         Connect via url "${URL}"

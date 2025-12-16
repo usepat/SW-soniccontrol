@@ -51,6 +51,7 @@ class Home(UIComponent):
             self._view.form_slot, 
             "Home Controls", 
             TransducerState, 
+            "home",
             model_dict=attrs.asdict(self._config),
             use_scroll=False
         )

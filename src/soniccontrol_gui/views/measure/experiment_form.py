@@ -33,8 +33,9 @@ class Template:
 class ExperimentForm(UIComponent):
     FINISHED_EDITING_EVENT: str = "<<FINISHED_EDITING>>"
 
-    def __init__(self, parent: UIComponent, view_slot: View | ttk.Frame | None = None):
+    def __init__(self, parent: UIComponent, widget_name: str, view_slot: View | ttk.Frame | None = None):
         self._logger = logging.getLogger(parent.logger.name + "." + ExperimentForm.__name__)
+        self._widget_name = widget_name
         self._view = ExperimentFormView(parent.view if view_slot is None else view_slot)
         super().__init__(parent, self._view )
 
@@ -215,7 +216,7 @@ class ExperimentForm(UIComponent):
         }
 
         
-        self._metadata_form = FormWidget(self, self._view.metadata_form_slot, "", ExperimentMetaData, field_hooks=form_field_hooks)
+        self._metadata_form = FormWidget(self, self._view.metadata_form_slot,  "", ExperimentMetaData, field_hooks=form_field_hooks, widget_name=self._widget_name)
     
     def _save_templates_to_file(self):
         """Save templates to file."""

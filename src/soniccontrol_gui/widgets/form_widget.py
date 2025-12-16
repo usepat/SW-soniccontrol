@@ -1768,9 +1768,12 @@ class ObjectFieldView(FieldViewBase[dict]):
         self._value: dict = {}
 
         # TODO: handle default values
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._field_view_factory = field_view_factory
-        self._widget_name = parent_widget_name + "." + self._field_name
+        if "parent_widget_name" in kwargs:
+            parent_widget_name = kwargs.pop("parent_widget_name", "")
+            self._widget_name = parent_widget_name + "." + self._field_name
+        else:
+            self._widget_name = self._field_name
         self._fields: Dict[str, FieldViewBase] = {}
         field_view_kwargs = kwargs.pop("field_view_kwargs", {}) # Others also rely on it so dont pop
         super().__init__(master, *args, **kwargs)
@@ -1841,13 +1844,14 @@ class ObjectFieldView(FieldViewBase[dict]):
 
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
-                 title: str, form_class: type, model_dict: dict | None = None, field_hooks: FieldHookRegistry = {}, use_scroll: bool = True):
+                 title: str, form_class: type, widget_name: str, model_dict: dict | None = None, field_hooks: FieldHookRegistry = {}, use_scroll: bool = True):
         """
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
                 use_scroll: Whether to use a scrolled frame (default True) or a regular frame (False)
         """
         assert attrs.has(form_class), "the form class provided has to be an attrs class"
+        self._widget_name = widget_name
         self._attrs_class: type = form_class
         self._converter = create_cattrs_converter_for_forms()
         self._field_view_factory = DynamicFieldViewFactory(self._converter, field_hooks)
@@ -1858,7 +1862,7 @@ class FormWidget(UIComponent):
         super().__init__(parent, self._view)
         # self._view.field_slot is the content frame (scrolled or regular) we need to scroll when using ScrolledFrame
         scroll_frame = self._view._content_frame if use_scroll else None
-        self._attr_view = ObjectFieldView(self._view.field_slot, self._title, self._attrs_class, self._field_view_factory, top_scroll_frame=scroll_frame)
+        self._attr_view = ObjectFieldView(self._view.field_slot, self._title, self._attrs_class, self._field_view_factory, top_scroll_frame=scroll_frame, parent_widget_name=self._widget_name)
         self._view._initialize_publish()
 
         # bind the model dict to the view

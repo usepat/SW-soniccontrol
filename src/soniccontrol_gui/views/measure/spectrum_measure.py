@@ -35,6 +35,7 @@ class SpectrumMeasureTab(UIComponent):
             self._view.form_frame, 
             ui_labels.SPECTRUM_MEASURE_TITLE, 
             SpectrumMeasureArgs,
+            "spectrum_measure",
             spectrum_measure_model.form_fields
         )
         self._view.set_guide_button_command(self._open_guide)

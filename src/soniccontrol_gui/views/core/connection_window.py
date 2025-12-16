@@ -185,6 +185,8 @@ class ConnectionWindow(UIComponent):
             args.append("--start-configurator")
         if self._view.use_firmware_gui:
             args.append("--gui")
+        if len(self._view.simulation_cmd_args) != 0:
+            args.extend(self._view.simulation_cmd_args.split(" "))
 
         connection = CLIConnection(bin_file=bin_file, connection_name = "simulation", cmd_args=args)
         await self._attempt_connection(connection)
@@ -263,6 +265,12 @@ class ConnectionWindowView(ttk.Window, View):
         )
         WidgetRegistry.register_widget(self._use_firmware_gui_box, "use_firmware_gui_box", window_name)
 
+
+        self._simulation_cmd_args = tk.StringVar()
+        self._simulation_cmd_args_entry = tk.Entry(self._simulation_frame, textvariable=self._simulation_cmd_args)
+        WidgetRegistry.register_widget(self._simulation_cmd_args_entry, "simulation_cmd_args", window_name)
+
+
         # --- plugin container (NEW) ---
         self.plugins_container = ttk.Frame(self)
 
@@ -284,6 +292,7 @@ class ConnectionWindowView(ttk.Window, View):
             self._connect_to_simulation_button.pack(side=ttk.LEFT, fill=ttk.X, expand=True, padx=sizes.SMALL_PADDING)
             self._start_configurator_box.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
             self._use_firmware_gui_box.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
+            self._simulation_cmd_args_entry.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
 
         self._loading_label.pack(side=ttk.TOP, pady=sizes.MEDIUM_PADDING)
 
@@ -305,6 +314,10 @@ class ConnectionWindowView(ttk.Window, View):
     @property
     def use_firmware_gui(self) -> bool:
         return self._use_firmware_gui.get()
+    
+    @property
+    def simulation_cmd_args(self) -> str:
+        return self._simulation_cmd_args.get()
     
     @loading_text.setter
     def loading_text(self, value: str) -> None:

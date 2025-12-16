@@ -6,6 +6,7 @@ from typing import List, Tuple
 
 from serial_asyncio import open_serial_connection
 import logging
+import atexit
 
 
 @attrs.define()
@@ -58,6 +59,9 @@ class CLIConnection(Connection):
     process: asyncio.subprocess.Process = attrs.field(init=False)     
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        # ensure that on program exit the clean up is called. Else the process gets not terminated sometimes
+        atexit.register(self.close_connection)
+        
         self.process = await asyncio.create_subprocess_exec(
             str(self.bin_file),
             *self.cmd_args,
