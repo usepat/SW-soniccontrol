@@ -27,8 +27,8 @@ Execute test script holds application
     ${signal_text_after_4000ms}=     Gui.Get text of widget "${STATUS_BAR_SIGNAL_LABEL}"
     Gui.Let the app update for "4000" ms
     ${signal_text_after_8000ms}=     Gui.Get text of widget "${STATUS_BAR_SIGNAL_LABEL}"
-    Should Contain    ${signal_text_after_4000ms}    ON
-    Should Contain    ${signal_text_after_8000ms}    OFF
+    Should Contain    ${signal_text_after_4000ms}    on
+    Should Contain    ${signal_text_after_8000ms}    off
 
 
 *** Keywords ***

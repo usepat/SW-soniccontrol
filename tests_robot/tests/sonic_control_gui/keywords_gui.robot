@@ -87,9 +87,9 @@ Set ramp args
     Gui.Set text of widget "${RAMP_F_START}" to "100000"
     Gui.Set text of widget "${RAMP_F_STOP}" to "200000"
     Gui.Set text of widget "${RAMP_F_STEP}" to "10000"
-    Gui.Set text of widget "${RAMP_T_ON_TIME}" to "500"
+    Gui.Set text of widget "${RAMP_T_ON_TIME}" to "1000"
     Gui.Set text of widget "${RAMP_T_ON_UNIT}" to "ms"
-    Gui.Set text of widget "${RAMP_T_OFF_TIME}" to "500"
+    Gui.Set text of widget "${RAMP_T_OFF_TIME}" to "1000"
     Gui.Set text of widget "${RAMP_T_OFF_UNIT}" to "ms"
 
 Set spectrum measure args

@@ -53,7 +53,7 @@ Test if after ramp signal is off
     [Teardown]    RemoteController.Send Command     !log[procedureLogger]=ERROR
     Set Ramp Args
     Send command and check if the device crashes     !ramp
-    Sleep for 15000 ms
+    Sleep for 25000 ms
     ${EXPECTED_PROCEDURE}=    Convert to procedure    NO_PROC
     Send command and check response    -    ${FIELD_PROCEDURE}=${EXPECTED_PROCEDURE}
 

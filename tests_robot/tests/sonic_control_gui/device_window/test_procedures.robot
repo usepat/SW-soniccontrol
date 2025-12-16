@@ -19,17 +19,26 @@ Run ramp procedure
     Gui.Press button "${MESSAGE_BOX_OPTION_PROCEED}"
     
     Gui.Wait up to "10000" ms for the widget "${STATUS_BAR_PROCEDURE_LABEL}" to change text
+    
+    ${timeout}=    Set Variable    1500
+    # We need to wait more than 1000 ms. Else we get issues with timing
+    # We also cannot wait for the signal to change to "on" at the beginning, 
+    # because it is more or less simultaneously set with selected proc.
+    ${signal_label}=    Gui.Get text of widget "${STATUS_BAR_SIGNAL_LABEL}"
+    Should Contain    ${signal_label}    on
 
-    # We need to wait more than 500 ms. Else we get issues with timing
-    FOR    ${i}    IN RANGE    10
-        ${signal_label}=    Gui.Wait up to "700" ms for the widget "${STATUS_BAR_SIGNAL_LABEL}" to change text
-        Should Contain    ${signal_label}    ON
+    ${signal_label}=    Gui.Wait up to "${timeout}" ms for the widget "${STATUS_BAR_SIGNAL_LABEL}" to change text
+    Should Contain    ${signal_label}    off
+    
+    FOR    ${i}    IN RANGE    9
+        ${signal_label}=    Gui.Wait up to "${timeout}" ms for the widget "${STATUS_BAR_SIGNAL_LABEL}" to change text
+        Should Contain    ${signal_label}    on
 
-        ${signal_label}=    Gui.Wait up to "700" ms for the widget "${STATUS_BAR_SIGNAL_LABEL}" to change text
-        Should Contain    ${signal_label}    OFF
+        ${signal_label}=    Gui.Wait up to "${timeout}" ms for the widget "${STATUS_BAR_SIGNAL_LABEL}" to change text
+        Should Contain    ${signal_label}    off
     END
 
-    ${proc_running_label}=    Gui.Wait up to "700" ms for the widget "${PROC_CONTROLLING_RUNNING_PROC_LABEL}" to change text
+    ${proc_running_label}=    Gui.Wait up to "${timeout}" ms for the widget "${PROC_CONTROLLING_RUNNING_PROC_LABEL}" to change text
     Should Be Equal As Strings    ${proc_running_label}    ${LABEL_PROC_NOT_RUNNING}
 
 

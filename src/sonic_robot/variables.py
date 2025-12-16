@@ -80,25 +80,21 @@ CONFIGURATION_DELETE_CONFIG_BUTTON = 'configuration.delete_config_button'
 CONFIGURATION_BROWSE_FILES_ENTRY = 'configuration.Transducer Config.init_script_path.browse_files_entry'
 CONFIGURATION_BROWSE_FILES_BUTTON = 'configuration.Transducer Config.init_script_path.browse_files_button'
 
-# AT Configuration (Index 0)
-CONFIGURATION_AT_CONFIG_0_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atf.entry_str'
-CONFIGURATION_AT_CONFIG_0_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atf.entry_str'
-CONFIGURATION_AT_CONFIG_0_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atk.entry_str'
+CONFIGURATION_AT_CONFIG_1_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atf.entry_str'
+CONFIGURATION_AT_CONFIG_1_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atk.entry_str'
+CONFIGURATION_AT_CONFIG_1_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.att.entry_str'
 
-# AT Configuration (Index 1)
-CONFIGURATION_AT_CONFIG_1_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atf.entry_str'
-CONFIGURATION_AT_CONFIG_1_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atf.entry_str'
-CONFIGURATION_AT_CONFIG_1_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atk.entry_str'
+CONFIGURATION_AT_CONFIG_2_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atf.entry_str'
+CONFIGURATION_AT_CONFIG_2_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atk.entry_str'
+CONFIGURATION_AT_CONFIG_2_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.att.entry_str'
 
-# AT Configuration (Index 2)
-CONFIGURATION_AT_CONFIG_2_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atf.entry_str'
-CONFIGURATION_AT_CONFIG_2_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atf.entry_str'
-CONFIGURATION_AT_CONFIG_2_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atk.entry_str'
+CONFIGURATION_AT_CONFIG_3_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atf.entry_str'
+CONFIGURATION_AT_CONFIG_3_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atk.entry_str'
+CONFIGURATION_AT_CONFIG_3_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.att.entry_str'
 
-# AT Configuration (Index 3)
-CONFIGURATION_AT_CONFIG_3_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atf.entry_str'
-CONFIGURATION_AT_CONFIG_3_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atf.entry_str'
-CONFIGURATION_AT_CONFIG_3_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atk.entry_str'
+CONFIGURATION_AT_CONFIG_4_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atf.entry_str'
+CONFIGURATION_AT_CONFIG_4_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atk.entry_str'
+CONFIGURATION_AT_CONFIG_4_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.att.entry_str'
 
 # Procedure Controlling constants
 PROC_CONTROLLING_PROCEDURE_COMBOBOX = 'proc_controlling.procedure_combobox'
