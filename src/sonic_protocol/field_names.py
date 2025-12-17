@@ -1,5 +1,4 @@
-
-from enum import unique, auto
+from enum import unique
 from sonic_protocol.schema import IEFieldName
 
 @unique
@@ -25,102 +24,102 @@ class EFieldName(IEFieldName):
 
     SUCCESS = BaseFieldName.SUCCESS.value
 
-    HELP = auto()
+    HELP = 6
 
-    DEVICE_TYPE = auto()
-    PROTOCOL_VERSION = auto()
-    IS_RELEASE = auto()
-    ADDITIONAL_OPTIONS = auto()
+    DEVICE_TYPE = 7
+    PROTOCOL_VERSION = 8
+    IS_RELEASE = 9
+    ADDITIONAL_OPTIONS = 10
 
-    INDEX = auto()
+    INDEX = 11
 
-    TRANSDUCER_ID = auto()
-    FREQUENCY = auto()
-    SWF = auto()
-    GAIN = auto()
-    TEMPERATURE = auto()
-    SIGNAL = auto()
-    WAVEFORM = auto()
-    URMS = auto()
-    IRMS = auto()
-    PHASE = auto()
-    TS_FLAG = auto()
-    PROCEDURE = auto()
-    PROCEDURE_ARG = auto()
-    ERROR_CODE = auto()
-    PASSWORD_HASHED = auto()
-    ANOMALY_DETECTION = auto()
-    VOLTAGE = auto()
-    TRANSDUCER_STATE = auto()
-    SYSTEM_STATE = auto()
+    TRANSDUCER_ID = 12
+    FREQUENCY = 13
+    SWF = 14
+    GAIN = 15
+    TEMPERATURE = 16
+    SIGNAL = 17
+    WAVEFORM = 18
+    URMS = 19
+    IRMS = 20
+    PHASE = 21
+    TS_FLAG = 22
+    PROCEDURE = 23
+    PROCEDURE_ARG = 24
+    ERROR_CODE = 25
+    PASSWORD_HASHED = 26
+    ANOMALY_DETECTION = 27
+    VOLTAGE = 28
+    TRANSDUCER_STATE = 29
+    SYSTEM_STATE = 30
 
-    TIMING = auto()
+    TIMING = 31
 
-    ATF = auto()
-    ATK = auto()
-    ATT = auto()
-    ATON = auto()
+    ATF = 32
+    ATK = 33
+    ATT = 34
+    ATON = 35
 
-    BUILD_DATE = auto()
-    BUILD_HASH = auto()
-    HARDWARE_VERSION = auto()
-    FIRMWARE_VERSION = auto()
-    SNR = auto()
+    BUILD_DATE = 36
+    BUILD_HASH = 37
+    HARDWARE_VERSION = 38
+    FIRMWARE_VERSION = 39
+    SNR = 40
 
-    CONTROL_MODE = auto()
-    COMM_MODE = auto()
-    COMMUNICATION_CHANNEL = auto()
-    COMMUNICATION_PROTOCOL = auto()
-    TERMINATION = auto()
+    CONTROL_MODE = 41
+    COMM_MODE = 42
+    COMMUNICATION_CHANNEL = 43
+    COMMUNICATION_PROTOCOL = 44
+    TERMINATION = 45
 
-    TIMESTAMP = auto()
+    TIMESTAMP = 46
 
-    SCAN_F_CENTER = auto()
-    SCAN_F_RANGE = auto()
-    SCAN_F_STEP = auto()
-    SCAN_F_SHIFT = auto()
-    SCAN_T_STEP = auto()
-    SCAN_GAIN = auto()
-    TUNE_F_STEP = auto()
-    TUNE_F_SHIFT = auto()
-    TUNE_T_TIME = auto()
-    TUNE_T_STEP = auto()
-    TUNE_N_STEPS = auto()
-    TUNE_GAIN = auto()
-    WIPE_F_RANGE = auto()
-    WIPE_F_STEP = auto()
-    WIPE_T_ON = auto()
-    WIPE_T_OFF = auto()
-    WIPE_T_PAUSE = auto()
-    WIPE_GAIN = auto()
-    RAMP_F_START = auto()
-    RAMP_F_STOP = auto()
-    RAMP_F_STEP = auto()
-    RAMP_T_ON = auto()
-    RAMP_T_OFF = auto()
-    DUTY_CYCLE_T_OFF = auto()
-    DUTY_CYCLE_T_ON = auto()
+    SCAN_F_CENTER = 47
+    SCAN_F_RANGE = 48
+    SCAN_F_STEP = 49
+    SCAN_F_SHIFT = 50
+    SCAN_T_STEP = 51
+    SCAN_GAIN = 52
+    TUNE_F_STEP = 53
+    TUNE_F_SHIFT = 54
+    TUNE_T_TIME = 55
+    TUNE_T_STEP = 56
+    TUNE_N_STEPS = 57
+    TUNE_GAIN = 58
+    WIPE_F_RANGE = 59
+    WIPE_F_STEP = 60
+    WIPE_T_ON = 61
+    WIPE_T_OFF = 62
+    WIPE_T_PAUSE = 63
+    WIPE_GAIN = 64
+    RAMP_F_START = 65
+    RAMP_F_STOP = 66
+    RAMP_F_STEP = 67
+    RAMP_T_ON = 68
+    RAMP_T_OFF = 69
+    DUTY_CYCLE_T_OFF = 70
+    DUTY_CYCLE_T_ON = 71
 
-    LOG_LEVEL = auto()
-    LOGGER_NAME = auto()
+    LOG_LEVEL = 72
+    LOGGER_NAME = 73
 
     # Legacy Fields
-    LEGACY_RANG = auto()
-    LEGACY_STEP = auto()
-    LEGACY_SING = auto()
-    LEGACY_PAUS = auto()
-    LEGACY_TUST = auto()
-    LEGACY_TUTM = auto()
-    LEGACY_SCST = auto()
-    LEGACY_F_CENTER = auto()
-    LEGACY_POLL = auto()
+    LEGACY_RANG = 74
+    LEGACY_STEP = 75
+    LEGACY_SING = 76
+    LEGACY_PAUS = 77
+    LEGACY_TUST = 78
+    LEGACY_TUTM = 79
+    LEGACY_SCST = 80
+    LEGACY_F_CENTER = 81
+    LEGACY_POLL = 82
 
-    MODBUS_SERVER_ID = auto()
+    MODBUS_SERVER_ID = 83
 
-    DEVICE_STATE = auto()
+    DEVICE_STATE = 84
 
-    MINUTES = auto()
-    HOURS = auto()
-    DAYS = auto()
+    MINUTES = 85
+    HOURS = 86
+    DAYS = 87
 
-
+    RAMP_GAIN = 88

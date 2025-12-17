@@ -127,6 +127,7 @@ class CommandCode(ICommandCode):
     SET_RAMP_F_STEP = 1313
     SET_RAMP_T_ON = 1314
     SET_RAMP_T_OFF = 1315
+    SET_RAMP_GAIN = 1316
     SET_SCAN_F_RANGE = 1321 
     SET_SCAN_F_STEP = 1322
     SET_SCAN_T_STEP = 1323

@@ -6,6 +6,10 @@ from sonic_protocol.schema import Anomaly, AnswerFieldDef, ControlMode, Converte
 from ..types import types as t
 import numpy as np
 
+from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import (
+    field_type_gain
+)
+
 #from ...protocol_v1_0_0.transducer_commands import transducer_fields as tf
 
 irms_field_type = FieldType(
@@ -94,6 +98,12 @@ field_ramp_f_stop = AnswerFieldDef(
     field_name=EFieldName.RAMP_F_STOP,
     field_type=field_type_frequency,
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Stop: ")
+)
+
+field_ramp_gain = AnswerFieldDef(
+    field_name=EFieldName.RAMP_GAIN,
+    field_type=field_type_gain,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Gain: ")
 )
 
 # template_field_type = FieldType(

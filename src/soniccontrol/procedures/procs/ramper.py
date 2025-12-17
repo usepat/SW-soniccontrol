@@ -4,12 +4,12 @@ import attrs
 from attrs import validators
 
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.schema import SIPrefix
+from sonic_protocol.schema import SIPrefix, Version
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, custom_validator_factory
 from sonic_protocol.python_parser import commands
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, RelativeFrequencySIVar
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
 
 
 @attrs.define(auto_attribs=True)
@@ -47,6 +47,10 @@ You can set t_off to 0 if you want the signal to never be turned off."""
         converter=convert_to_holder_args,
         metadata={"enum": EFieldName.RAMP_T_OFF}
     )
+    gain: GainSIVar = attrs.field(
+        default=GainSIVar(20),
+        metadata={"enum": EFieldName.SCAN_GAIN},
+    )
 
 
 class Ramper(Procedure):
@@ -74,6 +78,7 @@ class RamperLocal(Ramper):
         # TODO: Do we need those two lines?
         # await device.execute_command(f"!freq={start}")
         # await device.set_signal_on()
+        await device.execute_command(commands.SetGain(args.gain.value))
         await self._ramp(device, list(values), args.t_on, args.t_off)
     
         await device.set_signal_off()
@@ -132,6 +137,12 @@ class RamperRemote(Ramper):
 
         await device.execute_command(commands.SetRampTOn(t_on_duration))
         await device.execute_command(commands.SetRampTOff(t_off_duration))
+
+        gain = int(args.gain.to_prefix(SIPrefix.NONE))
+        if device.info.protocol_version >= Version(3, 0, 0):
+            await device.execute_command(commands.SetRampGain(gain))
+        elif not configure_only:
+            await device.execute_command(commands.SetGain(gain))
 
         if not configure_only:
             await device.execute_command(commands.SetRamp())

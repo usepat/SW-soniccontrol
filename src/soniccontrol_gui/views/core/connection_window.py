@@ -180,9 +180,7 @@ class ConnectionWindow(UIComponent):
         self._is_connecting = True
 
         bin_file = self._simulation_exe_path 
-        args = []
-        if self._view.should_start_configurator:
-            args.append("--start-configurator")
+        args = [f"--start-configurator={'true' if self._view.should_start_configurator else 'false'}"]
         if self._view.use_firmware_gui:
             args.append("--gui")
         if len(self._view.simulation_cmd_args) != 0:

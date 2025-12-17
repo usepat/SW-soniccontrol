@@ -66,6 +66,19 @@ for idx, field in enumerate(set_atf_v3_0_0.answer_def.fields):
     if field.field_name == EFieldName.ATF:
         set_atf_v3_0_0.answer_def.fields[idx] = f.atf_field
 
+set_ramp_gain = CommandContract(
+    CommandCode.SET_RAMP_GAIN,
+    CommandDef(
+        setter_param=CommandParamDef(
+            EFieldName.PROCEDURE_ARG,
+            f.field_type_gain
+        ), 
+        sonic_text_attrs=SonicTextCommandAttrs("!ramp_gain")
+    ),
+    AnswerDef([f.field_ramp_gain]),
+    is_release=True
+)
+
 # get_ramp = copy.deepcopy(prcmd_v1.get_ramp)
 
 # for field in get_ramp.answer_def.fields:

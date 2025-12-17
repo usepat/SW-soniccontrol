@@ -295,6 +295,12 @@ class SetRampTOn(Command):
     value: int = attrs.field(alias=EFieldName.RAMP_T_ON.name)
 
 @attrs.define()
+class SetRampGain(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_RAMP_GAIN)
+    value: int = attrs.field(alias=EFieldName.RAMP_GAIN.name)
+
+@attrs.define()
 class SetDutyCycleTOn(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_DUTY_CYCLE_T_ON)

@@ -16,7 +16,7 @@ excludes = [ "worker" ]
 excludes = [ "descale" ]
 [profiles.simulation_mvp.variables] 
 TARGET = "simulation"
-KWARGS = { expr="['--product-type=worker', '--name=test_worker', '--port=4000', f'--data-dir={Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'data'}']" } 
+KWARGS = { expr="['start-configurator=false', '--product-type=worker', '--name=test_worker', '--port=4000', f'--data-dir={Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / '../output/data'}']" } 
 SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/platform_linux/src/device/device_main'"} 
 
 
@@ -24,6 +24,6 @@ SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'li
 excludes = [ "worker" ]
 [profiles.simulation_descale.variables] 
 TARGET = "simulation"
-KWARGS = { expr="['--product-type=descale', '--name=test_descale', '--port=4000', f'--data-dir={Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'data'}']" } 
+KWARGS = { expr="['start-configurator=false', '--product-type=descale', '--name=test_descale', '--port=4000', f'--data-dir={Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / '../output/data'}']" } 
 SIMULATION_EXE_PATH = { expr="Path(environ.get('FIRMWARE_BUILD_DIR_PATH')) / 'linux/platform_linux/src/device/device_main'"} 
 
