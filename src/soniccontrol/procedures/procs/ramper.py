@@ -48,8 +48,8 @@ You can set t_off to 0 if you want the signal to never be turned off."""
         metadata={"enum": EFieldName.RAMP_T_OFF}
     )
     gain: GainSIVar = attrs.field(
-        default=GainSIVar(20),
-        metadata={"enum": EFieldName.SCAN_GAIN},
+        default=GainSIVar(50),
+        metadata={"enum": EFieldName.RAMP_GAIN},
     )
 
 
