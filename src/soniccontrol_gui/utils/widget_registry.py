@@ -135,8 +135,6 @@ class WidgetRegistry:
 
     @staticmethod
     async def clean_up():
-        for entry_str in WidgetRegistry._widget_registry.keys():
-            print(entry_str)
         if WidgetRegistry._polling_task and WidgetRegistry._polling_task.cancel():
             await WidgetRegistry._polling_task
             WidgetRegistry._widget_registry.clear()

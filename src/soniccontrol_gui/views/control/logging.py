@@ -98,6 +98,7 @@ class LoggingTab(UIComponent):
 
     def _add_log(self, e: Event):
         self._view.append_text_line(e.data["item"])
+        self._view.scroll_to_end()
 
     def _remove_log(self, e: Event):
         self._view.destroy_ith_text_line(0)
@@ -122,6 +123,12 @@ class LoggingTabView(TabView):
         self._horizontal_scrolled_frame: XYScrolledFrame = XYScrolledFrame(
             self._output_frame, autohide=True
         )
+        self._text_var: ttk.StringVar = ttk.StringVar()
+        self._text_widget: ttk.Label = ttk.Label(
+            self._horizontal_scrolled_frame, 
+            textvariable=self._text_var, 
+            font=("Consolas", 10)
+        )
 
 
     def _initialize_publish(self) -> None:
@@ -142,14 +149,17 @@ class LoggingTabView(TabView):
             pady=sizes.MEDIUM_PADDING,
             padx=sizes.MEDIUM_PADDING,
         )
-
-    def append_text_line(self, text: str):
-        ttk.Label(self._horizontal_scrolled_frame, text=text, font=("Consolas", 10)).pack(
+        self._text_widget.pack(
             fill=ttk.X, side=ttk.TOP, anchor=ttk.W
         )
-        self._horizontal_scrolled_frame.update()
-        self._horizontal_scrolled_frame.yview_moveto(1)
+
+    def append_text_line(self, text: str):
+        self._text_var.set(self._text_var.get() + text + "\n")
+    
+    def scroll_to_end(self):
+        self._horizontal_scrolled_frame.yview_moveto(1.0)
 
     def destroy_ith_text_line(self, i: int):
-        child = self._horizontal_scrolled_frame.winfo_children()[i]
-        child.destroy()
+        text_lines = self._text_var.get().splitlines(keepends=True)
+        text_lines.pop(i)
+        self._text_var.set("".join(text_lines))

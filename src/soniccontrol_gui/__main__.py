@@ -17,6 +17,4 @@ if __name__ == "__main__":
         simulation_exe_path = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/platform_linux/src/device/device_main")
 
     start_gui(simulation_exe_path)
-
-    if in_dev_env:
-        asyncio.run(WidgetRegistry.clean_up())
+ 

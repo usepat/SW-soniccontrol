@@ -297,6 +297,19 @@ class ConnectionWindowView(ttk.Window, View):
         # Place plugins_container between controls and loading
         self.plugins_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=4, pady=6)
 
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    @async_handler
+    async def on_close(self):
+        # clean up
+        try:
+            self.root.grab_release()
+        except tk.TclError:
+            pass
+
+        self.root.after_idle(self.root.destroy)
+        await WidgetRegistry.clean_up()
+
     @property
     def loading_text(self) -> str:
         return self._loading_text.get()

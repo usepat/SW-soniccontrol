@@ -21,7 +21,6 @@ class Plotting(UIComponent):
 
         for (attrName, line) in self._plot.lines.items():
             self._view.add_line(attrName, line.get_label(), self.create_toggle_line_callback(attrName))
-        self._view.update_plot()
             
         self._plot.subscribe_property_listener("plot", lambda _: self._view.update_plot())
 
@@ -83,10 +82,9 @@ class PlottingView(View):
         self._figure_canvas.get_tk_widget().pack(fill=ttk.BOTH, expand=True)
         
 
-
     def update_plot(self):
-        self._figure_canvas.draw()
-        self._figure_canvas.flush_events()
+        self._figure_canvas.draw_idle()
+        self.root.update_idletasks() # do not call self._figure_canvas.flush_events() it is badly implemented and calls root.update()
 
     def get_line_visibility(self, attrName: str) -> bool:
         return self._line_visibilities[attrName].get()

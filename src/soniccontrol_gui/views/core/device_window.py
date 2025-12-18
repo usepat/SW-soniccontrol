@@ -302,4 +302,8 @@ class DeviceWindowView(tk.Toplevel, View):
         self.protocol("WM_DELETE_WINDOW", callback)
 
     def close(self) -> None:
-        self.destroy()
+        try:
+            self.grab_release()
+        except tk.TclError:
+            pass
+        self.root.after_idle(self.destroy)
