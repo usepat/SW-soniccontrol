@@ -9,7 +9,7 @@ from ..protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
 
 from .commands.commands import (
     get_atf_v3_0_0, get_frequency_v3_0_0, get_update_descale_v3_0_0, get_update_worker_v3_0_0,
-    set_atf_v3_0_0, set_frequency_v3_0_0, set_ramp_gain
+    set_atf_v3_0_0, set_frequency_v3_0_0, set_ramp_gain, get_ramp_v3_0_0
 )
 
 # from .types.types import {
@@ -71,6 +71,9 @@ class Protocol_v3_0_0(ProtocolList):
         command_contract_dict: Dict[ICommandCode, CommandContract | None] = {
             command_contract.code: command_contract for command_contract in command_contract_list 
         } 
+
+        # overwrite existing contracts
+        command_contract_dict[CommandCode.GET_RAMP] = get_ramp_v3_0_0
 
         return command_contract_dict
 

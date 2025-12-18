@@ -66,6 +66,11 @@ for idx, field in enumerate(set_atf_v3_0_0.answer_def.fields):
     if field.field_name == EFieldName.ATF:
         set_atf_v3_0_0.answer_def.fields[idx] = f.atf_field
 
+get_ramp_v3_0_0 = copy.deepcopy(prcmd_v1.get_ramp)
+get_ramp_v3_0_0.answer_def.fields.append(
+    f.field_ramp_gain
+)
+
 set_ramp_gain = CommandContract(
     CommandCode.SET_RAMP_GAIN,
     CommandDef(
