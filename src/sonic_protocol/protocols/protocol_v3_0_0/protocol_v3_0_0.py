@@ -9,7 +9,7 @@ from ..protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
 
 from .commands.commands import (
     get_atf_v3_0_0, get_frequency_v3_0_0, get_update_descale_v3_0_0, get_update_worker_v3_0_0,
-    set_atf_v3_0_0, set_frequency_v3_0_0, set_ramp_gain, get_ramp_v3_0_0
+    set_atf_v3_0_0, set_frequency_v3_0_0, set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw
 )
 
 # from .types.types import {
@@ -62,7 +62,8 @@ class Protocol_v3_0_0(ProtocolList):
         if protocol_type.device_type == DeviceType.MVP_WORKER:
             command_contract_list.extend([
                 get_update_worker_v3_0_0,
-                set_ramp_gain
+                set_ramp_gain,
+                get_uipt_raw
             ])
             # command_contract_list.extend([
             #     get_atf_v3_0_0, get_frequency_v3_0_0, get_update_worker_v3_0_0, 

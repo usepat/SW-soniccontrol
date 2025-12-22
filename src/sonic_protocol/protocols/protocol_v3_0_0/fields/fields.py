@@ -106,6 +106,32 @@ field_ramp_gain = AnswerFieldDef(
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Gain: ")
 )
 
+## Raw field types(before calibration)
+raw_measurement_field_type = FieldType(
+    field_type=np.uint32,
+    si_unit=SIUnit.VOLTAGE,
+    si_prefix=SIPrefix.MICRO,
+)
+raw_urms_field = AnswerFieldDef(
+    field_name=EFieldName.URMS,
+    field_type=raw_measurement_field_type
+)
+
+raw_irms_field = AnswerFieldDef(
+    field_name=EFieldName.IRMS,
+    field_type=raw_measurement_field_type
+)
+
+raw_phase_field = AnswerFieldDef(
+    field_name=EFieldName.PHASE,
+    field_type=raw_measurement_field_type
+)
+
+raw_tsflag_field = AnswerFieldDef(
+    field_name=EFieldName.TS_FLAG,
+    field_type=raw_measurement_field_type
+)
+
 # template_field_type = FieldType(
 #     field_type=t.{type/enum},
 #     converter_ref=ConverterType.{converter_type}

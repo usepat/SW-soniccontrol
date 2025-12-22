@@ -84,6 +84,15 @@ set_ramp_gain = CommandContract(
     is_release=True
 )
 
+get_uipt_raw = CommandContract(
+    CommandCode.GET_UIPT_RAW,
+    CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs("?uipt_raw")
+    ),
+    AnswerDef([f.raw_urms_field, f.raw_irms_field, f.raw_phase_field, f.raw_tsflag_field]),
+    is_release=False
+)
+
 # get_ramp = copy.deepcopy(prcmd_v1.get_ramp)
 
 # for field in get_ramp.answer_def.fields:

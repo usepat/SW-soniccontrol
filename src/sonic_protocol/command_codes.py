@@ -89,6 +89,8 @@ class CommandCode(ICommandCode):
     # GET_MODBUS_SERVER_ID = 400
     GET_ON_TIMER = 410
 
+    GET_UIPT_RAW = 420
+
     # Setters with corresponding getters
     SET_SWF = 1010
     SET_FREQ = 1020
