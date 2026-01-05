@@ -194,11 +194,11 @@ class ConnectionWindow(UIComponent):
 class ConnectionWindowView(ttk.Window, View):
     def __init__(self, show_simulation_button: bool, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        ImageLoader(self)
 
         window_name: str = "connection"
 
-        self.iconphoto(True, ImageLoader.load_image_resource(images.LOGO, sizes.LARGE_BUTTON_ICON_SIZE))
+        image = ImageLoader.load_image_resource(images.LOGO, sizes.LARGE_BUTTON_ICON_SIZE)
+        self.iconphoto(True, image)
 
         self._url_connection_frame: ttk.Frame = ttk.Frame(self)
         self._refresh_button: ttk.Button = ttk.Button(

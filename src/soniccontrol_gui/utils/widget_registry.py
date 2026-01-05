@@ -137,8 +137,8 @@ class WidgetRegistry:
     async def clean_up():
         if WidgetRegistry._polling_task and WidgetRegistry._polling_task.cancel():
             await WidgetRegistry._polling_task
-            WidgetRegistry._widget_registry.clear()
-            WidgetRegistry._widget_registration_events.clear()
+        WidgetRegistry._widget_registry.clear()
+        WidgetRegistry._widget_registration_events.clear()
 
     @staticmethod
     def _poll_updates():

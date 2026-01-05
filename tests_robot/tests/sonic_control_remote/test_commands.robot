@@ -3,7 +3,7 @@
 Resource    keywords_remote_control.robot
 
 Suite Setup    Connect device and deduce consts
-Suite Teardown    RemoteController.Disconnect
+Suite Teardown    Disconnect
 
 Test Setup    Reconnect if disconnected
 

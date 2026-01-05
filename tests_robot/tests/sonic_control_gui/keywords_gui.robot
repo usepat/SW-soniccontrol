@@ -4,6 +4,7 @@ Resource    ../variables.robot
 
 Library    sonic_robot.RobotSonicControlGui    AS    Gui
 Library    OperatingSystem
+Library    Process
 
 Variables    sonic_robot.variables
 Variables    sonic_robot.labels
@@ -15,6 +16,12 @@ ${TIMEOUT_CONNECTION_MS}    ${60000}
 
 
 *** Keywords ***
+
+Close and clean up
+    Gui.Close app
+    IF    "${TARGET}" == "simulation"
+        Run Process    pkill    -f    device_main
+    END
 
 Connect via url "${URL}"
     IF  $URL is None
@@ -49,6 +56,7 @@ Open device window
 
     Gui.Wait up to "${TIMEOUT_CONNECTION_MS}" ms for the widget "${HOME_DEVICE_TYPE_LABEL}" to be registered
     Gui.Let the app update for "500" ms    # Ensure that stuff is loaded and initialized correctly
+
 
 
 Send command "${COMMAND}" over serial monitor
@@ -91,6 +99,7 @@ Set ramp args
     Gui.Set text of widget "${RAMP_T_ON_UNIT}" to "ms"
     Gui.Set text of widget "${RAMP_T_OFF_TIME}" to "1000"
     Gui.Set text of widget "${RAMP_T_OFF_UNIT}" to "ms"
+    Gui.Set text of widget "${RAMP_GAIN}" to "100"
 
 Set spectrum measure args
     Gui.Set text of widget "${SPECTRUM_MEASURE_GAIN}" to "50"

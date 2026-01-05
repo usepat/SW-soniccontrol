@@ -22,20 +22,7 @@ class SingletonMeta(type):
 
 
 class ImageLoader(metaclass=SingletonMeta):
-    _master: ttk.Window | None = None
     images: dict[str, ttk.ImageTk.PhotoImage] = {}
-
-    def __init__(self, master: ttk.Window | None) -> None:
-        if master is None and self._master is None:
-            print("No master specified, not initializing ImageLoader")
-            return
-        elif self._master is None and isinstance(master, ttk.Window):
-            self.initialize(master)
-
-    @classmethod
-    def initialize(cls, master: ttk.Window) -> type[ImageLoader]:
-        cls._master = master
-        return cls
 
     @classmethod
     def generate_image_key(
@@ -56,9 +43,12 @@ class ImageLoader(metaclass=SingletonMeta):
     def load_image_resource(
         cls, image_name: str, sizing: tuple[int, int]
     ) -> ttk.ImageTk.PhotoImage:
-        if cls._master is None:
-            raise RuntimeError("master not initialized")
         key: str = cls.generate_image_key(image_name, sizing)
         if key not in cls.images:
             cls.images[key] = cls._load_image_resource(image_name, sizing)
         return cls.images[key]
+    
+    @classmethod 
+    def clear_resources(cls):
+        cls.images.clear()
+    

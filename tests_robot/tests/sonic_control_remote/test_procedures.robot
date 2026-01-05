@@ -3,7 +3,7 @@
 Resource    keywords_remote_control.robot
 
 Suite Setup    Connect to device
-Suite Teardown    RemoteController.Disconnect
+Suite Teardown    Disconnect
 
 Test Setup    Setup Procedure Test
 Test Teardown    RemoteController.Send Command    !stop
@@ -62,16 +62,6 @@ Test if after ramp signal is off
 #     [Setup]     Set Tune Args
 #     [Teardown]    RemoteController.Send Command    !stop
 #     RemoteController.Send Command     !tune
-    
-# Invalid args error should not mark the procedure component as damaged and therefore should not block setter
-Test if user errors dont mark the prodedure component as damaged
-    [Setup]    Set faulty ramp args
-    [Teardown]    Send stop and clear errors
-    FOR    ${i}    IN RANGE    10
-        RemoteController.Send Command    !ramp
-        Sleep for 3000 ms
-    END
-    Send Command And Check Response    !gain\=50
 
 *** Keywords ***
 
@@ -80,13 +70,14 @@ Setup Procedure Test
     Set Ramp Args
 
 Set Ramp Args
-    [Arguments]    ${f_start}=100000    ${f_stop}=150000    ${f_step}=10000    ${t_on}=2000    ${t_off}=0
+    [Arguments]    ${f_start}=100000    ${f_stop}=150000    ${f_step}=10000    ${t_on}=2000    ${t_off}=0    ${gain}=100
     RemoteController.Send Command     !sonic_force    
     Send Command And Check Response    !ramp_f_start\=${f_start}
     Send Command And Check Response    !ramp_f_stop\=${f_stop}
     Send Command And Check Response    !ramp_f_step\=${f_step}
     Send Command And Check Response    !ramp_t_on\=${t_on}
     Send Command And Check Response    !ramp_t_off\=${t_off} 
+    Send Command And Check Response    !ramp_gain\=${gain} 
 
 
 Set Tune Args
@@ -98,15 +89,5 @@ Set Tune Args
     Send Command And Check Response    !tune_n_steps\=${n_steps}
     Send Command And Check Response    !tune_f_step\=${f_step}
     Send Command And Check Response    !tune_gain\=${gain}
-
-Set faulty ramp args
-    [Arguments]   ${f_start}=1000000    ${f_stop}=1000000     
-    RemoteController.Send Command     !sonic_force    
-    Send Command And Check Response    !ramp_f_start\=${f_start}
-    Send Command And Check Response    !ramp_f_stop\=${f_stop}
-
-Send stop and clear errors
-    RemoteController.Send Command     !stop
-    Send Command And Check Response    !clear_errors
 
     

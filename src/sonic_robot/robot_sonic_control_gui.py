@@ -13,6 +13,7 @@ from soniccontrol_gui.views.core.connection_window import ConnectionWindow
 from soniccontrol.app_config import PLATFORM, System
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry, get_text_of_widget, set_text_of_widget
 from soniccontrol_gui.widgets.notebook import Notebook
+from soniccontrol_gui.utils.image_loader import ImageLoader
 
 
 # We want Suite as scope, so that the gui can be used across tests
@@ -28,6 +29,9 @@ class RobotSonicControlGui:
 
     @keyword('Open app')
     def open_app(self, simulation_exe_path: str):
+        # ensure that no invalid images from previous tk.Root are still loaded
+        ImageLoader.clear_resources()
+
         WidgetRegistry.set_up()
         main_window = ConnectionWindow(Path(simulation_exe_path))
         if PLATFORM != System.WINDOWS:
@@ -42,6 +46,9 @@ class RobotSonicControlGui:
 
         self._loop.run_until_complete(WidgetRegistry.clean_up()) # Maybe we can do this better. But Idk
         self._root.destroy()
+        self._root = None
+        ImageLoader.clear_resources()
+
 
     @keyword('Let the app update for "${time_ms}" ms')
     def sleep_update(self, time_ms: int):

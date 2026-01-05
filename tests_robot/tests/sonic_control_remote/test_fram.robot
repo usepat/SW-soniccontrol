@@ -3,7 +3,7 @@
 Resource    keywords_remote_control.robot
 
 Suite Setup    Connect to device
-Suite Teardown    RemoteController.Disconnect
+Suite Teardown    Disconnect
 
 Test Setup    Reconnect if disconnected
 
@@ -17,7 +17,7 @@ Test if device save parameters like freq and gain
     [Teardown]    Send Command     !log[global]=ERROR
     Send command and check response    !freq\=123456   should_be_valid=${True}    ${FIELD_FREQUENCY}=${123456}
     Send command and check response    !gain\=100   should_be_valid=${True}    ${FIELD_GAIN}=${100}
-    RemoteController.Disconnect
+    Disconnect
     ${is_connected}=    RemoteController.Is connected to device
     Should Not Be True    ${is_connected}    # just to be 100% sure
     Reconnect if disconnected

@@ -30,7 +30,8 @@ Run ramp procedure
     ${signal_label}=    Gui.Wait up to "${timeout}" ms for the widget "${STATUS_BAR_SIGNAL_LABEL}" to change text
     Should Contain    ${signal_label}    off
     
-    FOR    ${i}    IN RANGE    9
+    # Ramp has 10 + 1 step. start and stop freq is included as steps. 
+    FOR    ${i}    IN RANGE    10
         ${signal_label}=    Gui.Wait up to "${timeout}" ms for the widget "${STATUS_BAR_SIGNAL_LABEL}" to change text
         Should Contain    ${signal_label}    on
 

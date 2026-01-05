@@ -5,6 +5,7 @@ Resource    ../variables.robot
 Library    sonic_robot.RobotRemoteController    log_path=${OUTPUT_DIR}    AS    RemoteController
 Library    sonic_robot.conversion_utils
 Library    Collections
+Library    Process
 
 Variables    sonic_robot.field_names
 Variables    sonic_robot.command_codes
@@ -44,13 +45,19 @@ Connect to device
 Reconnect if disconnected
     ${connection_is_open}=    RemoteController.Is connected to device
     IF  not $connection_is_open
-        RemoteController.Disconnect
+        Disconnect
         Connect to device
     END
     
 Reconnect
-    RemoteController.Disconnect
+    Disconnect
     Connect to device
+
+Disconnect
+    RemoteController.Disconnect
+    IF    "${TARGET}" == 'simulation'
+        Run Process    pkill    -f    device_main
+    END
 
 Check command code for errors
     [Arguments]    ${command_code}

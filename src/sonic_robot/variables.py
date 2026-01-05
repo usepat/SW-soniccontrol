@@ -110,6 +110,7 @@ RAMP_T_ON_TIME = 'proc_controlling.Ramp.t_on.time_str'
 RAMP_T_ON_UNIT = 'proc_controlling.Ramp.t_on.unit_str'
 RAMP_T_OFF_TIME = 'proc_controlling.Ramp.t_off.time_str'
 RAMP_T_OFF_UNIT = 'proc_controlling.Ramp.t_off.unit_str'
+RAMP_GAIN = 'proc_controlling.Ramp.gain.entry_str'
 
 # Spectrum Measure
 SPECTRUM_MEASURE_GAIN = "spectrum_measure.Spectrum Measure.gain.entry_str"

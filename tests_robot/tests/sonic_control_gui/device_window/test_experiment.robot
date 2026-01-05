@@ -64,9 +64,9 @@ procedure stops if capture ends
     Gui.Press button "${MEASURING_CONTROL_BUTTON}"
     
     ${label_control_button }=    Gui.Wait up to "2000" ms for the widget "${MEASURING_CONTROL_BUTTON}" to change text  
-    Should Be Equal As Strings    ${label_control_button}    ${LABEL_NEW_EXPERIMENT}
+    ${proc_label }=    Gui.Get text of widget "${STATUS_BAR_PROCEDURE_LABEL}"  
 
-    ${proc_label }=    Gui.Wait up to "2000" ms for the widget "${STATUS_BAR_PROCEDURE_LABEL}" to change text  
+    Should Be Equal As Strings    ${label_control_button}    ${LABEL_NEW_EXPERIMENT}
     Should Contain   ${proc_label}    none
 
 

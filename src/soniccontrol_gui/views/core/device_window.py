@@ -244,7 +244,8 @@ class DeviceWindowView(tk.Toplevel, View):
         self.title(title)
         self.geometry('1200x800')
         self.minsize(600, 400)
-        self.iconphoto(True, ImageLoader.load_image_resource(images.LOGO, sizes.LARGE_BUTTON_ICON_SIZE))
+        image = ImageLoader.load_image_resource(images.LOGO, sizes.LARGE_BUTTON_ICON_SIZE)
+        self.iconphoto(True, image)
 
         self.wm_title(ui_labels.IDLE_TITLE)
         ttk.Style(ui_labels.THEME)

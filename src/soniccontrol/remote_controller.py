@@ -159,7 +159,6 @@ class RemoteController:
 
         assert self._device is None
         assert self._updater is None
-        #
     
     @property
     def updater(self):
