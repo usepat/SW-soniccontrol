@@ -36,7 +36,7 @@ def test_interpreter_calls_function(command_mocks):
     ("send \"!freq=1000\"\n", "send", ("!freq=1000",)),
     ("hold 100ms\n", "hold", (HolderArgs(100, "ms"),)),
     ("frequency 100000\n", "frequency", (100000,)),
-    ("ramp 100000 200000 10000 5s 500ms\n", "ramp", (100000, 200000, 10000, HolderArgs(5, "s"), HolderArgs(500, "ms"))),
+    ("ramp 100000 200000 10000 5s 500ms 100\n", "ramp", (100000, 200000, 10000, HolderArgs(5, "s"), HolderArgs(500, "ms"), 100)),
 ])
 def test_interpreter_calls_function_with_params(script, command_name, params, command_mocks):
     runnable_script = NewScriptingFacade().parse_script(script)

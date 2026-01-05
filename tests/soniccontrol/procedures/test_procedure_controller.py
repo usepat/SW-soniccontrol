@@ -21,8 +21,7 @@ def proc_controller(monkeypatch, request):
         monkeypatch.setattr(ProcedureInstantiator, "instantiate_ramp", Mock(return_value=None))
 
     # We have to patch the function in the module it is used and not in the module where it is declared
-    monkeypatch.setattr("soniccontrol.procedures.procedure_controller.get_base_logger", lambda _: logging.getLogger())
-    proc_controller = ProcedureController(Mock(spec=SonicDevice), Mock(spec=Updater))
+    proc_controller = ProcedureController(Mock(spec=SonicDevice), Mock(spec=Updater), logging.getLogger())
 
     return proc_controller
 
@@ -42,10 +41,10 @@ async def test_stop_raises_event_exactly_once(monkeypatch, proc_controller):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("proc_controller", ["ramper_local"], indirect=True)
 async def test_execute_proc_throws_error_if_a_proc_already_is_running(proc_controller):
-    listener = Mock()
-    proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, listener)
-
-    proc_controller.execute_proc(ProcedureType.RAMP, RamperArgs(f_start=1000, f_stop=500, f_step=10, t_on=HolderArgs(1, "ms"), t_off=HolderArgs(1, "ms")))
+    procedure_args = RamperArgs.from_dict(
+        f_start=1000, f_stop=500, f_step=10, t_on=HolderArgs(1, "s"), t_off=HolderArgs(1, "s") # type: ignore
+    ) 
+    proc_controller.execute_proc(ProcedureType.RAMP, procedure_args)
     
     with pytest.raises(Exception):
         proc_controller.execute_proc(ProcedureType.RAMP, Mock(spec=RamperArgs))

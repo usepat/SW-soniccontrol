@@ -370,9 +370,9 @@ end""",
     },
     {
         "keyword": "ramp",
-        "arguments": "f_start: uint\nf_stop: uint\nf_step: uint\nt_on: time\nt_off: time",
+        "arguments": "f_start: uint\nf_stop: uint\nf_step: uint\nt_on: time\nt_off: time\ngain: uint",
         "description": "Executes the ramp procedure",
-        "example": "ramp 1000000 2000000 100000 1s 500ms",
+        "example": "ramp 1000000 2000000 100000 1s 500ms 100",
     },
     {
         "keyword": "wipe",

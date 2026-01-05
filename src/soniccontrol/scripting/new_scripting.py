@@ -110,6 +110,7 @@ class ProcedureCommand(Function):
         super().__init__(tuple(parameters))
         self._proc_args_class = proc_args_class
         self._proc_type = proc_type
+        
 
     def create_command(self, *params) -> Tuple[str, CommandFunc]:
         args = self._proc_args_class.from_tuple(params)
@@ -245,6 +246,14 @@ class Interpreter(RunnableScript):
             assert isinstance(token, lark.Token)
 
             parameter_type = param.type_.underlying_type() if issubclass(param.type_, SIVar) else param.type_
+            
+            # allow implicit conversions from float to int and back.
+            # So ramp_f_start can also be set by an int value
+            if parameter_type is float and isinstance(value, int):
+                value = float(value)
+            if parameter_type is int and isinstance(value, float):
+                value = int(value)
+
             if not isinstance(value, parameter_type):
                 raise ScriptException(f"The command {command_name} expected the type {parameter_type.__name__} for its parameter {param.name}, but got {type(value).__name__}", 
                                       line_begin=token.line, col_begin=token.column) #type: ignore
