@@ -94,10 +94,10 @@ DataTable = type("DataTable", (tb.IsDescription, ), _cols)
 class HDF5ExperimentWriter(ExperimentWriter):
     def __init__(self, file_path: Path):
         file_extension = ".h5"
-        self._file_path_posix = str(file_path) 
-        if not self._file_path_posix.endswith(file_extension):
-            self._file_path_posix += ".h5" # add extension
-        self._file = tb.open_file(self._file_path_posix, "w")
+        self._file_path = str(file_path) 
+        if not self._file_path.endswith(file_extension):
+            self._file_path += ".h5" # add extension
+        self._file = tb.open_file(self._file_path, "w")
         self._write_version(Version(2, 0, 0))
         self._data_table = self._file.create_table("/", "data", cast(tb.Description, DataTable))
 
@@ -144,7 +144,7 @@ class HDF5ExperimentReader(ExperimentReader):
             logging.getLogger("hdf5_serialization").warning("The schema of the hdf5 file is not versionized")
 
     def _read_version(self) -> Version | None:
-        with tb.open_file(self._file_path.as_posix(), "r") as file_:
+        with tb.open_file(str(self._file_path), "r") as file_:
             try:
                 root_node = cast(tb.Group, file_.get_node('/', classname='Group')) 
                 version_str = root_node._v_attrs["version"]
@@ -158,7 +158,7 @@ class HDF5ExperimentReader(ExperimentReader):
     
     def read_metadata(self) -> Experiment:
         data = None
-        with tb.open_file(self._file_path.as_posix(), "r") as file_:
+        with tb.open_file(str(self._file_path), "r") as file_:
             metadata_node = cast(tb.Group, file_.get_node('/metadata', classname='Group'))
             data = HDF5SerializationHelper.deserialize_attribute_tree(metadata_node)
         assert data
@@ -177,7 +177,7 @@ class HDF5ExperimentReader(ExperimentReader):
     
     def read_data(self) -> pd.DataFrame:
         records = None
-        with tb.open_file(self._file_path.as_posix(), "r") as file_:
+        with tb.open_file(str(self._file_path), "r") as file_:
             table_node = cast(tb.Table, file_.get_node('/data', classname='Table'))
             records = table_node.read()
         assert records is not None

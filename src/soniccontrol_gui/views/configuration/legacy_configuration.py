@@ -64,7 +64,7 @@ class TransducerConfigSchema(AttrsSchema):
     )
 
     def serialize_path(self, obj) -> str | None:
-        return obj.init_script_path.as_posix() if obj.init_script_path else None
+        return str(obj.init_script_path) if obj.init_script_path else None
 
     def deserialize_path(self, value):
         return Path(value) if value else None
