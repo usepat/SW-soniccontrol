@@ -3,7 +3,7 @@ from enum import Enum, IntEnum
 from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import (
-    CommandParamDef, ControlMode, ConverterType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    CommandParamDef, ControlMode, ConverterType, FieldType, Loglevel, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, SystemState, TransducerState, Anomaly
 )
 from sonic_protocol.command_codes import CommandCode
@@ -15,6 +15,9 @@ from sonic_protocol.schema import SonicTextAnswerFieldAttrs
 from ...protocol_v2_0_0.commands import commands as cmd_v2
 from ...protocol_v1_0_0.transducer_commands import transducer_commands as trcmd_v1
 from ...protocol_v1_0_0.procedure_commands import procedure_commands as prcmd_v1
+from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import (
+    param_index
+)
 
 # These relative imports should always import the files form the current protocol version
 from ..fields import fields as f
@@ -91,6 +94,84 @@ get_uipt_raw = CommandContract(
     ),
     AnswerDef([f.raw_urms_field, f.raw_irms_field, f.raw_phase_field, f.raw_tsflag_field]),
     is_release=False
+)
+
+
+set_log_level_v3_0_0 = CommandContract(
+    code=CommandCode.SET_LOG_LEVEL,
+    command_def=CommandDef(
+        index_param=CommandParamDef(
+            name=EFieldName.LOGGER_NAME,
+            param_type=FieldType(
+                field_type=str
+            )
+        ),
+        setter_param=CommandParamDef(
+            name=EFieldName.LOG_LEVEL,
+            param_type=FieldType(
+                field_type=Loglevel,
+                converter_ref=ConverterType.ENUM
+            )
+        ),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!log", "set_log_level"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            AnswerFieldDef(
+                field_name=EFieldName.LOGGER_NAME,
+                field_type=FieldType(
+                    field_type=str
+                ),
+                sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Set ", postfix=r" log level to \\") # Escape the # character
+            ),
+            AnswerFieldDef(
+                field_name=EFieldName.LOG_LEVEL,
+                field_type=FieldType(
+                    field_type=Loglevel,
+                    converter_ref=ConverterType.ENUM
+                )   
+            )
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the log level"
+    ),
+    is_release=True,
+    tags=["log"]
+)
+
+get_logger_list_size = CommandContract(
+    code=CommandCode.GET_LOGGER_LIST_SIZE,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?num_loggers")
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.COUNT, field_type=FieldType(field_type=np.uint8))
+    ]),
+    user_manual_attrs=UserManualAttrs(
+        description="Retrieve the amount of loggers available"
+    ),
+    is_release=True,
+    tags=["log"]
+)
+
+get_logger_list_item = CommandContract(
+    code=CommandCode.GET_LOGGER_LIST_ITEM,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?logger"),
+        index_param=CommandParamDef(EFieldName.INDEX, FieldType(np.uint8))
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.LOGGER_NAME, FieldType(str)),
+        AnswerFieldDef(EFieldName.LOG_LEVEL, FieldType(Loglevel, converter_ref=ConverterType.ENUM))
+    ]),
+    user_manual_attrs=UserManualAttrs(
+        description="Retrieve the name and log level of the logger with the specified id"
+    ),
+    is_release=True,
+    tags=["log"]
 )
 
 # get_ramp = copy.deepcopy(prcmd_v1.get_ramp)

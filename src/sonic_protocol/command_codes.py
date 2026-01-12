@@ -64,6 +64,9 @@ class CommandCode(ICommandCode):
     GET_WAVEFORM = 140
     GET_LOG_LEVEL = 150
 
+    GET_LOGGER_LIST_SIZE = 160
+    GET_LOGGER_LIST_ITEM = 161
+
 
     # THOSE ONES DO NOT HAVE A corresponding setter
     GET_SIGNAL = 40
@@ -115,6 +118,7 @@ class CommandCode(ICommandCode):
     SET_DATETIME = 1130
     SET_WAVEFORM = 1140
     SET_LOG_LEVEL = 1150
+
 
     SET_DEFAULT = 9000
 

@@ -9,7 +9,8 @@ from ..protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
 
 from .commands.commands import (
     get_atf_v3_0_0, get_frequency_v3_0_0, get_update_descale_v3_0_0, get_update_worker_v3_0_0,
-    set_atf_v3_0_0, set_frequency_v3_0_0, set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw
+    set_atf_v3_0_0, set_frequency_v3_0_0, set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
+    get_logger_list_item, get_logger_list_size
 )
 
 # from .types.types import {
@@ -48,6 +49,9 @@ class Protocol_v3_0_0(ProtocolList):
         data_types = {}
         data_types.update(self._previous_protocol.custom_data_types)
     
+        # delete deprecated data_types
+        data_types.pop("E_LOGGER_NAME") # enum got replaced by a string for more flexibility
+
         return data_types
 
     def supports_device_type(self, device_type: DeviceType) -> bool:
@@ -55,7 +59,8 @@ class Protocol_v3_0_0(ProtocolList):
 
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
         command_contract_list: List[CommandContract] = [
-            
+            get_logger_list_size,
+            get_logger_list_item
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_update_descale_v3_0_0])
@@ -75,6 +80,7 @@ class Protocol_v3_0_0(ProtocolList):
 
         # overwrite existing contracts
         command_contract_dict[CommandCode.GET_RAMP] = get_ramp_v3_0_0
+        command_contract_dict[CommandCode.SET_LOG_LEVEL] = set_log_level_v3_0_0
 
         return command_contract_dict
 

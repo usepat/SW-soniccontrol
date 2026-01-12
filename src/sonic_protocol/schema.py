@@ -216,6 +216,8 @@ class Loglevel(Enum):
     DISABLED = "DISABLED"
     DEBUG_EXTENSIVE = "DEBUG_EXTENSIVE"
 
+# TODO: upgrade to python 3.13 so we can use the deprecated decorator
+# @deprecated("Got replaced in protocol v3.0.0 by a simple string")
 class LoggerName(Enum):
     APP_LOGGER = "appLogger"
     TRANSDUCER_LOGGER = "transducerLogger"

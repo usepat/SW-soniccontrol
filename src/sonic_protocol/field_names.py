@@ -123,3 +123,5 @@ class EFieldName(IEFieldName):
     DAYS = 87
 
     RAMP_GAIN = 88
+
+    COUNT = 89
