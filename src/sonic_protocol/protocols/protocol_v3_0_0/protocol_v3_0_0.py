@@ -82,6 +82,11 @@ class Protocol_v3_0_0(ProtocolList):
         command_contract_dict[CommandCode.GET_RAMP] = get_ramp_v3_0_0
         command_contract_dict[CommandCode.SET_LOG_LEVEL] = set_log_level_v3_0_0
 
+        # delete unused commands
+        command_contract_dict.pop(CommandCode.GET_DATETIME_PICO)
+        command_contract_dict.pop(CommandCode.SET_COM_PROT)
+        command_contract_dict.pop(CommandCode.SET_TERMINATION)
+
         return command_contract_dict
 
     def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
