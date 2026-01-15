@@ -38,7 +38,7 @@ class ProtocolList:
         ...
 
     @abc.abstractmethod
-    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
+    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:
         """
             returns a dict, where command contracts are mapped to a command code. 
             Those will overwrite then the command contracts of the previous protocol.
@@ -63,25 +63,25 @@ class ProtocolList:
         if not self.supports_device_type(protocol_type.device_type):
             raise Exception("This version of SonicControl does not understand the protocol used by the device. Please update it!")
 
-        if self.previous_protocol is not None and self.previous_protocol.supports_device_type(protocol_type.device_type):
-            protocol = self.previous_protocol.build_protocol_for(protocol_type)
+        previous_protocol_can_build = self.previous_protocol is not None and self.previous_protocol.supports_device_type(protocol_type.device_type)
+        if previous_protocol_can_build and self.version > protocol_type.version:
+            # If this version is newer than the protocol wanted, we do not provide the protocol
+
+            assert self.previous_protocol is not None
+            return self.previous_protocol.build_protocol_for(protocol_type)
         else:
             protocol = Protocol(protocol_type, self.custom_data_types, self.command_code_cls,
                                  self.field_name_cls, command_contracts={})
-
-        if self.version <= protocol_type.version:
-            # If this version is newer than the protocol wanted, we do not overwrite and add command contracts
 
             device_consts = self._get_device_constants_for(protocol_type)
             # map DeviceParamConstantType to str (name of device param constant)
             device_consts_mapped = { key.value: val for key, val in device_consts.items() }
             protocol.consts = attrs.evolve(protocol.consts, **device_consts_mapped)
 
+            # filter release commands
             command_contracts = self._get_command_contracts_for(protocol_type)
             for command_code, command_contract in command_contracts.items():
-                if command_contract is None:
-                    del protocol.command_contracts[command_code]
-                elif not protocol_type.is_release:
+                if protocol_type.is_release:
                     protocol.command_contracts[command_code] = command_contract
                 elif command_contract.is_release:
                     protocol.command_contracts[command_code] = command_contract

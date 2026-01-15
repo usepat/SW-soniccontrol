@@ -27,7 +27,6 @@ class Protocol_v3_0_0(ProtocolList):
     def __init__(self):
         self._previous_protocol = Protocol_v2_0_0()
 
-
     @property
     def version(self) -> Version:
         return Version(3, 0, 0)
@@ -55,9 +54,15 @@ class Protocol_v3_0_0(ProtocolList):
         return data_types
 
     def supports_device_type(self, device_type: DeviceType) -> bool:
+        if device_type == DeviceType.POSTMAN:
+            return True
         return self._previous_protocol.supports_device_type(device_type)
 
-    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
+    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:        
+        if protocol_type.device_type == DeviceType.POSTMAN:
+            worker_command_contracts = self._get_command_contracts_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
+            return worker_command_contracts 
+
         command_contract_list: List[CommandContract] = [
             get_logger_list_size,
             get_logger_list_item
@@ -74,25 +79,33 @@ class Protocol_v3_0_0(ProtocolList):
             #     get_atf_v3_0_0, get_frequency_v3_0_0, get_update_worker_v3_0_0, 
             #     set_atf_v3_0_0, set_frequency_v3_0_0
             # ])
-        command_contract_dict: Dict[ICommandCode, CommandContract | None] = {
+        command_contract_dict = self._previous_protocol._get_command_contracts_for(protocol_type)
+        command_contract_dict.update({
             command_contract.code: command_contract for command_contract in command_contract_list 
-        } 
+        })
 
         # overwrite existing contracts
         command_contract_dict[CommandCode.GET_RAMP] = get_ramp_v3_0_0
         command_contract_dict[CommandCode.SET_LOG_LEVEL] = set_log_level_v3_0_0
 
         # delete unused commands
-        command_contract_dict.pop(CommandCode.GET_DATETIME_PICO)
-        command_contract_dict.pop(CommandCode.SET_COM_PROT)
-        command_contract_dict.pop(CommandCode.SET_TERMINATION)
+        if CommandCode.GET_DATETIME_PICO in command_contract_dict:
+            command_contract_dict.pop(CommandCode.GET_DATETIME_PICO)
+        if CommandCode.SET_COM_PROT in command_contract_dict:
+            command_contract_dict.pop(CommandCode.SET_COM_PROT)
+        if CommandCode.SET_TERMINATION in command_contract_dict:
+            command_contract_dict.pop(CommandCode.SET_TERMINATION)
 
         return command_contract_dict
 
     def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
+        assert self.previous_protocol
+
         match protocol_type.device_type:
+            case DeviceType.POSTMAN:
+                return self._get_device_constants_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
             # case DeviceType.MVP_WORKER:
             #     # Changed from Hz to hHz
             #     return { DeviceParamConstantType.MAX_FREQUENCY: 200000, DeviceParamConstantType.MIN_FREQUENCY: 1000 }
             case _:
-                return {}
+                return self.previous_protocol._get_device_constants_for(protocol_type)
