@@ -6,6 +6,7 @@ from sonic_protocol.protocol import protocol_list as operator_protocol_factory
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.schema import BuildType, DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName, IEFieldName
+from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
@@ -60,7 +61,7 @@ class DeviceBuilder:
         return device
 
 
-    async def build_amp(self, connection: Connection, try_deduce_protocol_used: bool = True) -> SonicDevice:
+    async def build_amp(self, comm: Communicator, try_deduce_protocol_used: bool = True) -> SonicDevice:
         """!
         @param open_in_rescue_mode This param can be set to False, so that it does not try to deduce which protocol to use. Used for the rescue window
         """
@@ -68,9 +69,6 @@ class DeviceBuilder:
         protocol_version: Version = Version(0, 0, 0)
         device_type: DeviceType = DeviceType.UNKNOWN
         is_release: bool = True
-
-        comm = SerialCommunicator(logger=self._logger) #type: ignore
-        await comm.open_communication(connection)
 
         self._builder_logger.debug("Serial connection is open, start building device")
 

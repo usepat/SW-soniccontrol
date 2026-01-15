@@ -23,6 +23,7 @@ from soniccontrol_gui.views.core.device_window import DeviceWindow, RescueWindow
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from sonic_protocol.python_parser import commands as cmds
+from soniccontrol.communication.serial_communicator import SerialCommunicator
 
 class DeviceConnectionClasses:
     def __init__(self, deviceWindow : DeviceWindow, connection : Connection):
@@ -67,7 +68,9 @@ class DeviceWindowManager:
             if is_legacy_device:
                 sonicamp = await device_builder.build_legacy_crystal(connection)
             else:
-                sonicamp = await device_builder.build_amp(connection, try_deduce_protocol_used=True)
+                communicator = SerialCommunicator(logger=self._logger) # type: ignore
+                await communicator.open_communication(connection)
+                sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=True)
         
         except Exception as e:
             logger.error(e)
@@ -77,7 +80,9 @@ class DeviceWindowManager:
             if user_answer is None or user_answer == DialogOptions.NO: 
                 return
             
-            sonicamp = await device_builder.build_amp(connection, try_deduce_protocol_used=False)
+            communicator = SerialCommunicator(logger=self._logger) # type: ignore
+            await communicator.open_communication(connection)
+            sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=False)
 
         # TODO: Maybe we should move this into a plugin
         device_type = sonicamp.info.device_type

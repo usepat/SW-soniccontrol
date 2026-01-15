@@ -14,9 +14,6 @@ class Communicator(abc.ABC, EventManager):
     def __init__(self) -> None:
         super().__init__()
 
-    @abc.abstractmethod
-    def protocol(self) -> CommunicationProtocol: ...
-
     @property
     @abc.abstractmethod
     def connection_opened(self) -> asyncio.Event: ...
@@ -35,8 +32,6 @@ class Communicator(abc.ABC, EventManager):
     @abc.abstractmethod
     async def read_message(self) -> str: ...
 
-    @abc.abstractmethod
-    async def change_baudrate(self, baudrate: int) -> None: ...
 
     def set_device_log_handler(self, handler: logging.Handler) -> None:
         """Optional hook for installing a device log handler.

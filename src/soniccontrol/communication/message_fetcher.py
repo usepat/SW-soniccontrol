@@ -8,13 +8,13 @@ from soniccontrol.app_config import ENCODING
 
 
 class MessageFetcher:
-    def __init__(self, reader: StreamReader, protocol: SonicMessageProtocol, logger: logging.Logger = logging.getLogger()) -> None:
+    def __init__(self, reader: StreamReader, logger: logging.Logger = logging.getLogger()) -> None:
         self._reader = reader
         self._answers: Dict[int, str] = {}
         self._answer_received: Dict[int, asyncio.Event] = {}
         self._messages = asyncio.Queue(maxsize=100)
         self._task = None
-        self._protocol: SonicMessageProtocol = protocol
+        self._protocol = SonicMessageProtocol()
         self._logger: logging.Logger = logging.getLogger(logger.name + "." + MessageFetcher.__name__)
         self._device_logger: logging.Logger = logging.getLogger(logger.name + ".device")
 

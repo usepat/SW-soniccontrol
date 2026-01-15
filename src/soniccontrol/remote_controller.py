@@ -11,6 +11,7 @@ from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
+from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
@@ -46,7 +47,11 @@ class RemoteController:
         else:
             self._logger = create_logger_for_connection(connection_name)
 
-        self._device = await DeviceBuilder(logger=self._logger, protocol_factories=self._protocol_factories).build_amp(connection)
+        communicator = SerialCommunicator(logger=self._logger) # type: ignore
+        await communicator.open_communication(connection)
+        self._device = await DeviceBuilder(logger=self._logger, protocol_factories=self._protocol_factories).build_amp(communicator)
+        # TODO: add postman connection logic.
+        
         self._updater = Updater(self._device)
         self._updater.start()
         self._proc_controller = ProcedureController(self._device, updater=self._updater)

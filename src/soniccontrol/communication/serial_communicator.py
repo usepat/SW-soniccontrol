@@ -35,14 +35,9 @@ class SerialCommunicator(Communicator):
         super().__init__()
 
     @property
-    def protocol(self) -> CommunicationProtocol: 
-        return self._protocol
-
-    @property
     def connection_opened(self) -> asyncio.Event:
         return self._connection_opened
     
-
     def set_device_log_handler(self, handler: logging.Handler) -> None:
         self._message_fetcher._device_logger.addHandler(handler)
 
@@ -58,10 +53,8 @@ class SerialCommunicator(Communicator):
         self._restart = False 
         self._reader, self._writer = await self._connection.open_connection()
         #self._writer.transport.set_write_buffer_limits(0) #Quick fix
-        self._protocol = SonicMessageProtocol()
-        self._message_fetcher = MessageFetcher(self._reader, self._protocol, self._logger)
+        self._message_fetcher = MessageFetcher(self._reader, self._logger)
         await self._writer.drain()
-        self._connection_opened.set()
         self._message_fetcher.run()
         self._connection_opened.set()
 
@@ -97,7 +90,7 @@ class SerialCommunicator(Communicator):
                     #self._logger.debug(f"Wrote last chunk: {chunk}.")
         #self._logger.debug("Finished sending all chunks.")
 
-    async def _send_and_get(self, request_str: str) -> str:
+    async def _send_and_get(self, request_str: str, **kwargs) -> str:
         assert self._writer is not None
         assert self._message_fetcher.is_running
 
@@ -109,7 +102,7 @@ class SerialCommunicator(Communicator):
             message_counter = self._message_counter
 
             message = self._protocol.parse_request(
-                request_str, message_counter
+                request_str, message_counter, **kwargs
             )
 
             if request_str != "-":
@@ -142,7 +135,7 @@ class SerialCommunicator(Communicator):
         MAX_RETRIES = 3 
         for i in range(MAX_RETRIES):
             try:
-                return await asyncio.wait_for(self._send_and_get(request), timeout)
+                return await asyncio.wait_for(self._send_and_get(request, **kwargs), timeout)
             except asyncio.TimeoutError:
                 self._logger.warn("%d th attempt of %d. Device did not respond in the given timeout of %f s when sending %s", i, MAX_RETRIES, timeout, request)
             
@@ -171,6 +164,4 @@ class SerialCommunicator(Communicator):
         if not(self._restart):
             self.emit(Event(Communicator.DISCONNECTED_EVENT))
 
-    async def change_baudrate(self, baudrate: int) -> None:
-        await self.close_communication(restart=True)
-        await self.open_communication(self._connection, baudrate)
+
