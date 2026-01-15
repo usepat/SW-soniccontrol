@@ -62,7 +62,7 @@ def main():
     manual_compiler = HtmlManualCompiler()
     manual = manual_compiler.compile_manual_for_specific_device(
         DeviceType.MVP_WORKER, 
-        Version(2, 1, 0), 
+        Version(3, 0, 0), 
         True
     )
 
