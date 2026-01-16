@@ -61,7 +61,10 @@ get_protocol = CommandContract(
             )
         ]
     ),
-    is_release=True
+    is_release=True,
+    user_manual_attrs= UserManualAttrs(
+        description="Used to retrieve the protocol version the device understands"
+    )
 )
 
 class Protocol_v1_0_0(ProtocolList):
