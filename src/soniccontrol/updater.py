@@ -7,6 +7,8 @@ from soniccontrol.events import Event, EventManager
 
 
 class Updater(EventManager):
+    UPDATE_EVENT = "update"
+
     def __init__(self, device: SonicDevice, time_waiting_between_updates_ms: int = 0) -> None:
         super().__init__()
         self._device = device
@@ -41,7 +43,7 @@ class Updater(EventManager):
             
         answer = await self._device.get_update()
         if answer.valid:
-            self.emit(Event("update", status=answer.field_value_dict))
+            self.emit(Event(Updater.UPDATE_EVENT, status=answer.field_value_dict))
             
 
     async def _loop(self) -> None:
