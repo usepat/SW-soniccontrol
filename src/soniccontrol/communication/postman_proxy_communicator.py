@@ -4,19 +4,24 @@ from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.message_protocol import SonicMessageProtocol
 from soniccontrol.events import Event
 from .serial_communicator import SerialCommunicator, Communicator
-
+from async_tkinter_loop import async_handler
 
 class PostmanProxyCommunicator(Communicator):
     def __init__(self, communicator: SerialCommunicator):
         self._communicator = communicator
         self._connection_opened = asyncio.Event()
 
+        @async_handler
+        async def on_disconnect(_):
+            await self.close_communication()
+        self._communicator.subscribe(Communicator.DISCONNECTED_EVENT, on_disconnect)
+
     @property
     def connection_opened(self) -> asyncio.Event: 
         return self._connection_opened
 
     async def open_communication(
-        self, connection: Connection, baudrate: int
+        self, connection: Connection, baudrate: int = 0
     ): 
         assert self._communicator.connection_opened.is_set(), "cannot connect to worker, you have to connect to the postman first"
         self._connection_opened.set()

@@ -11,6 +11,7 @@ from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
+from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
@@ -34,6 +35,7 @@ class RemoteController:
 
     def __init__(self, log_path: Optional[Path]=None, protocol_factories: Dict[DeviceType, ProtocolList] = {}):
         self._device: Optional[SonicDevice] = None
+        self._postman: Optional[SonicDevice] = None
         self._scripting: Optional[ScriptingFacade] = None
         self._proc_controller: Optional[ProcedureController] = None
         self._log_path: Optional[Path] = log_path
@@ -47,11 +49,20 @@ class RemoteController:
         else:
             self._logger = create_logger_for_connection(connection_name)
 
+        device_builder = DeviceBuilder(logger=self._logger, protocol_factories=self._protocol_factories)
+
         communicator = SerialCommunicator(logger=self._logger) # type: ignore
         await communicator.open_communication(connection)
-        self._device = await DeviceBuilder(logger=self._logger, protocol_factories=self._protocol_factories).build_amp(communicator)
-        # TODO: add postman connection logic.
+        self._device = await device_builder.build_amp(communicator)
         
+        if self._device.info.device_type == DeviceType.POSTMAN:
+            self._postman = self._device
+            worker_communicator = PostmanProxyCommunicator(communicator)
+            await worker_communicator.open_communication(connection)
+            self._device = await device_builder.build_amp(worker_communicator)
+        else:
+            self._postman = None
+            
         self._updater = Updater(self._device)
         self._updater.start()
         self._proc_controller = ProcedureController(self._device, updater=self._updater)
@@ -97,6 +108,10 @@ class RemoteController:
         answer = await self._device.execute_command(command, raise_exception=False)
         answer.field_value_dict[EFieldName.COMMAND_CODE] = answer.command_code # TODO you gotta do better senator
         return answer.message, answer.field_value_dict, answer.valid
+    
+    async def get_update(self) -> Tuple[str, Dict[EFieldName, Any], bool]:
+        assert self._device is not None,    RemoteController.NOT_CONNECTED
+        return await self.send_command(self._device._update_command)
 
     async def execute_script(self, text: str, callback: Callable[[str], None] = lambda _: None) -> None:
         assert self._device is not None,    RemoteController.NOT_CONNECTED
@@ -161,6 +176,10 @@ class RemoteController:
             self._scripting = None
             self._proc_controller = None
             self._device = None
+
+        if self._postman is not None:
+            await self._postman.disconnect()
+            self._postman = None
 
         assert self._device is None
         assert self._updater is None

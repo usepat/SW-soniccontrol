@@ -8,9 +8,10 @@ from sonic_protocol.python_parser.answer_validator_builder import AnswerValidato
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
-from sonic_protocol.schema import ICommandCode, Protocol
+from sonic_protocol.schema import DeviceType, ICommandCode, Protocol
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.communication.serial_communicator import Communicator
+from sonic_protocol.python_parser import commands
 
 class CommandValidationError(Exception):
     """Raised when a command's response fails validation."""
@@ -37,6 +38,9 @@ class SonicDevice:
         self._command_deserializer = CommandDeserializer(self._protocol)
         self._command_serializer = CommandSerializer(self._protocol)
         self._should_validate_answers = should_validate_answers
+
+        self._update_command = self._resolve_update_command()
+
 
     @property
     def info(self) -> FirmwareInfo:
@@ -180,4 +184,17 @@ class SonicDevice:
 
     async def get_overview(self) -> Answer:
         return await self.execute_command("?", raise_exception=False)
+    
+    def _resolve_update_command(self) -> Command:
+        # TODO: use different update commands  for different devices.
+        match self.info.device_type:
+            case DeviceType.POSTMAN:
+                return commands.GetConnectionStatus()
+            case _:
+                return commands.GetUpdate()
+    
+    async def get_update(self, raise_exception:bool=False, should_log:bool=False) -> Answer:
+        return await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
+
+
 

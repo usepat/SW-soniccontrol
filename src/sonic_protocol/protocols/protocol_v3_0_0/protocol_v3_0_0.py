@@ -10,7 +10,7 @@ from ..protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
 from .commands.commands import (
     get_atf_v3_0_0, get_frequency_v3_0_0, get_update_descale_v3_0_0, get_update_worker_v3_0_0,
     set_atf_v3_0_0, set_frequency_v3_0_0, set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
-    get_logger_list_item, get_logger_list_size
+    get_logger_list_item, get_logger_list_size, get_connection_status
 )
 
 # from .types.types import {
@@ -60,8 +60,10 @@ class Protocol_v3_0_0(ProtocolList):
 
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:        
         if protocol_type.device_type == DeviceType.POSTMAN:
-            worker_command_contracts = self._get_command_contracts_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
-            return worker_command_contracts 
+            command_contracts = self._get_command_contracts_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
+            
+            command_contracts[CommandCode.GET_CONNECTION_STATUS] = get_connection_status
+            return command_contracts 
 
         command_contract_list: List[CommandContract] = [
             get_logger_list_size,
@@ -85,7 +87,9 @@ class Protocol_v3_0_0(ProtocolList):
         })
 
         # overwrite existing contracts
-        command_contract_dict[CommandCode.GET_RAMP] = get_ramp_v3_0_0
+        if CommandCode.GET_RAMP in command_contract_dict:
+            command_contract_dict[CommandCode.GET_RAMP] = get_ramp_v3_0_0
+            
         command_contract_dict[CommandCode.SET_LOG_LEVEL] = set_log_level_v3_0_0
 
         # delete unused commands

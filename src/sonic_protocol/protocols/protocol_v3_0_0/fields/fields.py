@@ -132,6 +132,12 @@ raw_tsflag_field = AnswerFieldDef(
     field_type=raw_measurement_field_type
 )
 
+connection_status_field = AnswerFieldDef(
+    field_name=EFieldName.IS_CONNECTED,
+    field_type=FieldType(bool),
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="connected: ")
+)
+
 # template_field_type = FieldType(
 #     field_type=t.{type/enum},
 #     converter_ref=ConverterType.{converter_type}

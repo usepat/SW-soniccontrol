@@ -84,8 +84,6 @@ class Protocol_v2_0_0(ProtocolList):
         command_contract_dict[CommandCode.SET_CONTROL_MODE] = set_control_mode
         command_contract_dict[CommandCode.GET_INFO] = get_info
         
-        
-
         return command_contract_dict
 
     def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
