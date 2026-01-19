@@ -25,7 +25,7 @@ from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from sonic_protocol.python_parser import commands as cmds
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 
-class DeviceConnectionClasses:
+class DeviceConnectionClass:
     def __init__(self, deviceWindow : DeviceWindow, connection : Connection):
         self._deviceWindow = deviceWindow
         self._connection = connection
@@ -35,7 +35,7 @@ class DeviceWindowManager:
     def __init__(self, root):
         self._root = root
         self._id_device_window_counter = 0
-        self._opened_device_windows: Dict[int, DeviceConnectionClasses] = {}
+        self._opened_device_windows: Dict[int, DeviceConnectionClass] = {}
         self._attempt_connection_callback: Optional[Callable[[Connection], Awaitable[None]]] = None
 
     def open_rescue_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
@@ -48,7 +48,7 @@ class DeviceWindowManager:
         device_window._view.focus_set()  # grab focus and bring window to front
         self._id_device_window_counter += 1
         device_window_id = self._id_device_window_counter
-        self._opened_device_windows[device_window_id] = DeviceConnectionClasses(device_window, connection)
+        self._opened_device_windows[device_window_id] = DeviceConnectionClass(device_window, connection)
         device_window.subscribe(
             DeviceWindow.CLOSE_EVENT, lambda _: self._opened_device_windows.pop(device_window_id) #type: ignore
         )
