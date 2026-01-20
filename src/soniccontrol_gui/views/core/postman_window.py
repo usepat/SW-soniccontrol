@@ -11,11 +11,13 @@ from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import style, ui_labels, sizes
 from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.view import View
+from soniccontrol_gui.utils.image_loader import ImageLoader
+from soniccontrol_gui.view import TabView, View
 from soniccontrol_gui.views.control.logging import Logging
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
 from soniccontrol_gui.views.core.device_window import DeviceWindow, DeviceWindowView, KnownDeviceWindow
 from soniccontrol_gui.widgets.message_box import MessageBox
+from soniccontrol_gui.resources import images
 
 
 class PostmanStatusBar(UIComponent):
@@ -136,9 +138,18 @@ class PostmanStatusBarView(View):
         self._connection_label.configure(color)
 
 
-class WorkerConnectionTabView(View):
+class WorkerConnectionTabView(TabView):
     def __init__(self, master: ttk.Frame, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
+
+    #TODO: better icon and label needed
+    @property
+    def image(self) -> ttk.ImageTk.PhotoImage:
+        return ImageLoader.load_image_resource(images.HOME_ICON_BLACK, sizes.TAB_ICON_SIZE)
+
+    @property
+    def tab_title(self) -> str:
+        return ui_labels.HOME_LABEL
 
     def _initialize_children(self) -> None:
         self._connection_button = ttk.Button(
