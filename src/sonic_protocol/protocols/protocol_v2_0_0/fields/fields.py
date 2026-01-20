@@ -59,7 +59,7 @@ field_type_device_state = FieldType(
 )
 
 field_device_state = AnswerFieldDef(
-    EFieldName.DEVICE_TYPE, 
+    EFieldName.DEVICE_STATE, 
     field_type_device_state, 
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="device state: ")
 )
