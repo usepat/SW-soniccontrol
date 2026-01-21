@@ -42,8 +42,10 @@ class Home(UIComponent):
             self._config.frequency.value = 0
             # You can adjust min/max ranges here later
         
-        self._view = HomeView(parent.view, device_type=device.info.device_type)
+        self._view = HomeView(parent.view)
         super().__init__(parent, self._view)
+
+        self._info_frame = DeviceInfoFrame(self, self._view.info_frame_slot, "home", self._device) 
         
         # Create the form widget for the configuration
         self._form_widget = FormWidget(
@@ -56,21 +58,7 @@ class Home(UIComponent):
             use_scroll=False
         )
         
-        self._view.set_disconnect_button_command(self._on_disconnect_pressed)
         self._view.set_send_button_command(self._on_send_pressed)
-        self._initialize_info()
-
-    def _initialize_info(self) -> None:
-        device_type = self._device.info.device_type
-        firmware_version = str(self._device.info.firmware_version)
-        protocol_version = str(self._device.info.protocol_version)
-        self._view.set_device_type(device_type.value)
-        self._view.set_firmware_version(firmware_version)
-        self._view.set_protocol_version(protocol_version)
-
-    @async_handler
-    async def _on_disconnect_pressed(self) -> None:
-        await self._device.disconnect()
 
     @async_handler
     async def _on_send_pressed(self) -> None:
@@ -90,7 +78,7 @@ class Home(UIComponent):
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state
-        self._view.set_disconnect_button_enabled(execution_state != ExecutionState.NOT_RESPONSIVE)
+        self._info_frame.on_execution_state_changed(e)
         self._view.set_send_button_enabled(execution_state == ExecutionState.IDLE)
 
     @property 
@@ -108,8 +96,6 @@ class Home(UIComponent):
 
 class HomeView(TabView):
     def __init__(self, master: View, *args, **kwargs) -> None:
-        if 'device_type' in kwargs:
-            self.device_type = kwargs.pop('device_type')
         super().__init__(master, *args, **kwargs)
 
     @property
@@ -124,26 +110,7 @@ class HomeView(TabView):
         tab_name = "home"
         self._main_frame: ScrolledFrame = ScrolledFrame(self, autohide=True)
 
-        # info frame - displays device type, protocol type, firmware type
-        self._info_frame: ttk.LabelFrame = ttk.LabelFrame(
-            self._main_frame, text=ui_labels.INFO_LABEL
-        )
-        self._device_type_label = ttk.Label(
-            self._info_frame, text=ui_labels.DEVICE_TYPE_LABEL.format("N/A")
-        )
-        self._firmware_version_label = ttk.Label(
-            self._info_frame, text=ui_labels.FIRMWARE_VERSION_LABEL.format("N/A")
-        )
-        self._protocol_version_label = ttk.Label(
-            self._info_frame, text=ui_labels.PROTOCOL_VERSION_LABEL.format("N/A")
-        )
-        self._disconnect_button = ttk.Button(
-            self._info_frame, text=ui_labels.DISCONNECT_LABEL
-        )
-        WidgetRegistry.register_widget(self._device_type_label, "device_type_label", tab_name)
-        WidgetRegistry.register_widget(self._firmware_version_label, "firmware_version_label", tab_name)
-        WidgetRegistry.register_widget(self._protocol_version_label, "protocol_version_label", tab_name)
-        WidgetRegistry.register_widget(self._disconnect_button, "disconnect_button", tab_name)
+        self._info_frame_slot = ttk.Frame(self._main_frame)
 
         # Control frame - contains the form and send button
         self._control_frame: ttk.LabelFrame = ttk.LabelFrame(
@@ -161,11 +128,86 @@ class HomeView(TabView):
     @property
     def form_slot(self) -> ttk.Frame:
         return self._form_slot
-
+    
+    @property
+    def info_frame_slot(self) -> View:
+        return self._info_frame_slot #type: ignore
 
     def _initialize_publish(self) -> None:
         self._main_frame.pack(fill=ttk.BOTH, expand=True)
         
+        self._info_frame_slot.pack(fill=ttk.X)
+        self._control_frame.pack(fill=ttk.BOTH, expand=True, pady=(0, sizes.LARGE_PADDING), ipady=sizes.LARGE_PADDING)
+        # Layout the form slot first - ensure it expands to use all available space
+        self._form_slot.pack(side=ttk.LEFT, fill=ttk.BOTH, expand=True, padx=(sizes.LARGE_PADDING, sizes.MEDIUM_PADDING), pady=sizes.LARGE_PADDING)
+        # Layout the send button on the right side (fixed size, not expanding)
+        self._send_button.pack(side=ttk.RIGHT, padx=(0, sizes.LARGE_PADDING), pady=sizes.LARGE_PADDING)
+
+    def set_send_button_command(self, command: Callable[[], None]) -> None:
+        self._send_button.configure(command=command)
+
+
+    def set_send_button_enabled(self, enabled: bool) -> None:
+        self._send_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)
+
+
+class DeviceInfoFrame(UIComponent):
+    def __init__(self, parent: UIComponent, parent_slot: View, parent_widget_name: str, device: SonicDevice):
+        self._device = device
+        
+        self._view = DeviceInfoFrameView(parent_slot, parent_widget_name)
+        super().__init__(parent, self._view)
+        self._view.set_disconnect_button_command(self._on_disconnect_pressed)
+        self._initialize_info()
+
+    def _initialize_info(self) -> None:
+        device_type = self._device.info.device_type
+        firmware_version = str(self._device.info.firmware_version)
+        protocol_version = str(self._device.info.protocol_version)
+        self._view.set_device_type(device_type.value)
+        self._view.set_firmware_version(firmware_version)
+        self._view.set_protocol_version(protocol_version)
+
+    @async_handler
+    async def _on_disconnect_pressed(self) -> None:
+        await self._device.disconnect()
+
+    def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
+        execution_state: ExecutionState = e.new_value.execution_state
+        self._view.set_disconnect_button_enabled(execution_state != ExecutionState.NOT_RESPONSIVE)
+
+
+class DeviceInfoFrameView(View):
+    def __init__(self, master: View, parent_widget_name: str, *args, **kwargs) -> None:
+        self._parent_widget_name = parent_widget_name
+        super().__init__(master, *args, **kwargs)
+
+    def _initialize_children(self) -> None:
+        widget_name = self._parent_widget_name
+
+        # info frame - displays device type, protocol type, firmware type
+        self._info_frame: ttk.LabelFrame = ttk.LabelFrame(
+            self, text=ui_labels.INFO_LABEL
+        )
+        self._device_type_label = ttk.Label(
+            self._info_frame, text=ui_labels.DEVICE_TYPE_LABEL.format("N/A")
+        )
+        self._firmware_version_label = ttk.Label(
+            self._info_frame, text=ui_labels.FIRMWARE_VERSION_LABEL.format("N/A")
+        )
+        self._protocol_version_label = ttk.Label(
+            self._info_frame, text=ui_labels.PROTOCOL_VERSION_LABEL.format("N/A")
+        )
+        self._disconnect_button = ttk.Button(
+            self._info_frame, text=ui_labels.DISCONNECT_LABEL
+        )
+        WidgetRegistry.register_widget(self._device_type_label, "device_type_label", widget_name)
+        WidgetRegistry.register_widget(self._firmware_version_label, "firmware_version_label", widget_name)
+        WidgetRegistry.register_widget(self._protocol_version_label, "protocol_version_label", widget_name)
+        WidgetRegistry.register_widget(self._disconnect_button, "disconnect_button", widget_name)
+
+    def _initialize_publish(self) -> None:
+        self.pack(fill=ttk.BOTH)
         self._info_frame.pack(fill=ttk.X, pady=(0, sizes.MEDIUM_PADDING))
         self._device_type_label.grid(
             row=0, 
@@ -196,14 +238,6 @@ class HomeView(TabView):
             sticky=ttk.W
         )
 
-        self._control_frame.pack(fill=ttk.BOTH, expand=True, pady=(0, sizes.LARGE_PADDING), ipady=sizes.LARGE_PADDING)
-        
-        # Layout the form slot first - ensure it expands to use all available space
-        self._form_slot.pack(side=ttk.LEFT, fill=ttk.BOTH, expand=True, padx=(sizes.LARGE_PADDING, sizes.MEDIUM_PADDING), pady=sizes.LARGE_PADDING)
-        
-        # Layout the send button on the right side (fixed size, not expanding)
-        self._send_button.pack(side=ttk.RIGHT, padx=(0, sizes.LARGE_PADDING), pady=sizes.LARGE_PADDING)
-
     def set_device_type(self, text: str) -> None:
         self._device_type_label.configure(text=ui_labels.DEVICE_TYPE_LABEL.format(text)) 
 
@@ -216,11 +250,5 @@ class HomeView(TabView):
     def set_disconnect_button_command(self, command: Callable[[], None]) -> None:
         self._disconnect_button.configure(command=command)
 
-    def set_send_button_command(self, command: Callable[[], None]) -> None:
-        self._send_button.configure(command=command)
-
     def set_disconnect_button_enabled(self, enabled: bool) -> None:
         self._disconnect_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)
-
-    def set_send_button_enabled(self, enabled: bool) -> None:
-        self._send_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)
