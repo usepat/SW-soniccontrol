@@ -94,8 +94,10 @@ class SerialCommunicator(Communicator):
         assert self._writer is not None
         assert self._message_fetcher.is_running
 
+        should_log = kwargs.pop("should_log", True)
+
         async with self._lock:
-            if request_str != "-":
+            if should_log:
                 self._logger.info("Send command: %s", request_str)
 
             self._message_counter = (self._message_counter + 1) % self.MESSAGE_ID_MAX_CLIENT
@@ -105,7 +107,7 @@ class SerialCommunicator(Communicator):
                 request_str, message_counter, **kwargs
             )
 
-            if request_str != "-":
+            if should_log:
                 self._logger.info("Write package: %s", message)
             encoded_message = message.encode(ENCODING)
 
@@ -122,7 +124,7 @@ class SerialCommunicator(Communicator):
             response =  await self._message_fetcher.get_answer_of_request(
                 message_counter
             )
-            if request_str != "-":
+            if should_log:
                 self._logger.info("Receive Answer: %s", response)
 
             return response

@@ -6,6 +6,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import IEFieldName
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.communicator import Communicator
+from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.events import Event, PropertyChangeEvent
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
@@ -47,6 +48,7 @@ class WorkerConnectionTab(UIComponent):
         self._worker_device_window: DeviceWindow | None = None
 
         self._view.set_connection_button_pressed_callback(self._on_connect)
+        self._view.enable_connection_button(False)
 
     @async_handler
     async def _on_connect(self):
@@ -56,7 +58,8 @@ class WorkerConnectionTab(UIComponent):
 
         try:
             builder = DeviceBuilder(logger=self._logger)
-            worker_device = await builder.build_amp(self._device.communicator)
+            proxy_comm = PostmanProxyCommunicator(self._device.communicator)
+            worker_device = await builder.build_amp(proxy_comm)
         except Exception as e:
             self._logger.error(e)
             message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
@@ -64,7 +67,8 @@ class WorkerConnectionTab(UIComponent):
 
             self._view.enable_connection_button(True)
         else:
-            self._worker_device_window = KnownDeviceWindow(worker_device, self._view.root, self._connection_name)
+            self._worker_device_window = KnownDeviceWindow(
+                worker_device, self._view.root, self._connection_name)
             self._worker_device_window.view.focus_set()
             worker_device.communicator.subscribe(Communicator.DISCONNECTED_EVENT, self._on_close_communication)
             self._worker_device_window.subscribe(DeviceWindow.CLOSE_EVENT, self._on_close_communication)  
@@ -83,6 +87,11 @@ class WorkerConnectionTab(UIComponent):
             if self._worker_device_window:
                 self._worker_device_window.close()
 
+    def on_update(self, e: Event):
+        connection_status: Dict[IEFieldName, Any] = e.data["status"]
+        is_connected = connection_status[EFieldName.IS_CONNECTED]
+        self._view.enable_connection_button(is_connected)
+
 
 class PostmanDeviceWindow(DeviceWindow):
     def __init__(self, device: SonicDevice, root, connection_name: str):
@@ -93,15 +102,16 @@ class PostmanDeviceWindow(DeviceWindow):
             super().__init__(self._logger, self._view, self._device.communicator)
 
             self._updater = Updater(self._device)
+            self._updater.set_update_interval(1000)
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
             self._logging = Logging(self, connection_name)
-            self._worker_connection = WorkerConnectionTab(self, self._device, connection_name)
+            self._worker_connection_tab = WorkerConnectionTab(self, self._device, connection_name)
 
             # TODO: add modbus config view
 
             self._status_bar = PostmanStatusBar(self, self._view.status_bar_slot) # type: ignore
             self._view.add_tab_views([
-                self._worker_connection.view,
+                self._worker_connection_tab.view,
                 self._serialmonitor.view,
             ], right_one=False)
             self._view.add_tab_views([
@@ -109,9 +119,9 @@ class PostmanDeviceWindow(DeviceWindow):
             ], right_one=True)
 
             self._updater.subscribe(Updater.UPDATE_EVENT,self._status_bar.on_update)
+            self._updater.subscribe(Updater.UPDATE_EVENT,self._worker_connection_tab.on_update)
             self._updater.start()
-            self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._worker_connection.on_execution_state_changed)
-
+            self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._worker_connection_tab.on_execution_state_changed)
 
         except Exception as e:
             self._logger.error(e)
@@ -142,7 +152,7 @@ class PostmanStatusBarView(View):
         self._connection_label_text.set(text)
 
     def set_is_connected_label_color(self, color: str):
-        self._connection_label.configure(color)
+        self._connection_label.configure(bootstyle=color)
 
 
 class WorkerConnectionTabView(TabView):

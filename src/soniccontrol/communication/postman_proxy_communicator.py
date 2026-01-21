@@ -3,18 +3,22 @@ import logging
 from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.message_protocol import SonicMessageProtocol
 from soniccontrol.events import Event
-from .serial_communicator import SerialCommunicator, Communicator
+from .serial_communicator import Communicator
 from async_tkinter_loop import async_handler
 
 class PostmanProxyCommunicator(Communicator):
-    def __init__(self, communicator: SerialCommunicator):
+    def __init__(self, communicator: Communicator):
         self._communicator = communicator
         self._connection_opened = asyncio.Event()
+        super().__init__()
 
         @async_handler
         async def on_disconnect(_):
             await self.close_communication()
         self._communicator.subscribe(Communicator.DISCONNECTED_EVENT, on_disconnect)
+        
+        if self._communicator.connection_opened.is_set():
+            self._connection_opened.set()
 
     @property
     def connection_opened(self) -> asyncio.Event: 
@@ -23,8 +27,9 @@ class PostmanProxyCommunicator(Communicator):
     async def open_communication(
         self, connection: Connection, baudrate: int = 0
     ): 
-        assert self._communicator.connection_opened.is_set(), "cannot connect to worker, you have to connect to the postman first"
-        self._connection_opened.set()
+        await self._communicator.open_communication(connection, baudrate)        
+        if self._communicator.connection_opened.is_set():
+            self._connection_opened.set()
 
     async def close_communication(self, restart: bool = False) -> None: 
         assert not restart, "This class cannot restart the connection"
@@ -33,6 +38,7 @@ class PostmanProxyCommunicator(Communicator):
         self.emit(Event(Communicator.DISCONNECTED_EVENT))
 
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str: 
+        # add an address prefix to all messages, so that the postman understands, it need to forward those to the worker
         return await self._communicator.send_and_wait_for_response(
             request, addr_prefix=SonicMessageProtocol.ADDR_PREFIX_WORKER, **kwargs)
 

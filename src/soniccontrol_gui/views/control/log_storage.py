@@ -61,7 +61,6 @@ class LogStorage:
                 continue
    
             self._logs.append(item)
-            print(len(self._logs))
             if len(self._logs) > LogStorage._MAX_SIZE_LOGS:
                  self._logs.remove_at(0)
     

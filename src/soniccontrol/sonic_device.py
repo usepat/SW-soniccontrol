@@ -58,7 +58,7 @@ class SonicDevice:
         command_code = command.code if isinstance(command, Command) else command
         return command_code in self._protocol.command_contracts and self._protocol.command_contracts[command_code].command_def is not None
 
-    async def _send_command(self, command: Command) -> Answer:
+    async def _send_command(self, command: Command, should_log: bool = True) -> Answer:
         command_contract = self._protocol.command_contracts.get(command.code)
         assert command_contract is not None, f"The command {command} is not known for the protocol" # throw error?
         assert command_contract.command_def is not None, f"For the command_code of {command} exists a message (notify or error), but there exists no command" 
@@ -70,14 +70,16 @@ class SonicDevice:
             request_str, 
             self._answer_validators[command.code], 
             **command_contract.command_def.sonic_text_attrs.kwargs,
+            should_log=should_log,
             code=command.code  # We need this because of the legacyCommunicator since the answers of the crystal+ device don't include the commandcode. 
             #We need to remember them and prepend them to the answers
         )
 
         return answer
 
-    async def _send_message(self, message: str, answer_validator: AnswerValidator| None = None, try_deduce_answer_validator: bool = False, **kwargs) -> Answer:
-        response_str = await self._communicator.send_and_wait_for_response(message, **kwargs)
+    async def _send_message(self, message: str, answer_validator: AnswerValidator| None = None, 
+                            try_deduce_answer_validator: bool = False, should_log: bool = True, **kwargs) -> Answer:
+        response_str = await self._communicator.send_and_wait_for_response(message, should_log=should_log, **kwargs)
         
         code: ICommandCode | None = None
         if "#" in response_str:
@@ -149,10 +151,11 @@ class SonicDevice:
             if isinstance(command, str):
                 answer = await self._send_message(
                     command, 
-                    try_deduce_answer_validator=try_deduce_command_if_str
+                    try_deduce_answer_validator=try_deduce_command_if_str,
+                    should_log=should_log
                 )
             else:
-                answer = await self._send_command(command)
+                answer = await self._send_command(command, should_log=should_log)
         except Exception as e:
             self._logger.error(e)
             await self.disconnect()
