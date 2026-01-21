@@ -14,6 +14,7 @@ from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.view import TabView, View
 from soniccontrol_gui.views.control.logging import Logging
+from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
 from soniccontrol_gui.views.core.device_window import DeviceWindow, DeviceWindowView, KnownDeviceWindow
 from soniccontrol_gui.widgets.message_box import MessageBox
@@ -92,14 +93,20 @@ class PostmanDeviceWindow(DeviceWindow):
             super().__init__(self._logger, self._view, self._device.communicator)
 
             self._updater = Updater(self._device)
+            self._serialmonitor = SerialMonitor(self, self._device.communicator)
             self._logging = Logging(self, connection_name)
             self._worker_connection = WorkerConnectionTab(self, self._device, connection_name)
 
+            # TODO: add modbus config view
+
             self._status_bar = PostmanStatusBar(self, self._view.status_bar_slot) # type: ignore
             self._view.add_tab_views([
-                self._logging.view, 
-                self._worker_connection.view
+                self._worker_connection.view,
+                self._serialmonitor.view,
             ], right_one=False)
+            self._view.add_tab_views([
+                self._logging.view
+            ], right_one=True)
 
             self._updater.subscribe(Updater.UPDATE_EVENT,self._status_bar.on_update)
             self._updater.start()

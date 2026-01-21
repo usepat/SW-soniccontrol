@@ -49,13 +49,9 @@ class DeviceBuilder:
         self._builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release", str(protocol_version))
         protocol = operator_protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
             
-        info = FirmwareInfo()
+        info = FirmwareInfo(device_type=device_type, protocol_version=protocol_version, is_release=is_release)
         device = SonicDevice(comm, protocol, info, logger=self._logger)
     
-        # update info
-        info.device_type = device_type
-        info.protocol_version = protocol_version
-        info.is_release = is_release
         await self._update_info(device)
 
         return device
@@ -100,14 +96,12 @@ class DeviceBuilder:
         protocol_factory = self._protocol_factories.get(device_type, operator_protocol_factory)
         protocol = protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
             
+
         # If we did not deduce the protocol then we should also not try to validate the answers, because we do not know how they look like
+        info = FirmwareInfo(device_type=device_type, protocol_version=protocol_version, is_release=is_release)
         device = SonicDevice(comm, protocol, info, 
                              should_validate_answers=try_deduce_protocol_used, logger=self._logger)
     
-        # update info
-        info.device_type = device_type
-        info.protocol_version = protocol_version
-        info.is_release = is_release
         await self._update_info(device)
 
         return device
