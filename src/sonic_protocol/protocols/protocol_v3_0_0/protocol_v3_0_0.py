@@ -93,12 +93,9 @@ class Protocol_v3_0_0(ProtocolList):
         command_contract_dict[CommandCode.SET_LOG_LEVEL] = set_log_level_v3_0_0
 
         # delete unused commands
-        if CommandCode.GET_DATETIME_PICO in command_contract_dict:
-            command_contract_dict.pop(CommandCode.GET_DATETIME_PICO)
-        if CommandCode.SET_COM_PROT in command_contract_dict:
-            command_contract_dict.pop(CommandCode.SET_COM_PROT)
-        if CommandCode.SET_TERMINATION in command_contract_dict:
-            command_contract_dict.pop(CommandCode.SET_TERMINATION)
+        command_contract_dict.pop(CommandCode.GET_DATETIME_PICO, None)
+        command_contract_dict.pop(CommandCode.SET_COM_PROT, None)
+        command_contract_dict.pop(CommandCode.SET_TERMINATION, None)
 
         return command_contract_dict
 
