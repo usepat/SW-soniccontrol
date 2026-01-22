@@ -13,6 +13,8 @@ from soniccontrol_gui.view import View
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow
 from importlib.metadata import entry_points
 
+from soniccontrol_gui.views.core.postman_window import PostmanDeviceWindow
+
 
 class WindowFactoryBase(abc.ABC):
     @abc.abstractmethod
@@ -22,6 +24,10 @@ class WindowFactoryBase(abc.ABC):
 class KnownDeviceWindowFactory(WindowFactoryBase):
     def __call__(self, device: SonicDevice, root: tk.Tk, connection_name: str, **kwargs) -> DeviceWindow:
         return KnownDeviceWindow(device, root, connection_name, kwargs.pop("is_legacy_device"))
+
+class PostmanDeviceWindowFactory(WindowFactoryBase):
+    def __call__(self, device: SonicDevice, root: tk.Tk, connection_name: str, **kwargs) -> DeviceWindow:
+        return PostmanDeviceWindow(device, root, connection_name)
 
 
 @attrs.define(hash=True)
@@ -56,6 +62,9 @@ DevicePluginRegistry.register_device_plugin(
 )
 DevicePluginRegistry.register_device_plugin(
     DevicePlugin(DeviceType.CRYSTAL, KnownDeviceWindowFactory(), _operator_protocol_factory)
+)
+DevicePluginRegistry.register_device_plugin(
+    DevicePlugin(DeviceType.POSTMAN, PostmanDeviceWindowFactory(), _operator_protocol_factory)
 )
 
 def register_device_plugins():

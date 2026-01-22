@@ -38,11 +38,6 @@ class LegacyCommunicator(Communicator):
         self._send_lock = asyncio.Lock()
         super().__init__()
 
-
-    @property
-    def protocol(self) -> CommunicationProtocol: 
-        return SonicMessageProtocol()
-
     @property
     def connection_opened(self) -> asyncio.Event:
         return self._connection_opened
@@ -212,10 +207,6 @@ class LegacyCommunicator(Communicator):
         self._logger.info("Disconnected from device")
         if not(self._restart):
             self.emit(Event(Communicator.DISCONNECTED_EVENT))
-
-    async def change_baudrate(self, baudrate: int) -> None:
-        await self.close_communication(restart=True)
-        await self.open_communication(self._connection, baudrate)
 
 
 

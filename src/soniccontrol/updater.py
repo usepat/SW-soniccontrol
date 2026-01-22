@@ -1,12 +1,14 @@
 
 import asyncio
 from typing import Optional
-from sonic_protocol.python_parser import commands
+from sonic_protocol.schema import DeviceType
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.events import Event, EventManager
 
 
 class Updater(EventManager):
+    UPDATE_EVENT = "update"
+
     def __init__(self, device: SonicDevice, time_waiting_between_updates_ms: int = 0) -> None:
         super().__init__()
         self._device = device
@@ -34,15 +36,15 @@ class Updater(EventManager):
         self._time_waiting_between_updates_ms = time_waiting_between_updates_ms
 
     async def update(self) -> None:
-        # HINT: If ever needed to update different device attributes, we can do that, by checking what components the device has
-        # and then additionally call other commands to get this information
-        if self._device.has_command(commands.GetUpdate()):
+        if self._device.info.device_type == DeviceType.CONFIGURATOR:
             # Configurator does not have update but uses Device so for now I fix it like this
-            answer = await self._device.execute_command(commands.GetUpdate(), should_log=False, raise_exception=False)
-            if answer.valid:
-                self.emit(Event("update", status=answer.field_value_dict))
-        else:
             self._running.clear()
+            return 
+            
+        answer = await self._device.get_update()
+        if answer.valid:
+            self.emit(Event(Updater.UPDATE_EVENT, status=answer.field_value_dict))
+            
 
     async def _loop(self) -> None:
         try:

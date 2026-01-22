@@ -349,6 +349,12 @@ class GetAuto(Command):
         super().__init__(code=CommandCode.GET_AUTO)
 
 
+@attrs.define()
+class GetConnectionStatus(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_CONNECTION_STATUS)
+
+
 # Legacy specific commands
 
 # We need a different auto and wipe command so that procedure instantiator  knows which proc to create

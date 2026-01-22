@@ -125,3 +125,4 @@ class EFieldName(IEFieldName):
     RAMP_GAIN = 88
 
     COUNT = 89
+    IS_CONNECTED = 90

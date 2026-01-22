@@ -6,6 +6,7 @@ from sonic_protocol.protocol import protocol_list as operator_protocol_factory
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.schema import BuildType, DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName, IEFieldName
+from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.connection import Connection
 from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
@@ -48,19 +49,15 @@ class DeviceBuilder:
         self._builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release", str(protocol_version))
         protocol = operator_protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
             
-        info = FirmwareInfo()
+        info = FirmwareInfo(device_type=device_type, protocol_version=protocol_version, is_release=is_release)
         device = SonicDevice(comm, protocol, info, logger=self._logger)
     
-        # update info
-        info.device_type = device_type
-        info.protocol_version = protocol_version
-        info.is_release = is_release
         await self._update_info(device)
 
         return device
 
 
-    async def build_amp(self, connection: Connection, try_deduce_protocol_used: bool = True) -> SonicDevice:
+    async def build_amp(self, comm: Communicator, try_deduce_protocol_used: bool = True) -> SonicDevice:
         """!
         @param open_in_rescue_mode This param can be set to False, so that it does not try to deduce which protocol to use. Used for the rescue window
         """
@@ -68,9 +65,6 @@ class DeviceBuilder:
         protocol_version: Version = Version(0, 0, 0)
         device_type: DeviceType = DeviceType.UNKNOWN
         is_release: bool = True
-
-        comm = SerialCommunicator(logger=self._logger) #type: ignore
-        await comm.open_communication(connection)
 
         self._builder_logger.debug("Serial connection is open, start building device")
 
@@ -102,14 +96,12 @@ class DeviceBuilder:
         protocol_factory = self._protocol_factories.get(device_type, operator_protocol_factory)
         protocol = protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
             
+
         # If we did not deduce the protocol then we should also not try to validate the answers, because we do not know how they look like
+        info = FirmwareInfo(device_type=device_type, protocol_version=protocol_version, is_release=is_release)
         device = SonicDevice(comm, protocol, info, 
                              should_validate_answers=try_deduce_protocol_used, logger=self._logger)
     
-        # update info
-        info.device_type = device_type
-        info.protocol_version = protocol_version
-        info.is_release = is_release
         await self._update_info(device)
 
         return device

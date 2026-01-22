@@ -8,9 +8,10 @@ from sonic_protocol.python_parser.answer_validator_builder import AnswerValidato
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
-from sonic_protocol.schema import ICommandCode, Protocol
+from sonic_protocol.schema import DeviceType, ICommandCode, Protocol
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.communication.serial_communicator import Communicator
+from sonic_protocol.python_parser import commands
 
 class CommandValidationError(Exception):
     """Raised when a command's response fails validation."""
@@ -38,6 +39,9 @@ class SonicDevice:
         self._command_serializer = CommandSerializer(self._protocol)
         self._should_validate_answers = should_validate_answers
 
+        self._update_command = self._resolve_update_command()
+
+
     @property
     def info(self) -> FirmwareInfo:
         return self._info
@@ -54,7 +58,7 @@ class SonicDevice:
         command_code = command.code if isinstance(command, Command) else command
         return command_code in self._protocol.command_contracts and self._protocol.command_contracts[command_code].command_def is not None
 
-    async def _send_command(self, command: Command) -> Answer:
+    async def _send_command(self, command: Command, should_log: bool = True) -> Answer:
         command_contract = self._protocol.command_contracts.get(command.code)
         assert command_contract is not None, f"The command {command} is not known for the protocol" # throw error?
         assert command_contract.command_def is not None, f"For the command_code of {command} exists a message (notify or error), but there exists no command" 
@@ -66,14 +70,16 @@ class SonicDevice:
             request_str, 
             self._answer_validators[command.code], 
             **command_contract.command_def.sonic_text_attrs.kwargs,
+            should_log=should_log,
             code=command.code  # We need this because of the legacyCommunicator since the answers of the crystal+ device don't include the commandcode. 
             #We need to remember them and prepend them to the answers
         )
 
         return answer
 
-    async def _send_message(self, message: str, answer_validator: AnswerValidator| None = None, try_deduce_answer_validator: bool = False, **kwargs) -> Answer:
-        response_str = await self._communicator.send_and_wait_for_response(message, **kwargs)
+    async def _send_message(self, message: str, answer_validator: AnswerValidator| None = None, 
+                            try_deduce_answer_validator: bool = False, should_log: bool = True, **kwargs) -> Answer:
+        response_str = await self._communicator.send_and_wait_for_response(message, should_log=should_log, **kwargs)
         
         code: ICommandCode | None = None
         if "#" in response_str:
@@ -145,10 +151,11 @@ class SonicDevice:
             if isinstance(command, str):
                 answer = await self._send_message(
                     command, 
-                    try_deduce_answer_validator=try_deduce_command_if_str
+                    try_deduce_answer_validator=try_deduce_command_if_str,
+                    should_log=should_log
                 )
             else:
-                answer = await self._send_command(command)
+                answer = await self._send_command(command, should_log=should_log)
         except Exception as e:
             self._logger.error(e)
             await self.disconnect()
@@ -180,4 +187,17 @@ class SonicDevice:
 
     async def get_overview(self) -> Answer:
         return await self.execute_command("?", raise_exception=False)
+    
+    def _resolve_update_command(self) -> Command:
+        # TODO: use different update commands  for different devices.
+        match self.info.device_type:
+            case DeviceType.POSTMAN:
+                return commands.GetConnectionStatus()
+            case _:
+                return commands.GetUpdate()
+    
+    async def get_update(self, raise_exception:bool=False, should_log:bool=False) -> Answer:
+        return await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
+
+
 

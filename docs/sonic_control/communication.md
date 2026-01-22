@@ -52,4 +52,9 @@ So we have a method that pushes and waits and a method for pulling.
 The new communicator uses internally a [MessageFetcher](@ref soniccontrol.communication.message_fetcher.MessageFetcher) that runs in the background and constantly reads messages from the input stream. It stores then the messages in a dictionary (Key is the ID of the answer). The Communicator can then get the answer via [get_answer_of_request](@ref soniccontrol.communication.message_fetcher.MessageFetcher.get_answer_of_request). The method is awaitable. So we can support like this concurrency.
 
 
+## Communication over Postman
+
+In the case we want to communicate with a worker over a postman, the communication setup gets more complicated. We have first to connect with a normal SerialCommunicator (the new version) to the postman. After that we have to use a PostmanProxyCommunicator as a Wrapper for the SerialCommunicator. The task of the PostmanProxyCommunicator is just to prepend an address prefix "W" to all commands, so that they get redirected over the postman to the worker. This communicator needs to be injected into the device builder for creating a worker device. Like this we have two devices that use the same underlying Serial interface. We have to take care of disconnect and connect methods, so that the worker device instance does not close accidentally the connection for the postman device instance.  
+Also the communicator cannot differentiate between logs that where send by the worker or postman, because for that we would need an address prefix for logs. Answers however are identifiable and assignable to the right device by their message id.
+
 @}
