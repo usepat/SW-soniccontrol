@@ -174,6 +174,21 @@ get_logger_list_item = CommandContract(
     tags=["log"]
 )
 
+get_connection_status = CommandContract(
+    code=CommandCode.GET_CONNECTION_STATUS,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs("?connection")
+    ),
+    answer_def=AnswerDef(
+        [f.connection_status_field]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Returns true if the postman is connected to a worker"
+    ),
+    is_release=True,
+    tags=["postman"]
+)
+
 # get_ramp = copy.deepcopy(prcmd_v1.get_ramp)
 
 # for field in get_ramp.answer_def.fields:

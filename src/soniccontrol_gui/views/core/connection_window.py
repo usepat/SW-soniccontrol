@@ -23,8 +23,9 @@ from soniccontrol_gui.views.core.device_window import DeviceWindow, RescueWindow
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from sonic_protocol.python_parser import commands as cmds
+from soniccontrol.communication.serial_communicator import SerialCommunicator
 
-class DeviceConnectionClasses:
+class DeviceConnectionClass:
     def __init__(self, deviceWindow : DeviceWindow, connection : Connection):
         self._deviceWindow = deviceWindow
         self._connection = connection
@@ -34,7 +35,7 @@ class DeviceWindowManager:
     def __init__(self, root):
         self._root = root
         self._id_device_window_counter = 0
-        self._opened_device_windows: Dict[int, DeviceConnectionClasses] = {}
+        self._opened_device_windows: Dict[int, DeviceConnectionClass] = {}
         self._attempt_connection_callback: Optional[Callable[[Connection], Awaitable[None]]] = None
 
     def open_rescue_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
@@ -47,7 +48,7 @@ class DeviceWindowManager:
         device_window._view.focus_set()  # grab focus and bring window to front
         self._id_device_window_counter += 1
         device_window_id = self._id_device_window_counter
-        self._opened_device_windows[device_window_id] = DeviceConnectionClasses(device_window, connection)
+        self._opened_device_windows[device_window_id] = DeviceConnectionClass(device_window, connection)
         device_window.subscribe(
             DeviceWindow.CLOSE_EVENT, lambda _: self._opened_device_windows.pop(device_window_id) #type: ignore
         )
@@ -67,7 +68,9 @@ class DeviceWindowManager:
             if is_legacy_device:
                 sonicamp = await device_builder.build_legacy_crystal(connection)
             else:
-                sonicamp = await device_builder.build_amp(connection, try_deduce_protocol_used=True)
+                communicator = SerialCommunicator(logger=logger) # type: ignore
+                await communicator.open_communication(connection)
+                sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=True)
         
         except Exception as e:
             logger.error(e)
@@ -77,7 +80,9 @@ class DeviceWindowManager:
             if user_answer is None or user_answer == DialogOptions.NO: 
                 return
             
-            sonicamp = await device_builder.build_amp(connection, try_deduce_protocol_used=False)
+            communicator = SerialCommunicator(logger=logger) # type: ignore
+            await communicator.open_communication(connection)
+            sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=False)
 
         # TODO: Maybe we should move this into a plugin
         device_type = sonicamp.info.device_type
@@ -180,11 +185,16 @@ class ConnectionWindow(UIComponent):
         self._is_connecting = True
 
         bin_file = self._simulation_exe_path 
-        args = [f"--start-configurator={'true' if self._view.should_start_configurator else 'false'}"]
+        args: List[str] = []
+        if self._view.should_start_configurator:
+            args.append("--start-configurator=true")
         if self._view.use_firmware_gui:
             args.append("--gui")
+        if self._view.profile != "none":
+            args.append(f"--profile={self._view.profile}")
         if len(self._view.simulation_cmd_args) != 0:
             args.extend(self._view.simulation_cmd_args.split(" "))
+  
 
         connection = CLIConnection(bin_file=bin_file, connection_name = "simulation", cmd_args=args)
         await self._attempt_connection(connection)
@@ -268,6 +278,14 @@ class ConnectionWindowView(ttk.Window, View):
         self._simulation_cmd_args_entry = tk.Entry(self._simulation_frame, textvariable=self._simulation_cmd_args)
         WidgetRegistry.register_widget(self._simulation_cmd_args_entry, "simulation_cmd_args", window_name)
 
+        self._profile = tk.StringVar(self, "none")
+        self._profile_menue: ttk.Combobox = ttk.Combobox(
+            self._simulation_frame,
+            textvariable=self._profile,
+            style=ttk.DARK,
+            state=ttk.READONLY,
+            values=["postman", "worker", "none"]
+        )
 
         # --- plugin container (NEW) ---
         self.plugins_container = ttk.Frame(self)
@@ -290,6 +308,7 @@ class ConnectionWindowView(ttk.Window, View):
             self._connect_to_simulation_button.pack(side=ttk.LEFT, fill=ttk.X, expand=True, padx=sizes.SMALL_PADDING)
             self._start_configurator_box.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
             self._use_firmware_gui_box.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
+            self._profile_menue.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
             self._simulation_cmd_args_entry.pack(side=ttk.RIGHT, padx=sizes.SMALL_PADDING)
 
         self._loading_label.pack(side=ttk.TOP, pady=sizes.MEDIUM_PADDING)
@@ -329,6 +348,10 @@ class ConnectionWindowView(ttk.Window, View):
     @property
     def simulation_cmd_args(self) -> str:
         return self._simulation_cmd_args.get()
+    
+    @property 
+    def profile(self) -> str:
+        return self._profile.get()
     
     @loading_text.setter
     def loading_text(self, value: str) -> None:

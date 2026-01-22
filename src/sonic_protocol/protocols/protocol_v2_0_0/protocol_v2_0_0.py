@@ -62,7 +62,7 @@ class Protocol_v2_0_0(ProtocolList):
     def supports_device_type(self, device_type: DeviceType) -> bool:
         return self._previous_protocol.supports_device_type(device_type)
 
-    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract | None]:
+    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:
         command_contract_list: List[CommandContract] = [
             clear_errors, restart_device, start_configurator, get_control_mode, pop_error_histo_message, get_error_histo_size,
             get_postman_update, go_into_device_state, reset_on_timer, get_on_timer
@@ -73,17 +73,18 @@ class Protocol_v2_0_0(ProtocolList):
         if protocol_type.device_type == DeviceType.MVP_WORKER:
             command_contract_list.extend(all_proc_commands)
             command_contract_list.extend([get_update_worker_v2_0_0, broadcast_modbus_server_id])
-        command_contract_dict: Dict[ICommandCode, CommandContract | None] = {
+
+        command_contract_dict = self._previous_protocol._get_command_contracts_for(protocol_type)
+        command_contract_dict.update({
             command_contract.code: command_contract for command_contract in command_contract_list 
-        } 
+        })
 
         # setting the input source should be done in the configurator and not operator
         # Not really. But we changed to control mode?
         command_contract_dict[CommandCode.SET_CONTROL_MODE] = set_control_mode
         command_contract_dict[CommandCode.GET_INFO] = get_info
         
-
         return command_contract_dict
 
     def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
-        return {}
+        return self._previous_protocol._get_device_constants_for(protocol_type)

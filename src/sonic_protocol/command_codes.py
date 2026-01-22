@@ -93,6 +93,7 @@ class CommandCode(ICommandCode):
     GET_ON_TIMER = 410
 
     GET_UIPT_RAW = 420
+    GET_CONNECTION_STATUS = 430
 
     # Setters with corresponding getters
     SET_SWF = 1010
