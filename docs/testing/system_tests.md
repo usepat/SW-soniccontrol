@@ -3,16 +3,20 @@
 @addtogroup SystemTests
 @{
 
-# System Testing {#SystemTests}
+# System and Integration Testing {#SystemTests}
 
 In contrast to [Unit testing](@ref UnitTests), System testing is about testing the whole system and not just a single unit of it.
 There is also integration testing, that focus on testing if a collection of units works together as expected. The transition from integration testing to system testing is fluid.
 
-For the system testing we use a binary of our [firmware](https://github.com/usepat/FW-sonic-firmware/tree/stable) that simulates it locally on the pc (but only for Linux). 
+For the integration testing we use a binary of our [firmware](https://github.com/usepat/FW-sonic-firmware/tree/stable) that simulates it locally on the pc (but only for Linux). 
 We can start this binary as a process in the command line and can communicate with it over `stdout` and `stdin`.
 In the code we do this over [CLIConnectionFactory](@ref soniccontrol.ConnectionFactory.CLIConnectionFactory).
 
-For writing the system tests we use the robot framework.
+For testing the GUI we use the GUIDriver class. Every widget gets registered over a name and the GUIDriver offers methods to interact with the widgets programmatically.
+
+Because for the simulation and real device (and also for different device types like postman and worker) we need to interact differently with the GUI to open the device window. Therefore we use a Strategy pattern for Connecting with the Device and opening the Device Window.
+
+For writing the system tests we used the robot framework but now we want to migrate to pytest.
 
 ## Robot Framework
 

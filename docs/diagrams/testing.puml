@@ -1,0 +1,72 @@
+@startuml
+
+
+class Scripting {
+
+}
+
+class ProcedureController {
+
+}
+
+class Device {
+
+}
+
+class RemoteController {
+
+}
+
+RemoteController --> Scripting
+RemoteController --> ProcedureController
+RemoteController --> Device
+
+interface Connection {
+
+}
+
+interface ConnectionFactory {
+
+}
+
+ConnectionFactory ..> Connection
+
+RemoteController --> Connection
+
+class GUI {
+
+}
+
+GUI -u-> Scripting
+GUI -u-> ProcedureController
+GUI -u-> Device
+
+GUI -u-> Connection
+
+interface Widget {
+
+}
+
+GUI o-d- Widget : widgets
+
+class GuiDriver {
+
+}
+
+GuiDriver o-r- Widget : widget_registry
+
+interface ConnectDeviceStrategy {
+
+}
+
+ConnectDeviceStrategy .r.> GuiDriver
+
+class Tests {
+
+}
+
+Tests .d.> GuiDriver
+Tests .r.> RemoteController
+Tests .l.> ConnectDeviceStrategy
+
+@enduml
