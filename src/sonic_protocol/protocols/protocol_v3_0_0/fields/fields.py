@@ -138,13 +138,17 @@ connection_status_field = AnswerFieldDef(
     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="connected: ")
 )
 
-# template_field_type = FieldType(
-#     field_type=t.{type/enum},
-#     converter_ref=ConverterType.{converter_type}
-# )
+count_field = AnswerFieldDef(
+    field_name=EFieldName.COUNT,
+    field_type=FieldType(np.uint8)
+)
 
-# template_answer_field = AnswerFieldDef(
-#     EFieldName.{field_name}, 
-#     field_type=tempalte_field_type, 
-#     sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="{prefix}," postfix="{postfix}")
-# )
+test_name_field = AnswerFieldDef(
+    field_name=EFieldName.TEST_NAME,
+    field_type=FieldType(str)
+)
+
+test_suite_name_field = AnswerFieldDef(
+    field_name=EFieldName.TEST_SUITE_NAME,
+    field_type=FieldType(str)
+)

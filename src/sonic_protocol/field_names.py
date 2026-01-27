@@ -126,3 +126,8 @@ class EFieldName(IEFieldName):
 
     COUNT = 89
     IS_CONNECTED = 90
+    TEST_NAME = 91
+    TEST_SUITE_NAME = 92
+    TEST_RESULT = 93
+    TEST_INTERACTION = 94
+

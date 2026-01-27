@@ -1,3 +1,4 @@
+import numpy as np
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import CommandParamDef, FieldType, UserManualAttrs
 
@@ -19,4 +20,9 @@ frequency_param = CommandParamDef(
 atf_param = CommandParamDef(
     name=EFieldName.ATF,
     param_type=f.field_type_atf
+)
+
+param_index_uint8 = CommandParamDef(
+    name=EFieldName.INDEX,
+    param_type=FieldType(field_type=np.uint8)
 )
