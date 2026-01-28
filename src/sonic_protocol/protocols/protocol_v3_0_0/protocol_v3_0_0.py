@@ -1,21 +1,18 @@
-from enum import Enum
 from typing import Any, Dict, List
 from sonic_protocol.command_codes import CommandCode, ICommandCode
-from sonic_protocol.schema import Anomaly, SystemState, TransducerState, AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, ControlMode, ConverterType, DeviceParamConstantType, DeviceType, FieldType, IEFieldName, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version
+from sonic_protocol.schema import  CommandContract, DeviceParamConstantType, DeviceType, IEFieldName, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 
 from ..protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
 
 from .commands.commands import (
-    get_atf_v3_0_0, get_frequency_v3_0_0, get_update_descale_v3_0_0, get_update_worker_v3_0_0,
-    set_atf_v3_0_0, set_frequency_v3_0_0, set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
-    get_logger_list_item, get_logger_list_size, get_connection_status
+    get_update_descale_v3_0_0, get_update_worker_v3_0_0,
+    set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
+    get_logger_list_item, get_logger_list_size, get_connection_status, 
+    get_num_tests, get_test_info, run_test, start_diagnostic_tool, start_operator
 )
-
-# from .types.types import {
-#     {types}
-# }
+from .types.types import TestInteraction, TestResult
 
 
 class Protocol_v3_0_0(ProtocolList):
@@ -45,7 +42,10 @@ class Protocol_v3_0_0(ProtocolList):
 
     @property
     def custom_data_types(self) -> Dict[str, type]:
-        data_types = {}
+        data_types = {
+            "E_TEST_RESULT": TestResult,
+            "E_TEST_INTERACTION": TestInteraction,
+        }
         data_types.update(self._previous_protocol.custom_data_types)
     
         # delete deprecated data_types
@@ -67,7 +67,12 @@ class Protocol_v3_0_0(ProtocolList):
 
         command_contract_list: List[CommandContract] = [
             get_logger_list_size,
-            get_logger_list_item
+            get_logger_list_item,
+            get_num_tests,
+            get_test_info,
+            run_test,
+            start_diagnostic_tool,
+            start_operator,
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_update_descale_v3_0_0])
@@ -77,10 +82,7 @@ class Protocol_v3_0_0(ProtocolList):
                 set_ramp_gain,
                 get_uipt_raw
             ])
-            # command_contract_list.extend([
-            #     get_atf_v3_0_0, get_frequency_v3_0_0, get_update_worker_v3_0_0, 
-            #     set_atf_v3_0_0, set_frequency_v3_0_0
-            # ])
+
         command_contract_dict = self._previous_protocol._get_command_contracts_for(protocol_type)
         command_contract_dict.update({
             command_contract.code: command_contract for command_contract in command_contract_list 

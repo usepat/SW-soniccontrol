@@ -2,8 +2,11 @@
 
 from enum import IntEnum
 
+class TestInteraction(IntEnum):
+    VALIDATION = 0
+    PHYSICAL_INTERACTION = 1
 
-# class temmplate(IntEnum):
-#     MEMBER_1 = 0
-#     MEMBER_2 = 1
-#     MEMBER_3 = 2
+class TestResult(IntEnum):
+    SUCCESS = 0
+    FAILURE = 1
+    SEMI_AUTOMATED_STEP = 2

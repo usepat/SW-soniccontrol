@@ -94,6 +94,8 @@ class CommandCode(ICommandCode):
 
     GET_UIPT_RAW = 420
     GET_CONNECTION_STATUS = 430
+    GET_NUM_TESTS = 440
+    GET_TEST_INFO = 441
 
     # Setters with corresponding getters
     SET_SWF = 1010
@@ -154,6 +156,7 @@ class CommandCode(ICommandCode):
     SET_WIPE_GAIN = 1346
 
     SET_DAC = 1390
+    RUN_TEST = 1440
     # SET_MODBUS_SERVER_ID = 1400
 
     
@@ -165,6 +168,8 @@ class CommandCode(ICommandCode):
     POP_ERROR_HISTO_MESSAGE = 2050
     BROADCAST_MODBUS_SERVER_ID = 2060
     RESET_ON_TIMER = 2070
+    START_DIAGNOSTIC_TOOL = 2080
+    START_OPERATOR = 2081
     
 
     # commands that execute something

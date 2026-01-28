@@ -1,6 +1,7 @@
 import abc
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 
 import attrs
 import numpy as np
@@ -66,6 +67,7 @@ def main():
         True
     )
 
+    Path("./output").mkdir(exist_ok=True, parents=True)
     with open("./output/manual.html", "w") as file:
         file.write(manual)
 

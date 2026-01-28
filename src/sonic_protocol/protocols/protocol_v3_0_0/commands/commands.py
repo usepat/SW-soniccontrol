@@ -189,41 +189,67 @@ get_connection_status = CommandContract(
     tags=["postman"]
 )
 
-# get_ramp = copy.deepcopy(prcmd_v1.get_ramp)
+get_num_tests = CommandContract(
+    code=CommandCode.GET_NUM_TESTS,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs("?num_tests")
+    ),
+    answer_def=AnswerDef(
+        [f.count_field]
+    ),
+    is_release=True,
+    tags=["testing"]
+)
 
-# for field in get_ramp.answer_def.fields:
-#     if field.field_name == EFieldName.RAMP_F_START:
-#         field = f.field_ramp_f_start
-#     if field.field_name == EFieldName.RAMP_F_STOP:
-#         field = f.field_ramp_f_stop
+get_test_info = CommandContract(
+    code=CommandCode.GET_TEST_INFO,
+    command_def=CommandDef(
+        index_param=p.param_index_uint8,
+        sonic_text_attrs=SonicTextCommandAttrs("?test_info")
+    ),
+    answer_def=AnswerDef( [
+        f.test_name_field,
+        f.test_suite_name_field
+    ]),
+    is_release=True,
+    tags=["testing"]
+)
 
-# set_ramp_f_start = prcmd_v1.generate_procedure_arg_setter_contract(
-#     CommandCode.SET_RAMP_F_START, 
-#     ["!ramp_f_start"],
-#     response_field=f.field_ramp_f_start 
-# )
+run_test = CommandContract(
+    code=CommandCode.RUN_TEST,
+    command_def=CommandDef(
+        index_param=p.param_index_uint8,
+        sonic_text_attrs=SonicTextCommandAttrs("!run_test")
+    ),
+     answer_def=AnswerDef( [
+        AnswerFieldDef(EFieldName.TEST_RESULT, FieldType(t.TestResult, converter_ref=ConverterType.ENUM)),
+        AnswerFieldDef(EFieldName.TEST_INTERACTION, FieldType(t.TestInteraction, converter_ref=ConverterType.ENUM)),
+        AnswerFieldDef(EFieldName.MESSAGE, FieldType(str))
+    ]),
+    is_release=True,
+    tags=["testing"]
+)
 
-# set_ramp_f_stop = prcmd_v1.generate_procedure_arg_setter_contract(
-#     CommandCode.SET_RAMP_F_STOP, 
-#     ["!ramp_f_stop"],
-#     response_field=f.field_ramp_f_stop 
-# )
+start_diagnostic_tool = CommandContract(
+    code=CommandCode.START_DIAGNOSTIC_TOOL,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs("!start_diagnostic_tool")
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
+    ]),
+    is_release=True,
+    tags=["testing", "diagnosis", "debugging"]
+)
 
-# example_command = CommandContract(
-#     code=CommandCode.{CODE},
-#     command_def=CommandDef(
-#         index_param={index_param},
-#         setter_param={setter_param},
-#         sonic_text_attrs=SonicTextCommandAttrs(
-#             string_identifier=["{!command_identifier}"]
-#         )
-#     ),
-#     answer_def=AnswerDef(
-#         fields=[{answer_fields}]
-#     ),
-#     user_manual_attrs=UserManualAttrs(
-#         description="{description}"
-#     ),
-#     is_release=True,
-#     tags=["{tag}"]
-# )
+start_operator = CommandContract(
+    code=CommandCode.START_OPERATOR,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs("!start_operator")
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
+    ]),
+    is_release=True
+)
+
