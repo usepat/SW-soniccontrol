@@ -217,9 +217,9 @@ get_test_info = CommandContract(
 
 run_test = CommandContract(
     code=CommandCode.RUN_TEST,
-     command_def=CommandDef(
+    command_def=CommandDef(
         index_param=p.param_index_uint8,
-        sonic_text_attrs=SonicTextCommandAttrs("?run_test")
+        sonic_text_attrs=SonicTextCommandAttrs("!run_test")
     ),
      answer_def=AnswerDef( [
         AnswerFieldDef(EFieldName.TEST_RESULT, FieldType(t.TestResult, converter_ref=ConverterType.ENUM)),
@@ -229,3 +229,27 @@ run_test = CommandContract(
     is_release=True,
     tags=["testing"]
 )
+
+start_diagnostic_tool = CommandContract(
+    code=CommandCode.START_DIAGNOSTIC_TOOL,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs("!start_diagnostic_tool")
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
+    ]),
+    is_release=True,
+    tags=["testing", "diagnosis", "debugging"]
+)
+
+start_operator = CommandContract(
+    code=CommandCode.START_OPERATOR,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs("!start_operator")
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
+    ]),
+    is_release=True
+)
+

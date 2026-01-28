@@ -168,6 +168,8 @@ class CommandCode(ICommandCode):
     POP_ERROR_HISTO_MESSAGE = 2050
     BROADCAST_MODBUS_SERVER_ID = 2060
     RESET_ON_TIMER = 2070
+    START_DIAGNOSTIC_TOOL = 2080
+    START_OPERATOR = 2081
     
 
     # commands that execute something

@@ -9,7 +9,8 @@ from ..protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
 from .commands.commands import (
     get_update_descale_v3_0_0, get_update_worker_v3_0_0,
     set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
-    get_logger_list_item, get_logger_list_size, get_connection_status, get_num_tests, get_test_info, run_test
+    get_logger_list_item, get_logger_list_size, get_connection_status, 
+    get_num_tests, get_test_info, run_test, start_diagnostic_tool, start_operator
 )
 from .types.types import TestInteraction, TestResult
 
@@ -70,6 +71,8 @@ class Protocol_v3_0_0(ProtocolList):
             get_num_tests,
             get_test_info,
             run_test,
+            start_diagnostic_tool,
+            start_operator,
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_update_descale_v3_0_0])
