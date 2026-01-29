@@ -103,6 +103,13 @@ class SetGain(Command):
     value: int = attrs.field(alias=EFieldName.GAIN.name)
 
 @attrs.define()
+class SetDac(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_DAC)
+
+    value: int = attrs.field(alias=EFieldName.VOLTAGE.name)
+
+@attrs.define()
 class SetOn(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_ON)

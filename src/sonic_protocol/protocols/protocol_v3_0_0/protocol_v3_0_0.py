@@ -10,7 +10,7 @@ from .commands.commands import (
     get_update_descale_v3_0_0, get_update_worker_v3_0_0,
     set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
     get_logger_list_item, get_logger_list_size, get_connection_status, 
-    get_num_tests, get_test_info, run_test, start_diagnostic_tool, start_operator
+    get_num_tests, get_test_info, run_test, start_diagnostic_tool, start_operator, set_dac_mV
 )
 from .types.types import TestInteraction, TestResult
 
@@ -80,7 +80,8 @@ class Protocol_v3_0_0(ProtocolList):
             command_contract_list.extend([
                 get_update_worker_v3_0_0,
                 set_ramp_gain,
-                get_uipt_raw
+                get_uipt_raw,
+                set_dac_mV
             ])
 
         command_contract_dict = self._previous_protocol._get_command_contracts_for(protocol_type)

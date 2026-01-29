@@ -152,3 +152,16 @@ test_suite_name_field = AnswerFieldDef(
     field_name=EFieldName.TEST_SUITE_NAME,
     field_type=FieldType(str)
 )
+
+field_type_dac_mV = FieldType(
+    field_type=np.uint16,
+    min_value=np.uint16(0),
+    max_value=np.uint16(3300), 
+    si_unit=SIUnit.VOLTAGE,
+    si_prefix=SIPrefix.MILLI,
+)
+
+dac_mV_field = AnswerFieldDef(
+    field_name=EFieldName.VOLTAGE,
+    field_type=field_type_dac_mV
+)

@@ -26,3 +26,9 @@ param_index_uint8 = CommandParamDef(
     name=EFieldName.INDEX,
     param_type=FieldType(field_type=np.uint8)
 )
+
+param_dac_mV = CommandParamDef(
+    name=EFieldName.VOLTAGE,
+    param_type=f.field_type_dac_mV
+)
+
