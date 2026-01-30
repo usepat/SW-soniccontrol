@@ -1,3 +1,5 @@
+from importlib import metadata
+import sys
 from typing import List, Set
 
 import attrs
@@ -14,6 +16,8 @@ from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceW
 from importlib.metadata import entry_points
 
 from soniccontrol_gui.views.core.postman_window import PostmanDeviceWindow
+
+from soniccontrol_gui.constants import _Files
 
 
 class WindowFactoryBase(abc.ABC):
@@ -68,7 +72,25 @@ DevicePluginRegistry.register_device_plugin(
 )
 
 def register_device_plugins():
-    eps = entry_points()
-    for ep in eps.select(group="soniccontrol_gui.device_plugins"):
-        device_plugin = ep.load()
-        DevicePluginRegistry.register_device_plugin(device_plugin)
+    group = "soniccontrol_gui.device_plugins"
+
+    # 1) Built-in / bundled / normally installed entry points
+    try:
+        for ep in metadata.entry_points().select(group=group):
+            DevicePluginRegistry.register_device_plugin(ep.load())
+    except Exception:
+        # Don't let a broken plugin kill startup
+        pass
+
+    # 2) Plugins dropped into ./plugins (wheels unzipped here)
+    _Files.PLUGINS.mkdir(parents=True, exist_ok=True)
+    sys.path.insert(0, str(_Files.PLUGINS))  # allow importing plugin packages
+
+    for dist in metadata.distributions(path=[str(_Files.PLUGINS)]):
+        for ep in dist.entry_points:
+            if ep.group == group:
+                try:
+                    DevicePluginRegistry.register_device_plugin(ep.load())
+                except Exception:
+                    # log it; ignore bad plugin
+                    pass

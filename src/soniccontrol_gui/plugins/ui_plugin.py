@@ -1,3 +1,5 @@
+from importlib import metadata
+import sys
 from typing import List, Set, Optional, Callable
 from pathlib import Path
 
@@ -11,6 +13,7 @@ from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol_gui.constants import _Files
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView, TkinterView, View
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow
@@ -223,7 +226,26 @@ class TestPluginComponent3Factory(UIComponentFactory):
 
 
 def register_ui_plugins():
-    eps = entry_points()
-    for ep in eps.select(group="soniccontrol_gui.ui_plugins"):
-        ui_plugin = ep.load()
-        UIPluginRegistry.register_ui_plugin(ui_plugin)
+    group = "soniccontrol_gui.ui_plugins"
+
+    # 1) Built-in / bundled / normally installed entry points
+    try:
+        for ep in metadata.entry_points().select(group=group):
+            UIPluginRegistry.register_ui_plugin(ep.load())
+    except Exception:
+        # Don't let a broken plugin kill startup
+        pass
+
+    # 2) Plugins dropped into ./plugins (wheels unzipped here)
+    _Files.PLUGINS.mkdir(parents=True, exist_ok=True)
+    sys.path.insert(0, str(_Files.PLUGINS))  # allow importing plugin packages
+
+    for dist in metadata.distributions(path=[str(_Files.PLUGINS)]):
+        for ep in dist.entry_points:
+            if ep.group == group:
+                try:
+                    UIPluginRegistry.register_ui_plugin(ep.load())
+                except Exception as e:
+                    # log it; ignore bad plugin
+                    print(f"Expection: {e}")
+                    pass
