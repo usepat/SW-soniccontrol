@@ -23,6 +23,7 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
 """     
 
     f_range: RelativeFrequencySIVar = attrs.field(
+        converter=RelativeFrequencySIVar,
         default=RelativeFrequencySIVar(value=8000),
         metadata={"enum": EFieldName.WIPE_F_RANGE},
     )
@@ -47,6 +48,7 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
         converter=convert_to_holder_args
     )
     gain: GainSIVar = attrs.field(
+        converter=GainSIVar,
         default=GainSIVar(150),
         metadata={"enum": EFieldName.WIPE_GAIN},
     )

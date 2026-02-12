@@ -23,23 +23,28 @@ a wide frequency range at low gain and determines the optimal driving frequency.
 """
 
     f_center: AbsoluteFrequencySIVar = attrs.field(
+        converter=AbsoluteFrequencySIVar,
         default=AbsoluteFrequencySIVar(1, SIPrefix.MEGA),
         metadata={"enum": EFieldName.SCAN_F_CENTER},
         # Is validated via SIMeta
     )
     gain: GainSIVar = attrs.field(
+        converter=GainSIVar,
         default=GainSIVar(20),
         metadata={"enum": EFieldName.SCAN_GAIN},
     )
     f_range: RelativeFrequencySIVar = attrs.field(
+        converter=RelativeFrequencySIVar,
         default=RelativeFrequencySIVar(8, SIPrefix.KILO),
         metadata={"enum": EFieldName.SCAN_F_RANGE},
     )
     f_step: RelativeFrequencySIVar = attrs.field(
+        converter=RelativeFrequencySIVar,
         default=RelativeFrequencySIVar(1, SIPrefix.KILO),
         metadata={"enum": EFieldName.SCAN_F_STEP},
     )
     f_shift: RelativeFrequencySIVar = attrs.field(
+        converter=RelativeFrequencySIVar,
         default=RelativeFrequencySIVar(0),
         metadata={"enum": EFieldName.SCAN_F_SHIFT},
     )
