@@ -230,7 +230,7 @@ ABSOLUTE_FREQUENCY_META = SIVarMeta(
 class AbsoluteFrequencySIVar(SIVar[float], si_meta=ABSOLUTE_FREQUENCY_META):
     """Frequency variable for home UI with flexible range."""
     
-    def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
+    def __init__(self, value: int | float = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
 RELATIVE_FREQUENCY_META = SIVarMeta(
