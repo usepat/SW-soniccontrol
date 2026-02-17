@@ -9,7 +9,7 @@ from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, custom_validator_factory
 from sonic_protocol.python_parser import commands
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
+from sonic_protocol.si_unit import cls_converter, AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
 
 
 @attrs.define(auto_attribs=True)
@@ -24,17 +24,17 @@ and the duration it remains off is determined by t_off.
 You can set t_off to 0 if you want the signal to never be turned off."""
 
     f_start: AbsoluteFrequencySIVar = attrs.field(
-        converter=AbsoluteFrequencySIVar,
+        converter=cls_converter(AbsoluteFrequencySIVar),
         default=AbsoluteFrequencySIVar(1, SIPrefix.MEGA),
         metadata={"enum": EFieldName.RAMP_F_START},
     )
     f_stop: AbsoluteFrequencySIVar = attrs.field(
-        converter=AbsoluteFrequencySIVar,
+        converter=cls_converter(AbsoluteFrequencySIVar),
         default=AbsoluteFrequencySIVar(2, SIPrefix.MEGA),
         metadata={"enum": EFieldName.RAMP_F_STOP},
     )
     f_step: RelativeFrequencySIVar = attrs.field(
-        converter=RelativeFrequencySIVar,
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(100, SIPrefix.KILO),
         metadata={"enum": EFieldName.RAMP_F_STEP},
         validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
@@ -51,7 +51,7 @@ You can set t_off to 0 if you want the signal to never be turned off."""
         metadata={"enum": EFieldName.RAMP_T_OFF}
     )
     gain: GainSIVar = attrs.field(
-        converter=GainSIVar,
+        converter=cls_converter(GainSIVar),
         default=GainSIVar(50),
         metadata={"enum": EFieldName.RAMP_GAIN},
     )

@@ -10,7 +10,7 @@ from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, custom_validator_factory
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
+from sonic_protocol.si_unit import cls_converter, AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
 
 
 @attrs.define(auto_attribs=True)
@@ -22,19 +22,19 @@ This is very useful in an explorative study to find the optimal driving frequenc
 """
     
     gain: GainSIVar = attrs.field(
-        converter=GainSIVar,
+        converter=cls_converter(GainSIVar),
     )
 
     f_start: AbsoluteFrequencySIVar = attrs.field(
-        converter=AbsoluteFrequencySIVar,
+        converter=cls_converter(AbsoluteFrequencySIVar),
     )
     
     f_stop: AbsoluteFrequencySIVar = attrs.field(
-        converter=AbsoluteFrequencySIVar
+        converter=cls_converter(AbsoluteFrequencySIVar)
     )
     
     f_step: RelativeFrequencySIVar = attrs.field(
-        converter=RelativeFrequencySIVar,
+        converter=cls_converter(RelativeFrequencySIVar),
         validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
     )
 

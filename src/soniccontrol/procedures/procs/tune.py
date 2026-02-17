@@ -11,7 +11,7 @@ from sonic_protocol.schema import SIPrefix
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
-from sonic_protocol.si_unit import GainSIVar, RelativeFrequencySIVar
+from sonic_protocol.si_unit import GainSIVar, RelativeFrequencySIVar, cls_converter
 
 
 @attrs.define(auto_attribs=True)
@@ -23,7 +23,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
 """
 
     f_step: RelativeFrequencySIVar = attrs.field(
-        converter=RelativeFrequencySIVar,
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(1, SIPrefix.KILO),
         metadata={"enum": EFieldName.TUNE_F_STEP},
     )
@@ -42,7 +42,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
         metadata={"enum": EFieldName.TUNE_N_STEPS}
     )
     f_shift: RelativeFrequencySIVar = attrs.field(
-        converter=RelativeFrequencySIVar,
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(0),
         metadata={"enum": EFieldName.TUNE_F_SHIFT},
     )
@@ -53,7 +53,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
         metadata={"enum": EFieldName.TUNE_T_STEP}
     )
     gain: GainSIVar = attrs.field(
-        converter=GainSIVar,
+        converter=cls_converter(GainSIVar),
         default=GainSIVar(80),
         metadata={"enum": EFieldName.TUNE_GAIN},
     )
