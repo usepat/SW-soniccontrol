@@ -205,6 +205,12 @@ class SonicDevice:
     async def get_update(self, raise_exception:bool=False, should_log:bool=False) -> Answer:
         return await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
 
+    async def stop_procedures(self):
+        if self.has_command(commands.SetStop()):
+            await self.execute_command(commands.SetStop(), raise_exception=False)
+        elif self.has_command(commands.SetOff()):
+            await self.execute_command(commands.SetOff(), raise_exception=False)
+
     async def stop_running_processes(self):
         """
             Goes out of service mode, stops running procedures. 

@@ -32,9 +32,15 @@ class SpectrumArgsAdapter(CaptureSpectrumArgs):
 
 class RemoteController:
     """
-    This Remote Controller should in future replace the old one.
-    It has minor improvements, because it follows more a RAII pattern, 
-    making it also more suitable to use together with fixtures
+    The RemoteController follows a Facade pattern. It is a simple abstraction that hides the complex logic behind.
+    Used for controlling the device, by sending commands, executing procedures, scripts and conducting experiments.
+
+    Attributes
+    ----------
+    device_info: Info
+        contains information about the device like serial number and protocol version
+    protocol_consts: DeviceParamConstants
+        contains the limits for protocol specific constants. Used for deducing example commands in the tests.
     """
 
     def __init__(self, device: SonicDevice, logger: logging.Logger):
@@ -48,6 +54,22 @@ class RemoteController:
 
     @staticmethod
     async def connect(connection: Connection, log_path: Optional[Path]=None):
+        """
+        Creates a RemoteController by establishing a connection to a device.
+
+        Parameters
+        ----------
+        log_path: Path, optional
+            Used for specifying in which folder the logs should be stored
+
+        Example
+        -------
+        URL = Path("COM6")
+        connection = SerialConnection(url=URL, connection_name=URL.name)
+        controller = await RemoteController.connect(connection)
+        # Do stuff
+        await controller.disconnect()
+        """
         logger = create_logger_for_connection(connection.connection_name, log_path if log_path is not None else Path("."))   
 
         device_builder = DeviceBuilder(logger=logger)
@@ -59,6 +81,20 @@ class RemoteController:
         return RemoteController(device, logger)
     
     async def connect_to_worker(self):
+        """
+        Connects the underlying device, if it is a postman, to the worker 
+        and then returns a RemoteController, that is controls the worker (with the postman as middle man)
+        
+        Raises
+        ------
+        AssertionError
+            if the underlying device is not a postman
+
+        Returns
+        -------
+        worker_controller: RemoteController
+            A RemoteController that controls the worker device
+        """
         assert self._device.info.device_type == DeviceType.POSTMAN, "This function works only for postman devices"
 
         await asyncio.wait_for(self._device.wait_until_worker_connected(), 10.0)
@@ -80,39 +116,119 @@ class RemoteController:
         return self._device.communicator.connection_opened.is_set()
 
     def start_updater(self):
+        """
+        Starts the internal updater, that fetches periodically status information from the device.
+
+        Note
+        ----
+        For running procedures, the updater needs to run. Else the controller is not able to detect anymore, when a procedure finished.
+        """
         if not self._updater.running.set():
             self._updater.start()
 
-    """
-    Note:   
-        The updater is used by the procedure controller internally 
-        to get information about if a procedure is running on the device.
-        If you stop the updater, the procedure controller cannot detect anymore, when a procedure is finished and will run forever. 
-        However you can manually pull an update over the updater and send that to the procedure controller or just
-        call stop procedure.
-    """
     async def stop_updater(self):
+        """
+        Stops the internal updater, that fetches periodically status information from the device.
+
+        Note
+        ----
+        For running procedures, the updater needs to run. Else the controller is not able to detect anymore, when a procedure finished.
+        """
         if self._updater.running:
             await self._updater.stop()
 
     async def send_command(self, command: str | Command, raise_exception: bool = False) -> Answer:
+        """
+        Sends a command over the connection and waits until the device executed it. 
+        It then returns the answer it received from the device.
+
+        Parameters
+        ----------
+        command: str | Command, required
+            The command to be executed by the device. (Plain strings can also be sent, but Command objects are the preferred way)
+        raise_exception: bool, default=False
+            If true, it raises and exception, if the command failed or the answer could not be validated. 
+            Else it returns an Answer with the valid attribute set to False.
+        
+        Raises
+        ------
+            CommandValidationError
+                if raises_exception is set to True and the received answer could not be parsed or validated
+            CommandExecutionError
+                If raises_exception is set to True and the device could not execute the command
+
+        Returns
+        -------
+        answer: Answer
+            The received answer from the device.
+
+        Example
+        -------
+        # because send_command is async we have to await it. Look up asyncio for more information
+        answer = await controller.send_command(cmds.SetAtf(1, 100000))
+        # contains the pure str message received from the serial connection
+        print(answer.message) 
+        if answer.valid:
+            # if the answer could be parsed and is valid, we can access the parsed fields like this
+            print(answer.field_value_dict[EFieldName.ATF]) 
+        """
         return await self._device.execute_command(command, raise_exception=raise_exception)
     
     async def get_update(self) -> Answer:
+        """
+        sends an fetch_update command to the device and returns the Answer containing the device status.
+
+        Note
+        ----
+        For every device the status contains different fields. Look up in the protocol, which fields are available.
+        """
         return await self._device.get_update()
     
     async def stop_running_processes(self) -> None:
+        """
+        Stops running processes on the device like procedures and service mode. Also turns the signal off.
+        
+        Note
+        ----
+        It is good practice to call this method always immediately after connecting to a device.
+        """
         await self._device.stop_running_processes()
 
-    async def execute_script(self, text: str, callback: Callable[[str], None] = lambda _: None) -> None:
+    async def execute_script(self, text: str) -> None:
+        """
+        Executes a script.
+
+        Note
+        ----
+        There are examples for scripts in the script example folder and in the sonic control gui application there is a help guide for scripting.
+        """
         runnable_script = self._scripting.parse_script(text)
         interpreter = InterpreterEngine(self._device, self._updater, self._logger)
-        interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda target: callback(target.data.task))
         interpreter.script = runnable_script
         interpreter.start()
         await interpreter.wait_for_script_to_halt()
 
-    def execute_procedure(self, procedure: ProcedureType, args: dict | ProcedureArgs, event_loop=asyncio.get_event_loop()) -> None:
+    def start_procedure(self, procedure: ProcedureType, args: dict | ProcedureArgs, event_loop=asyncio.get_running_loop()) -> None:
+        """
+        Starts a procedure
+
+        Parameters
+        ----------
+        procedure: ProcedureType
+            Specifies which procedure should run
+        args: dict | ProcedureArgs
+            The arguments the procedure needs. 
+            The Arguments have to be valid and to be the right ones for the procedure.
+            Using Procedure Args instead of dicts is the preferred way.
+        event_loop: asyncio.EventLoop, optional
+            The event_loop in that the procedure controller should run. Note, you have to pass nothing, 
+            if this function is called from the inside of an event loop (In that case it will just use the same one).
+       
+        Note
+        ----
+        This function will start a procedure in the background. 
+        When you want to halt execution, you should call wait_for_procedure_to_finish()
+        """
         if isinstance(args, ProcedureArgs):
             procedure_args = args
         else:
@@ -122,13 +238,44 @@ class RemoteController:
         self._proc_controller.execute_proc(procedure, procedure_args, event_loop)
         
     async def wait_for_procedure_to_finish(self):
+        """
+        Waits for the currently running procedure to finish.
+        If no procedure runs, it returns immediately.
+
+        Raises
+        ------
+        AssertionError
+            If the updater is not running, because it needs that for detecting, if the procedure finished 
+        """
+        assert self._updater.running.is_set(), "The updater needs to be running. Else the procedure controller cannot check if a procedure finished execution"
         await self._proc_controller.wait_for_proc_to_finish()
 
     async def stop_procedure(self) -> None:
-        await self._proc_controller.stop_proc()
+        """
+        Stops the currently running procedure.
+        Does nothing if no procedure is running.
+        """
+        if self._proc_controller.is_proc_running:
+            await self._proc_controller.stop_proc()
+        else:
+            # A procedure can also be already running on the device. In that case also stop it
+            await self._device.stop_procedures()
 
     async def measure_spectrum(self, output_dir: Path, spectrum_args: SpectrumMeasureArgs, 
-                               experiment_metadata: ExperimentMetaData, blocking: bool=True) -> None:
+                               experiment_metadata: ExperimentMetaData) -> None:
+        """
+        Starts a Spectrum measure, by doing that it fetches the device status for every frequency step. 
+        The recorded data is stored together with the provided metadata in a experiment hdf5 file.
+
+        Parameters
+        ----------
+        output_dir: Path
+            Path to the directory where the experiment should be stored
+        spectrum_args: SpectrumMeasureArgs
+            The arguments for the Spectrum Measure to run
+        experiment_meta_data: ExperimentMetaData
+            Data about the setup and conduction of the experiment.
+        """
         capture = Capture(output_dir)
         capture_target = CaptureSpectrumMeasure(self._updater, self._proc_controller, SpectrumArgsAdapter(spectrum_args))
         self._updater.subscribe("update", lambda e: capture.on_update(e.data["status"]))
@@ -138,16 +285,11 @@ class RemoteController:
                                  CaptureTargets.SPECTRUM_MEASURE)
 
         await capture.start_capture(experiment, capture_target)
-        if blocking:
-            await capture.wait_for_capture_to_complete()
+        await capture.wait_for_capture_to_complete()
 
     async def disconnect(self) -> None:
         await self._updater.stop()
         await self._device.disconnect()
-    
-    @property
-    def updater(self):
-        return self._updater
     
     @property 
     def protocol_consts(self):

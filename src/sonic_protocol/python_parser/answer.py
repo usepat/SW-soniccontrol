@@ -12,6 +12,30 @@ from sonic_protocol.field_names import IEFieldName
 
 @attrs.define()    
 class Answer:
+    """
+    This class represents the parsed answer that was received from a device.
+
+    Attributes
+    ----------
+    message: str
+        Contains the plain text answer that was received
+    valid: bool
+        Is True, if the answer could be validated successfully and is not an error
+    was_validated: bool
+        Is True, if the answer was parsed and validated. 
+        It is only False, if the sent command was a plain string 
+        and no validator for it could be deduced. 
+        Therefore it is recommended to always use Command Objects instead of strings 
+        for sending commands to the device.
+    command_code: CommandCode | None
+        The command code returned from the device. Is the same as for the command sent, 
+        if the device could execute the command successfully
+    field_value_dict: Dict[EFieldName, Any]
+        The parsed answer fields are stored here. For Errors an ERROR_MESSAGE field is stored
+    is_error_msg: bool
+        True, if the returned Answer is an error message.
+    """
+
     message: str = attrs.field(on_setattr=attrs.setters.NO_OP) 
     # TODO: probably better to make an enum ValidationStatus and merge valid and was_validated
     valid: bool = attrs.field(on_setattr=attrs.setters.NO_OP)

@@ -39,7 +39,7 @@ def create_procedure_command(command_str: str, procedure_type: ProcedureType,
     def callback(ctx: click.Context, **kwargs):
         remote_controller: RemoteController = ctx.obj["REMOTE_CONTROLLER"]
         async_loop: asyncio.AbstractEventLoop = ctx.obj["ASYNC_LOOP"]
-        remote_controller.execute_procedure(procedure_type, kwargs, async_loop)
+        remote_controller.start_procedure(procedure_type, kwargs, async_loop)
     
     return click.Command(
         name=command_str,

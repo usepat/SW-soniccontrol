@@ -122,6 +122,10 @@ class HDF5ExperimentWriter(ExperimentWriter):
         
         
     def add_row(self, data: Dict[str, Any]) -> None:
+        # We only provide there a method to write a single row instead of the whole table, because
+        # We write the experiment data points directly after we record them. 
+        # This is also done, because storing the whole data in RAM and then writing is not feasible, as it can be very large up to GigaBytes.
+
         data = data.copy() # make a copy, so that we do not transform the original data
         timestamp_col = EFieldName.TIMESTAMP.name.lower()
         data[timestamp_col] = data[EFieldName.TIMESTAMP.name].isoformat()  # convert the time to a string for direct readability in storage
