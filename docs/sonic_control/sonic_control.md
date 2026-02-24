@@ -27,7 +27,8 @@ The amp has to be constructed with the [DeviceBuilder](@ref soniccontrol.builder
 @see soniccontrol.remote_controller.RemoteController
 
 The RemoteController provides a class that encapsulates everything. From accessing and setting attributes like frequency, to executing scripts and commands. 
-It is used by @ref sonic_robot that is a library for the RobotFramework and basically just wraps the RemoteController.  
-Also it will be used by the @ref soniccontrol_cli.
+It is used as a facade pattern to provide a simple and clean programming interface for labor workers, that have to write scripts for experiments.
+
+Also it is used for integration tests.
 
 @}

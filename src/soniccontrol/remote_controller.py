@@ -1,27 +1,27 @@
 import asyncio
+import logging
 from os import environ
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Optional
 import attrs
 
-from sonic_protocol.field_names import EFieldName
-from sonic_protocol.protocol_list import ProtocolList
+from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
+from soniccontrol.communication.connection import CLIConnection, Connection
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.logging_utils import create_logger_for_connection
+from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
-from soniccontrol.scripting.scripting_facade import ScriptingFacade
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
 
@@ -31,129 +31,251 @@ class SpectrumArgsAdapter(CaptureSpectrumArgs):
 
 
 class RemoteController:
-    NOT_CONNECTED = "Controller is not connected to a device"
+    """
+    The RemoteController follows a Facade pattern. It is a simple abstraction that hides the complex logic behind.
+    Used for controlling the device, by sending commands, executing procedures, scripts and conducting experiments.
 
-    def __init__(self, log_path: Optional[Path]=None, protocol_factories: Dict[DeviceType, ProtocolList] = {}):
-        self._device: Optional[SonicDevice] = None
-        self._postman: Optional[SonicDevice] = None
-        self._scripting: Optional[ScriptingFacade] = None
-        self._proc_controller: Optional[ProcedureController] = None
-        self._log_path: Optional[Path] = log_path
-        self._updater: Optional[Updater] = None
-        self._protocol_factories = protocol_factories
+    Attributes
+    ----------
+    device_info: Info
+        contains information about the device like serial number and protocol version
+    protocol_consts: DeviceParamConstants
+        contains the limits for protocol specific constants. Used for deducing example commands in the tests.
+    """
 
-    # TODO: make the connect functions classmethods and they give back a RemoteController
-    async def _connect(self, connection: Connection, connection_name: str):
-        if self._log_path:
-            self._logger = create_logger_for_connection(connection_name, self._log_path)   
-        else:
-            self._logger = create_logger_for_connection(connection_name)
-
-        device_builder = DeviceBuilder(logger=self._logger, protocol_factories=self._protocol_factories)
-
-        communicator = SerialCommunicator(logger=self._logger) # type: ignore
-        await communicator.open_communication(connection)
-        self._device = await device_builder.build_amp(communicator)
-        
-        if self._device.info.device_type == DeviceType.POSTMAN:
-            self._postman = self._device
-            worker_communicator = PostmanProxyCommunicator(communicator)
-            await worker_communicator.open_communication(connection)
-            self._device = await device_builder.build_amp(worker_communicator)
-        else:
-            self._postman = None
-            
-        self._updater = Updater(self._device)
+    def __init__(self, device: SonicDevice, logger: logging.Logger):
+        self._device: SonicDevice = device
+        self._logger = logger    
+        self._updater: Updater = Updater(self._device)
         self._updater.start()
-        self._proc_controller = ProcedureController(self._device, updater=self._updater)
-        self._scripting = NewScriptingFacade()
+        self._proc_controller: ProcedureController = ProcedureController(self._device, updater=self._updater)
+        self._scripting: NewScriptingFacade = NewScriptingFacade()
 
-    async def connect_via_serial(self, url: Path, baudrate: int = 9600) -> None:
-        assert self._device is None
-        connection_name = url.name
-        connection = SerialConnection(connection_name=connection_name, url=url, baudrate=baudrate)
-        await self._connect(connection, connection_name)
-        assert self._device is not None
 
-    async def connect_via_process(self, process_file: Path, cmd_args: List[str] = []) -> None:
-        assert self._device is None
-        connection_name = process_file.name
-        connection = CLIConnection(connection_name=connection_name, bin_file=process_file, cmd_args=cmd_args)
-        await self._connect(connection, connection_name)
-        assert self._device is not None
+    @staticmethod
+    async def connect(connection: Connection, log_path: Optional[Path]=None):
+        """
+        Creates a RemoteController by establishing a connection to a device.
+
+        Parameters
+        ----------
+        log_path: Path, optional
+            Used for specifying in which folder the logs should be stored
+
+        Example
+        -------
+        URL = Path("COM6")
+        connection = SerialConnection(url=URL, connection_name=URL.name)
+        controller = await RemoteController.connect(connection)
+        # Do stuff
+        await controller.disconnect()
+        """
+        logger = create_logger_for_connection(connection.connection_name, log_path if log_path is not None else Path("."))   
+
+        device_builder = DeviceBuilder(logger=logger)
+
+        communicator = SerialCommunicator(logger=logger) # type: ignore
+        await communicator.open_communication(connection)
+        device = await device_builder.build_amp(communicator)
+        
+        return RemoteController(device, logger)
+    
+    async def connect_to_worker(self):
+        """
+        Connects the underlying device, if it is a postman, to the worker 
+        and then returns a RemoteController, that is controls the worker (with the postman as middle man)
+        
+        Raises
+        ------
+        AssertionError
+            if the underlying device is not a postman
+
+        Returns
+        -------
+        worker_controller: RemoteController
+            A RemoteController that controls the worker device
+        """
+        assert self._device.info.device_type == DeviceType.POSTMAN, "This function works only for postman devices"
+
+        await asyncio.wait_for(self._device.wait_until_worker_connected(), 10.0)
+
+        worker_communicator = PostmanProxyCommunicator(self._device.communicator)
+        await worker_communicator.open_communication(None)
+        worker_device = await DeviceBuilder(logger=self._logger).build_amp(worker_communicator)
+        
+        loop = asyncio.get_running_loop()
+        worker_communicator.subscribe(
+            worker_communicator.DISCONNECTED_EVENT, 
+            lambda _: loop.run_until_complete(self._device.disconnect())
+        )
+
+        return RemoteController(worker_device, self._logger)
+
 
     def is_connected(self) -> bool:
-        return self._device is not None and self._device.communicator.connection_opened.is_set()
+        return self._device.communicator.connection_opened.is_set()
 
     def start_updater(self):
-        assert self._updater is not None
+        """
+        Starts the internal updater, that fetches periodically status information from the device.
+
+        Note
+        ----
+        For running procedures, the updater needs to run. Else the controller is not able to detect anymore, when a procedure finished.
+        """
         if not self._updater.running.set():
             self._updater.start()
 
-    """
-    Note:   
-        The updater is used by the procedure controller internally 
-        to get information about if a procedure is running on the device.
-        If you stop the updater, the procedure controller cannot detect anymore, when a procedure is finished and will run forever. 
-        However you can manually pull an update over the updater and send that to the procedure controller or just
-        call stop procedure.
-    """
     async def stop_updater(self):
-        assert self._updater is not None
+        """
+        Stops the internal updater, that fetches periodically status information from the device.
+
+        Note
+        ----
+        For running procedures, the updater needs to run. Else the controller is not able to detect anymore, when a procedure finished.
+        """
         if self._updater.running:
             await self._updater.stop()
 
-    async def send_command(self, command: str | Command) -> Tuple[str, Dict[EFieldName, Any], bool]:
-        assert self._device is not None,    RemoteController.NOT_CONNECTED
-        answer = await self._device.execute_command(command, raise_exception=False)
-        answer.field_value_dict[EFieldName.COMMAND_CODE] = answer.command_code # TODO you gotta do better senator
-        return answer.message, answer.field_value_dict, answer.valid
+    async def send_command(self, command: str | Command, raise_exception: bool = False) -> Answer:
+        """
+        Sends a command over the connection and waits until the device executed it. 
+        It then returns the answer it received from the device.
+
+        Parameters
+        ----------
+        command: str | Command, required
+            The command to be executed by the device. (Plain strings can also be sent, but Command objects are the preferred way)
+        raise_exception: bool, default=False
+            If true, it raises and exception, if the command failed or the answer could not be validated. 
+            Else it returns an Answer with the valid attribute set to False.
+        
+        Raises
+        ------
+            CommandValidationError
+                if raises_exception is set to True and the received answer could not be parsed or validated
+            CommandExecutionError
+                If raises_exception is set to True and the device could not execute the command
+
+        Returns
+        -------
+        answer: Answer
+            The received answer from the device.
+
+        Example
+        -------
+        # because send_command is async we have to await it. Look up asyncio for more information
+        answer = await controller.send_command(cmds.SetAtf(1, 100000))
+        # contains the pure str message received from the serial connection
+        print(answer.message) 
+        if answer.valid:
+            # if the answer could be parsed and is valid, we can access the parsed fields like this
+            print(answer.field_value_dict[EFieldName.ATF]) 
+        """
+        return await self._device.execute_command(command, raise_exception=raise_exception)
     
-    async def get_update(self) -> Tuple[str, Dict[EFieldName, Any], bool]:
-        assert self._device is not None,    RemoteController.NOT_CONNECTED
-        return await self.send_command(self._device._update_command)
+    async def get_update(self) -> Answer:
+        """
+        sends an fetch_update command to the device and returns the Answer containing the device status.
 
-    async def execute_script(self, text: str, callback: Callable[[str], None] = lambda _: None) -> None:
-        assert self._device is not None,    RemoteController.NOT_CONNECTED
-        assert self._scripting is not None
-        assert self._updater is not None
-        assert self._proc_controller is not None
+        Note
+        ----
+        For every device the status contains different fields. Look up in the protocol, which fields are available.
+        """
+        return await self._device.get_update()
+    
+    async def stop_running_processes(self) -> None:
+        """
+        Stops running processes on the device like procedures and service mode. Also turns the signal off.
+        
+        Note
+        ----
+        It is good practice to call this method always immediately after connecting to a device.
+        """
+        await self._device.stop_running_processes()
 
+    async def execute_script(self, text: str) -> None:
+        """
+        Executes a script.
+
+        Note
+        ----
+        There are examples for scripts in the script example folder and in the sonic control gui application there is a help guide for scripting.
+        """
         runnable_script = self._scripting.parse_script(text)
         interpreter = InterpreterEngine(self._device, self._updater, self._logger)
-        interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda target: callback(target.data.task))
         interpreter.script = runnable_script
         interpreter.start()
         await interpreter.wait_for_script_to_halt()
 
-    def execute_procedure(self, procedure: ProcedureType, args: dict, event_loop=asyncio.get_event_loop()) -> None:
-        assert self._device is not None,    RemoteController.NOT_CONNECTED
-        assert self._proc_controller is not None
+    def start_procedure(self, procedure: ProcedureType, args: dict | ProcedureArgs, event_loop=asyncio.get_running_loop()) -> None:
+        """
+        Starts a procedure
 
-        arg_class = self._proc_controller.proc_args_list[procedure]
-        procedure_args = arg_class.from_dict(**args)
+        Parameters
+        ----------
+        procedure: ProcedureType
+            Specifies which procedure should run
+        args: dict | ProcedureArgs
+            The arguments the procedure needs. 
+            The Arguments have to be valid and to be the right ones for the procedure.
+            Using Procedure Args instead of dicts is the preferred way.
+        event_loop: asyncio.EventLoop, optional
+            The event_loop in that the procedure controller should run. Note, you have to pass nothing, 
+            if this function is called from the inside of an event loop (In that case it will just use the same one).
+       
+        Note
+        ----
+        This function will start a procedure in the background. 
+        When you want to halt execution, you should call wait_for_procedure_to_finish()
+        """
+        if isinstance(args, ProcedureArgs):
+            procedure_args = args
+        else:
+            arg_class = self._proc_controller.proc_args_list[procedure]
+            procedure_args = arg_class.from_dict(**args)
+
         self._proc_controller.execute_proc(procedure, procedure_args, event_loop)
         
     async def wait_for_procedure_to_finish(self):
-        assert self._proc_controller is not None
-        assert self._updater
-        assert self._updater.running
+        """
+        Waits for the currently running procedure to finish.
+        If no procedure runs, it returns immediately.
 
+        Raises
+        ------
+        AssertionError
+            If the updater is not running, because it needs that for detecting, if the procedure finished 
+        """
+        assert self._updater.running.is_set(), "The updater needs to be running. Else the procedure controller cannot check if a procedure finished execution"
         await self._proc_controller.wait_for_proc_to_finish()
 
     async def stop_procedure(self) -> None:
-        assert self._device is not None,    RemoteController.NOT_CONNECTED
-        assert self._proc_controller is not None
-
-        await self._proc_controller.stop_proc()
+        """
+        Stops the currently running procedure.
+        Does nothing if no procedure is running.
+        """
+        if self._proc_controller.is_proc_running:
+            await self._proc_controller.stop_proc()
+        else:
+            # A procedure can also be already running on the device. In that case also stop it
+            await self._device.stop_procedures()
 
     async def measure_spectrum(self, output_dir: Path, spectrum_args: SpectrumMeasureArgs, 
-                               experiment_metadata: ExperimentMetaData, blocking: bool=True) -> None:
-        assert self._device is not None,    RemoteController.NOT_CONNECTED
-        assert self._updater
-        assert self._proc_controller
+                               experiment_metadata: ExperimentMetaData) -> None:
+        """
+        Starts a Spectrum measure, by doing that it fetches the device status for every frequency step. 
+        The recorded data is stored together with the provided metadata in a experiment hdf5 file.
 
-
+        Parameters
+        ----------
+        output_dir: Path
+            Path to the directory where the experiment should be stored
+        spectrum_args: SpectrumMeasureArgs
+            The arguments for the Spectrum Measure to run
+        experiment_meta_data: ExperimentMetaData
+            Data about the setup and conduction of the experiment.
+        """
         capture = Capture(output_dir)
         capture_target = CaptureSpectrumMeasure(self._updater, self._proc_controller, SpectrumArgsAdapter(spectrum_args))
         self._updater.subscribe("update", lambda e: capture.on_update(e.data["status"]))
@@ -163,36 +285,19 @@ class RemoteController:
                                  CaptureTargets.SPECTRUM_MEASURE)
 
         await capture.start_capture(experiment, capture_target)
-        if blocking:
-            await capture.wait_for_capture_to_complete()
+        await capture.wait_for_capture_to_complete()
 
     async def disconnect(self) -> None:
-        if self._updater is not None:
-            await self._updater.stop()
-            self._updater = None
-
-        if self._device is not None:
-            await self._device.disconnect()
-            self._scripting = None
-            self._proc_controller = None
-            self._device = None
-
-        if self._postman is not None:
-            await self._postman.disconnect()
-            self._postman = None
-
-        assert self._device is None
-        assert self._updater is None
-    
-    @property
-    def updater(self):
-        assert self._updater
-        return self._updater
+        await self._updater.stop()
+        await self._device.disconnect()
     
     @property 
     def protocol_consts(self):
-        assert self._device
         return self._device.protocol.consts
+    
+    @property
+    def device_info(self): 
+        return self._device.info
 
 
 
@@ -201,25 +306,30 @@ async def main():
     import sonic_protocol.python_parser.commands as cmds
     from sonic_protocol.field_names import EFieldName
 
-    controller = RemoteController()
     #await controller.connect_via_serial(Path("/dev/ttyUSB0"))
     firmware_dir = environ.get('FIRMWARE_BUILD_DIR_PATH')
     if not firmware_dir:
         raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
     exe_path = firmware_dir + '/linux/platform_linux/src/device/device_main'
-    await controller.connect_via_process(Path(exe_path), [
+    connection = CLIConnection("simulation", Path(exe_path), [
         '--product-type=worker', 
         '--name=test_worker', 
         '--port=4000', 
         f'--data-dir={firmware_dir + "/data"}'
     ])
-    answer_str, _, _ = await controller.send_command("?protocol")
-    answer_str, _, _ = await controller.send_command(cmds.GetProtocol())
-    answer_str, answer_dict, is_valid = await controller.send_command(cmds.SetAtf(1, 100000))
+
+    controller = await RemoteController.connect(connection)
+
+    # it is allowed but discouraged to send strings
+    await controller.send_command("?protocol")
+
+    # use instead the cmds classes. Avoids typos and will stay compatible with future protocols
+    await controller.send_command(cmds.GetProtocol())
+    answer = await controller.send_command(cmds.SetAtf(1, 100000))
     
-    print(answer_str)
-    if is_valid:
-        print(answer_dict[EFieldName.ATF])
+    print(answer.message)
+    if answer.valid:
+        print(answer.field_value_dict[EFieldName.ATF])
 
     await controller.disconnect()
 

@@ -1,6 +1,7 @@
 import logging
 import logging.handlers
 from pathlib import Path
+import os
 
 def get_base_logger(logger: logging.Logger) -> logging.Logger:
     try:
@@ -13,6 +14,7 @@ def get_base_logger(logger: logging.Logger) -> logging.Logger:
 def create_logger_for_connection(connection_name: str, out_dir=Path(".")) -> logging.Logger:
     logger = logging.getLogger(connection_name)
     logger.setLevel(logging.DEBUG)
+    os.makedirs(out_dir, exist_ok=True)
     log_file_handler = logging.handlers.RotatingFileHandler(
         out_dir / f"device_on_{connection_name}.log",
         maxBytes=40000,

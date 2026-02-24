@@ -89,13 +89,7 @@ class DeviceWindowManager:
         if device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.CRYSTAL, DeviceType.UNKNOWN]:
             # some devices are automatically in default routine.
             # To force them out of that, send the !sonic_force command
-            if sonicamp.has_command(cmds.SetStop()):
-                await sonicamp.execute_command(cmds.SetStop(), raise_exception=False)
-            # We cant use SetOff for the crystal+ device because it is not ready yet
-            if sonicamp.has_command(cmds.SetOff()) and not is_legacy_device:
-                await sonicamp.execute_command(cmds.SetOff(), raise_exception=False)
-            if sonicamp.has_command(cmds.SonicForce()):
-                await sonicamp.execute_command(cmds.SonicForce(), raise_exception=False)
+            await sonicamp.stop_running_processes()
         
         if device_type != DeviceType.UNKNOWN:
             logger.info("Created device successfully, open device window")
@@ -120,6 +114,8 @@ class ConnectionWindow(UIComponent):
         show_simulation_button = simulation_exe_path is not None
         self._view: ConnectionWindowView = ConnectionWindowView(show_simulation_button)
         
+        if simulation_exe_path:
+            simulation_exe_path = simulation_exe_path.expanduser().resolve()
         self._simulation_exe_path = simulation_exe_path
         super().__init__(None, self._view)
         # Create and PLACE the plugin slot (tabs=True -> Notebook; False -> stacked)
@@ -142,8 +138,11 @@ class ConnectionWindow(UIComponent):
         
         async def _attempt_connection(_connection: Connection, is_legacy_device: bool = False):
             await self._device_window_manager.attempt_connection(_connection, is_legacy_device)
+            self._is_connecting = False
+            self._finished_connecting.set()
 
-        self._is_connecting = False # Make this to asyncio Event if needed
+        self._is_connecting = False
+        self._finished_connecting: asyncio.Event = asyncio.Event() 
         self._attempt_connection = decorator(_attempt_connection)
         self._device_window_manager.set_attempt_connection_callback(self._attempt_connection)
         
@@ -152,23 +151,17 @@ class ConnectionWindow(UIComponent):
         self._view.set_refresh_button_command(self._refresh_ports)
         self._refresh_ports()
 
-    @property
-    def is_connecting(self) -> bool:
-        return self._is_connecting
-    
-    @is_connecting.setter
-    def is_connecting(self, value: bool):
-        self._is_connecting = value
-        self._view.enable_connect_via_url_button(not value)
-        self._view.enable_connect_to_simulation_button(not value)
-
     def _refresh_ports(self):
         ports = [port.device for port in list_ports.comports()]
         self._view.set_ports(ports)
 
+    async def wait_until_connected(self):
+        await self._finished_connecting.wait()
+        self._finished_connecting.clear()
+
     @async_handler
     async def _on_connect_via_url(self):
-        assert (not self.is_connecting)
+        assert (not self._is_connecting)
         self._is_connecting = True
 
         url = self._view.get_url()
@@ -176,11 +169,10 @@ class ConnectionWindow(UIComponent):
 
         connection = SerialConnection(url=url, baudrate=baudrate, connection_name=Path(url).name)
         await self._attempt_connection(connection, self._view.is_legacy_device)
-        self._is_connecting = False
 
     @async_handler 
     async def _on_connect_to_simulation(self):
-        assert (not self.is_connecting)
+        assert (not self._is_connecting)
         assert self._simulation_exe_path is not None
         self._is_connecting = True
 
@@ -198,7 +190,6 @@ class ConnectionWindow(UIComponent):
 
         connection = CLIConnection(bin_file=bin_file, connection_name = "simulation", cmd_args=args)
         await self._attempt_connection(connection)
-        self._is_connecting = False
 
 
 class ConnectionWindowView(ttk.Window, View):
@@ -284,7 +275,7 @@ class ConnectionWindowView(ttk.Window, View):
             textvariable=self._profile,
             style=ttk.DARK,
             state=ttk.READONLY,
-            values=["postman", "worker", "none"]
+            values=["postman", "worker", "diagnostics_tool", "none"]
         )
 
         # --- plugin container (NEW) ---

@@ -157,6 +157,7 @@ class CommandCode(ICommandCode):
 
     SET_DAC = 1390
     RUN_TEST = 1440
+    ABORT_TEST = 1441
     # SET_MODBUS_SERVER_ID = 1400
 
     

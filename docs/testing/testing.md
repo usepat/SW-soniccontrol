@@ -5,7 +5,7 @@
 # Testing
 
 Our project is way to big to test everything manually. We have to use automated tests to ensure bug free code.  
-We use the pytest framework for testing together with allure for nice test reports. We also use robot framework for system test, but want to move away from it.
+We use the pytest framework for testing together with allure for nice test reports.
 
 ## Hardware Tests
 

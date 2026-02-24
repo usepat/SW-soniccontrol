@@ -221,10 +221,22 @@ run_test = CommandContract(
         index_param=p.param_index_uint8,
         sonic_text_attrs=SonicTextCommandAttrs("!run_test")
     ),
-     answer_def=AnswerDef( [
+    answer_def=AnswerDef( [
         AnswerFieldDef(EFieldName.TEST_RESULT, FieldType(t.TestResult, converter_ref=ConverterType.ENUM)),
         AnswerFieldDef(EFieldName.TEST_INTERACTION, FieldType(t.TestInteraction, converter_ref=ConverterType.ENUM)),
         AnswerFieldDef(EFieldName.MESSAGE, FieldType(str))
+    ]),
+    is_release=True,
+    tags=["testing"]
+)
+
+abort_test = CommandContract(
+    code=CommandCode.ABORT_TEST,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs("!abort_test")
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
     ]),
     is_release=True,
     tags=["testing"]

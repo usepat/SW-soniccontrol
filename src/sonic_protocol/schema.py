@@ -58,6 +58,7 @@ class DeviceType(Enum):
     UNKNOWN = "unknown"
     CONFIGURATOR = "configurator"
     SIMULATION = "simulation"
+    DIAGNOSTICS_TOOL = "diagnostics_tool"
 
 class TransducerState(Enum):
     IDLE = "idle"

@@ -216,7 +216,7 @@ class ExperimentForm(UIComponent):
         }
 
         
-        self._metadata_form = FormWidget(self, self._view.metadata_form_slot,  "", ExperimentMetaData, field_hooks=form_field_hooks, widget_name=self._widget_name)
+        self._metadata_form = FormWidget(self, self._view.metadata_form_slot,  "Experiment Data", ExperimentMetaData, field_hooks=form_field_hooks, widget_name=self._widget_name)
     
     def _save_templates_to_file(self):
         """Save templates to file."""

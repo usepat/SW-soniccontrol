@@ -14,6 +14,7 @@ from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.constants import _Files
+from soniccontrol_gui.plugins.pluign_discovery import discover_plugins
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView, TkinterView, View
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow
@@ -213,39 +214,8 @@ class TestPluginComponent3Factory(UIComponentFactory):
         return TestPluginComponent3(master, parent)
 
 
-# # Register test plugins in the "ConnectionWindow" slot
-# UIPluginRegistry.register_ui_plugin(
-#     UIPlugin("ConnectionWindow", TestPluginComponent1Factory())
-# )
-# UIPluginRegistry.register_ui_plugin(
-#     UIPlugin("ConnectionWindow", TestPluginComponent2Factory())
-# )
-# UIPluginRegistry.register_ui_plugin(
-#     UIPlugin("ConnectionWindow", TestPluginComponent3Factory())
-# )
-
-
 def register_ui_plugins():
     group = "soniccontrol_gui.ui_plugins"
 
-    # 1) Built-in / bundled / normally installed entry points
-    try:
-        for ep in metadata.entry_points().select(group=group):
-            UIPluginRegistry.register_ui_plugin(ep.load())
-    except Exception:
-        # Don't let a broken plugin kill startup
-        pass
-
-    # 2) Plugins dropped into ./plugins (wheels unzipped here)
-    _Files.PLUGINS.mkdir(parents=True, exist_ok=True)
-    sys.path.insert(0, str(_Files.PLUGINS))  # allow importing plugin packages
-
-    for dist in metadata.distributions(path=[str(_Files.PLUGINS)]):
-        for ep in dist.entry_points:
-            if ep.group == group:
-                try:
-                    UIPluginRegistry.register_ui_plugin(ep.load())
-                except Exception as e:
-                    # log it; ignore bad plugin
-                    print(f"Expection: {e}")
-                    pass
+    for plugin in discover_plugins(group):
+        UIPluginRegistry.register_ui_plugin(plugin)

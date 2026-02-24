@@ -55,6 +55,7 @@ class ProcedureController(EventManager):
        
         self.execute_procedure(procedure, proc_type, args, event_loop)
 
+
     def execute_procedure(self, procedure: Procedure, proc_type: ProcedureType, args: Any, event_loop: asyncio.AbstractEventLoop | None = None):
         if event_loop is None:
             event_loop = asyncio.get_running_loop()
@@ -64,14 +65,7 @@ class ProcedureController(EventManager):
         
         self._logger.info("Run procedure %s with args %s", proc_type.name, str(args))
     
-
         async def proc_task():
-            async def stop_procedure():
-                if self._device.has_command(cmds.SetStop()):
-                    await self._device.execute_command(cmds.SetStop(), raise_exception=False)
-                else:
-                    await self._device.execute_command(cmds.SetOff(), raise_exception=False)
-
             try:
                 await procedure.execute(self._device, args)
                 if procedure.is_remote:
@@ -81,7 +75,7 @@ class ProcedureController(EventManager):
                     raise e # if task was not cancelled, then some internal unexpected exception occurred
             finally:
                 if procedure.is_remote:
-                    await stop_procedure()
+                    await self._device.stop_procedures()
                 await self._device.set_signal_off()
                 self._on_proc_finished()
                 

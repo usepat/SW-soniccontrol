@@ -20,7 +20,7 @@ class Communicator(abc.ABC, EventManager):
 
     @abc.abstractmethod
     async def open_communication(
-        self, connection: Connection, baudrate: int
+        self, connection: Connection, baudrate: int = 9600
     ): ...
 
     @abc.abstractmethod

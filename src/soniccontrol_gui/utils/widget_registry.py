@@ -58,21 +58,22 @@ def set_text_of_widget(widget: tk.Widget | tk.Variable, text: str) -> None:
 class WidgetReference:
     def __init__(self, widget: tk.Widget | tk.Variable):
         self.widget: tk.Widget | tk.Variable = widget
-        self.old_text_value = get_text_of_widget(self.widget)
-        self.last_time_text_has_changed = datetime.datetime.now()
+        self.text = get_text_of_widget(self.widget)
         self.text_has_changed = asyncio.Event()
 
 """!
-@brief Registry solely used for robot testing library
+@brief Registry solely used for integration testing via GuiController
 
 The widgets are available in a static directory of this class. 
 This would be bad practice for normal code, because we have global state.
-However for our robot testing library it is necessary, so that we can access the widgets easily.
+However for our testing library it is necessary, so that we can access the widgets easily.
+This also mimics also the user experience, as an user sees all the widgets at once
 
 You have to enable the registry with @ref WidgetRegistry.set_up, 
 before you register widgets.
 """
 class WidgetRegistry:
+    root: tk.Tk | tk.Toplevel | None = None
     _widget_registry: Dict[str, WidgetReference] = {}
     _widget_registration_events: Dict[str, asyncio.Event] = {} # for waiting until a widget got registered
     _enabled = False
@@ -116,21 +117,27 @@ class WidgetRegistry:
             return
 
     @staticmethod
-    async def wait_for_widget_to_change_text(full_widget_name: str) -> str:
-        start_time = datetime.datetime.now()
-        ref = WidgetRegistry._widget_registry[full_widget_name]
-
-        if ref.last_time_text_has_changed < start_time and ref.text_has_changed.is_set():
+    def clear_text_changed_flags():
+        for ref in WidgetRegistry._widget_registry.values():
             ref.text_has_changed.clear()
+
+    @staticmethod
+    def clear_widget_text_changed_flag(full_widget_name: str):
+        ref = WidgetRegistry._widget_registry[full_widget_name]
+        ref.text_has_changed.clear()
+
+    @staticmethod
+    async def wait_for_widget_to_change_text(full_widget_name: str) -> str:
+        ref = WidgetRegistry._widget_registry[full_widget_name]
 
         await ref.text_has_changed.wait()
         ref.text_has_changed.clear()
-        return ref.old_text_value
+
+        return ref.text
 
     @staticmethod
-    def set_up():
+    def set_up(loop = asyncio.get_event_loop()):
         WidgetRegistry._enabled = True
-        loop = asyncio.get_event_loop()
         WidgetRegistry._polling_task = loop.create_task(WidgetRegistry._polling_worker())
 
     @staticmethod
@@ -142,11 +149,10 @@ class WidgetRegistry:
 
     @staticmethod
     def _poll_updates():
-        for ref in WidgetRegistry._widget_registry.values():
+        for _name, ref in WidgetRegistry._widget_registry.items():
             current_text = get_text_of_widget(ref.widget)
-            if current_text != ref.old_text_value:
-                ref.last_time_text_has_changed = datetime.datetime.now()
-                ref.old_text_value = current_text
+            if current_text != ref.text:
+                ref.text = current_text
                 ref.text_has_changed.set()
 
     @staticmethod

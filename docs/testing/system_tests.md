@@ -12,100 +12,25 @@ For the integration testing we use a binary of our [firmware](https://github.com
 We can start this binary as a process in the command line and can communicate with it over `stdout` and `stdin`.
 In the code we do this over [CLIConnectionFactory](@ref soniccontrol.ConnectionFactory.CLIConnectionFactory).
 
-For testing the GUI we use the GUIDriver class. Every widget gets registered over a name and the GUIDriver offers methods to interact with the widgets programmatically.
+For testing the GUI we use the GuiController class. Every widget gets registered over a name in the WidgetRegistry and the GuiController offers methods to interact with the widgets programmatically. Additionally to that there is a file called workflows, that contains functions for simulating user interactions (like filling out an experiment form).
 
-Because for the simulation and real device (and also for different device types like postman and worker) we need to interact differently with the GUI to open the device window. Therefore we use a Strategy pattern for Connecting with the Device and opening the Device Window.
-
-For writing the system tests we used the robot framework but now we want to migrate to pytest.
-
-## Robot Framework
-
-The [Robot Framework](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html) is a popular testing framework for system tests. 
-You can install robot framework via `pip install robot-framework`.
-You can write Python libraries for it as API and then use them together with thousand others libraries, provided by the robot community.
-The *src/sonic_robot* folder contains the robot library for testing the application code.d
-In the *tests_robots/test_cases* folder are the tests.
-
-Here is an example for a robot file
-```robot
-*** Settings ***
-Library    calculator.py
-Suite Setup    Log    Starting Calculator Tests
-Suite Teardown    Log    Calculator Tests Finished
-
-*** Variables ***
-${A}    10
-${B}    5
-${ZERO}    0
-
-*** Test Cases ***
-
-Addition Test
-    [Documentation]    Verify that the addition function returns the correct sum.
-    ${result}=    Add    ${A}    ${B}
-    Should Be Equal    ${result}    15
-
-Division Test
-    [Documentation]    Verify that the division function returns the correct quotient.
-    ${result}=    Divide    ${A}    ${B}
-    Should Be Equal    ${result}    2
-
-Division By Zero Test
-    [Documentation]    Verify that dividing by zero raises an exception.
-    Run Keyword And Expect Error    ValueError    Divide    ${A}    ${ZERO}
-```
-The framework creates you reports in html and logs for your tests.
-They can be found in *tests_robots/results*.
-The path is specified via *.vscode/settings.json*:
-```json
-"robotcode.robot.outputDir": "${workspaceFolder}/tests_robot/results"
-```
-
-To run robot you can us the vscode *Test Tab* or run them directly via `robot .` in the command line.
-
-For continuous integration with robot see this [page](@ref CIandCD)
-
-### Custom Tags
-
-You can add tags to your tests, to group them and filter those you want to run.
-
-Here an example of how to add and remove tags.
-```robot
-*** Settings ***
-Test Tags       requirement: 42    smoke
+Because for the simulation and real device (and also for different device types like postman and worker) we need to interact differently with the GUI to open the device window. Therefore we use a Strategy pattern for Connecting with the Device and opening the Device Window. (This is not implemented yet)
 
 
-*** Test Cases ***
+### How widgets are registered and used for integration testing
 
-Own tags
-    [Documentation]    Test has tags 'requirement: 42', 'smoke' and 'not ready'.
-    [Tags]    not ready
-    No Operation
+All important widgets are registered in the [WidgetRegistry](@ref soniccontrol_gui.utils.widget_registry.WidgetRegistry) after they got instantiated. And when they get removed they are unregistered. This has to be done manually in the code for every widget, we are interested in.
 
+TKinter already does have an unique name for all widgets. We could use that for retrieving them directly, instead of registering them.  
+However, this is not desirable, as the widgets have hierarchical names and are dependent on the visual tree. So when we change the layout of our application, by wrapping the widgets in some frames, we also change their name and we have to update that then across all the test cases... Therefore I decided to register them manually and give them own unique names. 
+Also this allowed me to create asyncio.flags for each widget, that are set true, when it got registered. This is useful, for when we want to wait for a widget to be registered.  
 
-Remove common tag
-    [Documentation]    Test has only tag 'requirement: 42'.
-    [Tags]    -smoke
-    No Operation  
-```
+Registered widgets have also a flag, that gets set when the text of the widget changed. Text changes are detected not via an callback, but simply over a task that runs in the background, goes through all registered widgets and checks, if they changed. There is also a method to unset the text_changed flag. It is important to call it, before waiting for a text change, because the text change flag could have been already set by some other action. Waiting for a text change via wait_for_widget_to_change_text also resets the flag afterwards.
 
-To select which tests to run, you can specify which tags:
-```
-robot tests.robot
---include fooANDbar     # Matches tests containing tags 'foo' and 'bar'.
---exclude xx&yy&zz      # Matches tests containing tags 'xx', 'yy', and 'zz'.
-```
+## pytest quirks
 
-Those are the tags used in this project:
-- worker: For the worker devices
-- descaler: For the descale devices
-- expensive_to_run: For tests that take a long time to complete
+For using pytest together with async/await, we use the library pytest_asyncio. It runs each test in an own event loop. However for some fixtures, we want to instantiate them only once for the whole package, because they are expensive. The event loop of such a fixture is not automatically shared, you have to set `loop_scope="package"` to use it.  
 
-### Profiles
-
-With the RobotCode extension, we can define profiles in a *robot.toml* file.  
-A profile defines a set of arguments (which variables to set, which tags to include, etc...) that are passed to the commandline to start the robot tests.
-
-We have a profile for each device type and the simulation. In the vscode testing tab you can select which profile to run the tests with.
+Also because the tkinter event loop (has nothing to do with the asyncio event loop) runs in an own task, the gui updates only if that task gets scheduled. Therefore it is important to use `await gui_controller.execute_events_until_idle()` that updates tkinter and yields (lets other tasks execute) after button presses or other simulated user interactions.
 
 @}

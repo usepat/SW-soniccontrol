@@ -10,7 +10,8 @@ from .commands.commands import (
     get_update_descale_v3_0_0, get_update_worker_v3_0_0,
     set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
     get_logger_list_item, get_logger_list_size, get_connection_status, 
-    get_num_tests, get_test_info, run_test, start_diagnostic_tool, start_operator, set_dac_mV
+    get_num_tests, get_test_info, run_test, abort_test,
+    start_diagnostic_tool, start_operator, set_dac_mV
 )
 from .types.types import TestInteraction, TestResult
 
@@ -56,6 +57,8 @@ class Protocol_v3_0_0(ProtocolList):
     def supports_device_type(self, device_type: DeviceType) -> bool:
         if device_type == DeviceType.POSTMAN:
             return True
+        if device_type == DeviceType.DIAGNOSTICS_TOOL:
+            return True
         return self._previous_protocol.supports_device_type(device_type)
 
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:        
@@ -64,13 +67,42 @@ class Protocol_v3_0_0(ProtocolList):
             
             command_contracts[CommandCode.GET_CONNECTION_STATUS] = get_connection_status
             return command_contracts 
+        
+        if protocol_type.device_type == DeviceType.DIAGNOSTICS_TOOL:
+            command_contracts = self._get_command_contracts_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
+
+            diagnostics_tool_command_codes = [
+                CommandCode.GET_PROTOCOL,
+                CommandCode.GET_INFO,
+                CommandCode.GET_HELP,
+                CommandCode.SET_FLASH_115200,
+                CommandCode.SET_FLASH_9600,
+                CommandCode.SET_FLASH_USB,
+                CommandCode.SET_LOG_LEVEL,
+                CommandCode.GET_LOGGER_LIST_SIZE,
+                CommandCode.GET_LOGGER_LIST_ITEM,
+                CommandCode.SET_DATETIME,
+                CommandCode.GET_DATETIME,
+                CommandCode.RESTART_DEVICE,
+                CommandCode.START_CONFIGURATOR,
+                CommandCode.START_DIAGNOSTIC_TOOL,
+                CommandCode.START_OPERATOR,
+                CommandCode.GET_ERROR_HISTO_SIZE,
+                CommandCode.POP_ERROR_HISTO_MESSAGE,
+                CommandCode.GET_NUM_TESTS,
+                CommandCode.GET_TEST_INFO,
+                CommandCode.RUN_TEST,
+                CommandCode.ABORT_TEST,
+            ]
+            return { key: value for key, value in command_contracts.items() if key in diagnostics_tool_command_codes }
 
         command_contract_list: List[CommandContract] = [
             get_logger_list_size,
             get_logger_list_item,
-            get_num_tests,
+            get_num_tests, # FIXME: test commands should only be in Diagnostics Tool protocol
             get_test_info,
             run_test,
+            abort_test,
             start_diagnostic_tool,
             start_operator,
         ]

@@ -18,7 +18,7 @@ class DeviceBuilder:
     def __init__(self, protocol_factories: Dict[DeviceType, ProtocolList] = {}, logger: logging.Logger = logging.getLogger()):
         self._logger = logger
         self._builder_logger = logging.getLogger(logger.name + "." + DeviceBuilder.__name__)
-        self._protocol_factories = protocol_factories
+        self._protocol_factories = protocol_factories.copy()
 
 
     async def _update_info(self, device: SonicDevice) -> None:

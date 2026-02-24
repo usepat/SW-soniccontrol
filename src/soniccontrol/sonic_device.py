@@ -1,8 +1,10 @@
+import asyncio
+from typing import List
 import logging
 
 import attrs
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.field_names import BaseFieldName
+from sonic_protocol.field_names import BaseFieldName, EFieldName
 from sonic_protocol.python_parser.answer import Answer, AnswerValidator
 from sonic_protocol.python_parser.answer_validator_builder import AnswerValidatorBuilder
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
@@ -54,6 +56,9 @@ class SonicDevice:
     def protocol(self) -> Protocol:
         return self._protocol
 
+    def has_commands(self, commands: List[CommandCode | Command]) -> bool:
+        return all(map(self.has_command, commands))
+
     def has_command(self, command: CommandCode | Command) -> bool:
         command_code = command.code if isinstance(command, Command) else command
         return command_code in self._protocol.command_contracts and self._protocol.command_contracts[command_code].command_def is not None
@@ -98,6 +103,7 @@ class SonicDevice:
         if answer_validator is None or not self._should_validate_answers:
             # In open rescue mode, if we cannot understand the answers of the device.
             # So in rescue mode, we skip the validation of the answers
+            # Also for the serial monitor we do not want to validate answers.
             answer = Answer(response_str, False, was_validated=False)
         else:
             answer = answer_validator.validate(response_str)
@@ -199,5 +205,33 @@ class SonicDevice:
     async def get_update(self, raise_exception:bool=False, should_log:bool=False) -> Answer:
         return await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
 
+    async def stop_procedures(self):
+        if self.has_command(commands.SetStop()):
+            await self.execute_command(commands.SetStop(), raise_exception=False)
+        elif self.has_command(commands.SetOff()):
+            await self.execute_command(commands.SetOff(), raise_exception=False)
+
+    async def stop_running_processes(self):
+        """
+            Goes out of service mode, stops running procedures. 
+            The device will be afterwards idle and ready to accept any command.
+        """
+        if self.has_command(commands.SetStop()):
+            await self.execute_command(commands.SetStop(), raise_exception=False)
+        # We cant use SetOff for the crystal+ device because it is not ready yet
+        if self.has_command(commands.SetOff()) and self.info.device_type == DeviceType.CRYSTAL:
+            await self.execute_command(commands.SetOff(), raise_exception=False)
+        if self.has_command(commands.SonicForce()):
+            await self.execute_command(commands.SonicForce(), raise_exception=False)
 
 
+    async def wait_until_worker_connected(self):
+        assert self.info.device_type == DeviceType.POSTMAN, "This method only works for Postman Devices"
+
+        while True:
+            answer = await self.execute_command(commands.GetConnectionStatus())   
+            if answer.field_value_dict[EFieldName.IS_CONNECTED]:
+                break         
+
+            await asyncio.sleep(0.2)
+    

@@ -14,6 +14,7 @@ from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import style, ui_labels, sizes
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
+from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 from soniccontrol_gui.views.control.logging import Logging
 from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
@@ -72,13 +73,13 @@ class PostmanHomeTab(UIComponent):
 
             self._view.enable_connection_button(True)
         else:
+            await worker_device.stop_running_processes()
             self._worker_device_window = KnownDeviceWindow(
                 worker_device, self._view.root, self._connection_name)
             self._worker_device_window.view.focus_set()
             worker_device.communicator.subscribe(Communicator.DISCONNECTED_EVENT, self._on_close_communication_worker)
             self._worker_device_window.subscribe(DeviceWindow.CLOSE_EVENT, self._on_close_communication_worker)  
             self._worker_device_window.subscribe(DeviceWindow.RECONNECT_EVENT, lambda _: self._on_connect_to_worker())
-        
 
     @async_handler
     async def _on_close_communication_worker(self, e: Event):
@@ -129,6 +130,7 @@ class PostmanDeviceWindow(DeviceWindow):
             self._updater.subscribe(Updater.UPDATE_EVENT,self._worker_connection_tab.on_update)
             self._updater.start()
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._worker_connection_tab.on_execution_state_changed)
+            self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
 
         except Exception as e:
             self._logger.error(e)
@@ -176,6 +178,7 @@ class PostmanHomeTabView(TabView):
         return ui_labels.HOME_LABEL
 
     def _initialize_children(self) -> None:
+        tab_name = "postman_home_tab"
 
         self._main_frame: ScrolledFrame = ScrolledFrame(self, autohide=True)
 
@@ -190,6 +193,8 @@ class PostmanHomeTabView(TabView):
             text=ui_labels.OPEN_WORKER_WINDOW,
             bootstyle=ttk.DARK
         )
+
+        WidgetRegistry.register_widget(self._connect_to_worker_button, "connect_to_worker_button", tab_name)
 
     def _initialize_publish(self) -> None:
         self.pack(fill=ttk.BOTH, padx=3, pady=3)

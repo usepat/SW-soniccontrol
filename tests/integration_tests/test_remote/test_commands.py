@@ -1,0 +1,200 @@
+import attrs
+from soniccontrol import DeviceParamConstantType, Answer, EFieldName, DeviceType, CommandCode
+from .asserts import assert_answer, assert_answer_is_not_error
+from tests.integration_tests.test_remote.conftest import format_command
+import pytest
+from tests.integration_tests.test_remote.deduce_command_examples import deduce_command_examples
+import allure
+import json
+from allure_commons.lifecycle import AllureLifecycle 
+from allure_commons.model2 import Status, StatusDetails
+
+@pytest.mark.asyncio(loop_scope="package")
+@pytest.mark.parametrize("formatted_command_str", [
+    ("!g={}", DeviceParamConstantType.MIN_GAIN),
+    ("!gain={}", DeviceParamConstantType.MIN_GAIN),
+    ("set_gain={}", DeviceParamConstantType.MIN_GAIN),
+    ("-", None),
+    ("get_update", None),
+    ("?g", None),
+    ("?gain", None),
+    ("get_gain", None),
+], indirect=True)
+async def test_if_aliases_are_working(formatted_command_str, remote_controller):
+    answer = await remote_controller.send_command(formatted_command_str)
+    assert answer.valid, "Answer should be valid"
+
+@pytest.mark.asyncio(loop_scope="package")
+async def test_if_gain_can_be_set_and_retrieved(remote_controller):
+    consts = remote_controller.protocol_consts
+
+    await remote_controller.send_command(format_command("!gain={}", consts.min_gain))
+    answer = await remote_controller.send_command("?gain")
+    assert_answer(answer, { EFieldName.GAIN: consts.min_gain })
+
+    await remote_controller.send_command(format_command("!gain={}", consts.max_gain))
+    answer = await remote_controller.send_command("?gain")
+    assert_answer(answer, { EFieldName.GAIN: consts.max_gain })
+    
+
+@pytest.mark.asyncio(loop_scope="package")
+async def test_deduced_commands(remote_controller):
+    @attrs.define()
+    class DeducedCommandError(Exception):
+        command: str = attrs.field()
+        answer: Answer = attrs.field()
+        step: int = attrs.field()
+        assert_msg: str = attrs.field()
+
+        def __str__(self) -> str:
+            return f"Error on {self.step}-th command:\n" + \
+                    f"'{self.command}' returned '{self.answer.message}'\n" + \
+                    f"triggered assertion: '{self.assert_msg}'"
+
+
+    info = remote_controller.device_info
+    commands_to_skip = [
+        CommandCode.SONIC_FORCE,
+        CommandCode.GO_INTO_DEVICE_STATE,
+        CommandCode.START_CONFIGURATOR,
+        CommandCode.START_OPERATOR,
+        CommandCode.START_DIAGNOSTIC_TOOL,
+        CommandCode.RESTART_DEVICE,
+        CommandCode.SET_FLASH_115200,
+        CommandCode.SET_FLASH_9600,
+        CommandCode.SET_FLASH_USB
+    ]
+    commands = deduce_command_examples(
+        info.protocol_version, info.device_type, info.is_release, 
+        skip_command_codes=commands_to_skip
+    )
+
+    num_commands = len(commands)
+    errors = []
+    for i, command in enumerate(commands):
+        with allure.step(f"executing {i}/{num_commands}: '{command}'"):
+            answer = await remote_controller.send_command(command)
+            try:
+                assert_answer_is_not_error(answer, errors_to_check=[
+                    CommandCode.E_INTERNAL_DEVICE_ERROR, 
+                    CommandCode.E_COMMAND_NOT_KNOWN, 
+                    CommandCode.E_PARSING_ERROR, 
+                    CommandCode.E_SYNTAX_ERROR
+                ])
+            except AssertionError as e:
+                errors.append(DeducedCommandError(command, answer, i, str(e)))
+                lifecycle = AllureLifecycle()
+                lifecycle.update_step(
+                    lambda step_result: step_result.update(
+                        status=Status.FAILED,
+                        statusDetails=StatusDetails(message=str(e))
+                    )
+                )
+
+        await remote_controller.send_command("!log[global]=ERROR")
+        await remote_controller.send_command("!stop")
+        await remote_controller.send_command("!sonic_force")
+        await remote_controller.send_command("!clear_errors")
+        await remote_controller.send_command("!control_mode=remote")
+
+    error_json = json.dumps([{ 
+        "full_error_msg": str(e), 
+        "index": e.step, 
+        "command": e.command, 
+        "answer": e.answer.message, 
+        "assert_msg": e.assert_msg 
+    } for e in errors ])
+    allure.attach(
+        error_json,
+        attachment_type=allure.attachment_type.JSON
+    )
+    assert len(errors) == 0, "Errors occurred"
+
+
+@pytest.mark.asyncio(loop_scope="package")
+@pytest.mark.parametrize("formatted_command_str", [
+    ("!gain=-1000", []),
+    ("!gain=", []),
+    ("!gain{}", [DeviceParamConstantType.MIN_TRANSDUCER_INDEX]),
+    ("!gain", []),
+    ("!gain=asdf", []),
+    ("?gain={}", [DeviceParamConstantType.MIN_GAIN]),
+    ("?gain{}", [DeviceParamConstantType.MIN_TRANSDUCER_INDEX]),
+    ("?gainappendedtext", []),
+], indirect=True)
+async def test_if_invalid_syntax_throws_error(remote_controller, formatted_command_str):
+    answer = await remote_controller.send_command(formatted_command_str)
+    assert not answer.valid, "Answer should be not valid"
+
+
+# TODO: use more consts
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
+@pytest.mark.asyncio(loop_scope="package")
+@pytest.mark.parametrize("formatted_command_str", [
+    ("!gain=100", []),
+    ("!frequency={}", [DeviceParamConstantType.MIN_FREQUENCY]),
+    ("!att4=0", []),
+    ("!atk1=100", []),
+    ("!atf2={}", [DeviceParamConstantType.MIN_FREQUENCY]),
+    ("!wipe_f_step={}", [DeviceParamConstantType.MIN_FREQUENCY]),
+    ("!wipe_t_on=100", []),
+    ("!scan_f_step=1000", []),
+    ("!ramp_f_start={}", [DeviceParamConstantType.MIN_FREQUENCY]),
+    ("!tune_f_step=1000", []),
+], indirect=True)
+async def test_if_basic_setter_commands_work(remote_controller, formatted_command_str):
+    answer = await remote_controller.send_command(formatted_command_str)
+    assert answer.valid, "Answer was not valid"
+
+
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
+@pytest.mark.asyncio(loop_scope="package")
+async def test_if_freq_set_by_setter_can_be_retrieved_with_getter(remote_controller):
+    consts = remote_controller.protocol_consts
+
+    await remote_controller.send_command(format_command("!freq={}", consts.min_frequency))
+    answer = await remote_controller.send_command("?freq")
+    assert_answer(answer, {EFieldName.FREQUENCY: consts.min_frequency})
+
+    await remote_controller.send_command(format_command("!freq={}", consts.max_frequency))
+    answer = await remote_controller.send_command("?freq")
+    assert_answer(answer, {EFieldName.FREQUENCY: consts.max_frequency})
+
+    await remote_controller.send_command(format_command("!atf{}={}", consts.min_transducer_index, consts.min_frequency))
+    answer = await remote_controller.send_command(format_command("?atf{}", consts.min_transducer_index))
+    assert_answer(answer, {EFieldName.ATF: consts.min_frequency})
+
+    await remote_controller.send_command(format_command("!atf{}={}", consts.min_transducer_index, consts.max_frequency))
+    answer = await remote_controller.send_command(format_command("?atf{}", consts.min_transducer_index))
+    assert_answer(answer, {EFieldName.ATF: consts.max_frequency})
+
+@pytest.mark.asyncio(loop_scope="package")
+@pytest.mark.parametrize("command_str, const, is_upper_bound", [
+    ("!gain={}", DeviceParamConstantType.MAX_GAIN, True),
+    ("!gain={}", DeviceParamConstantType.MIN_GAIN, False),
+    pytest.param("?atf{}", DeviceParamConstantType.MAX_TRANSDUCER_INDEX, True, marks=pytest.mark.allowed_devices(DeviceType.MVP_WORKER)),
+    pytest.param("?atf{}", DeviceParamConstantType.MIN_TRANSDUCER_INDEX, False, marks=pytest.mark.allowed_devices(DeviceType.MVP_WORKER)),
+])
+async def test_limits_of_parameter(remote_controller, command_str, const, is_upper_bound):
+    const_value = getattr(remote_controller.protocol_consts, const.value)
+    valid_command = command_str.format(const_value)
+    answer = await remote_controller.send_command(valid_command)
+    assert answer.valid, "Answer should be valid, because the param is in the bounds"
+
+    invalid_command = command_str.format(const_value + (+1 if is_upper_bound else -1))
+    answer = await remote_controller.send_command(invalid_command)
+    assert not answer.valid, "Answer should be not valid, because param is expected to be out of bounds"
+
+
+@pytest.mark.allowed_devices(DeviceType.DESCALE)
+@pytest.mark.asyncio(loop_scope="package")
+async def test_if_swf_set_by_setter_can_be_retrieved_with_getter(remote_controller):
+    consts = remote_controller.protocol_consts
+
+    await remote_controller.send_command(format_command("!swf={}", consts.min_swf))
+    answer = await remote_controller.send_command("?swf")
+    assert_answer(answer, {EFieldName.SWF: consts.min_swf})
+
+    await remote_controller.send_command(format_command("!swf={}", consts.max_swf))
+    answer = await remote_controller.send_command("?swf")
+    assert_answer(answer, {EFieldName.SWF: consts.max_swf})

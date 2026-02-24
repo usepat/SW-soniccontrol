@@ -191,7 +191,7 @@ class SerialMonitorView(TabView):
         WidgetRegistry.register_widget(self._read_button, "read_button", tab_name)
         WidgetRegistry.register_widget(self.command_line_input_entry, "command_line_input_entry", tab_name)
         WidgetRegistry.register_widget(self._send_button, "send_button", tab_name)
-        WidgetRegistry.register_widget(self._scrolled_frame, "scroll_frame", tab_name)
+        WidgetRegistry.register_widget(self._monitor_frame, "scroll_frame", tab_name)
         WidgetRegistry.register_widget(self._loading_label, "loading_label", tab_name)
 
     def _initialize_publish(self) -> None:
@@ -298,10 +298,10 @@ class SerialMonitorView(TabView):
         self.command_line_input_entry.bind("<Return>", lambda _: command())
 
     def add_text_line(self, text: str):
-        ttk.Label(self._scrolled_frame, text=text, font=("Consolas", 10)).pack(
+        ttk.Label(self._monitor_frame, text=text, font=("Consolas", 10)).pack(
             fill=ttk.X, side=ttk.TOP, anchor=ttk.W
         )
-        self._scrolled_frame.update()
+        self._scrolled_frame.update_idletasks()
         self._scrolled_frame.yview_moveto(1)
 
     def clear(self):

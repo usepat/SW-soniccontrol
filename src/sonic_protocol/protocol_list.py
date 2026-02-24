@@ -80,11 +80,8 @@ class ProtocolList:
 
             # filter release commands
             command_contracts = self._get_command_contracts_for(protocol_type)
-            for command_code, command_contract in command_contracts.items():
-                if protocol_type.is_release:
-                    protocol.command_contracts[command_code] = command_contract
-                elif command_contract.is_release:
-                    protocol.command_contracts[command_code] = command_contract
+            protocol.command_contracts = { code: contract for code, contract in command_contracts.items() 
+                                          if not protocol_type.is_release or contract.is_release }
 
             protocol.custom_data_types = self.custom_data_types
             protocol.field_name_cls = self.field_name_cls
