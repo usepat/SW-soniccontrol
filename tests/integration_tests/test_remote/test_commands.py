@@ -9,7 +9,7 @@ import json
 from allure_commons.lifecycle import AllureLifecycle 
 from allure_commons.model2 import Status, StatusDetails
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="package")
 @pytest.mark.parametrize("formatted_command_str", [
     ("!g={}", DeviceParamConstantType.MIN_GAIN),
     ("!gain={}", DeviceParamConstantType.MIN_GAIN),
@@ -24,7 +24,7 @@ async def test_if_aliases_are_working(formatted_command_str, remote_controller):
     answer = await remote_controller.send_command(formatted_command_str)
     assert answer.valid, "Answer should be valid"
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="package")
 async def test_if_gain_can_be_set_and_retrieved(remote_controller):
     consts = remote_controller.protocol_consts
 
@@ -37,7 +37,7 @@ async def test_if_gain_can_be_set_and_retrieved(remote_controller):
     assert_answer(answer, { EFieldName.GAIN: consts.max_gain })
     
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="package")
 async def test_deduced_commands(remote_controller):
     @attrs.define()
     class DeducedCommandError(Exception):
@@ -111,7 +111,7 @@ async def test_deduced_commands(remote_controller):
     assert len(errors) == 0, "Errors occurred"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="package")
 @pytest.mark.parametrize("formatted_command_str", [
     ("!gain=-1000", []),
     ("!gain=", []),
@@ -129,7 +129,7 @@ async def test_if_invalid_syntax_throws_error(remote_controller, formatted_comma
 
 # TODO: use more consts
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="package")
 @pytest.mark.parametrize("formatted_command_str", [
     ("!gain=100", []),
     ("!frequency={}", [DeviceParamConstantType.MIN_FREQUENCY]),
@@ -148,7 +148,7 @@ async def test_if_basic_setter_commands_work(remote_controller, formatted_comman
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="package")
 async def test_if_freq_set_by_setter_can_be_retrieved_with_getter(remote_controller):
     consts = remote_controller.protocol_consts
 
@@ -168,7 +168,7 @@ async def test_if_freq_set_by_setter_can_be_retrieved_with_getter(remote_control
     answer = await remote_controller.send_command(format_command("?atf{}", consts.min_transducer_index))
     assert_answer(answer, {EFieldName.ATF: consts.max_frequency})
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="package")
 @pytest.mark.parametrize("command_str, const, is_upper_bound", [
     ("!gain={}", DeviceParamConstantType.MAX_GAIN, True),
     ("!gain={}", DeviceParamConstantType.MIN_GAIN, False),
@@ -187,7 +187,7 @@ async def test_limits_of_parameter(remote_controller, command_str, const, is_upp
 
 
 @pytest.mark.allowed_devices(DeviceType.DESCALE)
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="package")
 async def test_if_swf_set_by_setter_can_be_retrieved_with_getter(remote_controller):
     consts = remote_controller.protocol_consts
 

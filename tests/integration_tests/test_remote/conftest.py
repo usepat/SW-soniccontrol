@@ -8,10 +8,10 @@ from soniccontrol import RemoteController, DeviceType
 from tests.integration_tests.conftest import create_worker_process_impl
 
 
-create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope="function")
+create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope="package", loop_scope="package")
 
-@pytest_asyncio.fixture(scope="function", autouse=True)
-async def remote_controller(request, tmp_path, create_worker_process):
+@pytest_asyncio.fixture(scope="package", loop_scope="package", autouse=True)
+async def remote_controller(request, tmp_path_factory, create_worker_process):
     # setup
     plugin_config = request.config._sonic_control_plugin
     is_simulation: bool = plugin_config.is_simulation
@@ -19,7 +19,8 @@ async def remote_controller(request, tmp_path, create_worker_process):
     url: str = plugin_config.url
     log_path: Path = plugin_config.log_path
 
-    data_dir_arg = f"--data-dir={tmp_path}"
+    data_dir: Path = tmp_path_factory.mktemp("data")
+    data_dir_arg = f"--data-dir={data_dir}"
 
     connection = None
     if is_simulation:
