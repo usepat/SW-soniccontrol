@@ -2,12 +2,14 @@
 
 from typing import List
 from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.groups import GROUPS, GroupId
 from sonic_protocol.schema import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, FieldType, SonicTextCommandAttrs, UserManualAttrs
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_fields as fields
 
 
-def generate_start_procedure_contract(command_code: CommandCode, string_identifiers: List[str], description: str | None = None, release: bool = True) -> CommandContract:
+def generate_start_procedure_contract(command_code: CommandCode, string_identifiers: List[str], group_id: GroupId,
+                                       description: str | None = None, release: bool = True) -> CommandContract:
     procedure_name = "".join(command_code.name.split("_")[1:]) # This is a hack. I am lazy
     return CommandContract(
         code=command_code,
@@ -23,11 +25,13 @@ def generate_start_procedure_contract(command_code: CommandCode, string_identifi
             description=description
         ),
         is_release=release,
+        group_id=group_id,
         tags=["Procedure", procedure_name]
     )
 
 
 def generate_procedure_arg_setter_contract(command_code: CommandCode, string_identifiers: List[str], 
+                                           group_id: GroupId,
                                            field_name: EFieldName | None = None, description: str | None = None, 
                                            field_type = FieldType(field_type=int),
                                            response_field: AnswerFieldDef | None = None, release: bool = True) -> CommandContract:
@@ -57,6 +61,7 @@ def generate_procedure_arg_setter_contract(command_code: CommandCode, string_ide
         user_manual_attrs=UserManualAttrs(
             description=description
         ),
+        group_id=group_id,
         tags=["Procedure", procedure_name]
     )
 
@@ -77,6 +82,7 @@ get_ramp = CommandContract(
             fields.field_ramp_t_off
         ]
     ),
+    group_id=GROUPS.procedures.ramp,
     tags=["Procedure", "RAMP"]
 )
 
@@ -84,33 +90,39 @@ ramp_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_RAMP,
         ["!ramp", "start_ramp"],
+        GROUPS.procedures.ramp,
         ""
     ),
     get_ramp,
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_F_START, 
     ["!ramp_f_start"],
+    GROUPS.procedures.ramp,
     response_field=fields.field_ramp_f_start 
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_F_STOP, 
     ["!ramp_f_stop"],
+    GROUPS.procedures.ramp,
      response_field=fields.field_ramp_f_stop
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_F_STEP, 
     ["!ramp_f_step"], 
+    GROUPS.procedures.ramp,
     response_field=fields.field_ramp_f_step
     ),
     generate_procedure_arg_setter_contract(
     CommandCode.SET_RAMP_T_ON, 
     ["!ramp_t_on"], 
+    GROUPS.procedures.ramp,
      response_field=fields.field_ramp_t_on
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_RAMP_T_OFF, 
-    ["!ramp_t_off"], 
-     response_field=fields.field_ramp_t_off
+        CommandCode.SET_RAMP_T_OFF, 
+        ["!ramp_t_off"], 
+        GROUPS.procedures.ramp,
+        response_field=fields.field_ramp_t_off
     )
 ]
 
@@ -140,6 +152,7 @@ get_auto = CommandContract(
             fields.field_tune_t_step
         ]
     ),
+    group_id=GROUPS.procedures.auto,
     tags=["Procedure", "AUTO"]
 )
 
@@ -147,6 +160,7 @@ auto_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_AUTO,
         ["!auto"],
+        GROUPS.procedures.auto,
         ""
     ),
     get_auto
@@ -169,6 +183,7 @@ get_scan = CommandContract(
             fields.field_scan_gain,
         ]
     ),
+    group_id=GROUPS.procedures.scan,
     tags=["Procedure", "SCAN"]
 )
 
@@ -176,34 +191,40 @@ scan_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_SCAN,
         ["!scan"],
+        GROUPS.procedures.scan,
         description=""
     ),
     get_scan,
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_SCAN_F_STEP, 
-    ["!scan_f_step"], 
-    response_field=fields.field_scan_f_step, 
+        CommandCode.SET_SCAN_F_STEP,
+        ["!scan_f_step"],
+        GROUPS.procedures.scan,
+        response_field=fields.field_scan_f_step,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_SCAN_F_SHIFT, 
-    ["!scan_f_shift"], 
-    response_field=fields.field_scan_f_shift,
+        CommandCode.SET_SCAN_F_SHIFT,
+        ["!scan_f_shift"],
+        GROUPS.procedures.scan,
+        response_field=fields.field_scan_f_shift,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_SCAN_F_RANGE, 
-    ["!scan_f_range"], 
-    response_field=fields.field_scan_f_half_range,
+        CommandCode.SET_SCAN_F_RANGE,
+        ["!scan_f_range"],
+        GROUPS.procedures.scan,
+        response_field=fields.field_scan_f_half_range,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_SCAN_T_STEP, 
-    ["!scan_t_step"], 
-    response_field=fields.field_scan_t_step,
+        CommandCode.SET_SCAN_T_STEP,
+        ["!scan_t_step"],
+        GROUPS.procedures.scan,
+        response_field=fields.field_scan_t_step,
     ),
-    generate_procedure_arg_setter_contract( 
-    CommandCode.SET_SCAN_GAIN, 
-    ["!scan_gain"], 
-    response_field=fields.field_scan_gain,
-    release=False    
+    generate_procedure_arg_setter_contract(
+        CommandCode.SET_SCAN_GAIN,
+        ["!scan_gain"],
+        GROUPS.procedures.scan,
+        response_field=fields.field_scan_gain,
+        release=False
     )
 ]
 
@@ -225,6 +246,7 @@ get_tune = CommandContract(
             fields.field_tune_t_step
         ]
     ),
+    group_id=GROUPS.procedures.tune,
     tags=["Procedure", "TUNE"]
 )
 
@@ -232,40 +254,47 @@ tune_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_TUNE,
         ["!tune"],
+        GROUPS.procedures.tune,
         ""
     ),
     get_tune,
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_TUNE_F_STEP, 
-    ["!tune_f_step"], 
-    response_field=fields.field_tune_f_step,
+        CommandCode.SET_TUNE_F_STEP,
+        ["!tune_f_step"],
+        GROUPS.procedures.tune,
+        response_field=fields.field_tune_f_step,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_TUNE_F_SHIFT, 
-    ["!tune_f_shift"], 
-    response_field=fields.field_tune_f_shift,
+        CommandCode.SET_TUNE_F_SHIFT,
+        ["!tune_f_shift"],
+        GROUPS.procedures.tune,
+        response_field=fields.field_tune_f_shift,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_TUNE_T_STEP, 
-    ["!tune_t_step"], 
-    response_field=fields.field_tune_t_step
+        CommandCode.SET_TUNE_T_STEP,
+        ["!tune_t_step"],
+        GROUPS.procedures.tune,
+        response_field=fields.field_tune_t_step
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_TUNE_T_TIME, 
-    ["!tune_t_time"], 
-    response_field=fields.field_tune_t_time,
+        CommandCode.SET_TUNE_T_TIME,
+        ["!tune_t_time"],
+        GROUPS.procedures.tune,
+        response_field=fields.field_tune_t_time,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_TUNE_N_STEPS, 
-    ["!tune_n_steps"], 
-    response_field=fields.field_tune_n_steps,
-    release=False    
+        CommandCode.SET_TUNE_N_STEPS,
+        ["!tune_n_steps"],
+        GROUPS.procedures.tune,
+        response_field=fields.field_tune_n_steps,
+        release=False
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_TUNE_GAIN, 
-    ["!tune_gain"], 
-    response_field=fields.field_tune_gain,
-    release=False    
+        CommandCode.SET_TUNE_GAIN,
+        ["!tune_gain"],
+        GROUPS.procedures.tune,
+        response_field=fields.field_tune_gain,
+        release=False
     )
 ]
 
@@ -287,6 +316,7 @@ get_wipe = CommandContract(
             fields.field_wipe_t_pause,
         ]
     ),
+    group_id=GROUPS.procedures.wipe,
     tags=["Procedure", "WIPE"]
 )
 
@@ -294,33 +324,39 @@ wipe_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_WIPE,
         ["!wipe"],
+        GROUPS.procedures.wipe,
         description=""
     ),
     get_wipe,
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_WIPE_F_STEP, 
-    ["!wipe_f_step"], 
-    response_field=fields.field_wipe_f_step, 
+        CommandCode.SET_WIPE_F_STEP,
+        ["!wipe_f_step"],
+        GROUPS.procedures.wipe,
+        response_field=fields.field_wipe_f_step,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_WIPE_F_RANGE, 
-    ["!wipe_f_range"], 
-    response_field=fields.field_wipe_f_range,
+        CommandCode.SET_WIPE_F_RANGE,
+        ["!wipe_f_range"],
+        GROUPS.procedures.wipe,
+        response_field=fields.field_wipe_f_range,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_WIPE_T_ON, 
-    ["!wipe_t_on"], 
-    response_field=fields.field_wipe_t_on,
+        CommandCode.SET_WIPE_T_ON,
+        ["!wipe_t_on"],
+        GROUPS.procedures.wipe,
+        response_field=fields.field_wipe_t_on,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_WIPE_T_OFF, 
-    ["!wipe_t_off"], 
-    response_field=fields.field_wipe_t_off,
+        CommandCode.SET_WIPE_T_OFF,
+        ["!wipe_t_off"],
+        GROUPS.procedures.wipe,
+        response_field=fields.field_wipe_t_off,
     ),
     generate_procedure_arg_setter_contract(
-    CommandCode.SET_WIPE_T_PAUSE, 
-    ["!wipe_t_pause"], 
-    response_field=fields.field_wipe_t_pause,
+        CommandCode.SET_WIPE_T_PAUSE,
+        ["!wipe_t_pause"],
+        GROUPS.procedures.wipe,
+        response_field=fields.field_wipe_t_pause,
     )
 ]
 
@@ -345,17 +381,20 @@ get_duty_cycle = CommandContract(
 stop_command =  generate_start_procedure_contract(
     CommandCode.SET_STOP,
     ["!stop", "!stop_procedure"],
+    GROUPS.procedures.procedure,
     ""
 )
 continue_command =  generate_start_procedure_contract(
     CommandCode.SET_CONTINUE,
     ["!continue", "!continue_procedure"],
+    GROUPS.procedures.procedure,
     ""
 )
 
 pause_command =  generate_start_procedure_contract(
     CommandCode.SET_PAUSE,
     ["!pause", "!pause_procedure"],
+    GROUPS.procedures.procedure,
     ""
 )
 notify_proc_failure = CommandContract(
@@ -377,17 +416,20 @@ duty_cycle_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_DUTY_CYCLE,
         ["!duty_cycle"],
+        GROUPS.procedures.duty_cycle,
         description="Starts a duty cycle for defined behaviour"
     ),
     get_duty_cycle,
     generate_procedure_arg_setter_contract(
         CommandCode.SET_DUTY_CYCLE_T_OFF,
         ["!duty_cycle_t_off"],
+        GROUPS.procedures.duty_cycle,
         response_field=fields.field_duty_cycle_t_off
     ),
     generate_procedure_arg_setter_contract(
         CommandCode.SET_DUTY_CYCLE_T_ON,
         ["!duty_cycle_t_on"],
+        GROUPS.procedures.duty_cycle,
         response_field=fields.field_duty_cycle_t_on
     ),
     stop_command,

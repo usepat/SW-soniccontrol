@@ -140,11 +140,76 @@
                 <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>Commands</span>
             </h2>
-            <div>
-                {% for command_contract in pure_command_contracts | sort(attribute="code") %} 
-                    {# pure_command_contracts should only contain command contracts that are not notifications or errors #}
-                    {{ schema_templates.command_contract_entry(command_contract )}}
+
+            {# ---------------- TOC / Index ---------------- #}
+            <h3 class="flex items-center text-lg font-semibold gap-3 mt-4">
+                <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span>Index</span>
+            </h3>
+
+            <div class="not-prose bg-slate-50 border border-slate-200 rounded p-4">
+                {% macro toc_nodes(nodes) %}
+                <ul class="text-sm space-y-2">
+                    {% for n in nodes %}
+                    <li>
+                        <a class="text-indigo-700 hover:underline" href="#{{ anchor_group(n.id) }}">{{ n.title }}</a>
+
+                        {% if n.commands %}
+                        <ul class="ml-4 mt-1 space-y-1">
+                            {% for c in n.commands %}
+                            <li>
+                                <a class="text-slate-700 hover:underline" href="#{{ anchor_cmd(c.code) }}">
+                                {{ c.code.value }} — {{ c.code.name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+
+                        {% if n.children %}
+                        <div class="ml-4 mt-2">
+                            {{ toc_nodes(n.children) }}
+                        </div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endmacro %}
+
+                {{ toc_nodes(command_groups) }}
+            </div>
+
+            {# ---------------- Grouped Content ---------------- #}
+            <div class="mt-8">
+                {% macro render_groups(nodes) %}
+                {% for g in nodes %}
+                    {% set level = 3 + g.depth %}
+                    {% if level > 6 %}{% set level = 6 %}{% endif %}
+
+                    <div id="{{ anchor_group(g.id) }}" class="mt-10">
+                    {% if level == 3 %}<h3>{{ g.title }}</h3>{% endif %}
+                    {% if level == 4 %}<h4>{{ g.title }}</h4>{% endif %}
+                    {% if level == 5 %}<h5>{{ g.title }}</h5>{% endif %}
+                    {% if level == 6 %}<h6>{{ g.title }}</h6>{% endif %}
+
+                    {% if g.description %}
+                        <p class="text-slate-600">{{ g.description }}</p>
+                    {% endif %}
+
+                    {% for command_contract in g.commands %}
+                        <div id="{{ anchor_cmd(command_contract.code) }}" class="avoid-break">
+                        {{ schema_templates.command_contract_entry(command_contract) }}
+                        </div>
+                    {% endfor %}
+
+                    {% if g.children %}
+                        {{ render_groups(g.children) }}
+                    {% endif %}
+                    </div>
                 {% endfor %}
+                {% endmacro %}
+
+                {{ render_groups(command_groups) }}
             </div>
         </section>
 
@@ -192,6 +257,11 @@
     <style>
         pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Source Code Pro", monospace; }
         .prose code { background: rgba(15,23,42,0.05); padding: .1rem .3rem; border-radius: .25rem; }
+        @media print {
+            .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+            h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+            a { color: inherit; text-decoration: none; }
+        }
     </style>
 </body>
 </html>
