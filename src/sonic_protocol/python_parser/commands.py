@@ -36,6 +36,12 @@ class GetUpdate(Command):
         super().__init__(code=CommandCode.GET_UPDATE)
 
 @attrs.define()
+class GetUpdateRaw(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_UIPT_RAW)
+        
+
+@attrs.define()
 class RestartDevice(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.RESTART_DEVICE)
@@ -102,6 +108,13 @@ class SetGain(Command):
         super().__init__(code=CommandCode.SET_GAIN)
 
     value: int = attrs.field(alias=EFieldName.GAIN.name)
+
+@attrs.define()
+class SetDac(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_DAC)
+
+    value: int = attrs.field(alias=EFieldName.VOLTAGE.name)
 
 @attrs.define()
 class SetOn(Command):

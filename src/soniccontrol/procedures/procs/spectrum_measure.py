@@ -10,7 +10,7 @@ from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, custom_validator_factory
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
+from sonic_protocol.si_unit import cls_converter, AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
 
 
 @attrs.define(auto_attribs=True)
@@ -21,13 +21,20 @@ class SpectrumMeasureArgs:
 This is very useful in an explorative study to find the optimal driving frequency.
 """
     
-    gain: GainSIVar = attrs.field()
+    gain: GainSIVar = attrs.field(
+        converter=cls_converter(GainSIVar),
+    )
 
-    f_start: AbsoluteFrequencySIVar = attrs.field()
+    f_start: AbsoluteFrequencySIVar = attrs.field(
+        converter=cls_converter(AbsoluteFrequencySIVar),
+    )
     
-    f_stop: AbsoluteFrequencySIVar = attrs.field()
+    f_stop: AbsoluteFrequencySIVar = attrs.field(
+        converter=cls_converter(AbsoluteFrequencySIVar)
+    )
     
     f_step: RelativeFrequencySIVar = attrs.field(
+        converter=cls_converter(RelativeFrequencySIVar),
         validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
     )
 
@@ -98,3 +105,14 @@ class SpectrumMeasure(Procedure):
         return {}
 
 
+
+if __name__ == "__main__":
+    spectrum_args=SpectrumMeasureArgs(
+           gain=10,
+           f_start=int(2.0e6),
+           f_stop=int(2.2e6),
+           f_step=int(500),
+           t_on=(350, 'ms'),
+           time_offset_measure=(200, 'ms'),
+    )
+    print(spectrum_args)

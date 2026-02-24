@@ -1,9 +1,22 @@
 
 from abc import ABCMeta
-from typing import Generic, TypeVar, cast, Optional, get_args
+from typing import Any, Generic, TypeVar, cast, Optional, get_args
 import attrs
 from sonic_protocol.schema import SIUnit, SIPrefix
 
+
+def cls_converter(cls):
+    """
+    Helper method used for attrs classes.
+
+    example:
+        freq = attrs.field(converter=cls_converter(SIVarFrequency), default=SIVarFrequency(0))
+    """
+    def convert(x: Any):
+        if isinstance(x, cls):
+            return x
+        return cls(x)
+    return convert
 
 
 @attrs.define(auto_attribs=True, frozen=True)
@@ -217,7 +230,7 @@ ABSOLUTE_FREQUENCY_META = SIVarMeta(
 class AbsoluteFrequencySIVar(SIVar[float], si_meta=ABSOLUTE_FREQUENCY_META):
     """Frequency variable for home UI with flexible range."""
     
-    def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
+    def __init__(self, value: int | float = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
 RELATIVE_FREQUENCY_META = SIVarMeta(

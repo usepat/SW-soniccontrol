@@ -265,3 +265,21 @@ start_operator = CommandContract(
     is_release=True
 )
 
+
+set_dac_mV = CommandContract(
+    code=CommandCode.SET_DAC,
+    command_def=CommandDef(
+        setter_param=p.param_dac_mV,
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!dac"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[f.dac_mV_field]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Command to set the dac voltage in milli Volts."
+    ),
+    is_release=False,
+    tags=["DAC"]
+)

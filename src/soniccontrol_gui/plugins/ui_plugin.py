@@ -1,3 +1,5 @@
+from importlib import metadata
+import sys
 from typing import List, Set, Optional, Callable
 from pathlib import Path
 
@@ -11,6 +13,8 @@ from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol_gui.constants import _Files
+from soniccontrol_gui.plugins.pluign_discovery import discover_plugins
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView, TkinterView, View
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow
@@ -211,7 +215,7 @@ class TestPluginComponent3Factory(UIComponentFactory):
 
 
 def register_ui_plugins():
-    eps = entry_points()
-    for ep in eps.select(group="soniccontrol_gui.ui_plugins"):
-        ui_plugin = ep.load()
-        UIPluginRegistry.register_ui_plugin(ui_plugin)
+    group = "soniccontrol_gui.ui_plugins"
+
+    for plugin in discover_plugins(group):
+        UIPluginRegistry.register_ui_plugin(plugin)

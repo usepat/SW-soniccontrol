@@ -34,6 +34,7 @@ class _Files:
     SCRIPT_DIR = DATA_DIR / "scripts"
     EXAMPLE_SCRIPT = SCRIPT_DIR / "example_script"
     EXAMPLE_SCRIPT_DIR = SONIC_CONTROL_BASE_DIR / "sonic_script_examples"
+    PLUGINS = APP_DATA_DIR / "plugins"
 
 files: _Files = _Files()
 
