@@ -53,76 +53,193 @@
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>How this API is structured</span>
             </h3>
-            <p><strong>Our Application Programming Interface (API) is designed to be a Remote Procedure Protocol (RPC).</strong></p>
-            <p>That means that we define a set of functions (called commands in this documentation) that our devices can execute. Those commands, can be invoked by sending a command call over a request. As response the device will then return an appropriate answer object. Such an answer object consists of single fields, that have a type, a name and a value. If the device fails executing the command, it will return an error as answer.</p>
+            <p>
+                <strong>Our Application Programming Interface (API) is
+                designed to be a Remote Procedure Protocol (RPC).</strong>
+            </p>
 
-            <p>The device is also able to produce logs and notification messages and send them directly to the remote controller. However Logs and notification messages are not sent, when a master-slave-based protocol like MODBUS is used.</p>
+            <p>
+                That means that we define a set of functions (called
+                commands in this documentation) that our devices can
+                execute. Those commands can be invoked by sending a
+                command call over a request. As a response the device
+                will then return an appropriate answer object. Such an
+                answer object consists of single fields, that have a
+                type, a name and a value. If the device fails to execute
+                the command, it will return an error as answer.
+            </p>
 
-            <p>The API can be used with various underlying protocols. There exists a text-based human-readable protocol that is used together with our in-house Software Sonic Control. The only other protocol supported (so far) is MODBUS-RTU.</p>
+            <p>
+                The device is also able to produce logs and notification
+                messages and send them directly to the remote
+                controller. However Logs and notification messages are
+                not sent, when a master-slave-based protocol like
+                MODBUS is used.
+            </p>
+
+            <p>
+                The API can be used with various underlying protocols.
+                There exists a text-based human-readable protocol that
+                is used together with our in-house Software Sonic
+                Control. The only other protocol supported (so far) is
+                MODBUS-RTU.
+            </p>
         </section>
 
+        {% if include_modbus %}
         <section id="modbus" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
             <h3 class="flex items-center text-lg font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>MODBUS API</span>
             </h3>
-            <p><strong>MODBUS is a protocol that defines how a master client reads and writes memory buffers on a slave server.</strong></p>
+            <p>
+                <strong>MODBUS is an industry standard communication
+                protocol that describes how a single master can talk to
+                multiple slave devices to exchange data. This is done
+                via "registers" that allow to read/write 16bits or 1bit
+                of data.</strong>
+            </p>
 
-            <p>We use a "mailbox" system to implement our RPC protocol. A mailbox is a memory section to that can be written or read. We define a command call mailbox, to that the command call has to be written and an answer mailbox, in that the device will put the answer. A command call consists of the code for the specific command, followed by the arguments passed. Similarly the answer consists of the same code followed by data fields. In case of an error, the code is not the same command code, but an error code. Error codes are in the range from 20000 to 32767 (int16 maximum value). Additionally an error message is supplied afterwards.</p>
+            <p>
+                We use a "mailbox" system to implement our RPC
+                protocol. A mailbox is a memory section (register) that
+                can be written to or read from. We define a command
+                call mailbox, where the command call has to be written
+                and an answer mailbox, in which the device will put the
+                answer. A command call consists of the code for the
+                specific command, followed by the arguments passed.
+                Similarly the answer consists of the same code followed
+                by data fields. In case of an error, the code is not the
+                same command code, but an error code. Error codes are
+                in the range from 20000 to 32767 (int16 maximum
+                value). Additionally an error message is supplied
+                afterwards.
+            </p>
 
-            <p>Therefore we support only the MODBUS functions write multiple holding registers (0x10) and read input registers (0x04). And we only allow to read and write from the mailboxes. Where the answer mailbox is read only.</p>
+            <p>
+                Therefore we support only the MODBUS functions write
+                multiple holding registers (0x10) and read input
+                registers (0x04). And we only allow to read and write
+                from the mailboxes, where the answer mailbox is read
+                only.
+            </p>
 
-            <p>The start of the command mailbox contains an "execute command" flag, that has to be set to 1, after the command call has been written. This is needed to signal to the device, that it can read and execute the command now. The flag and command call can be written in a single MODBUS write multiple registers function call.</p>
+            <p>
+                The start of the command mailbox contains an "execute
+                command" flag, that has to be set to 1 after the
+                command call has been written. This is needed to
+                signal to the device that it can read and execute the
+                command now. The flag and command call can be written
+                in a single MODBUS write multiple registers function
+                call.
+            </p>
 
-            <p>The start of the answer mailbox contains a "status" flag. This can either be "busy" or "idle/done". Also this flag is followed by a answer length field. This is handy, because answers vary in size.</p>
+            <p>
+                The start of the answer mailbox contains a "status"
+                flag. This can either be "busy" or "idle/done". Also
+                this flag is followed by an answer length field. This
+                is handy, because answers vary in size.
+            </p>
         </section>
+        {% endif %}
 
+        {% if include_text %}
         <section id="text-api" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
             <h3 class="flex items-center text-lg font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>Text-based API</span>
             </h3>
-            <p><strong>The text-based API is used by our in house Software Sonic Control.</strong></p>
+            <p>
+                <strong>The text-based API is used by our in house
+                Software Sonic Control.</strong>
+            </p>
 
-            <p>It is good for debugging, because of the human readable messages. Also with it the device can be directly controlled over a serial monitor like minicom.</p>
+            <p>
+                It is good for debugging, because of the human readable
+                messages. Also with it the device can be directly
+                controlled via a serial monitor like minicom.
+            </p>
 
-            <p>In general for each command exists a command name (often also multiple aliases, like a short form and a long form). The signs "?", "!", "-", "=" can be the first character of a command name. For example "?frequency" for getting the current frequency of the transducer. Some commands require an index argument that has to be written inside brackets "command_name[arg]". Some commands require a setter argument, that has to be written after an equal sign "command_name=arg". Some commands require both args "command_name[arg_index]=arg_setter". Some commands require none "command_name".</p>
+            <p>
+                In general for each command exists a command name
+                (often also multiple aliases, like a short form and a
+                long form). Almost all commands start with either a "!" or a "?" and denote,
+                if that command is used to execute something(setter),
+                or get an information(getter) about the device. 
+                There are special commands that deviate from this rule, such as the "dash" command:
+                "-", this command is used to get a detailed status of the device.
+                Setter commands sometimes require a value that needs to be appended to the command name via a "=".
+                For example "?frequency" is used to retrieve the currently set frequency of the device, 
+                whereas "!frequencey=xxx" will set the new frequency.
+                Some commands require an index argument.
+                There are two ways to use the index. For number indeces,
+                the number can simply be written after the command name:
+                "!atf1=xxx".
+                For indeces that are implemented as strings they must be written inside brackets:
+                "!log[appLogger]=INFO".
+            </p>
 
-            <p>To signal the end of a command call "\n\r" is used. The same goes for answers.</p>
+            <p>
+                To signal the end of a command call "\n\r" is used.
+                The same goes for answers.
+            </p>
 
-            <p>Answers consists of their fields separated by a single sharp sign "#". The first field always contains the corresponding command code or error code. For example the answer for the "?frequency" command would be "&lt;COMMAND CODE&gt;#Freq: &lt;FREQUENCY VALUE&gt;Hz".</p>
+            <p>
+                Answers consist of their fields separated by a single
+                sharp sign "#". The first field always contains the
+                corresponding command code or error code. For example
+                the answer for the "?frequency" command would be
+                "&lt;COMMAND CODE&gt;#Freq: &lt;FREQUENCY VALUE&gt;Hz".
+            </p>
 
-            <p>Notifications have the completely same format as answers. The format of logs is subject to change in the future.</p>
+            <p>
+                Notifications have the same format as
+                answers. The format of logs is subject to change in
+                the future.
+            </p>
 
-            <p>Each message is preceded by a message type prefix.</p>
+            <p>
+                Each message is preceded by a message type prefix.
+            </p>
             <ul class="list-disc pl-6">
                 <li><code>LOG=</code> for logs</li>
                 <li><code>NOTIFY=</code> for notification messages</li>
-                <li><code>COM#&lt;ID&gt;=</code> for command calls. (It is allowed to omit this, in that case ID is set to 0).</li>
+                <li><code>COM#&lt;ID&gt;=</code> for command calls. (It is allowed to omit this, as this is mostly used by our software SonicControl).</li>
                 <li><code>ANS#&lt;ID&gt;=</code> for answers. The ID matches that of the command call. Useful for async code.</li>
             </ul>
 
             <p>The ID is used by the Software "Sonic Control" to find out which answer belongs to which command call (useful for async code).</p>
         </section>
+        {% endif %}
 
         <section id="types" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
             <h2 class="flex items-center text-2xl font-semibold gap-3">
                 <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>Types</span>
             </h2>
-            <p>The primitive types used by the API are bool, uint8, uint16, uint32, int16, float. Complex types used are strings, enums and structs for Version and Timestamp, which are explained here in more detail.</p>
+            <p>
+                The primitive types used by the API are bool, uint8,
+                uint16, uint32, int16, float. Complex types used are
+                strings, enums and structs for Version and Timestamp,
+                which are explained here in more detail.
+            </p>
 
             <h3 class="flex items-center text-lg font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>Version</span>
             </h3>
-            <p>Version consists of the member variables major_version, minor_version and patch_version. It follows the conventional versioning schema.</p>
+            <p>
+                Version consists of the member variables major_version, minor_version and patch_version. 
+                It follows the conventional versioning schema.
+            </p>
 
             <h3 class="flex items-center text-lg font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>Timestamp</span>
             </h3>
-            <p>The timestamp consists of the members variables: hour, minute, seconds, day, month and year.</p>
+            <p>
+                The timestamp consists of the members variables: hour, minute, seconds, day, month and year.
+            </p>
 
             <h3 class="flex items-center text-lg font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
