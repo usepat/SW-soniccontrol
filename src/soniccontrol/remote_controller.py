@@ -2,7 +2,7 @@ import asyncio
 import logging
 from os import environ
 from pathlib import Path
-from typing import Callable, Optional
+from typing import List, Optional
 import attrs
 
 from sonic_protocol.python_parser.answer import Answer
@@ -10,7 +10,7 @@ from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.communication.connection import CLIConnection, Connection
+from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
@@ -53,25 +53,40 @@ class RemoteController:
 
 
     @staticmethod
-    async def connect(connection: Connection, log_path: Optional[Path]=None):
+    async def connect_via_serial(url: Path | str, baudrate: int = 9600, log_path: Optional[Path]=None) -> "RemoteController":
         """
-        Creates a RemoteController by establishing a connection to a device.
+        Creates a RemoteController by establishing a connection to a device over serial.
 
         Parameters
         ----------
+        url: Path | str
+            name of port to connect over. 
+            Is a path on Linux, a comport on Windows
+        baudrate: int, required
+            baudrate for the serial connection
         log_path: Path, optional
             Used for specifying in which folder the logs should be stored
 
         Example
         -------
         ```
-        URL = Path("COM6")
-        connection = SerialConnection(url=URL, connection_name=URL.name)
-        controller = await RemoteController.connect(connection)
+        port = "COM6"
+        controller = await RemoteController.connect_via_serial(port)
+        await controller.stop_running_processes() # goes out of service mode and stops procedures
         # do stuff
         await controller.disconnect()
         ```
         """
+        if isinstance(url, str):
+            url = Path(url)
+        return await RemoteController.connect(SerialConnection(url.name, url, baudrate), log_path)
+
+    @staticmethod
+    async def connect_via_simulation(simulation_executable: Path, cmd_args: List[str] = [""], log_path: Optional[Path]=None) -> "RemoteController":
+        return await RemoteController.connect(CLIConnection("simulation", simulation_executable, cmd_args), log_path)
+
+    @staticmethod
+    async def connect(connection: Connection, log_path: Optional[Path]=None) -> "RemoteController":
         logger = create_logger_for_connection(connection.connection_name, log_path if log_path is not None else Path("."))   
 
         device_builder = DeviceBuilder(logger=logger)
@@ -212,7 +227,7 @@ class RemoteController:
         interpreter.start()
         await interpreter.wait_for_script_to_halt()
 
-    def start_procedure(self, procedure: ProcedureType, args: dict | ProcedureArgs, event_loop=asyncio.get_running_loop()) -> None:
+    def start_procedure(self, procedure: ProcedureType, args: dict | ProcedureArgs, event_loop: asyncio.AbstractEventLoop | None=None) -> None:
         """
         Starts a procedure
 
@@ -233,6 +248,9 @@ class RemoteController:
         This function will start a procedure in the background. 
         When you want to halt execution, you should call wait_for_procedure_to_finish()
         """
+        if event_loop is None:
+            event_loop = asyncio.get_running_loop()
+
         if isinstance(args, ProcedureArgs):
             procedure_args = args
         else:
@@ -306,29 +324,30 @@ class RemoteController:
 
 
 async def main():
-    from soniccontrol.remote_controller import RemoteController
     import sonic_protocol.python_parser.commands as cmds
     from sonic_protocol.field_names import EFieldName
 
-    #await controller.connect_via_serial(Path("/dev/ttyUSB0"))
-    firmware_dir = environ.get('FIRMWARE_BUILD_DIR_PATH')
+    firmware_dir_env_var = environ.get('FIRMWARE_BUILD_DIR_PATH')
+    assert firmware_dir_env_var is not None
+    firmware_dir = Path(firmware_dir_env_var).expanduser().resolve()
     if not firmware_dir:
         raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
-    exe_path = firmware_dir + '/linux/platform_linux/src/device/device_main'
-    connection = CLIConnection("simulation", Path(exe_path), [
-        '--product-type=worker', 
-        '--name=test_worker', 
-        '--port=4000', 
-        f'--data-dir={firmware_dir + "/data"}'
-    ])
+    exe_path = firmware_dir / 'linux/platform_linux/src/device/device_main'
 
-    controller = await RemoteController.connect(connection)
+    controller = await RemoteController.connect_via_simulation(
+        exe_path, 
+        ['--profile=worker']
+    )
 
     # it is allowed but discouraged to send strings
-    await controller.send_command("?protocol")
+    answer = await controller.send_command("?protocol")
+    print(answer.message)
 
     # use instead the cmds classes. Avoids typos and will stay compatible with future protocols
     await controller.send_command(cmds.GetProtocol())
+
+    # ensures not procedure is running and service mode not active
+    await controller.stop_running_processes() 
     answer = await controller.send_command(cmds.SetAtf(1, 100000))
     
     print(answer.message)
