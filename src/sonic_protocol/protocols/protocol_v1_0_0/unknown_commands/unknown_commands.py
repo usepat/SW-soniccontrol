@@ -23,7 +23,7 @@ unknown_set_frequency = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_unknown_answer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the frequency of the transducer on the device."
+        description="Sets the transducer frequency on the device."
     ),
     is_release=True,
     tags=["frequency", "transducer"]
@@ -38,7 +38,7 @@ unknown_get_frequency = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_unknown_answer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the frequency of the transducer on the device."
+        description="Retrieves the transducer frequency from the device."
     ),
     is_release=True,
     tags=["frequency", "transducer"]
@@ -53,7 +53,7 @@ unknown_get_transducer = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_unknown_answer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get ID of the transducer connected to the device"
+        description="Retrieves the ID of the transducer connected to the device."
     ),
     is_release=True,
     tags=["transducer"]
@@ -73,7 +73,7 @@ unknown_set_transducer = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_unknown_answer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set ID of the transducer connected to the device"
+        description="Sets the ID of the transducer connected to the device."
     ),
     is_release=True,
     tags=["transducer"]
@@ -91,7 +91,7 @@ unknown_set_gain = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_unknown_answer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the gain of the transducer on the device."
+        description="Sets the transducer gain on the device."
     ),
     is_release=True,
     tags=["gain", "transducer"],
@@ -106,7 +106,7 @@ unknown_get_gain = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_unknown_answer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the gain of the transducer on the device."
+        description="Retrieves the transducer gain from the device."
     ),
     is_release=True,
     tags=["gain", "transducer"]
@@ -121,7 +121,7 @@ unknown_set_on = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_unknown_answer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to turn the transducer on."
+        description="Turns the transducer on."
     ),
     is_release=True,
     tags=["transducer"]
@@ -136,7 +136,7 @@ unknown_set_off = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_unknown_answer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to turn the transducer off."
+        description="Turns the transducer off."
     ),
     is_release=True,
     tags=["transducer"]

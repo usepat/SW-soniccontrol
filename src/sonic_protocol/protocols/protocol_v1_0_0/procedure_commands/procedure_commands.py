@@ -91,7 +91,7 @@ ramp_proc_commands: List[CommandContract] = [
         CommandCode.SET_RAMP,
         ["!ramp", "start_ramp"],
         GROUPS.procedures.ramp,
-        ""
+        "Starts the Ramp procedure."
     ),
     get_ramp,
     generate_procedure_arg_setter_contract(
@@ -161,7 +161,7 @@ auto_proc_commands: List[CommandContract] = [
         CommandCode.SET_AUTO,
         ["!auto"],
         GROUPS.procedures.auto,
-        ""
+        "Starts the Auto procedure."
     ),
     get_auto
 ]
@@ -192,7 +192,7 @@ scan_proc_commands: List[CommandContract] = [
         CommandCode.SET_SCAN,
         ["!scan"],
         GROUPS.procedures.scan,
-        description=""
+        description="Starts the Scan procedure."
     ),
     get_scan,
     generate_procedure_arg_setter_contract(
@@ -255,7 +255,7 @@ tune_proc_commands: List[CommandContract] = [
         CommandCode.SET_TUNE,
         ["!tune"],
         GROUPS.procedures.tune,
-        ""
+        "Starts the Tune procedure."
     ),
     get_tune,
     generate_procedure_arg_setter_contract(
@@ -325,7 +325,7 @@ wipe_proc_commands: List[CommandContract] = [
         CommandCode.SET_WIPE,
         ["!wipe"],
         GROUPS.procedures.wipe,
-        description=""
+        description="Starts the Wipe procedure."
     ),
     get_wipe,
     generate_procedure_arg_setter_contract(
@@ -374,6 +374,7 @@ get_duty_cycle = CommandContract(
             fields.field_duty_cycle_t_off
         ]
     ),
+    group_id=GROUPS.procedures.duty_cycle,
     tags=["Procedure", "DUTY_CYCLE"]
 )
 
@@ -382,20 +383,20 @@ stop_command =  generate_start_procedure_contract(
     CommandCode.SET_STOP,
     ["!stop", "!stop_procedure"],
     GROUPS.procedures.procedure,
-    ""
+    "Stops the currently running procedure."
 )
 continue_command =  generate_start_procedure_contract(
     CommandCode.SET_CONTINUE,
     ["!continue", "!continue_procedure"],
     GROUPS.procedures.procedure,
-    ""
+    "Continues a paused procedure."
 )
 
 pause_command =  generate_start_procedure_contract(
     CommandCode.SET_PAUSE,
     ["!pause", "!pause_procedure"],
     GROUPS.procedures.procedure,
-    ""
+    "Pauses the currently running procedure."
 )
 notify_proc_failure = CommandContract(
     code=CommandCode.NOTIFY_PROCEDURE_FAILURE,
@@ -417,7 +418,7 @@ duty_cycle_proc_commands: List[CommandContract] = [
         CommandCode.SET_DUTY_CYCLE,
         ["!duty_cycle"],
         GROUPS.procedures.duty_cycle,
-        description="Starts a duty cycle for defined behaviour"
+        description="Starts a duty cycle with the configured behavior."
     ),
     get_duty_cycle,
     generate_procedure_arg_setter_contract(

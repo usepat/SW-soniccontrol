@@ -34,7 +34,7 @@ broadcast_modbus_server_id = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="this command can be broadcasted. If a device has the corresponding serial number, it configures its modbus server id."
+        description="This command supports broadcast. If a device matches the provided serial number, it sets its MODBUS server ID."
     ),
     is_release=True,
     tags=["MODBUS"]

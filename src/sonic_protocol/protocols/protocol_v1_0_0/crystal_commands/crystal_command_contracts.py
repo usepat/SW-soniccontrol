@@ -33,7 +33,7 @@ set_on = CommandContract(
     is_release=True,
     tags=[" "],
     user_manual_attrs=UserManualAttrs(
-        description=""
+        description="Turns the transducer on."
     ),
 )
 
@@ -48,7 +48,7 @@ set_auto = CommandContract(
     is_release=True,
     tags=[" "],
     user_manual_attrs=UserManualAttrs(
-        description=""
+        description="Starts legacy Auto mode."
     ),
 )
 
@@ -63,7 +63,7 @@ set_wipe = CommandContract(
     is_release=True,
     tags=[" "],
     user_manual_attrs=UserManualAttrs(
-        description=""
+        description="Starts legacy Wipe mode."
     ),
 )
 
@@ -79,7 +79,7 @@ set_off = CommandContract(
     is_release=True,
     tags=[" "],
     user_manual_attrs=UserManualAttrs(
-        description=""
+        description="Turns the transducer off."
     ),
 )
 field_type_gain = FieldType(
@@ -123,7 +123,7 @@ set_frequency = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_frequency]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the frequency of the transducer on the device."
+        description="Sets the transducer frequency on the device."
     ),
     is_release=True,
     tags=["frequency", "transducer"]
@@ -150,7 +150,7 @@ set_gain = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_gain]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the gain of the transducer on the device."
+        description="Sets the transducer gain on the device."
     ),
     is_release=True,
     tags=["gain", "transducer"],
@@ -261,7 +261,7 @@ set_step = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the frequency step size for the wipe procedure."
+        description="Sets the frequency step size for the Wipe procedure."
     ),
     is_release=True
 )
@@ -280,7 +280,7 @@ set_sing = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the sing parameter for the wipe procedure."
+        description="Sets the SING parameter for the Wipe procedure."
     ),
     is_release=True
 )
@@ -299,7 +299,7 @@ set_paus = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the paus parameter for the wipe procedure."
+        description="Sets the PAUS parameter for the Wipe procedure."
     ),
     is_release=True
 )
@@ -318,7 +318,7 @@ set_rang = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the rang parameter for the wipe procedure."
+        description="Sets the RANG parameter for the Wipe procedure."
     ),
     is_release=True
 )
@@ -382,7 +382,7 @@ get_pval = CommandContract(
         )
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the pval of the transducer on the device."
+        description="Retrieves legacy PVAL data from the transducer."
     ),
     is_release=True
 )
@@ -422,7 +422,7 @@ set_tust = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the tune steps for the auto procedure."
+        description="Sets the tune-step parameter for the Auto procedure."
     ),
     is_release=True
 )
@@ -443,7 +443,7 @@ set_tutm = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the tune time for the auto procedure."
+        description="Sets the tune-time parameter for the Auto procedure."
     ),
     is_release=True
 )
@@ -462,7 +462,7 @@ set_scst = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the scanning for the auto procedure."
+        description="Sets the scan parameter for the Auto procedure."
     ),
     is_release=True
 )
@@ -489,7 +489,7 @@ dash = CommandContract(
                 ]
             ),
             user_manual_attrs=UserManualAttrs(
-                description="Mainly used by sonic control to get a short and computer friendly parsable status update."
+                description="Primarily used by Sonic Control to retrieve a compact, machine-readable status update."
             ),
             is_release=True,
             tags=["update", "status"]
@@ -549,7 +549,7 @@ set_atf = CommandContract(
         fields=[field_atf]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the atf"
+        description="Sets the ATF value."
     ),
     is_release=True,
     tags=["transducer", "config"]
@@ -574,7 +574,7 @@ set_att = CommandContract(
         fields=[field_att]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the att"
+        description="Sets the ATT value."
     ),
     is_release=True,
     tags=["transducer", "config"]
@@ -599,7 +599,7 @@ set_atk = CommandContract(
         fields=[field_atk]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the atk"
+        description="Sets the ATK value."
     ),
     is_release=True,
     tags=["transducer", "config"]

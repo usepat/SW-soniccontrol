@@ -13,8 +13,18 @@ import attrs
 import numpy as np
 from sonic_protocol.protocol import protocol_list
 from sonic_protocol.groups import GroupId, get_spec
-from sonic_protocol.schema import CommandContract, ConverterType, DeviceType, ProtocolType, Timestamp, Version
+from sonic_protocol.schema import (
+    CommandContract,
+    ConverterType,
+    DeviceType,
+    ProtocolType,
+    Timestamp,
+    Version,
+)
 import sonic_protocol
+from sonic_protocol.user_manual_compiler.command_example_utils import (
+    deduce_single_command_example_for_contract,
+)
 from sonic_protocol.user_manual_compiler.manual_compiler import ManualCompiler
 
 
@@ -33,6 +43,11 @@ class GroupNode:
     depth: int
     children: List["GroupNode"] = field(default_factory=list)
     commands: List["CommandContract"] = field(default_factory=list)
+
+
+def add_wbr_before_underscore(value: object) -> str:
+    text = "" if value is None else str(value)
+    return text.replace("_", "<wbr>_")
 
 def build_group_tree(
     command_contracts: List["CommandContract"],
@@ -121,6 +136,10 @@ class HtmlManualCompiler(ManualCompiler):
         
         error_code_begin = 20000 # all command codes greater than 20000 are error codes
         pure_command_contracts = [ elem for elem in protocol.command_contracts.values() if elem.command_def is not None ]
+        text_command_examples = {
+            int(command_contract.code.value): deduce_single_command_example_for_contract(protocol.consts, command_contract)
+            for command_contract in pure_command_contracts
+        }
         command_groups = build_group_tree(pure_command_contracts, is_release=is_release)
         error_codes = [ code for code in protocol.command_code_cls if code >= error_code_begin ]
         notification_messages = [ elem for elem in protocol.command_contracts.values() if elem.command_def is None and elem.code.value < error_code_begin ]
@@ -146,6 +165,7 @@ class HtmlManualCompiler(ManualCompiler):
             "protocol_constants": attrs.asdict(protocol.consts), # FIXME: It would be better to pass this as render variable, but I am lazy
             "anchor_group": lambda gid: f"group-{str(gid).replace('.', '-')}",
             "anchor_cmd": lambda code: f"cmd-{int(code.value)}",
+            "add_wbr_before_underscore": add_wbr_before_underscore,
         }) # export functions and classes to jinja environment. So we can use them inside the templates
 
         # mode: "both" | "modbus" | "text"
@@ -161,6 +181,7 @@ class HtmlManualCompiler(ManualCompiler):
             enum_classes=enum_classes,
             include_modbus=include_modbus,
             include_text=include_text,
+            text_command_examples=text_command_examples,
         )
 
         return content 
@@ -172,7 +193,7 @@ def main():
     Path("./output").mkdir(exist_ok=True, parents=True)
 
     # Produce two documents: one for the text-based API and one for MODBUS
-    targets = (("text", "manual_text"), ("modbus", "manual_modbus"))
+    targets = (("text", "manual_text"), ("modbus", "manual_modbus"), ("both", "manual"))
     for mode, basename in targets:
         manual = manual_compiler.compile_manual_for_specific_device(
             DeviceType.MVP_WORKER,

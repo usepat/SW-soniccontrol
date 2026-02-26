@@ -2,6 +2,7 @@ import copy
 from enum import Enum, IntEnum
 from typing import List
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
     CommandParamDef, ControlMode, ConverterType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, SystemState, TransducerState, Anomaly
@@ -47,9 +48,10 @@ clear_errors = CommandContract(
         fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to clear errors"
+        description="Clears current error states."
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["error"]
 )
 
@@ -64,9 +66,10 @@ restart_device = CommandContract(
         fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to restart device. Primarily used in debugging/testing"
+        description="Restarts the device. Primarily used for debugging and testing."
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["restart"]
 )
 
@@ -81,9 +84,10 @@ get_adc = CommandContract(
         fields=[field_message]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to retrieve 40 adc samples"
+        description="Retrieves 40 ADC samples."
     ),
     is_release=False,
+    group_id=GROUPS.measurements,
     tags=["debug"]
 )
 
@@ -100,9 +104,10 @@ start_configurator = CommandContract(
         fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to start the configurator"
+        description="Starts the configurator."
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["debug"]
 )
 
@@ -121,9 +126,10 @@ set_control_mode = CommandContract(
         fields=[f.field_control_mode]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the input source. Where to get commands from"
+        description="Sets the control mode (input source for incoming commands)."
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["communication"]
 )
 
@@ -138,9 +144,10 @@ get_control_mode = CommandContract(
         fields=[f.field_control_mode]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the input source. Where to get commands from"
+        description="Retrieves the current control mode (input source for incoming commands)."
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["communication"]
 )
 
@@ -155,9 +162,10 @@ get_error_histo_size = CommandContract(
         fields=[field_message]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the size of error histogram logs"
+        description="Retrieves the number of entries in the error histogram log."
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["errors"]
 )
 
@@ -174,9 +182,10 @@ pop_error_histo_message = CommandContract(
         fields=[f.error_message_field]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to pop error histogram messages from the error histogram log."
+        description="Pops the next message from the error histogram log."
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["errors"]
 )
 
@@ -193,9 +202,10 @@ set_dac = CommandContract(
         fields=[f.field_dac_voltage]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the dac voltage."
+        description="Sets the DAC voltage."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["DAC"]
 )
 
@@ -210,9 +220,10 @@ get_dac = CommandContract(
         fields=[f.field_dac_voltage]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the currently set dac voltage"
+        description="Retrieves the currently configured DAC voltage."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["DAC"]
 )
 
@@ -244,6 +255,7 @@ go_into_device_state = CommandContract(
         )
     ),
     answer_def=AnswerDef([f.field_device_state]),
+    group_id=GROUPS.generic,
     is_release=True
 )
 
@@ -257,7 +269,8 @@ get_postman_update = CommandContract(
         f.field_transducer_state,
         f.field_system_state
     ]),
-    is_release=True
+    is_release=True,
+    group_id=GROUPS.measurements,
 )
 
 get_on_timer = CommandContract(
@@ -270,7 +283,8 @@ get_on_timer = CommandContract(
         f.field_hours,
         f.field_minutes
     ]),
-    is_release=True
+    is_release=True,
+    group_id=GROUPS.measurements,
 )
 
 reset_on_timer = CommandContract(
@@ -281,5 +295,6 @@ reset_on_timer = CommandContract(
     answer_def=AnswerDef([
         field_success,
     ]),
-    is_release=True
+    is_release=True,
+    group_id=GROUPS.measurements,
 )

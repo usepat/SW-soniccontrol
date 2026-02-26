@@ -48,7 +48,7 @@
         {% set errors_no = sections.i %}{% set sections.i = sections.i + 1 %}
         {% set notifications_no = sections.i %}
 
-        <section id="document-index" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate avoid-break">
+        <section id="document-index" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
             <h2 class="flex items-center text-2xl font-semibold gap-3">
                 <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>Document Index</span>
@@ -78,7 +78,6 @@
                                         <li>
                                             <div class="flex items-baseline justify-between gap-3">
                                                 <a class="text-slate-700 hover:underline" href="#{{ anchor_cmd(command_contract.code) }}">
-                                                    <span class="font-mono text-slate-500 mr-2">{{ item_number }}.{{ loop.index }}.</span>
                                                     {{ command_contract.code.value }} - {{ command_contract.code.name }}
                                                 </a>
                                                 {{ toc_page(anchor_cmd(command_contract.code)) }}
@@ -203,16 +202,21 @@
                 <strong>MODBUS is an industry-standard communication protocol in which
                 one master communicates with one or more slave devices.
                 Data exchange is performed through registers that support
-                16-bit values (and, depending on function, bit-level data).</strong>
+                16-bit values.</strong>
             </p>
 
             <p>
                 The RPC model is implemented using a mailbox concept.
                 A mailbox is a dedicated register area for read/write
                 access. One mailbox is used for command requests and
-                another for responses. A request contains a command code
-                followed by command arguments. A response contains the
-                corresponding command code followed by response fields.
+                another for responses. The response mailbox starts at
+                register `0`. The command mailbox starts at register
+                `1024` (directly after the response mailbox). A command request starts with an
+                execute flag, then a transceiver id (only used for
+                postman), followed by the command code and command
+                arguments. A response starts with a pending-execution
+                flag, followed by a response-length field, then the
+                corresponding code and response fields.
                 On failure, the response code is an error code rather
                 than the command code. Error codes are in the range
                 20000 to 32767 (the positive `int16` range upper segment),
@@ -228,17 +232,42 @@
 
             <p>
                 The command mailbox starts with an "execute command"
-                flag. After writing the request payload, this flag must
-                be set to `1` to signal the device to process the command.
-                The flag and payload can be written in a single
+                flag, followed by a transceiver id and the command
+                payload. After writing the request payload, the execute
+                flag must be set to `1` to signal the device to process
+                the command. The header and payload can be written in a single
                 `0x10` request.
             </p>
 
-            <p>
+            
+            <p class="mb-8">
                 The response mailbox starts with a status flag (`busy`
                 or `idle/done`) followed by a response-length field,
-                allowing variable-sized responses.
+                allowing variable-sized responses. While a command is
+                still executing (no response payload written yet) and
+                the pending flag is `1`, the MODBUS device responds with
+                "server device busy".
             </p>
+
+            <p>
+                The Postman acts as both a MODBUS slave and a MODBUS
+                master. It is addressed as a slave on the first network,
+                and it forwards requests as a master on its second
+                MODBUS network where other devices reside. The
+                transceiver id in this API is used as the target device
+                id on that second network. For MODBUS function code
+                `0x10` (Write Multiple Holding Registers), the slave id
+                in the MODBUS frame header must be the Postman id. The
+                transceiver id in the mailbox then selects the routing
+                target: set transceiver id to `255` to target the
+                Postman itself for execution; use values `1` to `254`
+                to target that device id on the second network; value
+                `256` is reserved for forwarding to the specific device
+                connected to the Postman when only one device is
+                present and value `0`
+                creates a broadcast on the second network (currently not implemented).
+            </p>
+
         </section>
         {% endif %}
 
@@ -504,6 +533,8 @@
             vertical-align: top;
             color: rgb(30 41 59);
             line-height: 1.45;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         section.bg-white,
@@ -526,6 +557,9 @@
             h2 { border-bottom: 1px solid rgb(203 213 225); }
             .page-break-before { break-before: page; page-break-before: always; }
             .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+            .overflow-x-auto { overflow: visible !important; }
+            .manual-table { min-width: 0 !important; width: 100% !important; }
+            #document-index { break-inside: auto; page-break-inside: auto; }
             table { break-inside: auto; page-break-inside: auto; }
             tr, td, th { break-inside: avoid; page-break-inside: avoid; }
             h2, h3, h4, h5, h6 { break-after: avoid; page-break-after: avoid; }
@@ -538,6 +572,16 @@
             #commands .param-item, #commands .answer-field-item, #commands .field-entry-card {
                 break-inside: avoid;
                 page-break-inside: avoid;
+            }
+            #commands .modbus-section-title,
+            #commands .modbus-layout-title {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+            #commands .modbus-section-title + .modbus-layout-block,
+            #commands .modbus-layout-title + .modbus-layout-table {
+                break-before: avoid;
+                page-break-before: avoid;
             }
             #types .enum-entry {
                 break-inside: avoid;

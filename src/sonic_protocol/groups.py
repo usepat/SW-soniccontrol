@@ -23,6 +23,10 @@ class GROUPS:
     communication = _CommunicationGroups()
     procedures = _ProcedureGroups
     logging = GroupId("logging")
+    measurements = GroupId("measurements")
+    transducer = GroupId("transducer")
+    generic = GroupId("generic")
+    testing = GroupId("testing")
 
 @dataclass(frozen=True)
 class GroupSpec:
@@ -35,15 +39,34 @@ class GroupSpec:
 
 GROUP_SPECS: Dict[GroupId, GroupSpec] = {
     GROUPS.misc: GroupSpec(GROUPS.misc, "Misc", "Commands that are not yet categorized.", order=999),
-
+    GROUPS.generic: GroupSpec(
+        GROUPS.generic, 
+        "Generic", 
+        "Commands for fundamental functionality, such as error handling and retrieving device information.",
+        order=0
+    ),
+    GROUPS.transducer: GroupSpec(
+        GROUPS.transducer, 
+        "Transducer", 
+        "Commands related to transducer configuration and operation.",
+        order=10
+    ),
+    GROUPS.measurements: GroupSpec(
+        GROUPS.measurements, 
+        "Measurements", 
+        "Commands related to measurements.",
+        order=20
+    ),
     GROUPS.communication.communication: GroupSpec(
-        GROUPS.communication.communication, "Communication", "Commands that related to communication configuration",
+        GROUPS.communication.communication, 
+        "Communication", 
+        "Commands related to communication configuration.",
         order=30
     ),
     GROUPS.communication.serial_settings: GroupSpec(
         GROUPS.communication.serial_settings, "" \
         "Seral Settings", 
-        "Commands that related to serial communication settings",
+        "Commands related to serial communication settings.",
         parent=GROUPS.communication.communication,
         order=30
     ),
@@ -56,51 +79,57 @@ GROUP_SPECS: Dict[GroupId, GroupSpec] = {
     GROUPS.procedures.ramp: GroupSpec(
         GROUPS.procedures.ramp,
         "Ramp",
-        "Commands for the Ramp Procedure, which starts and stops at the given freqeuncies and steps through it.",
+        "Commands for the Ramp procedure, which sweeps through configured frequencies between a start and stop value.",
         parent=GROUPS.procedures.procedure,
-        order=40,
+        order=41,
     ),
     GROUPS.procedures.scan: GroupSpec(
         GROUPS.procedures.scan,
         "Scan",
-        "Commands for the Scan Procedure, which tries to find the current optimal frequency. Setup for Tune Procedure",
+        "Commands for the Scan procedure, which identifies the current optimal frequency and prepares setup for the Tune procedure.",
         parent=GROUPS.procedures.procedure,
-        order=40,
+        order=42,
     ),
     GROUPS.procedures.tune: GroupSpec(
         GROUPS.procedures.tune,
         "Tune",
-        "Commands for the Tune Procedure, which tries to operate the device at the optimum frequency. Optimal for catching particles",
+        "Commands for the Tune procedure, which aims to run the device at the optimal frequency (for example, for particle capture).",
         parent=GROUPS.procedures.procedure,
-        order=40,
+        order=43,
     ),
     GROUPS.procedures.auto: GroupSpec(
         GROUPS.procedures.auto,
         "Auto",
-        "Commands for the Auto Procedure, which uses the Scan and Tune Procedure. So the actual configuration for the Auto Procedure must be done via Scan and Tune commands",
+        "Commands for the Auto procedure, which combines the Scan and Tune procedures. Auto behavior is configured through Scan and Tune commands.",
         parent=GROUPS.procedures.procedure,
-        order=40,
+        order=44,
     ),
     GROUPS.procedures.wipe: GroupSpec(
         GROUPS.procedures.wipe,
         "Wipe",
-        "Commands for the Wipe Procedure, which runs ramps at the given atfs. Optimal for wiping sensors",
+        "Commands for the Wipe procedure, which runs ramps at configured ATFs and is intended for sensor cleaning.",
         parent=GROUPS.procedures.procedure,
-        order=40,
+        order=45,
     ),
     GROUPS.procedures.duty_cycle: GroupSpec(
         GROUPS.procedures.duty_cycle,
         "Duty Cycle",
-        "Commands for the Duty Cycle procedure that allows to activate a procedure or just the signal output with a specific timing",
+        "Commands for the Duty Cycle procedure, which activates either a procedure or the signal output using defined timing intervals.",
         parent=GROUPS.procedures.procedure,
-        order=40,
+        order=46,
     ),
 
     GROUPS.logging: GroupSpec(
         GROUPS.logging,
         "Logging",
-        "Commands for controlling the log functionality of the device",
+        "Commands for configuring and controlling device logging.",
         order=50,
+    ),
+    GROUPS.testing: GroupSpec(
+        GROUPS.testing,
+        "Testing",
+        "Commands for running tests and retrieving diagnostic information.",
+        order=60,
     ),
 
 }

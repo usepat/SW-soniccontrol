@@ -143,21 +143,25 @@
         {% endif %}
 
         {% if include_modbus %}
-            <div class="text-sm font-medium text-slate-800 mb-2 mt-8">MODBUS API</div>
+            <div class="text-sm font-medium text-slate-800 mb-2 mt-8 modbus-section-title">MODBUS API</div>
             {% set is_notification = command_contract.command_def is none and command_contract.code.value < 20000 %}
             {% if is_notification %}
                 <p class="text-sm text-slate-600">Notification messages are not supported for MODBUS.</p>
             {% else %}
                 {% if command_contract.command_def is not none %}
-                <div class="mb-4 avoid-break">
-                    <p class="text-sm text-slate-600 mb-2">Command request memory layout:</p>
-                    {{ modbus.modbus_layout(command_contract.code, command_contract.command_def.field_defs()) }}
+                <div class="mb-4 modbus-layout-block">
+                    <p class="text-sm text-slate-600 mb-2 modbus-layout-title">Command request memory layout:</p>
+                    <div class="modbus-layout-table">
+                        {{ modbus.modbus_layout(command_contract.code, command_contract.command_def.field_defs(), 1024, false) }}
+                    </div>
                 </div>
                 {% endif %}
 
-                <div class="pt-4 border-t border-slate-100 mt-4 avoid-break">
-                    <p class="text-sm text-slate-600 mb-2">Response memory layout:</p>
-                    {{ modbus.modbus_layout(command_contract.code, command_contract.answer_def.field_defs()) }}
+                <div class="pt-4 border-t border-slate-100 mt-4 modbus-layout-block">
+                    <p class="text-sm text-slate-600 mb-2 modbus-layout-title">Response memory layout:</p>
+                    <div class="modbus-layout-table">
+                        {{ modbus.modbus_layout(command_contract.code, command_contract.answer_def.field_defs()) }}
+                    </div>
                 </div>
             {% endif %}
         {% endif %}
@@ -172,6 +176,10 @@
                     {% endfor %}
                     </ul>
                 </p>
+                {% set text_example = text_command_examples.get(command_contract.code.value) %}
+                {% if text_example is not none and text_example|trim != "" %}
+                    <p class="text-sm text-slate-600 mb-3">Example command: <code>{{ text_example }}</code></p>
+                {% endif %}
             {% endif %}
         {% endif %}
     </article>

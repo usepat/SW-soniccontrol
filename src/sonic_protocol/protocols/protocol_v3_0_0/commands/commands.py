@@ -85,6 +85,7 @@ set_ramp_gain = CommandContract(
         sonic_text_attrs=SonicTextCommandAttrs("!ramp_gain")
     ),
     AnswerDef([f.field_ramp_gain]),
+    group_id=GROUPS.procedures.ramp,
     is_release=True
 )
 
@@ -94,6 +95,7 @@ get_uipt_raw = CommandContract(
         sonic_text_attrs=SonicTextCommandAttrs("?uipt_raw")
     ),
     AnswerDef([f.raw_urms_field, f.raw_irms_field, f.raw_phase_field, f.raw_tsflag_field]),
+    group_id=GROUPS.measurements,
     is_release=False
 )
 
@@ -137,7 +139,7 @@ set_log_level_v3_0_0 = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the log level"
+        description="Sets the logger level for the selected logger."
     ),
     is_release=True,
     group_id=GROUPS.logging,
@@ -153,7 +155,7 @@ get_logger_list_size = CommandContract(
         AnswerFieldDef(EFieldName.COUNT, field_type=FieldType(field_type=np.uint8))
     ]),
     user_manual_attrs=UserManualAttrs(
-        description="Retrieve the amount of loggers available"
+        description="Retrieves the number of available loggers."
     ),
     is_release=True,
     group_id=GROUPS.logging,
@@ -171,7 +173,7 @@ get_logger_list_item = CommandContract(
         AnswerFieldDef(EFieldName.LOG_LEVEL, FieldType(Loglevel, converter_ref=ConverterType.ENUM))
     ]),
     user_manual_attrs=UserManualAttrs(
-        description="Retrieve the name and log level of the logger with the specified id"
+        description="Retrieves the logger name and level for the specified logger ID."
     ),
     is_release=True,
     group_id=GROUPS.logging,
@@ -187,9 +189,10 @@ get_connection_status = CommandContract(
         [f.connection_status_field]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Returns true if the postman is connected to a worker"
+        description="Returns whether the postman is connected to a worker."
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["postman"]
 )
 
@@ -202,6 +205,7 @@ get_num_tests = CommandContract(
         [f.count_field]
     ),
     is_release=True,
+    group_id=GROUPS.testing,
     tags=["testing"]
 )
 
@@ -216,6 +220,7 @@ get_test_info = CommandContract(
         f.test_suite_name_field
     ]),
     is_release=True,
+    group_id=GROUPS.testing,
     tags=["testing"]
 )
 
@@ -231,6 +236,7 @@ run_test = CommandContract(
         AnswerFieldDef(EFieldName.MESSAGE, FieldType(str))
     ]),
     is_release=True,
+    group_id=GROUPS.testing,
     tags=["testing"]
 )
 
@@ -243,6 +249,7 @@ abort_test = CommandContract(
         AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
     ]),
     is_release=True,
+    group_id=GROUPS.testing,
     tags=["testing"]
 )
 
@@ -255,6 +262,7 @@ start_diagnostic_tool = CommandContract(
         AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
     ]),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["testing", "diagnosis", "debugging"]
 )
 
@@ -266,7 +274,8 @@ start_operator = CommandContract(
     answer_def=AnswerDef([
         AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
     ]),
-    is_release=True
+    is_release=True,
+    group_id=GROUPS.generic,
 )
 
 
@@ -282,8 +291,9 @@ set_dac_mV = CommandContract(
         fields=[f.dac_mV_field]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the dac voltage in milli Volts."
+        description="Sets the DAC voltage in millivolts."
     ),
     is_release=False,
+    group_id=GROUPS.transducer,
     tags=["DAC"]
 )

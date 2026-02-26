@@ -1,4 +1,5 @@
 from typing import List
+from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
 	SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandContract
 )
@@ -31,9 +32,10 @@ set_swf = CommandContract(
         fields=[field_swf]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the switching frequency of the transducer on the device."
+        description="Sets the transducer switching frequency on the device."
     ),
     is_release=False,
+    group_id=GROUPS.transducer,
     tags=["switching frequency", "transducer"]
 )
 
@@ -48,9 +50,10 @@ get_swf = CommandContract(
         fields=[field_swf]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the switching frequency of the transducer on the device."
+        description="Retrieves the transducer switching frequency from the device."
     ),
     is_release=False,
+    group_id=GROUPS.transducer,
     tags=["switching frequency", "transducer"]
 )
 
@@ -73,9 +76,10 @@ get_update_descale = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Mainly used by sonic control to get a short and computer friendly parsable status update."
+        description="Primarily used by Sonic Control to retrieve a compact, machine-readable status update."
     ),
     is_release=True,
+    group_id=GROUPS.measurements,
     tags=["update", "status"]
 )
 
