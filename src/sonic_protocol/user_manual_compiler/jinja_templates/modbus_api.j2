@@ -33,11 +33,11 @@
     <td rowspan="2">{{ field_name}}</td>
     <td rowspan="2">uint32</td>
     <td>{{ address }}</td>
-    <td colspan="2">high word</td>
+    <td colspan="2">High word</td>
 </tr>
 <tr>
     <td>{{ address + 1 }}</td>
-    <td colspan="2">low word</td>
+    <td colspan="2">Low word</td>
 </tr>
 {% endmacro %}
 
@@ -46,11 +46,11 @@
     <td rowspan="2">{{ field_name}}</td>
     <td rowspan="2">float32 IEEE-754</td>
     <td>{{ address }}</td>
-    <td colspan="2">high word</td>
+    <td colspan="2">High word</td>
 </tr>
 <tr>
     <td>{{ address + 1 }}</td>
-    <td colspan="2">low word</td>
+    <td colspan="2">Low word</td>
 </tr>
 {% endmacro %}
 
@@ -69,7 +69,7 @@
     <td rowspan="4">{{ field_name }}</td>
     <td rowspan="4">str</td>
     <td>{{ address }}</td>
-    <td colspan="2">string length</td>
+    <td colspan="2">String length</td>
 </tr>
 <tr>
     <td>{{ address + 1}}</td>
@@ -93,7 +93,7 @@
     <td>{{ field_name }}</td>
     <td>enum {{ enum_name }}</td>
     <td>{{ address }}</td>
-    <td colspan="2">index of enum member</td>
+    <td colspan="2">Enum member index</td>
 </tr>
 {% endmacro %}
 
@@ -102,19 +102,19 @@
     <td rowspan="4">{{ field_name }}</td>
     <td rowspan="4">timestamp (posix time, int64)</td>
     <td>{{ address }}</td>
-    <td colspan="2">highest word</td>
+    <td colspan="2">Highest word</td>
 </tr>
 <tr>
     <td>{{ address + 1 }}</td>
-    <td colspan="2">second highest word</td>
+    <td colspan="2">Second-highest word</td>
 </tr>
 <tr>
     <td>{{ address + 2 }}</td>
-    <td colspan="2">second lowest word</td>
+    <td colspan="2">Second-lowest word</td>
 </tr>
 <tr>
     <td>{{ address + 3 }}</td>
-    <td colspan="2">lowest word</td>
+    <td colspan="2">Lowest word</td>
 </tr>
 {% endmacro %}
 
@@ -124,37 +124,38 @@
     <td rowspan="3">struct version</td>
     <td>{{ address }}</td>
     <td>0x00</td>
-    <td>major version (uint8)</td>
+    <td>Major version (uint8)</td>
 </tr>
 <tr>
     <td>{{ address + 1 }}</td>
      <td>0x00</td>
-    <td>minor version (uint8)</td>
+    <td>Minor version (uint8)</td>
 </tr>
 <tr>
     <td>{{ address + 2 }}</td>
      <td>0x00</td>
-    <td>patch version (uint8)</td>
+    <td>Patch version (uint8)</td>
 </tr>
 {% endmacro %}
 
 
 {% macro memory_layout_table(content) %}
-    <table class="w-full text-sm border-collapse table-fixed [&_th]:pl-3 [&_td]:pl-3">
+    <div class="overflow-x-auto my-2">
+    <table class="manual-table w-full text-sm border-collapse table-fixed [&_th]:px-3 [&_td]:px-3">
         <colgroup>
             <col class="w-[18%]" />
             <col class="w-[22%]" />
-            <col class="w-[15%] bg-slate-50 border-l-2 border-slate-200" />
-            <col class="w-[15%] bg-slate-50" />
-            <col class="w-[15%] bg-slate-50 border-l-2 border-slate-200" />
+            <col class="w-[15%]" />
+            <col class="w-[15%]" />
+            <col class="w-[15%]" />
         </colgroup>
         <thead>
-            {% set th_class = "text-left text-xs font-medium text-slate-600 py-2" %}
+            {% set th_class = "text-left py-2" %}
             <tr>
                 <th class="{{th_class}}">Name</th>
                 <th class="{{th_class}}">Type</th>
                 <th class="{{th_class}}">Register Address</th>
-                <th class="{{th_class}}" colspan="2">Register Memory</th>
+                <th class="{{th_class}}" colspan="2">Register Data</th>
             </tr>
             <tr>
                 <th class="{{th_class}}"></th>
@@ -168,15 +169,30 @@
             {{ content }}
         </tbody>
     </table>
+    </div>
 {% endmacro %}
 
 
 {% macro modbus_layout_fields(command_code, fields, start_address=0) %}
+    {% set code_value = command_code.value %}
+    {% set code_word = code_value % 65536 %}
+    {% set code_high_byte = (code_value // 256) % 256 %}
+    {% set code_low_byte = code_value % 256 %}
     <tr class="border-t border-slate-100">
-        <td>CommandCode</td>
+        <td>
+            <div>CommandCode</div>
+            <div class="text-xs text-slate-500">Value: {{ code_value }} (0x{{ '%04X' % code_word }})</div>
+        </td>
         <td>int16</td>
         <td>{{ start_address }}</td>
-        <td colspan="2">{{ command_code.value }}</td>
+        <td>
+            <div class="font-mono text-slate-800">0x{{ '%02X' % code_high_byte }}</div>
+            <div class="text-xs text-slate-500">High Byte (MSB)</div>
+        </td>
+        <td>
+            <div class="font-mono text-slate-800">0x{{ '%02X' % code_low_byte }}</div>
+            <div class="text-xs text-slate-500">Low Byte (LSB)</div>
+        </td>
     </tr>
     {% set ns = namespace(address=start_address + 1) %}
     {% for field in fields %}
@@ -215,7 +231,7 @@
             {% set ns.address = ns.address + 3 %}
         {% else %}
             <tr>
-                <td colspan="5">Missing documentation</td>
+                <td colspan="5">Documentation unavailable</td>
             </tr>
         {% endif %}
     {% endfor %}
@@ -230,9 +246,9 @@
         <td>Error Code</td>
         <td>int16</td>
         <td>0</td>
-        <td colspan="2"><b>error code value</b></td>
+        <td colspan="2"><b>Error code value</b></td>
     </tr>
-    {{  string64_layout("error message", 1) }}
+    {{  string64_layout("Error message", 1) }}
 {% endmacro %}
 
 {% macro error_memory_layout(command_code, fields, start_address=0) %}

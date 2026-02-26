@@ -64,11 +64,13 @@ class RemoteController:
 
         Example
         -------
+        ```
         URL = Path("COM6")
         connection = SerialConnection(url=URL, connection_name=URL.name)
         controller = await RemoteController.connect(connection)
-        # Do stuff
+        # do stuff
         await controller.disconnect()
+        ```
         """
         logger = create_logger_for_connection(connection.connection_name, log_path if log_path is not None else Path("."))   
 
@@ -164,6 +166,7 @@ class RemoteController:
 
         Example
         -------
+        ```
         # because send_command is async we have to await it. Look up asyncio for more information
         answer = await controller.send_command(cmds.SetAtf(1, 100000))
         # contains the pure str message received from the serial connection
@@ -171,6 +174,7 @@ class RemoteController:
         if answer.valid:
             # if the answer could be parsed and is valid, we can access the parsed fields like this
             print(answer.field_value_dict[EFieldName.ATF]) 
+        ```
         """
         return await self._device.execute_command(command, raise_exception=raise_exception)
     

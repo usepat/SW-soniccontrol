@@ -1,6 +1,10 @@
 import abc
+import asyncio
+import base64
 from datetime import datetime
 from enum import Enum
+import os
+os.environ.setdefault("PYPPETEER_CHROMIUM_REVISION", "1181217")
 from pathlib import Path
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field
@@ -16,6 +20,9 @@ from sonic_protocol.user_manual_compiler.manual_compiler import ManualCompiler
 
 import importlib.resources as rs
 import jinja2
+from pyppeteer import launch
+from pyppeteer import chromium_downloader as cd
+
 
 @dataclass
 class GroupNode:
@@ -106,7 +113,7 @@ def build_group_tree(
 
 
 class HtmlManualCompiler(ManualCompiler):
-    def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True) -> str:
+    def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True, mode: str = "both") -> str:
         try:
             protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
         except Exception as e:
@@ -141,13 +148,19 @@ class HtmlManualCompiler(ManualCompiler):
             "anchor_cmd": lambda code: f"cmd-{int(code.value)}",
         }) # export functions and classes to jinja environment. So we can use them inside the templates
 
+        # mode: "both" | "modbus" | "text"
+        include_modbus = mode in ("modbus", "both")
+        include_text = mode in ("text", "both")
+
         template = environment.get_template("index.j2")
         content = template.render(
             command_groups=command_groups,  
             pure_command_contracts=pure_command_contracts, 
             error_codes=error_codes,
             notification_messages=notification_messages,
-            enum_classes=enum_classes
+            enum_classes=enum_classes,
+            include_modbus=include_modbus,
+            include_text=include_text,
         )
 
         return content 
@@ -155,15 +168,85 @@ class HtmlManualCompiler(ManualCompiler):
 
 def main():
     manual_compiler = HtmlManualCompiler()
-    manual = manual_compiler.compile_manual_for_specific_device(
-        DeviceType.MVP_WORKER, 
-        Version(3, 0, 0), 
-        True
-    )
 
     Path("./output").mkdir(exist_ok=True, parents=True)
-    with open("./output/manual.html", "w") as file:
-        file.write(manual)
+
+    # Produce two documents: one for the text-based API and one for MODBUS
+    targets = (("text", "manual_text"), ("modbus", "manual_modbus"))
+    for mode, basename in targets:
+        manual = manual_compiler.compile_manual_for_specific_device(
+            DeviceType.MVP_WORKER,
+            Version(3, 0, 0),
+            True,
+            mode=mode,
+        )
+
+        html_path = f"./output/{basename}.html"
+        pdf_path = f"./output/{basename}.pdf"
+        with open(html_path, "w", encoding="utf-8") as file:
+            file.write(manual)
+    
+    async def get_browser(**launch_kwargs):
+        chrome_rel_path = "Google/Chrome/Application/chrome.exe"
+        edge_rel_path = "Microsoft/Edge/Application/msedge.exe"
+        chrome_candidates = [
+            Path(os.environ.get("PROGRAMFILES", "")) / chrome_rel_path,
+            Path(os.environ.get("PROGRAMFILES(X86)", "")) / chrome_rel_path,
+            Path(os.environ.get("LOCALAPPDATA", "")) / chrome_rel_path,
+            Path(os.environ.get("PROGRAMFILES", "")) / edge_rel_path,
+            Path(os.environ.get("PROGRAMFILES(X86)", "")) / edge_rel_path,
+        ]
+
+        local_browser = next((str(p) for p in chrome_candidates if str(p) and p.exists()), None)
+
+        if local_browser:
+            print(f"Using local browser for PDF generation: {local_browser}")
+            return await launch(
+                executablePath=local_browser,
+                **launch_kwargs,
+            )
+
+        # 1) Ensure Chromium exists (download if needed)
+        if not cd.check_chromium():
+            cd.download_chromium()
+
+        # 2) Launch using the downloaded Chromium
+        print(f"Using bundled Chromium for PDF generation: {cd.chromium_executable()}")
+        return await launch(
+            executablePath=cd.chromium_executable(),
+            **launch_kwargs
+        )
+
+    def convert_html_to_pdf(html_path: str, pdf_path: str) -> None:
+        async def _pdf():
+            browser = await get_browser(headless=True)
+            page = await browser.newPage()
+            await page.goto("file://" + str(Path(html_path).absolute()), {"waitUntil": "networkidle0"})
+            await page.waitForFunction("document.fonts && document.fonts.status === 'loaded'")
+            await page.emulateMedia("print")
+            await page.evaluate("window.updateTocPageNumbers && window.updateTocPageNumbers()")
+
+            client = page._client
+            cdp_options = {
+                "printBackground": True,
+                "preferCSSPageSize": True,
+                "generateTaggedPDF": True,
+                "generateDocumentOutline": True,
+            }
+            result = await client.send("Page.printToPDF", cdp_options)
+            Path(pdf_path).write_bytes(base64.b64decode(result["data"]))
+            await browser.close()
+
+        asyncio.get_event_loop().run_until_complete(_pdf())
+
+    for mode, basename in targets:
+        html_path = f"./output/{basename}.html"
+        pdf_path = f"./output/{basename}.pdf"
+        try:
+            convert_html_to_pdf(html_path, pdf_path)
+            print(f"Wrote {pdf_path}")
+        except Exception as e:
+            print(f"PDF conversion for {basename} skipped:", e)
 
 if __name__ == "__main__":
     main()
