@@ -2,6 +2,7 @@ import copy
 from enum import Enum, IntEnum
 from typing import List
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
     CommandParamDef, ControlMode, ConverterType, FieldType, Loglevel, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, SystemState, TransducerState, Anomaly
@@ -139,6 +140,7 @@ set_log_level_v3_0_0 = CommandContract(
         description="Command to set the log level"
     ),
     is_release=True,
+    group_id=GROUPS.logging,
     tags=["log"]
 )
 
@@ -154,6 +156,7 @@ get_logger_list_size = CommandContract(
         description="Retrieve the amount of loggers available"
     ),
     is_release=True,
+    group_id=GROUPS.logging,
     tags=["log"]
 )
 
@@ -171,6 +174,7 @@ get_logger_list_item = CommandContract(
         description="Retrieve the name and log level of the logger with the specified id"
     ),
     is_release=True,
+    group_id=GROUPS.logging,
     tags=["log"]
 )
 

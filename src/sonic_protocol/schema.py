@@ -7,6 +7,8 @@ import re
 from functools import total_ordering
 from datetime import datetime
 
+from sonic_protocol.groups import GROUPS, GroupId
+
 
 VersionTuple = Tuple[int, int, int]
 
@@ -470,6 +472,7 @@ class CommandContract:
     answer_def: AnswerDef = attrs.field()
     is_release: bool = attrs.field(default=False) #! some commands are only for debugging. They should not be included in release
     tags: List[str] = attrs.field(default=[]) #! tags are used to group commands and to filter them
+    group_id: GroupId = attrs.field(default=GROUPS.misc)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
 
 

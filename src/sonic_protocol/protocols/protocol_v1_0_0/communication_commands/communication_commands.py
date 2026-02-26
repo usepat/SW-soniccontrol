@@ -1,4 +1,5 @@
 from typing import List
+from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
     ConverterType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, 
     AnswerDef, CommandParamDef, AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, LoggerName, Loglevel
@@ -52,6 +53,7 @@ set_comm_protocol = CommandContract(
         description="Command to set the communication protocol"
     ),
     is_release=True,
+    group_id= GROUPS.communication.communication,
     tags=["communication", "protocol"]
 )
 
@@ -74,6 +76,7 @@ set_input_source = CommandContract(
         description="Command to set the input source. Where to get commands from"
     ),
     is_release=True,
+    group_id= GROUPS.communication.serial_settings,
     tags=["communication"]
 )
 
@@ -123,6 +126,7 @@ set_log_level = CommandContract(
         description="Command to set the log level"
     ),
     is_release=True,
+    group_id=GROUPS.logging,
     tags=["log"]
 )
 
