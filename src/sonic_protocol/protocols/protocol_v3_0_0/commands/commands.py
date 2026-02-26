@@ -86,6 +86,7 @@ set_ramp_gain = CommandContract(
     ),
     AnswerDef([f.field_ramp_gain]),
     group_id=GROUPS.procedures.ramp,
+    user_manual_attrs=UserManualAttrs(description="Sets the Ramp gain."),
     is_release=True
 )
 
@@ -205,6 +206,7 @@ get_num_tests = CommandContract(
         [f.count_field]
     ),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves the number of available tests."),
     group_id=GROUPS.testing,
     tags=["testing"]
 )
@@ -220,6 +222,7 @@ get_test_info = CommandContract(
         f.test_suite_name_field
     ]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves test metadata (name and suite) for the specified test index."),
     group_id=GROUPS.testing,
     tags=["testing"]
 )
@@ -236,6 +239,7 @@ run_test = CommandContract(
         AnswerFieldDef(EFieldName.MESSAGE, FieldType(str))
     ]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Runs the specified test."),
     group_id=GROUPS.testing,
     tags=["testing"]
 )
@@ -249,6 +253,7 @@ abort_test = CommandContract(
         AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
     ]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Aborts the currently running test."),
     group_id=GROUPS.testing,
     tags=["testing"]
 )
@@ -262,6 +267,7 @@ start_diagnostic_tool = CommandContract(
         AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
     ]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Starts the diagnostic tool on the device."),
     group_id=GROUPS.generic,
     tags=["testing", "diagnosis", "debugging"]
 )
@@ -275,6 +281,7 @@ start_operator = CommandContract(
         AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
     ]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Starts operator mode on the device."),
     group_id=GROUPS.generic,
 )
 

@@ -43,6 +43,11 @@ def generate_procedure_arg_setter_contract(command_code: CommandCode, string_ide
             field_name=field_name,
             field_type=field_type,
         )
+    # Provide a sensible default description when none is given
+    if description is None:
+        param_label = response_field.field_name.name.replace('_', ' ').lower() if response_field is not None else 'parameter'
+        proc_label = procedure_name.replace('_', ' ').capitalize()
+        description = f"Sets the {proc_label} procedure parameter {param_label}."
     return CommandContract(
         code=command_code,
         command_def=CommandDef(
@@ -73,6 +78,7 @@ get_ramp = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves current Ramp procedure parameters."),
     answer_def=AnswerDef(
         fields=[
             fields.field_ramp_f_start,
@@ -137,6 +143,7 @@ get_auto = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves configuration for the Auto procedure."),
     answer_def=AnswerDef(
         fields=[
             fields.field_scan_f_step,
@@ -174,6 +181,7 @@ get_scan = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves current Scan procedure parameters."),
     answer_def=AnswerDef(
         fields=[
             fields.field_scan_f_step,
@@ -236,6 +244,7 @@ get_tune = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves current Tune procedure parameters."),
     answer_def=AnswerDef(
         fields=[
             fields.field_tune_f_step,
@@ -307,6 +316,7 @@ get_wipe = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves current Wipe procedure parameters."),
     answer_def=AnswerDef(
         fields=[
             fields.field_wipe_f_step,
@@ -368,6 +378,7 @@ get_duty_cycle = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves the configured duty cycle on/off times."),
     answer_def=AnswerDef(
         fields=[
             fields.field_duty_cycle_t_on,
@@ -410,6 +421,7 @@ notify_proc_failure = CommandContract(
         ]
     ),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Notification sent when a procedure fails."),
     tags=["Notification", "Procedure"]
 )
 

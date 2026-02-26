@@ -38,6 +38,7 @@ get_info = CommandContract(
     ),
     group_id=GROUPS.generic,
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves device information including type, hardware and firmware versions, build hash and date."),
 )
 
 get_help = CommandContract(
@@ -75,6 +76,7 @@ notify = CommandContract(
     command_def=None,
     answer_def=AnswerDef(fields=[field_message]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Notification message sent by device to report events."),
     group_id=GROUPS.generic,
     tags=["Notification"],
 )

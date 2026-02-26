@@ -255,6 +255,7 @@ go_into_device_state = CommandContract(
         )
     ),
     answer_def=AnswerDef([f.field_device_state]),
+    user_manual_attrs=UserManualAttrs(description="Sets or retrieves the device state."),
     group_id=GROUPS.generic,
     is_release=True
 )
@@ -270,6 +271,9 @@ get_postman_update = CommandContract(
         f.field_system_state
     ]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(
+        description="Smaller version of the dash command that sends the device information the postman needs to update the UI."
+    ),
     group_id=GROUPS.measurements,
 )
 
@@ -284,6 +288,9 @@ get_on_timer = CommandContract(
         f.field_minutes
     ]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(
+        description="Returns the on-timer value tracking how long the signal has been ON."
+    ),
     group_id=GROUPS.measurements,
 )
 
@@ -296,5 +303,6 @@ reset_on_timer = CommandContract(
         field_success,
     ]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Resets the on-timer tracking how long the signal has been ON."),
     group_id=GROUPS.measurements,
 )

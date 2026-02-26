@@ -71,10 +71,12 @@
     </div>
 {% endmacro %}
 
-{% macro command_contract_entry(command_contract) %}
+{% macro command_contract_entry(command_contract, show_header=True) %}
     <article class="bg-white border border-slate-200 rounded-none p-4 shadow-none mb-6">
         <div class="command-header-block avoid-break">
-            {{ command_code_headline(command_contract.code) }}
+            {% if show_header %}
+                {{ command_code_headline(command_contract.code) }}
+            {% endif %}
 
             {% set command_description = command_contract.user_manual_attrs.description %}
             {% if (command_description is none or command_description|trim == "") and command_contract.command_def is not none %}
@@ -176,7 +178,7 @@
                     {% endfor %}
                     </ul>
                 </p>
-                {% set text_example = text_command_examples.get(command_contract.code.value) %}
+                {% set text_example = deduce_single_command_example_for_contract(protocol_consts, command_contract) %}
                 {% if text_example is not none and text_example|trim != "" %}
                     <p class="text-sm text-slate-600 mb-3">Example command: <code>{{ text_example }}</code></p>
                 {% endif %}

@@ -21,18 +21,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased">
-    <header class="bg-white border-b border-slate-200">
-        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-indigo-600 text-white font-bold rounded flex items-center justify-center">UP</div>
-                <div>
-                    <h1 class="text-lg font-semibold">UsePAT API Reference</h1>
-                    <p class="text-sm text-slate-500">Remote Procedure Call Protocol</p>
-                    <div class="major-heading-separator mt-2"></div>
-                </div>
-            </div>
+    <section id="title-page" class="bg-white text-slate-800 antialiased" style="min-height:100vh; display:flex; align-items:center; justify-content:center;">
+        <div style="text-align:center; max-width:800px; margin:0 auto;">
+            <h1 style="font-size:3.2rem; margin-bottom:0.5rem;">UsePAT API Reference</h1>
+            <p style="font-size:1.1rem; color:#475569; margin-bottom:1.5rem;">Remote Procedure Call Protocol</p>
+            <p style="font-size:1rem; color:#64748b; margin-bottom:0.25rem;">Device: <strong>{{ device_name_to_label(device_type_name) }}</strong></p>
+            <p style="font-size:1rem; color:#64748b; margin-bottom:0.25rem;">Protocol: <strong>{{ protocol_version_str }}</strong> — <em>{{ release_type }}</em></p>
+            <p style="font-size:0.95rem; color:#94a3b8; margin-top:1rem;">Built: {{ build_date_str }}</p>
         </div>
-    </header>
+    </section>
 
     <main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {% set sections = namespace(i=1) %}
@@ -365,10 +362,16 @@
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>Timestamp</span>
             </h3>
-            <p>
-                `Timestamp` contains the fields `hour`, `minute`,
-                `seconds`, `day`, `month`, and `year`.
-            </p>
+                {% if include_modbus %}
+                <p>
+                    On MODBUS the timestamp is represented as a single POSIX `uint64_t` (POSIX time, seconds since the epoch) occupying four 16-bit registers.
+                </p>
+                {% endif %}
+                {% if include_text %}
+                <p>
+                    In the text-based API, `Timestamp` is represented by separate fields: `hour`, `minute`, `seconds`, `day`, `month`, and `year`.
+                </p>
+                {% endif %}
 
             <h3 class="flex items-center text-lg font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
@@ -397,19 +400,32 @@
                     {% if level > 6 %}{% set level = 6 %}{% endif %}
 
                     <div id="{{ anchor_group(g.id) }}" class="mt-10 command-group-block{% if g.depth == 0 %} command-group-top{% else %} command-group-sub{% endif %}">
-                    {% if level == 3 %}<h3><span class="font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h3>{% endif %}
-                    {% if level == 4 %}<h4><span class="font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h4>{% endif %}
-                    {% if level == 5 %}<h5><span class="font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h5>{% endif %}
-                    {% if level == 6 %}<h6><span class="font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h6>{% endif %}
+                    {% if level == 3 %}<h3><span class="group-number font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h3>{% endif %}
+                    {% if level == 4 %}<h4><span class="group-number font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h4>{% endif %}
+                    {% if level == 5 %}<h5><span class="group-number font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h5>{% endif %}
+                    {% if level == 6 %}<h6><span class="group-number font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h6>{% endif %}
 
                     {% if g.description %}
                         <p class="text-slate-600">{{ g.description }}</p>
                     {% endif %}
 
                     {% for command_contract in g.commands %}
-                        <div id="{{ anchor_cmd(command_contract.code) }}">
-                        {{ schema_templates.command_contract_entry(command_contract) }}
-                        </div>
+                        {% set cmd_level = level + 1 %}
+                        {% if cmd_level > 6 %}{% set cmd_level = 6 %}{% endif %}
+                        {% if cmd_level == 3 %}
+                            <h3 id="{{ anchor_cmd(command_contract.code) }}">{{ command_contract.code.value }} - {{ command_contract.code.name }}</h3>
+                        {% endif %}
+                        {% if cmd_level == 4 %}
+                            <h4 id="{{ anchor_cmd(command_contract.code) }}">{{ command_contract.code.value }} - {{ command_contract.code.name }}</h4>
+                        {% endif %}
+                        {% if cmd_level == 5 %}
+                            <h5 id="{{ anchor_cmd(command_contract.code) }}">{{ command_contract.code.value }} - {{ command_contract.code.name }}</h5>
+                        {% endif %}
+                        {% if cmd_level == 6 %}
+                            <h6 id="{{ anchor_cmd(command_contract.code) }}">{{ command_contract.code.value }} - {{ command_contract.code.name }}</h6>
+                        {% endif %}
+
+                        {{ schema_templates.command_contract_entry(command_contract, False) }}
                     {% endfor %}
 
                     {% if g.children %}
@@ -507,6 +523,17 @@
         .prose h3 > span:first-child,
         .prose h4 > span:first-child {
             display: none;
+        }
+        /* show numeric labels for command groups while keeping general prose headings clean */
+        .prose h2 > .group-number,
+        .prose h3 > .group-number,
+        .prose h4 > .group-number,
+        .prose h5 > .group-number,
+        .prose h6 > .group-number {
+            display: inline-block !important;
+            color: #64748b;
+            margin-right: .5rem;
+            font-family: var(--manual-font-mono);
         }
 
         .manual-table {
