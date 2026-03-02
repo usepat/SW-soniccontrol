@@ -70,7 +70,12 @@ class SpectrumMeasure(Procedure):
         device: SonicDevice,
         args: SpectrumMeasureArgs
     ) -> None:
-        values = [int(args.f_start.to_prefix(SIPrefix.NONE)) + i * int(args.f_step.to_prefix(SIPrefix.NONE)) for i in range(int((int(args.f_stop.to_prefix(SIPrefix.NONE)) - int(args.f_start.to_prefix(SIPrefix.NONE))) / int(args.f_step.to_prefix(SIPrefix.NONE)))) ]
+        f_start = int(args.f_start.to_prefix(SIPrefix.NONE))
+        f_stop = int(args.f_stop.to_prefix(SIPrefix.NONE))
+        f_step = int(args.f_step.to_prefix(SIPrefix.NONE))
+
+        num_steps = (f_stop - f_start) // f_step
+        values = [f_start + i * f_step for i in range(num_steps + 1) ] # +1, because range stop is exclusive
 
         try:
             # await device.get_overview() # FIXME I dont think we need this

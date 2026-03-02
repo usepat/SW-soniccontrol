@@ -8,7 +8,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.si_unit import (AtfSiVar, AttSiVar, SwfSIVar, GainSIVar, 
                                     MeterSIVar, MilliMeterSIVar, TemperatureSIVar, 
-                                    AbsoluteFrequencySIVar, RelativeFrequencySIVar)
+                                    AbsoluteFrequencySIVar, RelativeFrequencySIVar, SIPrefix, SIUnit)
 from sonic_protocol.schema import DeviceParamConstantType, Procedure, Loglevel, DeviceType
 from soniccontrol.procedures.procs import (ScanArgs, AutoArgs, TuneArgs, WipeArgs, 
                                            RamperArgs, SpectrumMeasureArgs)
