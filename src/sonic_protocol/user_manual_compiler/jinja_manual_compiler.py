@@ -4,6 +4,7 @@ import base64
 from datetime import datetime
 from enum import Enum
 import os
+import shutil
 os.environ.setdefault("PYPPETEER_CHROMIUM_REVISION", "1181217")
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -13,8 +14,18 @@ import attrs
 import numpy as np
 from sonic_protocol.protocol import protocol_list
 from sonic_protocol.groups import GroupId, get_spec
-from sonic_protocol.schema import CommandContract, ConverterType, DeviceType, ProtocolType, Timestamp, Version
+from sonic_protocol.schema import (
+    CommandContract,
+    ConverterType,
+    DeviceType,
+    ProtocolType,
+    Timestamp,
+    Version,
+)
 import sonic_protocol
+from sonic_protocol.user_manual_compiler.command_example_utils import (
+    deduce_single_command_example_for_contract,
+)
 from sonic_protocol.user_manual_compiler.manual_compiler import ManualCompiler
 
 
@@ -33,6 +44,21 @@ class GroupNode:
     depth: int
     children: List["GroupNode"] = field(default_factory=list)
     commands: List["CommandContract"] = field(default_factory=list)
+
+
+def add_wbr_before_underscore(value: object) -> str:
+    text = "" if value is None else str(value)
+    return text.replace("_", "<wbr>_")
+
+
+def device_name_to_label(value: object) -> str:
+    """Convert device type identifiers to a human-friendly label.
+
+    Replaces underscores with spaces and converts the result to
+    Title Case (capitalize the first letter of each word).
+    """
+    text = "" if value is None else str(value)
+    return text.replace("_", " ").strip().upper()
 
 def build_group_tree(
     command_contracts: List["CommandContract"],
@@ -144,8 +170,12 @@ class HtmlManualCompiler(ManualCompiler):
             "Enum": Enum,
             "Timestamp": Timestamp,
             "protocol_constants": attrs.asdict(protocol.consts), # FIXME: It would be better to pass this as render variable, but I am lazy
+            "protocol_consts": protocol.consts,
+            "deduce_single_command_example_for_contract": deduce_single_command_example_for_contract,
+            "device_name_to_label": device_name_to_label,
             "anchor_group": lambda gid: f"group-{str(gid).replace('.', '-')}",
             "anchor_cmd": lambda code: f"cmd-{int(code.value)}",
+            "add_wbr_before_underscore": add_wbr_before_underscore,
         }) # export functions and classes to jinja environment. So we can use them inside the templates
 
         # mode: "both" | "modbus" | "text"
@@ -153,6 +183,11 @@ class HtmlManualCompiler(ManualCompiler):
         include_text = mode in ("text", "both")
 
         template = environment.get_template("index.j2")
+        device_type_name = device_type.value
+        protocol_version_str = str(protocol_version)
+        release_type = "Release" if is_release else "Development"
+        build_date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         content = template.render(
             command_groups=command_groups,  
             pure_command_contracts=pure_command_contracts, 
@@ -161,6 +196,10 @@ class HtmlManualCompiler(ManualCompiler):
             enum_classes=enum_classes,
             include_modbus=include_modbus,
             include_text=include_text,
+            device_type_name=device_type_name,
+            protocol_version_str=protocol_version_str,
+            release_type=release_type,
+                build_date_str=build_date_str,
         )
 
         return content 
@@ -172,7 +211,7 @@ def main():
     Path("./output").mkdir(exist_ok=True, parents=True)
 
     # Produce two documents: one for the text-based API and one for MODBUS
-    targets = (("text", "manual_text"), ("modbus", "manual_modbus"))
+    targets = (("text", "manual_text"), ("modbus", "manual_modbus"), ("both", "manual"))
     for mode, basename in targets:
         manual = manual_compiler.compile_manual_for_specific_device(
             DeviceType.MVP_WORKER,
@@ -186,40 +225,45 @@ def main():
         with open(html_path, "w", encoding="utf-8") as file:
             file.write(manual)
     
-    async def get_browser(**launch_kwargs):
-        chrome_rel_path = "Google/Chrome/Application/chrome.exe"
-        edge_rel_path = "Microsoft/Edge/Application/msedge.exe"
-        chrome_candidates = [
-            Path(os.environ.get("PROGRAMFILES", "")) / chrome_rel_path,
-            Path(os.environ.get("PROGRAMFILES(X86)", "")) / chrome_rel_path,
-            Path(os.environ.get("LOCALAPPDATA", "")) / chrome_rel_path,
-            Path(os.environ.get("PROGRAMFILES", "")) / edge_rel_path,
-            Path(os.environ.get("PROGRAMFILES(X86)", "")) / edge_rel_path,
-        ]
+    def find_browser() -> str | None:
+        # 1) Explicit override
+        exe = os.getenv("PYPPETEER_EXECUTABLE_PATH")
+        if exe and Path(exe).exists():
+            return exe
 
-        local_browser = next((str(p) for p in chrome_candidates if str(p) and p.exists()), None)
+        # 2) PATH candidates (Linux/macOS, sometimes Windows)
+        for name in ("google-chrome-stable", "google-chrome", "msedge", "chromium", "chromium-browser"):
+            p = shutil.which(name)
+            if p:
+                return p
 
-        if local_browser:
-            print(f"Using local browser for PDF generation: {local_browser}")
-            return await launch(
-                executablePath=local_browser,
-                **launch_kwargs,
+        # 3) Common Windows locations (covers most installs)
+        if os.name == "nt":
+            candidates = [
+                Path(os.environ.get("PROGRAMFILES", "")) / "Google/Chrome/Application/chrome.exe",
+                Path(os.environ.get("PROGRAMFILES(X86)", "")) / "Google/Chrome/Application/chrome.exe",
+                Path(os.environ.get("LOCALAPPDATA", "")) / "Google/Chrome/Application/chrome.exe",
+                Path(os.environ.get("PROGRAMFILES", "")) / "Microsoft/Edge/Application/msedge.exe",
+                Path(os.environ.get("PROGRAMFILES(X86)", "")) / "Microsoft/Edge/Application/msedge.exe",
+            ]
+            for c in candidates:
+                if c.exists():
+                    return str(c)
+
+        return None
+
+    async def get_browser():
+        exe = find_browser()
+        if not exe:
+            raise RuntimeError(
+                "No system browser found. Install Google Chrome or Microsoft Edge, "
+                "or set PYPPETEER_EXECUTABLE_PATH to the browser executable."
             )
-
-        # 1) Ensure Chromium exists (download if needed)
-        if not cd.check_chromium():
-            cd.download_chromium()
-
-        # 2) Launch using the downloaded Chromium
-        print(f"Using bundled Chromium for PDF generation: {cd.chromium_executable()}")
-        return await launch(
-            executablePath=cd.chromium_executable(),
-            **launch_kwargs
-        )
+        return await launch(executablePath=exe, headless=True)
 
     def convert_html_to_pdf(html_path: str, pdf_path: str) -> None:
         async def _pdf():
-            browser = await get_browser(headless=True)
+            browser = await get_browser()
             page = await browser.newPage()
             await page.goto("file://" + str(Path(html_path).absolute()), {"waitUntil": "networkidle0"})
             await page.waitForFunction("document.fonts && document.fonts.status === 'loaded'")

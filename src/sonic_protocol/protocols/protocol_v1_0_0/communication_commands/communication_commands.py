@@ -27,7 +27,7 @@ set_termination = CommandContract(
         fields=[field_termination]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the 120Ohm termination resistor for rs485"
+        description="Sets the 120 Ohm RS-485 termination resistor state."
     ),
     is_release=True,
     tags=["communication", "rs485"]
@@ -50,7 +50,7 @@ set_comm_protocol = CommandContract(
         fields=[field_comm_protocol]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the communication protocol"
+        description="Sets the communication protocol."
     ),
     is_release=True,
     group_id= GROUPS.communication.communication,
@@ -73,7 +73,7 @@ set_input_source = CommandContract(
         fields=[field_input_source]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the input source. Where to get commands from"
+        description="Sets the input source used for incoming commands."
     ),
     is_release=True,
     group_id= GROUPS.communication.serial_settings,
@@ -123,7 +123,7 @@ set_log_level = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the log level"
+        description="Sets the logger level for the selected logger."
     ),
     is_release=True,
     group_id=GROUPS.logging,

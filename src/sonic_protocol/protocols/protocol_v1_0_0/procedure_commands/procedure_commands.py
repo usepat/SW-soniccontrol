@@ -43,6 +43,11 @@ def generate_procedure_arg_setter_contract(command_code: CommandCode, string_ide
             field_name=field_name,
             field_type=field_type,
         )
+    # Provide a sensible default description when none is given
+    if description is None:
+        param_label = response_field.field_name.name.replace('_', ' ').lower() if response_field is not None else 'parameter'
+        proc_label = procedure_name.replace('_', ' ').capitalize()
+        description = f"Sets the {proc_label} procedure parameter {param_label}."
     return CommandContract(
         code=command_code,
         command_def=CommandDef(
@@ -73,6 +78,7 @@ get_ramp = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves current Ramp procedure parameters."),
     answer_def=AnswerDef(
         fields=[
             fields.field_ramp_f_start,
@@ -91,7 +97,7 @@ ramp_proc_commands: List[CommandContract] = [
         CommandCode.SET_RAMP,
         ["!ramp", "start_ramp"],
         GROUPS.procedures.ramp,
-        ""
+        "Starts the Ramp procedure."
     ),
     get_ramp,
     generate_procedure_arg_setter_contract(
@@ -137,6 +143,7 @@ get_auto = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves configuration for the Auto procedure."),
     answer_def=AnswerDef(
         fields=[
             fields.field_scan_f_step,
@@ -161,7 +168,7 @@ auto_proc_commands: List[CommandContract] = [
         CommandCode.SET_AUTO,
         ["!auto"],
         GROUPS.procedures.auto,
-        ""
+        "Starts the Auto procedure."
     ),
     get_auto
 ]
@@ -174,6 +181,7 @@ get_scan = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves current Scan procedure parameters."),
     answer_def=AnswerDef(
         fields=[
             fields.field_scan_f_step,
@@ -192,7 +200,7 @@ scan_proc_commands: List[CommandContract] = [
         CommandCode.SET_SCAN,
         ["!scan"],
         GROUPS.procedures.scan,
-        description=""
+        description="Starts the Scan procedure."
     ),
     get_scan,
     generate_procedure_arg_setter_contract(
@@ -236,6 +244,7 @@ get_tune = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves current Tune procedure parameters."),
     answer_def=AnswerDef(
         fields=[
             fields.field_tune_f_step,
@@ -255,7 +264,7 @@ tune_proc_commands: List[CommandContract] = [
         CommandCode.SET_TUNE,
         ["!tune"],
         GROUPS.procedures.tune,
-        ""
+        "Starts the Tune procedure."
     ),
     get_tune,
     generate_procedure_arg_setter_contract(
@@ -307,6 +316,7 @@ get_wipe = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves current Wipe procedure parameters."),
     answer_def=AnswerDef(
         fields=[
             fields.field_wipe_f_step,
@@ -325,7 +335,7 @@ wipe_proc_commands: List[CommandContract] = [
         CommandCode.SET_WIPE,
         ["!wipe"],
         GROUPS.procedures.wipe,
-        description=""
+        description="Starts the Wipe procedure."
     ),
     get_wipe,
     generate_procedure_arg_setter_contract(
@@ -368,12 +378,14 @@ get_duty_cycle = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves the configured duty cycle on/off times."),
     answer_def=AnswerDef(
         fields=[
             fields.field_duty_cycle_t_on,
             fields.field_duty_cycle_t_off
         ]
     ),
+    group_id=GROUPS.procedures.duty_cycle,
     tags=["Procedure", "DUTY_CYCLE"]
 )
 
@@ -382,20 +394,20 @@ stop_command =  generate_start_procedure_contract(
     CommandCode.SET_STOP,
     ["!stop", "!stop_procedure"],
     GROUPS.procedures.procedure,
-    ""
+    "Stops the currently running procedure."
 )
 continue_command =  generate_start_procedure_contract(
     CommandCode.SET_CONTINUE,
     ["!continue", "!continue_procedure"],
     GROUPS.procedures.procedure,
-    ""
+    "Continues a paused procedure."
 )
 
 pause_command =  generate_start_procedure_contract(
     CommandCode.SET_PAUSE,
     ["!pause", "!pause_procedure"],
     GROUPS.procedures.procedure,
-    ""
+    "Pauses the currently running procedure."
 )
 notify_proc_failure = CommandContract(
     code=CommandCode.NOTIFY_PROCEDURE_FAILURE,
@@ -409,6 +421,7 @@ notify_proc_failure = CommandContract(
         ]
     ),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Notification sent when a procedure fails."),
     tags=["Notification", "Procedure"]
 )
 
@@ -417,7 +430,7 @@ duty_cycle_proc_commands: List[CommandContract] = [
         CommandCode.SET_DUTY_CYCLE,
         ["!duty_cycle"],
         GROUPS.procedures.duty_cycle,
-        description="Starts a duty cycle for defined behaviour"
+        description="Starts a duty cycle with the configured behavior."
     ),
     get_duty_cycle,
     generate_procedure_arg_setter_contract(

@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, Dict
 import numpy as np
+from sonic_protocol.groups import GROUPS
 from sonic_protocol.protocols.contract_generators import create_version_field
 from sonic_protocol.schema import (
     BuildType, CommunicationChannel, CommunicationProtocol, ConverterType, DeviceParamConstantType, FieldType, IEFieldName, InputSource, LoggerName, Loglevel, Procedure, 
@@ -62,8 +63,9 @@ get_protocol = CommandContract(
         ]
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     user_manual_attrs= UserManualAttrs(
-        description="Used to retrieve the protocol version the device understands"
+        description="Retrieves the protocol version supported by the device."
     )
 )
 

@@ -19,6 +19,7 @@ get_wipe = CommandContract(
         )
     ), 
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves current Wipe procedure parameters."),
     answer_def=AnswerDef(
         fields=[
             fields.field_wipe_f_step,

@@ -1,4 +1,5 @@
 from typing import List
+from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
 	FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, 
     CommandParamDef, CommandContract
@@ -18,9 +19,10 @@ get_transducer = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_transducer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get ID of the transducer connected to the device"
+        description="Retrieves the ID of the transducer connected to the device."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer"]
 )
 
@@ -38,9 +40,10 @@ set_transducer = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_transducer]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set ID of the transducer connected to the device"
+        description="Sets the ID of the transducer connected to the device."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer"]
 )
 
@@ -57,9 +60,10 @@ set_gain = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_gain]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the gain of the transducer on the device."
+        description="Sets the transducer gain on the device."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["gain", "transducer"],
 )
 
@@ -72,9 +76,10 @@ get_gain = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_gain]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the gain of the transducer on the device."
+        description="Retrieves the transducer gain from the device."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["gain", "transducer"]
 )
 
@@ -87,9 +92,10 @@ set_on = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_signal]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to turn the transducer on."
+        description="Turns the transducer on."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer"]
 )
 
@@ -102,9 +108,10 @@ set_off = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_signal]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to turn the transducer off."
+        description="Turns the transducer off."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer"]
 )
 
@@ -119,9 +126,10 @@ get_temp = CommandContract(
         fields=[field_temperature_kelvin]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the temperature of the device in celsiuus."
+        description="Retrieves the device temperature in Celsius."
     ),
     is_release=True,
+    group_id=GROUPS.measurements,
     tags=["temperature", "transducer"]
 )
 
