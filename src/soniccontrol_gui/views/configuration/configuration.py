@@ -31,7 +31,8 @@ from async_tkinter_loop import async_handler
 
 from soniccontrol_gui.widgets.form_widget import FormWidget
 from soniccontrol_gui.widgets.message_box import MessageBox
-    
+from sonic_protocol.si_unit import cls_converter 
+
 import attrs
 import cattrs
 
@@ -45,7 +46,7 @@ class ATConfig:
     )
     atk: float = attrs.field(default=0)
     att: AttSiVar = attrs.field(
-        converter=AttSiVar,
+        converter=cls_converter(AttSiVar),
         default=AttSiVar(), 
         #metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}
     )
