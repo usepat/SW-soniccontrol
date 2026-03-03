@@ -32,6 +32,10 @@ bash ./scripts/create_exe.sh \
     --collect-all flashing_tools \
     --collect-all usb_flashing \
     --collect-all uart_flashing \
+    --copy-metadata configuration_gui \
+    --copy-metadata flashing_tools \
+    --copy-metadata usb_flashing \
+    --copy-metadata uart_flashing \
     --hidden-import configuration_gui \
     --hidden-import flashing_tools \
     --hidden-import usb_flashing \
