@@ -23,11 +23,11 @@
                 "command": "bash '${workspaceFolder}/scripts/create_exe.sh'" 
             },
             "windows": {
-                "command": "${workspaceFolder}/scripts/create_exe.bat"
+                "command": "${workspaceFolder}/scripts/create_exe.bat",
+                "args": [
+                    "${workspaceFolder}"
+                ]
             },
-            "args": [
-                "${workspaceFolder}"
-            ],
             "dependsOn":[
                 "Install editable build"
             ],

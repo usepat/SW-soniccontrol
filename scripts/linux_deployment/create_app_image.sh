@@ -24,7 +24,7 @@ mkdir -p "$BUILD_DIR"
 cp -r ./scripts/linux_deployment/SonicControl.AppDir "$BUILD_DIR"
 
 # create a standalone executable for the app. Passing the current working directory
-bash ./scripts/create_exe.sh "$PROJECT_ROOT"
+bash ./scripts/create_exe.sh --collect-all sonic_firmware_tools
 
 # copy the executable into the app dir folder
 cp -r "$BUILD_DIR/dist/SonicControl/"  "$BUILD_DIR/SonicControl.AppDir/usr/bin"
