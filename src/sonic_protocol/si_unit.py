@@ -13,7 +13,7 @@ def cls_converter(cls):
         freq = attrs.field(converter=cls_converter(SIVarFrequency), default=SIVarFrequency(0))
     """
     def convert(x: Any):
-        if isinstance(x, cls):
+        if isinstance(x, (cls, SIVar)):
             return x
         return cls(x)
     return convert

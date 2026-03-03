@@ -42,6 +42,7 @@ import cattrs
 class ATConfig:
     atf: Optional[AtfSiVar] = attrs.field(
         default=None,
+        converter=lambda x: None if x is None else cls_converter(AtfSiVar)(x),
         metadata={"field_view_kwargs": {"treat_zero_as_none": True}}
     )
     atk: float = attrs.field(default=0)

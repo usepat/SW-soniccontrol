@@ -4,7 +4,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from sonic_protocol.schema import DeviceType, SIPrefix
 from sonic_protocol.python_parser import commands
 from soniccontrol_gui.ui_component import UIComponent
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar, cls_converter
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.sonic_device import SonicDevice
@@ -23,13 +23,13 @@ from soniccontrol_gui.constants import ui_labels, sizes
 class TransducerState:
     """Configuration data for the home view controls."""
     frequency: AbsoluteFrequencySIVar = attrs.field(
-        converter=AbsoluteFrequencySIVar,
+        converter=cls_converter(AbsoluteFrequencySIVar),
         default=AbsoluteFrequencySIVar(100000),
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )
     signal: bool = attrs.field(default=False, metadata={"field_view_kwargs":{"bootstyle": "round-toggle" }})
     gain: GainSIVar = attrs.field(
-        converter=GainSIVar,
+        converter=cls_converter(GainSIVar),
         default=GainSIVar(value=0),
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )

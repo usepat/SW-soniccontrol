@@ -4,7 +4,7 @@
         {   
             "label": "Install editable build",
             "type": "shell",
-            "command": "pip install -e '${workspaceFolder}'",
+            "command": "source '${workspaceFolder}/.venv/bin/activate' && pip install -e '${workspaceFolder}'",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -20,7 +20,7 @@
             "label": "Build SonicControl with PyInstaller",
             "type": "shell",
             "linux": { 
-                "command": "${workspaceFolder}/scripts/create_exe.sh" 
+                "command": "bash '${workspaceFolder}/scripts/create_exe.sh'" 
             },
             "windows": {
                 "command": "${workspaceFolder}/scripts/create_exe.bat"
@@ -58,6 +58,26 @@
                 "reveal": "always",
                 "focus": true,
                 "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Build AppImage for linux",
+            "type": "shell",
+            "linux": { 
+                "command": "bash '${workspaceFolder}/scripts/linux_deployment/create_app_image.sh'" 
+            },
+            "dependsOn":[
+                "Install editable build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
             }
         },
         {
