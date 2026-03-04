@@ -81,6 +81,26 @@
             }
         },
         {
+            "label": "Install plugins",
+            "type": "shell",
+            "linux": { 
+                "command": "bash '${workspaceFolder}/scripts/install_plugins.sh'" 
+            },
+            "dependsOn":[
+                "Install editable build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
             "label": "Build Documentation",
             "type": "shell",
             "command": "doxygen",

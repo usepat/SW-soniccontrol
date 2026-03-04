@@ -72,13 +72,6 @@ Status_Logs/
 venv/
 __pycache__/
 
-# We do not want user specific stuff
-.vscode/
-# But we want configurations for debugging and tasks
-!.vscode/settings.json
-!.vscode/extensions.json
-!.vscode/tasks.json
-!.vscode/launch.json
 
 *.tmp
 *.csv
