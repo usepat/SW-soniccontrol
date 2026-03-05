@@ -1,5 +1,5 @@
 import asyncio
-from typing import List
+from typing import Any, Dict, List
 
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import TestResult as ProtocolTestResult
@@ -72,6 +72,17 @@ class TestExecutor(EventManager):
     def proceed_semi_automated_test(self):
         self._user_interacted_flag.set()
 
+    async def _fetch_validation_args(self, num_args) -> Dict[str, Any]:
+        fetched_args: Dict[str, Any] = {}
+
+        for i in range(num_args):
+            answer = await self._device.execute_command(commands.GetTestValidationArg(i))
+            name = answer.field_value_dict[EFieldName.NAME]
+            value = answer.field_value_dict[EFieldName.VALUE]
+            fetched_args[name] = value
+
+        return fetched_args
+
     async def _run_test(self, test: TestInfo):
         try:
             test.test_result = None
@@ -83,6 +94,7 @@ class TestExecutor(EventManager):
 
                 test_result_value = answer.field_value_dict[EFieldName.TEST_RESULT]
                 interaction_type = answer.field_value_dict[EFieldName.TEST_INTERACTION]
+                num_test_validation_args = answer.field_value_dict[EFieldName.NUM_TEST_VALIDATION_ARGS]
                 msg = answer.field_value_dict[EFieldName.MESSAGE]
 
                 if test_result_value == ProtocolTestResult.COMPLETED:
@@ -96,9 +108,11 @@ class TestExecutor(EventManager):
                     )
                     break
 
+                validation_args = await self._fetch_validation_args(num_test_validation_args)
+
                 self.emit(Event(
                     TestExecutor.NEEDS_USER_INTERACTION_EVENT, 
-                    semi_automated_step=SemiAutomatedStep(interaction_type, msg),
+                    semi_automated_step=SemiAutomatedStep(interaction_type, msg, validation_args=validation_args),
                     test=test
                 ))
                 

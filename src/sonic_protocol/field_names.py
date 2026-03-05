@@ -130,4 +130,8 @@ class EFieldName(IEFieldName):
     TEST_SUITE_NAME = 92
     TEST_RESULT = 93
     TEST_INTERACTION = 94
+    NUM_TEST_VALIDATION_ARGS = 95
+    NAME = 96
+    VALUE = 97
+    
 

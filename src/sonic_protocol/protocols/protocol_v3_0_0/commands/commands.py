@@ -236,7 +236,8 @@ run_test = CommandContract(
     answer_def=AnswerDef( [
         AnswerFieldDef(EFieldName.TEST_RESULT, FieldType(t.TestResult, converter_ref=ConverterType.ENUM)),
         AnswerFieldDef(EFieldName.TEST_INTERACTION, FieldType(t.TestInteraction, converter_ref=ConverterType.ENUM)),
-        AnswerFieldDef(EFieldName.MESSAGE, FieldType(str))
+        AnswerFieldDef(EFieldName.NUM_TEST_VALIDATION_ARGS, FieldType(np.uint8)),
+        AnswerFieldDef(EFieldName.MESSAGE, FieldType(str)),
     ]),
     is_release=True,
     user_manual_attrs=UserManualAttrs(description="Runs the specified test."),
@@ -257,6 +258,23 @@ abort_test = CommandContract(
     group_id=GROUPS.testing,
     tags=["testing"]
 )
+
+get_test_validation_arg = CommandContract(
+    code=CommandCode.GET_TEST_VALIDATION_ARG,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs("?test_validation_arg"),
+        index_param=p.param_index_uint8
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.NAME, FieldType(str)),
+        AnswerFieldDef(EFieldName.VALUE, FieldType(float)),
+    ]),
+    is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Fetches an argument needed for user validation"),
+    group_id=GROUPS.testing,
+    tags=["testing"]
+)
+
 
 start_diagnostic_tool = CommandContract(
     code=CommandCode.START_DIAGNOSTIC_TOOL,

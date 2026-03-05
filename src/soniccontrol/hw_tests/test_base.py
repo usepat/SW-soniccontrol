@@ -1,3 +1,4 @@
+from typing import Any, Dict
 import attrs
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import TestInteraction
 from soniccontrol.events import EventManager, PropertyChangeEvent
@@ -11,6 +12,7 @@ class TestResult:
 class SemiAutomatedStep:
     interaction: TestInteraction = attrs.field()
     message: str = attrs.field()
+    validation_args: Dict[str, Any] = attrs.field(factory=dict)
 
 
 def _emit_test_result_changed(self, attr: attrs.Attribute, value):

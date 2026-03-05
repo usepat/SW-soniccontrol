@@ -10,7 +10,7 @@ from .commands.commands import (
     get_update_descale_v3_0_0, get_update_worker_v3_0_0,
     set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
     get_logger_list_item, get_logger_list_size, get_connection_status, 
-    get_num_tests, get_test_info, run_test, abort_test,
+    get_num_tests, get_test_info, run_test, abort_test, get_test_validation_arg,
     start_diagnostic_tool, start_operator, set_dac_mV
 )
 from .types.types import TestInteraction, TestResult
@@ -93,6 +93,7 @@ class Protocol_v3_0_0(ProtocolList):
                 CommandCode.GET_TEST_INFO,
                 CommandCode.RUN_TEST,
                 CommandCode.ABORT_TEST,
+                CommandCode.GET_TEST_VALIDATION_ARG
             ]
             return { key: value for key, value in command_contracts.items() if key in diagnostics_tool_command_codes }
 
@@ -103,6 +104,7 @@ class Protocol_v3_0_0(ProtocolList):
             get_test_info,
             run_test,
             abort_test,
+            get_test_validation_arg,
             start_diagnostic_tool,
             start_operator,
         ]

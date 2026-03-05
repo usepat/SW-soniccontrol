@@ -393,6 +393,13 @@ class AbortTest(Command):
         super().__init__(code=CommandCode.ABORT_TEST)
 
 @attrs.define()
+class GetTestValidationArg(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_TEST_VALIDATION_ARG)
+
+    index: int = attrs.field()
+
+@attrs.define()
 class SetLogLevel(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_LOG_LEVEL)

@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import Callable, List
 import asyncio
+import json
 from async_tkinter_loop import async_handler
 from ttkbootstrap.scrolled import ScrolledFrame
 from soniccontrol.hw_tests.test_base import TestInteraction, TestResult
@@ -108,13 +109,17 @@ class HwTestingTab(UIComponent):
         semi_automated_step: SemiAutomatedStep = event.data["semi_automated_step"]
         test: TestInfo = event.data["test"]
 
+        demand_msg = semi_automated_step.message
+        if len(semi_automated_step.validation_args) > 0:
+            demand_msg += "\n" + json.dumps(semi_automated_step.validation_args, indent=-1)
+
         if semi_automated_step.interaction == TestInteraction.PHYSICAL_INTERACTION:
-            msg_box = MessageBox(self._view.root, semi_automated_step.message, ui_labels.USER_INTERACTION_NEEDED, [DialogOptions.PROCEED])
+            msg_box = MessageBox(self._view.root, demand_msg, ui_labels.USER_INTERACTION_NEEDED, [DialogOptions.PROCEED])
             answer = await msg_box.wait_for_answer()
             if answer is None or answer != DialogOptions.PROCEED:
                 return # in case the window was closed, do not proceed the test. Do nothing
         elif semi_automated_step.interaction == TestInteraction.VALIDATION:
-            msg_box = MessageBox(self._view.root, semi_automated_step.message, ui_labels.USER_INTERACTION_NEEDED, [DialogOptions.YES, DialogOptions.NO])
+            msg_box = MessageBox(self._view.root, demand_msg, ui_labels.USER_INTERACTION_NEEDED, [DialogOptions.YES, DialogOptions.NO])
             answer = await msg_box.wait_for_answer()
             if answer is None:
                 return # Window was closed. Do not proceed the test

@@ -96,6 +96,7 @@ class CommandCode(ICommandCode):
     GET_CONNECTION_STATUS = 430
     GET_NUM_TESTS = 440
     GET_TEST_INFO = 441
+    GET_TEST_VALIDATION_ARG = 442
 
     # Setters with corresponding getters
     SET_SWF = 1010
