@@ -116,8 +116,10 @@ class HwTestingTab(UIComponent):
         elif semi_automated_step.interaction == TestInteraction.VALIDATION:
             msg_box = MessageBox(self._view.root, semi_automated_step.message, ui_labels.USER_INTERACTION_NEEDED, [DialogOptions.YES, DialogOptions.NO])
             answer = await msg_box.wait_for_answer()
+            if answer is None:
+                return # Window was closed. Do not proceed the test
             did_test_pass =  answer == DialogOptions.YES
-            test.test_result = TestResult(did_test_pass, "Success" if did_test_pass else "Failure")
+            test.test_result = TestResult(did_test_pass, ui_labels.SUCCESS if did_test_pass else ui_labels.FAILURE)
         else:
             raise NotImplementedError("This user interaction type was not implemented")
 

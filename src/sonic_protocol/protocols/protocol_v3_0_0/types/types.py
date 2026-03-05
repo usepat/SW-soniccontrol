@@ -10,3 +10,4 @@ class TestResult(IntEnum):
     SUCCESS = 0
     FAILURE = 1
     SEMI_AUTOMATED_STEP = 2
+    COMPLETED = 3

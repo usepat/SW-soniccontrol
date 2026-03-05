@@ -85,6 +85,9 @@ class TestExecutor(EventManager):
                 interaction_type = answer.field_value_dict[EFieldName.TEST_INTERACTION]
                 msg = answer.field_value_dict[EFieldName.MESSAGE]
 
+                if test_result_value == ProtocolTestResult.COMPLETED:
+                    break # after Semi Automated step Needs user validation, the device responds with "test completed"
+
                 if test_result_value != ProtocolTestResult.SEMI_AUTOMATED_STEP:
                     was_successful = test_result_value == ProtocolTestResult.SUCCESS
                     test.test_result = TestResult(
@@ -101,9 +104,6 @@ class TestExecutor(EventManager):
                 
                 await self._user_interacted_flag.wait()
                 self._user_interacted_flag.clear()
-
-                if interaction_type == TestInteraction.VALIDATION:
-                    break # user validated test as last step
         except asyncio.CancelledError:
             await self._device.execute_command(commands.AbortTest())
             raise
