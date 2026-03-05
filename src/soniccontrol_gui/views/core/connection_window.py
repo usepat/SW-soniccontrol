@@ -181,7 +181,7 @@ class ConnectionWindow(UIComponent):
         if self._view.should_start_configurator:
             args.append("--start-configurator=true")
         if self._view.use_firmware_gui:
-            args.append("--gui")
+            args.append("--gui=true")
         if self._view.profile != "none":
             args.append(f"--profile={self._view.profile}")
         if len(self._view.simulation_cmd_args) != 0:

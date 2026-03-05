@@ -4,7 +4,7 @@ from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import TestResult as ProtocolTestResult
 from soniccontrol.events import Event, EventManager, PropertyChangeEvent
-from .test_base import SemiAutomatedStep, TestInfo, TestResult, TestInteraction
+from .test_base import SemiAutomatedStep, TestInfo, TestResult
 from soniccontrol.sonic_device import SonicDevice
 import sonic_protocol.python_parser.commands as commands
 
