@@ -12,6 +12,7 @@ class TestResult:
 class SemiAutomatedStep:
     interaction: TestInteraction = attrs.field()
     message: str = attrs.field()
+    test_step_index: int = attrs.field()
     validation_args: Dict[str, Any] = attrs.field(factory=dict)
 
 

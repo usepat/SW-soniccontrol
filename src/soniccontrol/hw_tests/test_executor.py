@@ -93,6 +93,7 @@ class TestExecutor(EventManager):
                 answer = await self._device.execute_command(commands.RunTest(test.index))
 
                 test_result_value = answer.field_value_dict[EFieldName.TEST_RESULT]
+                test_step_index = answer.field_value_dict[EFieldName.TEST_STEP_INDEX]
                 interaction_type = answer.field_value_dict[EFieldName.TEST_INTERACTION]
                 num_test_validation_args = answer.field_value_dict[EFieldName.NUM_TEST_VALIDATION_ARGS]
                 msg = answer.field_value_dict[EFieldName.MESSAGE]
@@ -112,7 +113,7 @@ class TestExecutor(EventManager):
 
                 self.emit(Event(
                     TestExecutor.NEEDS_USER_INTERACTION_EVENT, 
-                    semi_automated_step=SemiAutomatedStep(interaction_type, msg, validation_args=validation_args),
+                    semi_automated_step=SemiAutomatedStep(interaction_type, msg, test_step_index, validation_args=validation_args),
                     test=test
                 ))
                 

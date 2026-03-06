@@ -235,6 +235,7 @@ run_test = CommandContract(
     ),
     answer_def=AnswerDef( [
         AnswerFieldDef(EFieldName.TEST_RESULT, FieldType(t.TestResult, converter_ref=ConverterType.ENUM)),
+        AnswerFieldDef(EFieldName.TEST_STEP_INDEX, FieldType(np.uint8), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="test step: ")),
         AnswerFieldDef(EFieldName.TEST_INTERACTION, FieldType(t.TestInteraction, converter_ref=ConverterType.ENUM)),
         AnswerFieldDef(EFieldName.NUM_TEST_VALIDATION_ARGS, FieldType(np.uint8)),
         AnswerFieldDef(EFieldName.MESSAGE, FieldType(str)),

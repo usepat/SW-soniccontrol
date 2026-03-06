@@ -133,5 +133,6 @@ class EFieldName(IEFieldName):
     NUM_TEST_VALIDATION_ARGS = 95
     NAME = 96
     VALUE = 97
+    TEST_STEP_INDEX = 98
     
 
