@@ -3,6 +3,7 @@ from typing import List
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
+from soniccontrol.app_config import SOFTWARE_VERSION
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView
 from soniccontrol_gui.constants import fonts, sizes, ui_labels
@@ -109,11 +110,9 @@ class InfoView(TabView):
         self._company_name: ttk.Label = ttk.Label(
             self._footer_frame, text=ui_labels.COMPANY_NAME, anchor=ttk.CENTER
         )
-        # TODO create the exe inside a github task, and then just fetch the release version
-        __version__= "v3.1.0-beta" # TODO: fix the version problem
         self._version: ttk.Label = ttk.Label(
             self._footer_frame,
-            text=f"{ui_labels.VERSION_LABEL}: {__version__}",
+            text=f"{ui_labels.VERSION_LABEL}: {SOFTWARE_VERSION}",
             anchor=ttk.CENTER,
         )
 

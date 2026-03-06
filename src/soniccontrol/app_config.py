@@ -10,7 +10,7 @@ import re
 
 def get_version_tag() -> str:
     version_desc = version("soniccontrol")
-    regex = r"v?(?P<tag>\d+\.\d+\.\d+).*"
+    regex = r"^v?(?P<tag>\d+\.\d+\.\d+(?:-[a-zA-Z]+)?).*"
     match_result = re.match(regex, version_desc)
     if match_result is None:
         raise Exception("Version tag not parsable")

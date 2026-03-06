@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from pathlib import Path
 from tkinter import filedialog
 from typing import Any, Optional, Callable
@@ -7,13 +8,19 @@ from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 
 
+class FileBrowseAction(Enum):
+    OPEN_FILE = auto()
+    SAVE_FILE = auto()
+
 class FileBrowseButtonView(View):
     def __init__(self, master: Any, parent_widget_name: str, *args, 
-                 text: str = "", defaultextension: str | None = None, filetypes = None, **kwargs):
+                 text: str = "", defaultextension: str | None = None, filetypes = None, 
+                 action: FileBrowseAction = FileBrowseAction.OPEN_FILE, **kwargs):
         self._parent_widget_name = parent_widget_name
         self._text = text
         self._defaultextension = defaultextension
         self._filetypes = filetypes
+        self._action = action
         super().__init__(master, *args, **kwargs)
         
     def _initialize_children(self) -> None:
@@ -54,7 +61,12 @@ class FileBrowseButtonView(View):
             kwargs["defaultextension"] = self._defaultextension
         if self._filetypes is not None:
             kwargs["filetypes"] = self._filetypes
-        filename: str = filedialog.askopenfilename(**kwargs)
+        if self._action == FileBrowseAction.OPEN_FILE:
+            filename: str = filedialog.askopenfilename(**kwargs)
+        elif self._action == FileBrowseAction.SAVE_FILE:
+            filename: str = filedialog.asksaveasfilename(**kwargs)
+        else:
+            raise NotImplementedError()
 
         if filename == "." or filename == "" or isinstance(filename, (tuple)):
             return
