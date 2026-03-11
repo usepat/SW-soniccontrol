@@ -323,3 +323,106 @@ set_dac_mV = CommandContract(
     group_id=GROUPS.transducer,
     tags=["DAC"]
 )
+
+get_modbus_settings = CommandContract(
+    code=CommandCode.GET_MODBUS_SETTINGS,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["?modbus_settings"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            f.modbus_server_id_field,
+            f.baudrate_field,
+            f.uart_interface_field,
+            f.parity_field
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Returns the settings for modbus over serial line"
+    ),
+    is_release=True,
+    group_id=GROUPS.communication.serial_settings
+)
+
+
+set_modbus_server_id = CommandContract(
+    code=CommandCode.SET_MODBUS_SLAVE_ADDRESS,
+    command_def=CommandDef(
+        setter_param=CommandParamDef(EFieldName.MODBUS_SERVER_ID, f.field_type_modbus_server_id),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!modbus_server_id"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            f.modbus_server_id_field,
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Sets the modbus server id."
+    ),
+    is_release=True,
+    group_id=GROUPS.communication.serial_settings
+)
+
+set_modbus_baudrate = CommandContract(
+    code=CommandCode.SET_MODBUS_BAUDRATE,
+    command_def=CommandDef(
+        setter_param=CommandParamDef(EFieldName.BAUDRATE, f.field_type_baudrate),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!modbus_baudrate"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            f.baudrate_field,
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Sets the baudrate for modbus over serial line."
+    ),
+    is_release=True,
+    group_id=GROUPS.communication.serial_settings
+)
+
+set_modbus_uart_interface = CommandContract(
+    code=CommandCode.SET_MODBUS_INTERFACE,
+    command_def=CommandDef(
+        setter_param=CommandParamDef(EFieldName.UART_INTERFACE, f.field_type_uart_interface),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!modbus_uart_interface"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            f.uart_interface_field,
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Sets the physical interface for modbus over serial line."
+    ),
+    is_release=True,
+    group_id=GROUPS.communication.serial_settings
+)
+
+set_modbus_parity = CommandContract(
+    code=CommandCode.SET_MODBUS_PARITY,
+    command_def=CommandDef(
+        setter_param=CommandParamDef(EFieldName.PARITY, f.field_type_parity),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!modbus_parity"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            f.parity_field,
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Sets the parity for modbus over serial line."
+    ),
+    is_release=True,
+    group_id=GROUPS.communication.serial_settings
+)

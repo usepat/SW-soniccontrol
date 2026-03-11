@@ -11,7 +11,8 @@ from .commands.commands import (
     set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
     get_logger_list_item, get_logger_list_size, get_connection_status, 
     get_num_tests, get_test_info, run_test, abort_test, get_test_validation_arg,
-    start_diagnostic_tool, start_operator, set_dac_mV
+    start_diagnostic_tool, start_operator, set_dac_mV, 
+    get_modbus_settings, set_modbus_baudrate, set_modbus_parity, set_modbus_server_id, set_modbus_uart_interface
 )
 from .types.types import TestInteraction, TestResult
 
@@ -107,6 +108,11 @@ class Protocol_v3_0_0(ProtocolList):
             get_test_validation_arg,
             start_diagnostic_tool,
             start_operator,
+            get_modbus_settings, 
+            set_modbus_baudrate, 
+            set_modbus_parity, 
+            set_modbus_server_id, 
+            set_modbus_uart_interface
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_update_descale_v3_0_0])
@@ -133,6 +139,7 @@ class Protocol_v3_0_0(ProtocolList):
         command_contract_dict.pop(CommandCode.GET_DATETIME_PICO, None)
         command_contract_dict.pop(CommandCode.SET_COM_PROT, None)
         command_contract_dict.pop(CommandCode.SET_TERMINATION, None)
+        command_contract_dict.pop(CommandCode.BROADCAST_MODBUS_SERVER_ID, None)
 
         return command_contract_dict
 

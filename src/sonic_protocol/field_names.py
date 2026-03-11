@@ -134,5 +134,11 @@ class EFieldName(IEFieldName):
     NAME = 96
     VALUE = 97
     TEST_STEP_INDEX = 98
+
+    PARITY = 99
+    UART_INTERFACE = 100
+    BAUDRATE = 101
+    # Mobdus server id = 83
+
     
 

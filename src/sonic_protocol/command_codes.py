@@ -98,6 +98,8 @@ class CommandCode(ICommandCode):
     GET_TEST_INFO = 441
     GET_TEST_VALIDATION_ARG = 442
 
+    GET_MODBUS_SETTINGS = 450
+
     # Setters with corresponding getters
     SET_SWF = 1010
     SET_FREQ = 1020
@@ -172,6 +174,11 @@ class CommandCode(ICommandCode):
     RESET_ON_TIMER = 2070
     START_DIAGNOSTIC_TOOL = 2080
     START_OPERATOR = 2081
+
+    SET_MODBUS_INTERFACE = 2090
+    SET_MODBUS_BAUDRATE = 2091
+    SET_MODBUS_PARITY = 2092
+    SET_MODBUS_SLAVE_ADDRESS = 2093
     
 
     # commands that execute something

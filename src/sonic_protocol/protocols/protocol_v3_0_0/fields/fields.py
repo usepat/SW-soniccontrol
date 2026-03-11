@@ -165,3 +165,44 @@ dac_mV_field = AnswerFieldDef(
     field_name=EFieldName.VOLTAGE,
     field_type=field_type_dac_mV
 )
+
+field_type_parity = FieldType(
+    field_type=t.Parity,
+    converter_ref=ConverterType.ENUM
+)
+
+parity_field = AnswerFieldDef(
+    field_name=EFieldName.PARITY,
+    field_type=field_type_parity
+)
+
+field_type_baudrate = FieldType(
+    field_type=np.uint32,
+    allowed_values=(np.uint32(9600), np.uint32(19200))
+)
+
+baudrate_field = AnswerFieldDef(
+    field_name=EFieldName.BAUDRATE,
+    field_type=field_type_baudrate
+)
+
+field_type_uart_interface = FieldType(
+    field_type=t.UartInterface,
+    converter_ref=ConverterType.ENUM
+)
+
+uart_interface_field = AnswerFieldDef(
+    field_name=EFieldName.UART_INTERFACE,
+    field_type=field_type_uart_interface
+)
+
+field_type_modbus_server_id = FieldType(
+    np.uint8,
+    min_value=np.uint8(1), # address 0 is for broadcasting
+    max_value=np.uint8(247) # addresses from 248 to 255 are reserved
+)
+
+modbus_server_id_field = AnswerFieldDef(
+    field_name=EFieldName.MODBUS_SERVER_ID,
+    field_type=field_type_modbus_server_id
+)
