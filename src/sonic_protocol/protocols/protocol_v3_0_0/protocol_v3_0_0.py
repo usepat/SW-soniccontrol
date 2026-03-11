@@ -14,7 +14,7 @@ from .commands.commands import (
     start_diagnostic_tool, start_operator, set_dac_mV, 
     get_modbus_settings, set_modbus_baudrate, set_modbus_parity, set_modbus_server_id, set_modbus_uart_interface
 )
-from .types.types import TestInteraction, TestResult
+from .types.types import TestInteraction, TestResult, Parity, UartInterface
 
 
 class Protocol_v3_0_0(ProtocolList):
@@ -47,6 +47,8 @@ class Protocol_v3_0_0(ProtocolList):
         data_types = {
             "E_TEST_RESULT": TestResult,
             "E_TEST_INTERACTION": TestInteraction,
+            "E_PARITY": Parity,
+            "E_UART_INTERFACE": UartInterface,
         }
         data_types.update(self._previous_protocol.custom_data_types)
     
