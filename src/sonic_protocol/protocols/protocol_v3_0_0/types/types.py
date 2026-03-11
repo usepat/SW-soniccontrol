@@ -14,7 +14,7 @@ class TestResult(IntEnum):
 
 class UartInterface(IntEnum):
     RS232 = 0
-    RS485 = 0
+    RS485 = 1
 
 class Parity(IntEnum):
     EVEN = 0
