@@ -15,6 +15,7 @@ from soniccontrol.communication.communicator import Communicator
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol_gui.views.configuration.device_settings import DeviceSettingsTab
 from soniccontrol_gui.views.configuration.settings import Settings
 from soniccontrol_gui.views.control.log_storage import LogStorage, NotDeviceLogFilter
 from soniccontrol.updater import Updater
@@ -194,6 +195,7 @@ class KnownDeviceWindow(DeviceWindow):
                 self._flashing.subscribe(Flashing.FAILED_EVENT, lambda _e: self.reconnect_after_flashing(False))
                 flashing_view = self._flashing.view
 
+            self._device_settings_tab = DeviceSettingsTab(self, self._device)
 
             # Views
             self._logger.debug("Created all views, add them as tabs")
@@ -205,7 +207,8 @@ class KnownDeviceWindow(DeviceWindow):
                 self._editor.view, 
                 self._configuration.view, 
                 self._settings.view,
-                flashing_view
+                flashing_view,
+                self._device_settings_tab.view
             ], right_one=False)
             self._view.add_tab_views([
                 self._info.view,

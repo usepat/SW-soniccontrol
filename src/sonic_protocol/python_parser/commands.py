@@ -2,6 +2,7 @@ from typing import Any, Dict
 import attrs
 from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity, UartInterface
 from sonic_protocol.schema import Loglevel
 
 
@@ -406,6 +407,39 @@ class SetLogLevel(Command):
 
     index: str = attrs.field(alias=EFieldName.LOGGER_NAME.name)
     value: Loglevel = attrs.field(alias=EFieldName.LOG_LEVEL.name)
+
+@attrs.define()
+class GetModbusSettings(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_MODBUS_SETTINGS)
+
+@attrs.define()
+class SetModbusServerAddress(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_MODBUS_SLAVE_ADDRESS)
+
+    value: int = attrs.field(alias=EFieldName.MODBUS_SERVER_ID.name)
+
+@attrs.define()
+class SetModbusParity(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_MODBUS_PARITY)
+
+    value: Parity = attrs.field(alias=EFieldName.PARITY.name)
+
+@attrs.define()
+class SetModbusBaudrate(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_MODBUS_BAUDRATE)
+
+    value: int = attrs.field(alias=EFieldName.BAUDRATE.name)
+
+@attrs.define()
+class SetModbusInterface(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_MODBUS_INTERFACE)
+
+    value: UartInterface = attrs.field(alias=EFieldName.UART_INTERFACE.name)
 
 # Legacy specific commands
 

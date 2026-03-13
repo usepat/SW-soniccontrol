@@ -16,6 +16,7 @@ from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
+from soniccontrol_gui.views.configuration.device_settings import DeviceSettingsTab
 from soniccontrol_gui.views.control.logging import Logging
 from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
@@ -114,13 +115,13 @@ class PostmanDeviceWindow(DeviceWindow):
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
             self._logging = Logging(self, connection_name)
             self._worker_connection_tab = PostmanHomeTab(self, self._device, connection_name)
-
-            # TODO: add modbus config view
+            self._device_settings_tab = DeviceSettingsTab(self, self._device)
 
             self._status_bar = PostmanStatusBar(self, self._view.status_bar_slot) # type: ignore
             self._view.add_tab_views([
                 self._worker_connection_tab.view,
                 self._serialmonitor.view,
+                self._device_settings_tab.view,
             ], right_one=False)
             self._view.add_tab_views([
                 self._logging.view
