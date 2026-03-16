@@ -8,6 +8,8 @@ from serial_asyncio import open_serial_connection
 import logging
 
 
+# TODO: implement proper factory pattern and
+# close_connection should be as destructor on the connection object RAII
 @attrs.define()
 class Connection(abc.ABC):
     connection_name : str = attrs.field(init=True)

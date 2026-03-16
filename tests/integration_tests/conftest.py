@@ -8,6 +8,8 @@ from sonic_protocol.schema import DeviceType
 import pytest
 import psutil
 
+from soniccontrol.app_config import get_simulation_exe
+
 
 class Profile(Enum):
     simulation_worker = auto()
@@ -75,10 +77,8 @@ def pytest_configure(config):
         Profile.simulation_postman_worker
     ]
 
-    assert "FIRMWARE_BUILD_DIR_PATH" in os.environ, "FIRMWARE_BUILD_DIR_PATH was not set as environment variable"
-    simulation_exe_path = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"]) / "linux/platform_linux/src/device/device_main"
-    simulation_exe_path = simulation_exe_path.expanduser().resolve()
-
+    simulation_exe_path = get_simulation_exe()
+    assert simulation_exe_path is not None, "Firmware build dir was not set in the environment variables"
     config._sonic_control_plugin = SonicControlPlugin(is_simulation, url, device, simulation_exe_path, log_path)
 
 

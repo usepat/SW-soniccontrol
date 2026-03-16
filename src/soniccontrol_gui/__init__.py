@@ -19,7 +19,7 @@ from typing import Optional
 from ttkbootstrap.utility import enable_high_dpi_awareness
 from async_tkinter_loop import async_mainloop
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
-from soniccontrol.app_config import System, PLATFORM
+from soniccontrol.app_config import System, PLATFORM, get_simulation_exe
 from soniccontrol_gui.constants import files
 from soniccontrol_gui.resources import resources
 from importlib import resources as rs
@@ -73,13 +73,11 @@ def start_gui():
     register_device_plugins()
 
     in_dev_env = "FIRMWARE_BUILD_DIR_PATH" in os.environ
-    simulation_exe_path = None
     if in_dev_env:
         # We could do this somehow else. But this is easy and simple
         WidgetRegistry.set_up()
-        simulation_exe_path =  Path(os.environ["FIRMWARE_BUILD_DIR_PATH"]) / "linux/platform_linux/src/device/device_main"
 
-    main_window = ConnectionWindow(simulation_exe_path=simulation_exe_path)
+    main_window = ConnectionWindow(simulation_exe_path=get_simulation_exe())
     root = main_window.view
 
     if PLATFORM != System.WINDOWS:
