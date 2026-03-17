@@ -1,9 +1,6 @@
 from typing import List
 import aiohttp
 
-from soniccontrol.communication.remote.server import HTTP_OK
-
-
 
 class RemoteClient:
     def __init__(self, url: str):
@@ -14,7 +11,7 @@ class RemoteClient:
         await self._session.close()
 
     async def _check_response_ok(self, response: aiohttp.ClientResponse):
-        if response.status != HTTP_OK:
+        if response.status != 200:
             error_message = await response.json()
             raise Exception(error_message["error"])
 
@@ -23,8 +20,14 @@ class RemoteClient:
             await self._check_response_ok(response)
             return (await response.json())["ports"]
 
-    async def connect(self, port: str):
-        async with self._session.post(self._url + "/connect/" + port) as response:
+    async def connect(self, port: str, **kwargs):
+        cmd_args: List[str] = kwargs.get("cmd_args", [])
+        baudrate: int = kwargs.get("baudrate", 9600)
+        params = { 
+            "cmd_args": " ".join(cmd_args), 
+            "baudrate": baudrate
+        }
+        async with self._session.post(self._url + "/connect/" + port, params=params) as response:
             await self._check_response_ok(response)
 
     async def write(self, port: str, data: bytes):

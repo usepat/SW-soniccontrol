@@ -3,6 +3,7 @@ import asyncio
 
 from PIL import Image
 
+from soniccontrol_gui.plugins.ui_plugin import register_ui_plugins
 from soniccontrol_gui.widgets.message_box import MessageBox
 Image.CUBIC = Image.BICUBIC # FIX: because ttk.bootstrap sets an deprecated, removed value
 
@@ -15,6 +16,7 @@ from pathlib import Path
 import subprocess
 import sys
 import os
+import click
 from typing import Optional
 from ttkbootstrap.utility import enable_high_dpi_awareness
 from async_tkinter_loop import async_mainloop
@@ -68,16 +70,21 @@ check_high_dpi_windows()
 setup_fonts()
 
 
-
-def start_gui():
+@click.command()
+@click.option("--remote-server-url", default=None)
+def start_gui(remote_server_url: str | None):
     register_device_plugins()
+    register_ui_plugins()
 
     in_dev_env = "FIRMWARE_BUILD_DIR_PATH" in os.environ
     if in_dev_env:
         # We could do this somehow else. But this is easy and simple
         WidgetRegistry.set_up()
 
-    main_window = ConnectionWindow(simulation_exe_path=get_simulation_exe())
+    main_window = ConnectionWindow(
+        simulation_exe_path=get_simulation_exe(), 
+        remote_server_url=remote_server_url
+    )
     root = main_window.view
 
     if PLATFORM != System.WINDOWS:

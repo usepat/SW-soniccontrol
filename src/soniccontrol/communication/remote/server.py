@@ -3,12 +3,13 @@ from pathlib import Path
 from typing import Dict
 from flask import Flask, Response, request, abort, jsonify
 from serial.tools.list_ports import comports as get_comports
-from soniccontrol.app_config import get_simulation_exe
-from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 import time
 import threading
 import attrs
 from werkzeug.exceptions import HTTPException
+
+from soniccontrol.app_config import get_simulation_exe
+from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 
 
 @attrs.define()

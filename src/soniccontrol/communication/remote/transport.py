@@ -18,8 +18,8 @@ class RemoteClientTransport(asyncio.Transport):
         self._resumed_reading = asyncio.Event()
         super().__init__()
     
-    async def start_client(self):
-        await self._client.connect(self._port)
+    async def start_client(self, **kwargs):
+        await self._client.connect(self._port, **kwargs)
         self._poll_task = asyncio.Task(self._poll())
 
     async def _poll(self):
@@ -66,13 +66,16 @@ class RemoteClientTransport(asyncio.Transport):
     def get_write_buffer_limits(self) -> tuple[int, int]:
         return 0, 0
 
-    def write(self, data: bytes | bytearray | memoryview[Any]):
+    def write(self, data: bytes | bytearray | memoryview):
         """Write some data bytes to the transport.
 
         This does not block; it buffers the data and arranges for it
         to be sent out asynchronously.
         """
         # Fuck non blocking. We ballin...
+        # TODO: make this non blocking
+        if isinstance(data, memoryview):
+            data = data.tobytes()
         self._loop.run_until_complete(self._client.write(self._port, bytes(data)))
 
     def can_write_eof(self):
@@ -83,18 +86,20 @@ class RemoteClientTransport(asyncio.Transport):
         self._loop.run_until_complete(self._close())
 
 
-async def create_remote_connection(protocol_factory, url: str, port: str, loop = asyncio.get_running_loop()):
+async def create_remote_connection(protocol_factory, url: str, port: str, loop: asyncio.AbstractEventLoop, **kwargs):
     protocol = protocol_factory()
     transport = RemoteClientTransport(loop, protocol, url, port)
-    await transport.start_client()
+    await transport.start_client(**kwargs)
     return transport, protocol
 
 
-async def open_remote_connection(url: str, port: str, loop = asyncio.get_running_loop()):
+async def open_remote_connection(url: str, port: str, loop: asyncio.AbstractEventLoop | None = None, **kwargs):
+    if loop is None:
+        loop = asyncio.get_running_loop()
+    
     reader = asyncio.StreamReader(loop=loop)
     protocol = asyncio.StreamReaderProtocol(reader)
     factory = lambda: protocol
-    transport, _ = await create_remote_connection(factory, url, port, loop=loop)
+    transport, _ = await create_remote_connection(factory, url, port, loop, **kwargs)
     writer = asyncio.StreamWriter(transport, protocol, reader, loop)
     return reader, writer
-

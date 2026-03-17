@@ -7,13 +7,14 @@ import ttkbootstrap as ttk
 import tkinter as tk
 
 from sonic_protocol.schema import DeviceType, Version
+from soniccontrol.communication.remote.client import RemoteClient
 from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
-from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent, register_ui_plugins
+from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
+from soniccontrol.communication.connection import CLIConnection, Connection, RemoteServerConnection, SerialConnection
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
@@ -108,15 +109,14 @@ class DeviceWindowManager:
 
 
 class ConnectionWindow(UIComponent):
-    def __init__(self, simulation_exe_path: Optional[Path] = None):
-        #TODO move this somewhere else?
-        register_ui_plugins()
-        show_simulation_button = simulation_exe_path is not None
+    def __init__(self, simulation_exe_path: Optional[Path] = None, remote_server_url: str | None = None):        
+        show_simulation_button = simulation_exe_path is not None or remote_server_url is not None
         self._view: ConnectionWindowView = ConnectionWindowView(show_simulation_button)
         
         if simulation_exe_path:
             simulation_exe_path = simulation_exe_path.expanduser().resolve()
         self._simulation_exe_path = simulation_exe_path
+        self._remote_server_url = remote_server_url
         super().__init__(None, self._view)
         # Create and PLACE the plugin slot (tabs=True -> Notebook; False -> stacked)
         self._plugin_slot = UIPluginSlotComponent(
@@ -151,8 +151,14 @@ class ConnectionWindow(UIComponent):
         self._view.set_refresh_button_command(self._refresh_ports)
         self._refresh_ports()
 
-    def _refresh_ports(self):
-        ports = [port.device for port in list_ports.comports()]
+    @async_handler
+    async def _refresh_ports(self):
+        if self._remote_server_url is None:
+            ports = [port.device for port in list_ports.comports()]
+        else:
+            client = RemoteClient(self._remote_server_url)
+            ports = await client.scan_available_ports()
+            await client.close_client()
         self._view.set_ports(ports)
 
     async def wait_until_connected(self):
@@ -166,8 +172,13 @@ class ConnectionWindow(UIComponent):
 
         url = self._view.get_url()
         baudrate = 9600
+        connection_name = Path(url).name
 
-        connection = SerialConnection(url=url, baudrate=baudrate, connection_name=Path(url).name)
+        if self._remote_server_url is None:
+            connection = SerialConnection(connection_name, url=url, baudrate=baudrate)
+        else:
+            connection = RemoteServerConnection(connection_name, self._remote_server_url, port=url, baudrate=baudrate)
+        
         await self._attempt_connection(connection, self._view.is_legacy_device)
 
     @async_handler 
@@ -177,6 +188,7 @@ class ConnectionWindow(UIComponent):
         self._is_connecting = True
 
         bin_file = self._simulation_exe_path 
+        connection_name = "simulation"
         args: List[str] = []
         if self._view.should_start_configurator:
             args.append("--start-configurator=true")
@@ -188,7 +200,12 @@ class ConnectionWindow(UIComponent):
             args.extend(self._view.simulation_cmd_args.split(" "))
   
 
-        connection = CLIConnection(bin_file=bin_file, connection_name = "simulation", cmd_args=args)
+        if self._remote_server_url is None:
+            connection = CLIConnection(connection_name, bin_file=bin_file, cmd_args=args)
+        else:
+            connection = RemoteServerConnection(
+                connection_name, self._remote_server_url, port="simulation", cmd_args=args)
+        
         await self._attempt_connection(connection)
 
 
