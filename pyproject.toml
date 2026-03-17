@@ -26,6 +26,7 @@ dynamic = ["version", "dependencies"]
 dependencies = {file = ["requirements.txt"]}
 
 [project.scripts]
+soniccontrol_server = "soniccontrol:start_server"
 soniccontrol_cli = "soniccontrol_cli:cli"
 sonic_api_manual_builder = "sonic_protocol:build_manual"
 

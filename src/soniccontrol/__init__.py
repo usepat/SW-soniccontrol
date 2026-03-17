@@ -15,5 +15,6 @@ from soniccontrol.procedures.procs import (ScanArgs, AutoArgs, TuneArgs, WipeArg
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.data_capturing.experiment_store import HDF5ExperimentReader, HDF5ExperimentWriter
 from soniccontrol.communication.connection import CLIConnection, SerialConnection
+from soniccontrol.server import start_server
 
 logger = logging.getLogger(__name__)

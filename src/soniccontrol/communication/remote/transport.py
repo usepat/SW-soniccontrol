@@ -16,6 +16,7 @@ class RemoteClientTransport(asyncio.Transport):
         self._is_open = True
         self._poll_task: asyncio.Task | None = None
         self._resumed_reading = asyncio.Event()
+        self._resumed_reading.set()
         super().__init__()
     
     async def start_client(self, **kwargs):
@@ -76,14 +77,14 @@ class RemoteClientTransport(asyncio.Transport):
         # TODO: make this non blocking
         if isinstance(data, memoryview):
             data = data.tobytes()
-        self._loop.run_until_complete(self._client.write(self._port, bytes(data)))
+        self._loop.create_task(self._client.write(self._port, bytes(data)))
 
     def can_write_eof(self):
         return False
 
     def abort(self):
         self._is_open = False
-        self._loop.run_until_complete(self._close())
+        self._loop.create_task(self._close())
 
 
 async def create_remote_connection(protocol_factory, url: str, port: str, loop: asyncio.AbstractEventLoop, **kwargs):

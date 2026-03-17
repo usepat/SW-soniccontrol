@@ -1,11 +1,13 @@
 import asyncio
 from pathlib import Path
-from typing import Dict
-from flask import Flask, Response, request, abort, jsonify
+from typing import Any, Callable, Coroutine, Dict
+from flask import Flask, Response, request, abort, jsonify, Blueprint, current_app
 from serial.tools.list_ports import comports as get_comports
 import time
 import threading
 import attrs
+import click
+from functools import wraps
 from werkzeug.exceptions import HTTPException
 
 from soniccontrol.app_config import get_simulation_exe
@@ -19,36 +21,32 @@ class ConnectionObject:
     writer: asyncio.StreamWriter = attrs.field()
     timestamp: float = attrs.field(factory=time.time)
 
-connections: Dict[str, ConnectionObject] = {} 
+CONNECTIONS_REGISTRY = "connections"
+EVENT_LOOP = "event_loop"
 
-def cleanup_task():
-    # expiration in seconds
-    EXPIRATION = 300  # 5 minutes
-    while True:
-        now = time.time()
-        expired = [
-            obj_id for obj_id, obj in connections.items() 
-            if now - obj.timestamp > EXPIRATION
-        ]
-        for obj_id in expired:
-            del connections[obj_id]
-            app.logger.warning(f"Deleted expired object {obj_id}")
-        time.sleep(60)  # run every minute
-
-# start cleanup thread
-threading.Thread(target=cleanup_task, daemon=True).start()
-
-
-app = Flask(__name__)
 HTTP_OK = 200
 HTTP_CLIENT_ERROR = 400
 HTTP_SERVER_ERROR = 500
 
+server_bp = Blueprint("device", __name__)
+
+def execute_in_event_loop(func: Callable[..., Coroutine[Any, Any, Any]]):
+    """
+    decorator so we can use the same eventloop for all endpoints. 
+    Note flask[async] creates eventloops for each request. 
+    """
+    @wraps(func) # provide original function meta data.
+    def _execute(*args, **kwargs):
+        loop: asyncio.AbstractEventLoop = current_app.extensions[EVENT_LOOP]
+        coro = func(*args, **kwargs)
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        return future.result()
+    return _execute
 
 def http_ok():
     return jsonify({"status": "ok"}), HTTP_OK
 
-@app.errorhandler(Exception)
+@server_bp.errorhandler(Exception)
 def handle_exception(e) -> tuple[Response, int]:
     if isinstance(e, HTTPException):
         # e.code is Optional[int], default to 500
@@ -61,13 +59,15 @@ def handle_exception(e) -> tuple[Response, int]:
     return jsonify({"error": str(e)}), HTTP_SERVER_ERROR
 
 
-@app.get("/scan_available_ports")
+@server_bp.get("/scan_available_ports")
 def scan_available_ports():
     ports = [port.device for port in get_comports()]
     return jsonify({ "ports": ports }), HTTP_OK
 
-@app.post("/connect/<string:port>")
+@server_bp.post("/connect/<string:port>")
+@execute_in_event_loop
 async def connect(port: str):
+    connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port in connections:
         abort(HTTP_CLIENT_ERROR, description="there is already an active connection for this port")
 
@@ -88,8 +88,10 @@ async def connect(port: str):
 
     return http_ok()
 
-@app.post("/write/<string:port>")
+@server_bp.post("/write/<string:port>")
+@execute_in_event_loop
 async def write(port: str):
+    connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
         abort(HTTP_CLIENT_ERROR, description="there is no active connection for this port")
 
@@ -104,8 +106,10 @@ async def write(port: str):
 
     return http_ok()
 
-@app.get("/read/<string:port>")
+@server_bp.get("/read/<string:port>")
+@execute_in_event_loop
 async def read(port: str):
+    connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
         abort(HTTP_CLIENT_ERROR, description="there is no active connection for this port")
 
@@ -120,8 +124,10 @@ async def read(port: str):
 
     return Response(data, mimetype="application/octet-stream"), HTTP_OK
 
-@app.post("/disconnect/<string:port>")
+@server_bp.post("/disconnect/<string:port>")
+@execute_in_event_loop
 async def disconnect(port: str):
+    connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
         abort(HTTP_CLIENT_ERROR, description="there is no active connection for this port")
 
@@ -131,3 +137,38 @@ async def disconnect(port: str):
     return http_ok()
 
 
+@click.command()
+@click.option("--host", default=None)
+@click.option("--port", type=click.INT, default=None)
+def start_server(host: str | None, port: int | None):
+    loop = asyncio.new_event_loop()
+    threading.Thread(target=lambda: loop.run_forever(), daemon=True).start()
+
+    connection_registry: Dict[str, ConnectionObject] = {}
+    
+    # start cleanup thread
+    async def cleanup_task():
+        # expiration in seconds
+        EXPIRATION = 300  # 5 minutes
+        while True:
+            now = time.time()
+            expired = [
+                obj_id for obj_id, obj in connection_registry.items() 
+                if now - obj.timestamp > EXPIRATION
+            ]
+            for obj_id in expired:
+                await connection_registry[obj_id].connection.close_connection()
+                del connection_registry[obj_id]
+            await asyncio.sleep(60)  # run every minute
+    asyncio.run_coroutine_threadsafe(cleanup_task(), loop)
+
+    app = Flask(__name__)
+    app.extensions[CONNECTIONS_REGISTRY] = connection_registry
+    app.extensions[EVENT_LOOP] = loop
+    app.register_blueprint(server_bp)
+
+    app.run(host, port)
+
+
+if __name__ == "__main__":
+    start_server()

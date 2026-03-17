@@ -39,7 +39,7 @@ class RemoteClient:
             await self._check_response_ok(response)
 
     async def read(self, port: str) -> bytes:
-        async with self._session.post(self._url + "/read/" + port) as response:
+        async with self._session.get(self._url + "/read/" + port) as response:
             await self._check_response_ok(response)
             return await response.read()
 
