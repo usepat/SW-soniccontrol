@@ -7,14 +7,15 @@ import ttkbootstrap as ttk
 import tkinter as tk
 
 from sonic_protocol.schema import DeviceType, Version
-from soniccontrol.communication.remote.client import RemoteClient
+from soniccontrol.network.client import RemoteClient
+from soniccontrol.network.connection import RemoteServerConnection
 from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
 from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.communication.connection import CLIConnection, Connection, RemoteServerConnection, SerialConnection
+from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logging_utils import create_logger_for_connection
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
