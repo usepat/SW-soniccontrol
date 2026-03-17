@@ -12,6 +12,7 @@ from werkzeug.exceptions import HTTPException
 
 from soniccontrol.app_config import get_simulation_exe
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
+from soniccontrol.network.plugin import register_server_plugins
 
 
 @attrs.define()
@@ -166,6 +167,7 @@ def start_server(host: str | None, port: int | None):
     app.extensions[CONNECTIONS_REGISTRY] = connection_registry
     app.extensions[EVENT_LOOP] = loop
     app.register_blueprint(server_bp)
+    register_server_plugins(app)
 
     app.run(host, port)
 

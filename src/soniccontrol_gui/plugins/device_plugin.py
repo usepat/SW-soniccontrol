@@ -10,7 +10,7 @@ from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol_gui.plugins.pluign_discovery import discover_plugins
+from soniccontrol.plugin_discovery import discover_plugins
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import View
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow

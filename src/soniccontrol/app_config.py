@@ -47,6 +47,7 @@ def create_appdata_directory(system: System, dir_name: str) -> Path:
 PLATFORM: Final[System] = decode_platform()
 SOFTWARE_VERSION: Final[Version] = Version.to_version(get_version_tag())
 APP_DATA_DIR: Final[Path] = create_appdata_directory(PLATFORM, "SonicControl")
+PLUGIN_DIR: Final[Path] = APP_DATA_DIR / "plugins"
 
 def get_base_dir() -> Path:
     if getattr(sys, "frozen", False):

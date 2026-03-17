@@ -1,10 +1,8 @@
-
 from importlib import metadata
 import sys
-import os
 from typing import Any, List
 
-from soniccontrol_gui.constants import _Files
+from soniccontrol.app_config import PLUGIN_DIR
 
 
 def discover_plugins(group: str) -> List[Any]:
@@ -20,9 +18,9 @@ def discover_plugins(group: str) -> List[Any]:
         pass
 
     # 2) Plugins dropped into ./plugins (wheels unzipped here)
-    plugin_dirs=[str(_Files.PLUGINS)]
-    _Files.PLUGINS.mkdir(parents=True, exist_ok=True)
-    sys.path.insert(0, str(_Files.PLUGINS))  # allow importing plugin packages from the directory
+    plugin_dirs=[str(PLUGIN_DIR)]
+    PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
+    sys.path.insert(0, str(PLUGIN_DIR))  # allow importing plugin packages from the directory
 
     # 3) In a bundled application all dependencies and packages are inside _internal folder
     # When using pyinstaller with --one-directory option
