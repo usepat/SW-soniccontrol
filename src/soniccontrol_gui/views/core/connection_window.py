@@ -7,6 +7,7 @@ import ttkbootstrap as ttk
 import tkinter as tk
 
 from sonic_protocol.schema import DeviceType, Version
+from soniccontrol.app_config import REMOTE_SERVER_URL
 from soniccontrol.network.client import RemoteClient
 from soniccontrol.network.connection import RemoteServerConnection
 from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
@@ -110,14 +111,13 @@ class DeviceWindowManager:
 
 
 class ConnectionWindow(UIComponent):
-    def __init__(self, simulation_exe_path: Optional[Path] = None, remote_server_url: str | None = None):        
+    def __init__(self, simulation_exe_path: Optional[Path] = None):        
         show_simulation_button = simulation_exe_path is not None or remote_server_url is not None
         self._view: ConnectionWindowView = ConnectionWindowView(show_simulation_button)
         
         if simulation_exe_path:
             simulation_exe_path = simulation_exe_path.expanduser().resolve()
         self._simulation_exe_path = simulation_exe_path
-        self._remote_server_url = remote_server_url
         super().__init__(None, self._view)
         # Create and PLACE the plugin slot (tabs=True -> Notebook; False -> stacked)
         self._plugin_slot = UIPluginSlotComponent(
@@ -154,10 +154,10 @@ class ConnectionWindow(UIComponent):
 
     @async_handler
     async def _refresh_ports(self):
-        if self._remote_server_url is None:
+        if REMOTE_SERVER_URL is None:
             ports = [port.device for port in list_ports.comports()]
         else:
-            client = RemoteClient(self._remote_server_url)
+            client = RemoteClient(REMOTE_SERVER_URL)
             ports = await client.scan_available_ports()
             await client.close_client()
         self._view.set_ports(ports)
@@ -175,10 +175,10 @@ class ConnectionWindow(UIComponent):
         baudrate = 9600
         connection_name = Path(url).name
 
-        if self._remote_server_url is None:
+        if REMOTE_SERVER_URL is None:
             connection = SerialConnection(connection_name, url=url, baudrate=baudrate)
         else:
-            connection = RemoteServerConnection(connection_name, self._remote_server_url, port=url, baudrate=baudrate)
+            connection = RemoteServerConnection(connection_name, REMOTE_SERVER_URL, port=url, baudrate=baudrate)
         
         await self._attempt_connection(connection, self._view.is_legacy_device)
 
@@ -201,11 +201,11 @@ class ConnectionWindow(UIComponent):
             args.extend(self._view.simulation_cmd_args.split(" "))
   
 
-        if self._remote_server_url is None:
+        if REMOTE_SERVER_URL is None:
             connection = CLIConnection(connection_name, bin_file=bin_file, cmd_args=args)
         else:
             connection = RemoteServerConnection(
-                connection_name, self._remote_server_url, port="simulation", cmd_args=args)
+                connection_name, REMOTE_SERVER_URL, port="simulation", cmd_args=args)
         
         await self._attempt_connection(connection)
 

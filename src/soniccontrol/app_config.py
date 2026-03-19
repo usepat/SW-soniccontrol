@@ -68,3 +68,5 @@ def get_simulation_exe() -> Path | None:
     if "FIRMWARE_BUILD_DIR_PATH" not in os.environ:
         return None
     return Path(os.environ["FIRMWARE_BUILD_DIR_PATH"]) / "linux/platform_linux/src/device/device_main"
+
+REMOTE_SERVER_URL: str | None = None # This variable can be changed depending on the cmd args. Is done in sonic control gui

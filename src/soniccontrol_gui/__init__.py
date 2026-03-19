@@ -21,7 +21,7 @@ from typing import Optional
 from ttkbootstrap.utility import enable_high_dpi_awareness
 from async_tkinter_loop import async_mainloop
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
-from soniccontrol.app_config import System, PLATFORM, get_simulation_exe
+from soniccontrol.app_config import REMOTE_SERVER_URL, System, PLATFORM, get_simulation_exe
 from soniccontrol_gui.constants import files
 from soniccontrol_gui.resources import resources
 from importlib import resources as rs
@@ -73,6 +73,7 @@ setup_fonts()
 @click.command()
 @click.option("--remote-server-url", default=None)
 def start_gui(remote_server_url: str | None):
+    REMOTE_SERVER_URL = remote_server_url
     register_device_plugins()
     register_ui_plugins()
 
@@ -82,8 +83,7 @@ def start_gui(remote_server_url: str | None):
         WidgetRegistry.set_up()
 
     main_window = ConnectionWindow(
-        simulation_exe_path=get_simulation_exe(), 
-        remote_server_url=remote_server_url
+        simulation_exe_path=get_simulation_exe()
     )
     root = main_window.view
 

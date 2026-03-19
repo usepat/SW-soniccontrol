@@ -1,21 +1,24 @@
 from importlib import metadata
 import sys
 from typing import Any, List
+import logging
 
 from soniccontrol.app_config import PLUGIN_DIR
 
+
+logger = logging.getLogger(__name__)
 
 def discover_plugins(group: str) -> List[Any]:
     plugins = []
 
     # 1) normally installed entry points 
     # Do get added by installing a library over pip into the venv
-    try:
-        for ep in metadata.entry_points().select(group=group):
+    for ep in metadata.entry_points().select(group=group):
+        try:
             plugins.append(ep.load())
-    except Exception:
-        # Don't let a broken plugin kill startup
-        pass
+        except Exception as e:
+            logger.warning("Could not load plugin: %s", str(e))
+            # Don't let a broken plugin kill startup
 
     # 2) Plugins dropped into ./plugins (wheels unzipped here)
     plugin_dirs=[str(PLUGIN_DIR)]
@@ -36,8 +39,6 @@ def discover_plugins(group: str) -> List[Any]:
                 try:
                     plugins.append(ep.load())
                 except Exception as e:
-                    # log it; ignore bad plugin
-                    print(f"Expection: {e}")
-                    pass
+                    logger.warning("Could not load plugin: %s", str(e))
 
     return plugins
