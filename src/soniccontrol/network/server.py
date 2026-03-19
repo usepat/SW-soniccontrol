@@ -29,7 +29,7 @@ HTTP_OK = 200
 HTTP_CLIENT_ERROR = 400
 HTTP_SERVER_ERROR = 500
 
-server_bp = Blueprint("device", __name__)
+server_bp = Blueprint("remote_soniccontrol", __name__)
 
 def execute_in_event_loop(func: Callable[..., Coroutine[Any, Any, Any]]):
     """

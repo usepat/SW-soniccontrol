@@ -12,7 +12,7 @@ class ServerPlugin:
         ...
 
 def register_server_plugins(app: Flask):
-    group= "soniccontrol.server_plugin"
+    group= "soniccontrol.server_plugins"
 
     for plugin in discover_plugins(group):
         plugin.setup_plugin(app)
