@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 import sys
 from typing import Final
+
+import attrs
 from sonic_protocol.schema import Version
 from importlib.metadata import version
 import re
@@ -69,4 +71,8 @@ def get_simulation_exe() -> Path | None:
         return None
     return Path(os.environ["FIRMWARE_BUILD_DIR_PATH"]) / "linux/platform_linux/src/device/device_main"
 
-REMOTE_SERVER_URL: str | None = None # This variable can be changed depending on the cmd args. Is done in sonic control gui
+@attrs.define()
+class AppConfig:
+    remote_server_url: str | None = attrs.field(default=None)
+
+APP_CONFIG = AppConfig() # This variable can be changed depending on the cmd args. Is done in sonic control gui

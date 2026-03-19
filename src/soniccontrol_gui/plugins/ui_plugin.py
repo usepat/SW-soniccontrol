@@ -12,6 +12,7 @@ import ttkbootstrap as ttk
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
+from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.constants import _Files
 from soniccontrol.plugin_discovery import discover_plugins
