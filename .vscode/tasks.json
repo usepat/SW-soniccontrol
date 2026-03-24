@@ -116,6 +116,18 @@
                 "focus": true,
                 "panel": "dedicated"
             }
+        },
+        {
+            "label": "Integration Tests: simulation_worker",
+            "type": "shell",
+            "command": "pytest tests/integration_tests --profile=simulation_worker",
+            "group": "test"
+        },
+        {
+            "label": "Integration Tests: device_worker",
+            "type": "shell",
+            "command": "pytest tests/integration_tests --profile=device_worker --url=${input:serialPort}",
+            "group": "test"
         }
     ]
 }

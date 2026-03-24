@@ -1,9 +1,10 @@
 import attrs
 from soniccontrol import DeviceParamConstantType, Answer, EFieldName, DeviceType, CommandCode
-from .asserts import assert_answer, assert_answer_is_not_error
 from tests.integration_tests.test_remote.conftest import format_command
+
+from .asserts import assert_answer, assert_answer_is_not_error
 import pytest
-from tests.integration_tests.test_remote.deduce_command_examples import deduce_command_examples
+from sonic_protocol.user_manual_compiler.deduce_command_examples import deduce_command_examples
 import allure
 import json
 from allure_commons.lifecycle import AllureLifecycle 
@@ -73,6 +74,8 @@ async def test_deduced_commands(remote_controller):
     errors = []
     for i, command in enumerate(commands):
         with allure.step(f"executing {i}/{num_commands}: '{command}'"):
+            if command == '?protocol':
+                pass
             answer = await remote_controller.send_command(command)
             try:
                 assert_answer_is_not_error(answer, errors_to_check=[

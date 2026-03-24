@@ -97,7 +97,7 @@ class SonicDevice:
         
         if try_deduce_answer_validator and answer_validator is None:
             command_code = self._command_deserializer.get_deserialized_command_code(message.strip())
-            if command_code:
+            if command_code is not None:
                 answer_validator = self._answer_validators[command_code]
         
         if answer_validator is None or not self._should_validate_answers:
