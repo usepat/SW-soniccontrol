@@ -3,7 +3,8 @@
         "GTK_PATH": ""
     },
     "python.testing.pytestArgs": [
-        "tests"
+        "-s",
+        "tests",
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,

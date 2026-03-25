@@ -3,8 +3,15 @@
     "tasks": [
         {   
             "label": "Install editable build",
-            "type": "shell",
-            "command": "source '${workspaceFolder}/.venv/bin/activate' && pip install -e '${workspaceFolder}'",
+            "type": "process",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "pip",
+                "install",
+                "-e",
+                "${workspaceFolder}"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -44,10 +51,12 @@
         }, 
         {
             "label": "Run unit tests of current file",
-            "type": "shell",
-            "command": "pytest",
+            "type": "process",
+            "command": "${command:python.interpreterPath}",
             "args": [
-                "'${relativeFile}'"
+                "-m",
+                "pytest",
+                "${relativeFile}"
             ],
             "group": {
                 "kind": "test",
@@ -119,15 +128,36 @@
         },
         {
             "label": "Integration Tests: simulation_worker",
-            "type": "shell",
-            "command": "pytest tests/integration_tests --profile=simulation_worker",
+            "type": "process",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "pytest",
+                "tests/integration_tests/test_remote",
+                "--profile=simulation_worker"
+            ],
             "group": "test"
         },
         {
             "label": "Integration Tests: device_worker",
-            "type": "shell",
-            "command": "pytest tests/integration_tests --profile=device_worker --url=${input:serialPort}",
+            "type": "process",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "pytest",
+                "tests/integration_tests/test_remote",
+                "--profile=device_worker",
+                "--url=/dev/${input:serialPort}"
+            ],
             "group": "test"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "serialPort",
+            "type": "promptString",
+            "description": "TTY device name to use for device_worker tests",
+            "default": "ttyUSB0"
         }
     ]
 }

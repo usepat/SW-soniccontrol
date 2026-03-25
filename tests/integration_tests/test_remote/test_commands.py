@@ -39,7 +39,7 @@ async def test_if_gain_can_be_set_and_retrieved(remote_controller):
     
 
 @pytest.mark.asyncio(loop_scope="package")
-async def test_deduced_commands(remote_controller):
+async def test_deduced_commands(remote_controller, progress_writer):
     @attrs.define()
     class DeducedCommandError(Exception):
         command: str = attrs.field()
@@ -73,9 +73,8 @@ async def test_deduced_commands(remote_controller):
     num_commands = len(commands)
     errors = []
     for i, command in enumerate(commands):
+        progress_writer(f"executing {i + 1}/{num_commands}: {command}")
         with allure.step(f"executing {i}/{num_commands}: '{command}'"):
-            if command == '?protocol':
-                pass
             answer = await remote_controller.send_command(command)
             try:
                 assert_answer_is_not_error(answer, errors_to_check=[
@@ -93,6 +92,7 @@ async def test_deduced_commands(remote_controller):
                         statusDetails=StatusDetails(message=str(e))
                     )
                 )
+                progress_writer(f"Error: {answer}, {e}")
 
         await remote_controller.send_command("!log[global]=ERROR")
         await remote_controller.send_command("!stop")
