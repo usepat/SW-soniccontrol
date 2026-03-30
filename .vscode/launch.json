@@ -17,7 +17,7 @@
             "request": "launch",
             "module": "soniccontrol_gui",
             "args": [
-                "--remote-server-url=http://127.0.0.1:8080"
+                "--remote-server-url=http://${input:host}:8080"
             ],
             "console": "integratedTerminal"
         },
@@ -39,6 +39,18 @@
                 "--port=8080"
             ],
             "console": "integratedTerminal",
+        }
+    ],
+    "inputs": [
+        {
+            "id": "host",
+            "description": "Host running the sonic control server",
+            "type": "pickString",
+            "default": "127.0.0.1",
+            "options": [
+                "127.0.0.1",
+                "192.168.1.175"
+            ]
         }
     ]
 }
