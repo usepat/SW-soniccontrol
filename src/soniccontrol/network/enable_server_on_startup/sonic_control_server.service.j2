@@ -1,0 +1,17 @@
+[Unit]
+Description=SonicControl Server
+After=network.target
+
+[Service]
+AssertFileIsExecutable={{ python_venv }}/bin/soniccontrol_server
+ExecStart={{ python_venv }}/bin/soniccontrol_server --port={{ port }}
+Restart=always
+RestartSec=3
+User={{ user }}
+Group={{ user }}
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

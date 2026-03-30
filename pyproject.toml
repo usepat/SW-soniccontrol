@@ -27,6 +27,7 @@ dependencies = {file = ["requirements.txt"]}
 
 [project.scripts]
 soniccontrol_server = "soniccontrol:start_server"
+enable_server_on_startup = "soniccontrol:enable_server_on_startup"
 soniccontrol_cli = "soniccontrol_cli:cli"
 sonic_api_manual_builder = "sonic_protocol:build_manual"
 

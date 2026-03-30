@@ -16,5 +16,6 @@ from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaDat
 from soniccontrol.data_capturing.experiment_store import HDF5ExperimentReader, HDF5ExperimentWriter
 from soniccontrol.communication.connection import CLIConnection, SerialConnection
 from soniccontrol.network.server import start_server
+from soniccontrol.network.enable_server_on_startup.script import enable_server_on_startup
 
 logger = logging.getLogger(__name__)
