@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 AssertFileIsExecutable={{ python_venv }}/bin/soniccontrol_server
-ExecStart={{ python_venv }}/bin/soniccontrol_server --port={{ port }}
+ExecStart={{ python_venv }}/bin/soniccontrol_server --port={{ port }} --host=0.0.0.0
 Restart=always
 RestartSec=3
 User={{ user }}
