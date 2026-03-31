@@ -12,8 +12,11 @@ class RemoteClient:
 
     async def _check_response_ok(self, response: aiohttp.ClientResponse):
         if response.status != 200:
-            error_message = await response.json()
-            raise Exception(error_message["error"])
+            if response.content_type == "application/json":
+                error_message = (await response.json())["error"]
+            else:
+                error_message = await response.content.read()
+            raise Exception(error_message)
 
     async def scan_available_ports(self) -> List[str]:
         async with self._session.get(self._url + "/scan_available_ports") as response:

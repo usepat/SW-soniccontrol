@@ -82,7 +82,11 @@ async def connect(port: str):
 
     else:
         baudrate = request.args.get("baudrate", 9600, type=int)
-        connection = SerialConnection(Path(port).name, port, baudrate)
+        port_path = Path("/dev") / port
+        if not port_path.exists():
+            abort(HTTP_SERVER_ERROR, description=f"The given port {port} is not registered in dev")
+        
+        connection = SerialConnection(port, port_path, baudrate)
     
     reader, writer = await connection.open_connection()
     connections[port] = ConnectionObject(connection, reader, writer)

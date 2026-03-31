@@ -178,7 +178,8 @@ class ConnectionWindow(UIComponent):
         if APP_CONFIG.remote_server_url is None:
             connection = SerialConnection(connection_name, url=url, baudrate=baudrate)
         else:
-            connection = RemoteServerConnection(connection_name, APP_CONFIG.remote_server_url, port=url, baudrate=baudrate)
+            # The remote server only expects the port name without the path.
+            connection = RemoteServerConnection(connection_name, APP_CONFIG.remote_server_url, port=connection_name, baudrate=baudrate)
         
         await self._attempt_connection(connection, self._view.is_legacy_device)
 
