@@ -1,9 +1,10 @@
 import attrs
 from soniccontrol import DeviceParamConstantType, Answer, EFieldName, DeviceType, CommandCode
-from .asserts import assert_answer, assert_answer_is_not_error
 from tests.integration_tests.test_remote.conftest import format_command
+
+from .asserts import assert_answer, assert_answer_is_not_error
 import pytest
-from tests.integration_tests.test_remote.deduce_command_examples import deduce_command_examples
+from sonic_protocol.user_manual_compiler.deduce_command_examples import deduce_command_examples
 import allure
 import json
 from allure_commons.lifecycle import AllureLifecycle 
@@ -38,7 +39,7 @@ async def test_if_gain_can_be_set_and_retrieved(remote_controller):
     
 
 @pytest.mark.asyncio(loop_scope="package")
-async def test_deduced_commands(remote_controller):
+async def test_deduced_commands(remote_controller, progress_writer):
     @attrs.define()
     class DeducedCommandError(Exception):
         command: str = attrs.field()
@@ -72,6 +73,7 @@ async def test_deduced_commands(remote_controller):
     num_commands = len(commands)
     errors = []
     for i, command in enumerate(commands):
+        progress_writer(f"executing {i + 1}/{num_commands}: {command}")
         with allure.step(f"executing {i}/{num_commands}: '{command}'"):
             answer = await remote_controller.send_command(command)
             try:
@@ -90,6 +92,7 @@ async def test_deduced_commands(remote_controller):
                         statusDetails=StatusDetails(message=str(e))
                     )
                 )
+                progress_writer(f"Error: {answer}, {e}")
 
         await remote_controller.send_command("!log[global]=ERROR")
         await remote_controller.send_command("!stop")

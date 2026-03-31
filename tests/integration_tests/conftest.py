@@ -1,6 +1,7 @@
 import asyncio
 from enum import Enum, auto
 import os
+import sys
 from pathlib import Path
 from typing import List
 import attrs
@@ -32,14 +33,14 @@ def pytest_addoption(parser):
     parser.addoption(
         "--profile",
         action="store",
-        default=Profile.simulation_postman_worker.name,
+        default=os.getenv("TEST_PROFILE", Profile.simulation_postman_worker.name),
         choices=(profile.name for profile in Profile),
         help="Choose a profile to execute",
     )
     parser.addoption(
         "--url",
         action="store",
-        default=None,
+        default=os.getenv("TEST_URL", None),
         help="Choose the url for the serial port over that the device is connected",
     )
     parser.addoption(
@@ -114,6 +115,15 @@ def process_management():
     yield
 
     kill_all("device_main")
+
+
+@pytest.fixture
+def progress_writer():
+    def write(message: str):
+        if sys.__stdout__:
+            sys.__stdout__.write(message + "\n")
+            sys.__stdout__.flush()
+    return write
 
 
 async def create_worker_process_impl(request, tmp_path_factory):
