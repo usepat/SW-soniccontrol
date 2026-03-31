@@ -74,6 +74,10 @@ pip install -r requirements.txt
 
 You can create a `requirements.txt` with `pip freeze > requirements.txt`. Do this each time you install new dependencies with `pip`.
 
+#### Installing Plugins
+
+There is a task for installing plugins that are provided by the firmware repo. For that the path to the firmware repo has to be set as the environment variable `$FIRMWARE_BUILD_DIR_PATH`.
+
 ## Running Soniccontrol
 
 To run soniccontrol GUI, either run `soniccontrol_gui` as a command in the cli or execute *src/soniccontrol_gui/__main__.py*.
@@ -83,6 +87,12 @@ For the cli version of soniccontrol run `soniccontrol' as a command in the cli.
 ### Running SonicControl with a simulation
 
 You can create a simulation executable of the firmware and provide the path to it over the `SIMULATION_EXE_PATH` environment variable. If you then start Sonic Control, a **Connect to simulation** button will appear in the connection window.  
+
+### Running SonicControl via a remote server
+
+The Remote server can be started via `soniccontrol_server`. There exists also a launch target for it **Python: Remote Server** to debug it. You have to provide to the server the cmd argument `--host=0.0.0.0`, so that it listens also for connections not coming from the local machine.  
+You can enable the server on start up of the computer via `enable_server_on_startup`. That creates a systemd unit file, that registers the application as *sonic_control_server.service*. If you want to start it directly you have to do `sudo systemctl start sonic_control_server`.  
+After starting the server you can connect to it by executing `soniccontrol_gui --remote-url=http://host:port`, where port is by default *8080* if it was not set via cmd args on the server.  
 
 ## How to set up the documentation
 
