@@ -441,6 +441,12 @@ class SetModbusInterface(Command):
 
     value: UartInterface = attrs.field(alias=EFieldName.UART_INTERFACE.name)
 
+@attrs.define()
+class StartConfigurator(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.START_CONFIGURATOR)
+
+
 # Legacy specific commands
 
 # We need a different auto and wipe command so that procedure instantiator  knows which proc to create
