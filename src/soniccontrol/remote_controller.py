@@ -16,7 +16,7 @@ from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
-from soniccontrol.logging.utils import create_logger_for_connection
+from soniccontrol.logger.utils import create_logger_for_connection
 from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs

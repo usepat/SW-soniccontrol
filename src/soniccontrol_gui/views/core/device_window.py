@@ -174,7 +174,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._logger.debug("Create views")
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
             self._spectrum_measure = SpectrumMeasureTab(self, self._spectrum_measure_model)
-            self._logging = Logging(self, connection_name)
+            self._logging = Logging(self, connection_name, self._device)
             self._editor = Editor(self, self._scripting, self._script_file, self._interpreter, self.app_state)
             self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
             self._info = Info(self)

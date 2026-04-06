@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Any
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import Protocol
+import numpy as np
 
 class CommandSerializer:
     def __init__(self, protocol: Protocol):
@@ -24,7 +25,13 @@ class CommandSerializer:
         request_msg: str = identifier[0] if isinstance(identifier, list) else identifier
         if command_def.index_param:
             assert "index"in command.args
-            request_msg += self._serialize_field(command.args["index"])
+            
+            index_str = self._serialize_field(command.args["index"])
+            is_int = isinstance(command_def.index_param.param_type.field_type, (np.integer, int)) 
+            if is_int:
+                #  we have to provide brackets for the case that the index is not a string
+                index_str = f"[{index_str}]"
+            request_msg += index_str
         if command_def.setter_param:
             assert "value"in command.args 
             request_msg += "=" + self._serialize_field(command.args["value"])

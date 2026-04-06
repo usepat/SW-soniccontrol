@@ -1,14 +1,15 @@
 
 import logging
-import os
-from typing import Callable, Dict, Literal
-from soniccontrol.app_config import PLATFORM, System
+from typing import Callable, Dict
+from soniccontrol.logger.logger_discovery import DeviceLoggerDiscovery, PythonLoggerDiscovery
+from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui import constants
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.file_explorer import open_file_explorer
 from soniccontrol_gui.view import TabView, View
 import ttkbootstrap as ttk
 
+from soniccontrol_gui.views.control.log_settings import LogSettingsTab
 from soniccontrol_gui.views.control.log_storage import DeviceLogFilter, LogStorage, NotDeviceLogFilter
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol.events import Event
@@ -21,7 +22,7 @@ from soniccontrol_gui.widgets.notebook import Notebook
 
 
 class Logging(UIComponent):
-    def __init__(self, parent: UIComponent, connection_name: str):
+    def __init__(self, parent: UIComponent, connection_name: str, device: SonicDevice):
         self._logger: logging.Logger = logging.getLogger(connection_name)
         self._view = LoggingView(parent.view)
         super().__init__(parent, self._view, self._logger)
@@ -39,11 +40,19 @@ class Logging(UIComponent):
         device_log_filter = DeviceLogFilter()
         device_log_storage_handler.addFilter(device_log_filter)
 
+        device_logger_discovery = DeviceLoggerDiscovery(device)
+
+        app_logger_discovery = PythonLoggerDiscovery(self._logger)
+
         self._application_log_tab = LoggingTab(self, self._app_logStorage.logs)
         self._device_log_tab = LoggingTab(self, self._device_logStorage.logs)
+        self._application_log_settings_tab = LogSettingsTab(self, app_logger_discovery)
+        self._device_log_settings_tab = LogSettingsTab(self, device_logger_discovery)
         self._view.add_tabs({
             ui_labels.DEVICE_LOGS_LABEL: self._device_log_tab.view,
-            ui_labels.APP_LOGS_LABEL: self._application_log_tab.view
+            ui_labels.APP_LOGS_LABEL: self._application_log_tab.view,
+            ui_labels.DEVICE_LOG_SETTINGS_LABEL: self._device_log_settings_tab.view,
+            ui_labels.APP_LOG_SETTINGS_LABEL: self._application_log_settings_tab.view,
         })
         self._view.set_open_logs_command(self._open_logs)
 

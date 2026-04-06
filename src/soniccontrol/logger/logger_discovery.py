@@ -4,7 +4,7 @@ import abc
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
 from sonic_protocol.schema import Loglevel
-from soniccontrol.logging.utils import is_sub_logger
+from soniccontrol.logger.utils import is_sub_logger
 from soniccontrol.sonic_device import SonicDevice
 
 
@@ -13,9 +13,8 @@ class AbstractLogger(abc.ABC):
     @abc.abstractmethod
     def log_level(self) -> Loglevel: ...
 
-    @log_level.setter
     @abc.abstractmethod
-    async def log_level(self, log_level: Loglevel): ...
+    async def set_log_level(self, log_level: Loglevel): ...
 
     @property
     @abc.abstractmethod
@@ -67,10 +66,10 @@ class PythonLogger(AbstractLogger):
         if self._logger.disabled:
             return Loglevel.DISABLED
         
-        return PythonLogger.convert_to_schema_log_level(self._logger.level)
+        log_level= self._logger.getEffectiveLevel()
+        return PythonLogger.convert_to_schema_log_level(log_level)
 
-    @log_level.setter
-    async def log_level(self, log_level: Loglevel): 
+    async def set_log_level(self, log_level: Loglevel): 
         is_disabled = log_level == Loglevel.DISABLED
         self._logger.disabled = is_disabled
         if is_disabled:
@@ -104,7 +103,7 @@ class PythonLoggerDiscovery(LoggerDiscovery):
 
 
 class DeviceLogger(AbstractLogger):
-    async def __init__(self, device: SonicDevice, logger_name: str, log_level: Loglevel):
+    def __init__(self, device: SonicDevice, logger_name: str, log_level: Loglevel):
         self._device = device
         self._logger_name = logger_name
         self._log_level = log_level
@@ -114,11 +113,9 @@ class DeviceLogger(AbstractLogger):
     def log_level(self) -> Loglevel: 
         return self._log_level
 
-    @log_level.setter
-    async def log_level(self, log_level: Loglevel): 
-        answer = await self._device.execute_command(commands.SetLogLevel(self._logger_name, log_level))
-        if not answer.is_error_msg:
-            self._log_level = log_level
+    async def set_log_level(self, log_level: Loglevel): 
+        await self._device.execute_command(commands.SetLogLevel(self._logger_name, log_level))
+        self._log_level = log_level
 
     @property
     def qual_logger_name(self) -> str: 

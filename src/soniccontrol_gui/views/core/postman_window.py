@@ -113,7 +113,7 @@ class PostmanDeviceWindow(DeviceWindow):
             self._updater = Updater(self._device)
             self._updater.set_update_interval(1000)
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
-            self._logging = Logging(self, connection_name)
+            self._logging = Logging(self, connection_name, self._device)
             self._worker_connection_tab = PostmanHomeTab(self, self._device, connection_name)
             self._device_settings_tab = DeviceSettingsTab(self, self._device)
 
