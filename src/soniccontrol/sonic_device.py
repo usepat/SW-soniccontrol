@@ -174,7 +174,7 @@ class SonicDevice:
             raise CommandValidationError(answer.message)
         
         if raise_exception and answer.is_error_msg:
-            raise CommandExecutionError(answer.field_value_dict[BaseFieldName.ERROR_MESSAGE])
+            raise CommandExecutionError(answer[BaseFieldName.ERROR_MESSAGE])
         
         return answer
 
@@ -230,7 +230,7 @@ class SonicDevice:
 
         while True:
             answer = await self.execute_command(commands.GetConnectionStatus())   
-            if answer.field_value_dict[EFieldName.IS_CONNECTED]:
+            if answer[EFieldName.IS_CONNECTED]:
                 break         
 
             await asyncio.sleep(0.2)

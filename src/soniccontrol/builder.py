@@ -82,9 +82,9 @@ class DeviceBuilder:
                 assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
                 assert(EFieldName.PROTOCOL_VERSION in answer.field_value_dict)
                 assert(EFieldName.IS_RELEASE in answer.field_value_dict)
-                device_type = answer.field_value_dict[EFieldName.DEVICE_TYPE]
-                protocol_version = answer.field_value_dict[EFieldName.PROTOCOL_VERSION]
-                is_release = answer.field_value_dict[EFieldName.IS_RELEASE] == BuildType.RELEASE.name
+                device_type = answer[EFieldName.DEVICE_TYPE]
+                protocol_version = answer[EFieldName.PROTOCOL_VERSION]
+                is_release = answer[EFieldName.IS_RELEASE] == BuildType.RELEASE.name
             else:
                 self._builder_logger.debug("Device does not understand ?protocol command")
         else:

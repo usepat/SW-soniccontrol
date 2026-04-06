@@ -16,7 +16,7 @@ from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
-from soniccontrol.logging_utils import create_logger_for_connection
+from soniccontrol.logging.utils import create_logger_for_connection
 from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs
@@ -188,7 +188,7 @@ class RemoteController:
         print(answer.message) 
         if answer.valid:
             # if the answer could be parsed and is valid, we can access the parsed fields like this
-            print(answer.field_value_dict[EFieldName.ATF]) 
+            print(answer[EFieldName.ATF]) 
         ```
         """
         return await self._device.execute_command(command, raise_exception=raise_exception)
@@ -352,7 +352,7 @@ async def main():
     
     print(answer.message)
     if answer.valid:
-        print(answer.field_value_dict[EFieldName.ATF])
+        print(answer[EFieldName.ATF])
 
     await controller.disconnect()
 

@@ -82,10 +82,10 @@ class DeviceSettingsTab(UIComponent):
 
         self._form.attrs_object = DeviceSettings(
             modbus_settings=ModbusSettings(
-                parity=answer.field_value_dict[EFieldName.PARITY],
-                baudrate=answer.field_value_dict[EFieldName.BAUDRATE],
-                interface=answer.field_value_dict[EFieldName.UART_INTERFACE],
-                server_address=answer.field_value_dict[EFieldName.MODBUS_SERVER_ID],
+                parity=answer[EFieldName.PARITY],
+                baudrate=answer[EFieldName.BAUDRATE],
+                interface=answer[EFieldName.UART_INTERFACE],
+                server_address=answer[EFieldName.MODBUS_SERVER_ID],
             )
         )
 

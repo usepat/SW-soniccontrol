@@ -3,6 +3,10 @@ import logging.handlers
 from pathlib import Path
 import os
 
+
+def is_sub_logger(child: logging.Logger, parent: logging.Logger) -> bool:
+    return child.name.startswith(parent.name + ".")
+
 def get_base_logger(logger: logging.Logger) -> logging.Logger:
     try:
         base_logger_name = logger.name.split(".").pop(0)
