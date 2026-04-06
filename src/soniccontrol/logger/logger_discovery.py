@@ -3,7 +3,7 @@ from typing import List
 import abc
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
-from sonic_protocol.schema import Loglevel
+from sonic_protocol.schema import Loglevel, Version
 from soniccontrol.logger.utils import is_sub_logger
 from soniccontrol.sonic_device import SonicDevice
 
@@ -104,6 +104,8 @@ class PythonLoggerDiscovery(LoggerDiscovery):
 
 class DeviceLogger(AbstractLogger):
     def __init__(self, device: SonicDevice, logger_name: str, log_level: Loglevel):
+        assert device.info.protocol_version >= Version(3, 0, 0), "Logger discovery is only available since protocol v3.0.0"
+        
         self._device = device
         self._logger_name = logger_name
         self._log_level = log_level

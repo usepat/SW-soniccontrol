@@ -1,6 +1,7 @@
 
 import logging
 from typing import Callable, Dict
+from sonic_protocol.schema import Version
 from soniccontrol.logger.logger_discovery import DeviceLoggerDiscovery, PythonLoggerDiscovery
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui import constants
@@ -40,20 +41,26 @@ class Logging(UIComponent):
         device_log_filter = DeviceLogFilter()
         device_log_storage_handler.addFilter(device_log_filter)
 
-        device_logger_discovery = DeviceLoggerDiscovery(device)
-
         app_logger_discovery = PythonLoggerDiscovery(self._logger)
 
         self._application_log_tab = LoggingTab(self, self._app_logStorage.logs)
         self._device_log_tab = LoggingTab(self, self._device_logStorage.logs)
         self._application_log_settings_tab = LogSettingsTab(self, app_logger_discovery)
-        self._device_log_settings_tab = LogSettingsTab(self, device_logger_discovery)
         self._view.add_tabs({
-            ui_labels.DEVICE_LOGS_LABEL: self._device_log_tab.view,
             ui_labels.APP_LOGS_LABEL: self._application_log_tab.view,
-            ui_labels.DEVICE_LOG_SETTINGS_LABEL: self._device_log_settings_tab.view,
+            ui_labels.DEVICE_LOGS_LABEL: self._device_log_tab.view,
             ui_labels.APP_LOG_SETTINGS_LABEL: self._application_log_settings_tab.view,
         })
+
+        if device.info.protocol_version >= Version(3, 0, 0):
+            # FIXME: We need also to disable log discovery if app state is broken or idle
+            # log discovery for the device is only available since Version 3.0.0
+            device_logger_discovery = DeviceLoggerDiscovery(device)
+            self._device_log_settings_tab = LogSettingsTab(self, device_logger_discovery)
+            self._view.add_tabs({
+                ui_labels.DEVICE_LOG_SETTINGS_LABEL: self._device_log_settings_tab.view
+            })
+
         self._view.set_open_logs_command(self._open_logs)
 
     def _open_logs(self):

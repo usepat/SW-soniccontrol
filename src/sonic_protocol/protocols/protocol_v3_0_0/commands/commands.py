@@ -127,8 +127,7 @@ set_log_level_v3_0_0 = CommandContract(
                 field_name=EFieldName.LOGGER_NAME,
                 field_type=FieldType(
                     field_type=str
-                ),
-                sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Set ", postfix=r" log level to \\") # Escape the # character
+                )
             ),
             AnswerFieldDef(
                 field_name=EFieldName.LOG_LEVEL,
