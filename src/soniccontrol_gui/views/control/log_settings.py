@@ -75,8 +75,8 @@ class LogSettingsTab(UIComponent):
         super().__init__(parent, self._view)
 
         self._logger_entries: List[LoggerEntry] = []
-        self._discovery_task = asyncio.create_task(self._reload_loggers())
-       
+        asyncio.run_coroutine_threadsafe(self._reload_loggers(), asyncio.get_running_loop())
+
         self._view.set_reload_loggers_command(async_handler(self._reload_loggers))
 
     async def _reload_loggers(self):
