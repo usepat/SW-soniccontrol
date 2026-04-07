@@ -8,28 +8,26 @@ from soniccontrol_gui.utils.observable_list import ObservableList
 
 class DeviceLogFilter(logging.Filter):
     def filter(self, record) -> bool:
-        return "device" in record.name
+        return record.name.endswith(".device")
     
 class NotDeviceLogFilter(logging.Filter):
     def filter(self, record) -> bool:
-        return "device" not in record.name
+        return not record.name.endswith(".device")
 
 class LogStorage:
     class LogStorageHandler(logging.Handler):
-        def __init__(self, logStorage: "LogStorage", log_level: int = logging.INFO):
+        def __init__(self, logStorage: "LogStorage"):
             super(LogStorage.LogStorageHandler, self).__init__()
             formatter = logging.Formatter("%(asctime)s: %(levelname)s - %(name)s - %(message)s")
             self.setFormatter(formatter)
             self._logStorage = logStorage
-            self._log_level = log_level
 
         def emit(self, record: logging.LogRecord) -> None:
-            if record.levelno >= self._log_level:
-                try:
-                    log = self.format(record)
-                    self._logStorage._queue.put_nowait(log)
-                except:
-                    self.handleError(record)
+            try:
+                log = self.format(record)
+                self._logStorage._queue.put_nowait(log)
+            except:
+                self.handleError(record)
 
 
     _MAX_SIZE_LOGS = 1000

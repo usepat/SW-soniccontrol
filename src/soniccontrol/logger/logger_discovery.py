@@ -103,9 +103,7 @@ class PythonLoggerDiscovery(LoggerDiscovery):
 
 
 class DeviceLogger(AbstractLogger):
-    def __init__(self, device: SonicDevice, logger_name: str, log_level: Loglevel):
-        assert device.info.protocol_version >= Version(3, 0, 0), "Logger discovery is only available since protocol v3.0.0"
-        
+    def __init__(self, device: SonicDevice, logger_name: str, log_level: Loglevel):        
         self._device = device
         self._logger_name = logger_name
         self._log_level = log_level
@@ -129,7 +127,16 @@ class DeviceLoggerDiscovery(LoggerDiscovery):
         self._device = device
         super().__init__()
 
+    def is_device_supporting_log_discovery(self):
+        return self._device.has_commands([
+            commands.GetNumLoggers(), 
+            commands.GetLogger(0), 
+            commands.SetLogLevel("", Loglevel.DEBUG)
+        ])
+
     async def discover_loggers(self) -> List[AbstractLogger]:
+        assert self.is_device_supporting_log_discovery(), "Device does not support log discovery"
+        
         answer = await self._device.execute_command(commands.GetNumLoggers())
         count = answer[EFieldName.COUNT]
 

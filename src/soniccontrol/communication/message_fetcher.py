@@ -66,7 +66,7 @@ class MessageFetcher:
                 return logging.WARN
             case DeviceLogLevel.ERROR:
                 return logging.ERROR
-            case DeviceLogLevel.DEBUG:
+            case DeviceLogLevel.DEBUG | DeviceLogLevel.DEBUG_EXTENSIVE:
                 return logging.DEBUG
 
     async def _worker(self) -> None:
