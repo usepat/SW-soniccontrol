@@ -23,6 +23,11 @@ class RemoteClient:
             await self._check_response_ok(response)
             return (await response.json())["ports"]
 
+    async def is_port_free(self, port: str) -> bool:
+        async with self._session.get(self._url + "/is_port_free/" + port) as response:
+            await self._check_response_ok(response)
+            return (await response.json())["is_connected"]
+
     async def connect(self, port: str, **kwargs):
         cmd_args: List[str] = kwargs.get("cmd_args", [])
         baudrate: int = kwargs.get("baudrate", 9600)

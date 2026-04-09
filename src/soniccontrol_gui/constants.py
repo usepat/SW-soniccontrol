@@ -290,6 +290,7 @@ class _UIStringsEN:
     SUCCESS: Final[str] = "Success"
     FAILURE: Final[str] = "Failure"
     RELOAD_LOGGERS: Final[str] = "Reload loggers"
+    ERROR_MSG_CONNECTION_ALREADY_OPEN: Final[str] = "There is already a connection open for this serial port, do you want to close it?"
     
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()

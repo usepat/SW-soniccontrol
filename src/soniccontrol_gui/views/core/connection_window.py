@@ -179,7 +179,9 @@ class ConnectionWindow(UIComponent):
             connection = SerialConnection(connection_name, url=url, baudrate=baudrate)
         else:
             # The remote server only expects the port name without the path.
-            connection = RemoteServerConnection(connection_name, APP_CONFIG.remote_server_url, port=connection_name, baudrate=baudrate)
+            connection = RemoteServerConnection(connection_name, APP_CONFIG.remote_server_url, 
+                                                force_remove_connection=self._on_connection_already_open, 
+                                                port=connection_name, baudrate=baudrate)
         
         await self._attempt_connection(connection, self._view.is_legacy_device)
 
@@ -206,10 +208,18 @@ class ConnectionWindow(UIComponent):
             connection = CLIConnection(connection_name, bin_file=bin_file, cmd_args=args)
         else:
             connection = RemoteServerConnection(
-                connection_name, APP_CONFIG.remote_server_url, port="simulation", cmd_args=args)
+                connection_name, APP_CONFIG.remote_server_url, 
+                force_remove_connection=True, port="simulation", cmd_args=args)
         
         await self._attempt_connection(connection)
 
+
+    async def _on_connection_already_open(self) -> bool:
+        msg_box = MessageBox.show_yes_no(self.view.root, ui_labels.ERROR_MSG_CONNECTION_ALREADY_OPEN)
+        answer = await msg_box.wait_for_answer()
+        if answer is None:
+            return False
+        return answer == DialogOptions.YES
 
 class ConnectionWindowView(ttk.Window, View):
     def __init__(self, show_simulation_button: bool, *args, **kwargs) -> None:

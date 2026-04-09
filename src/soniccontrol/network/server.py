@@ -25,6 +25,8 @@ class ConnectionObject:
 CONNECTIONS_REGISTRY = "connections"
 EVENT_LOOP = "event_loop"
 
+ALREADY_ACTIVE_CONNECTION_ERROR_STR = "there is already an active connection for this port"
+
 HTTP_OK = 200
 HTTP_CLIENT_ERROR = 400
 HTTP_SERVER_ERROR = 500
@@ -65,12 +67,17 @@ def scan_available_ports():
     ports = [port.device for port in get_comports()]
     return jsonify({ "ports": ports }), HTTP_OK
 
+@server_bp.post("/is_port_free/<string:port>")
+def is_port_free(port: str):
+    connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
+    return jsonify({ "is_connected": port in connections }), HTTP_OK
+
 @server_bp.post("/connect/<string:port>")
 @execute_in_event_loop
 async def connect(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port in connections:
-        abort(HTTP_CLIENT_ERROR, description="there is already an active connection for this port")
+        abort(HTTP_CLIENT_ERROR, description=ALREADY_ACTIVE_CONNECTION_ERROR_STR)
 
     if port == "simulation":
         simulation_exe_path = get_simulation_exe()
