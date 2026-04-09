@@ -409,6 +409,18 @@ class SetLogLevel(Command):
     value: Loglevel = attrs.field(alias=EFieldName.LOG_LEVEL.name)
 
 @attrs.define()
+class GetNumLoggers(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_LOGGER_LIST_SIZE)
+
+@attrs.define()
+class GetLogger(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_LOGGER_LIST_ITEM)
+
+    index: int = attrs.field(alias=EFieldName.INDEX.name)
+
+@attrs.define()
 class GetModbusSettings(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.GET_MODBUS_SETTINGS)

@@ -159,7 +159,7 @@ class DiagnosticsWindow(DeviceWindow):
             super().__init__(self._logger, self._view, self._device.communicator)
 
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
-            self._logging = Logging(self, connection_name)
+            self._logging = Logging(self, connection_name, self._device)
             self._test_executor = TestExecutor(self._device)
             self._testing_tab = HwTestingTab(self, self._test_executor)
 

@@ -3,7 +3,7 @@
   "disable_existing_loggers": true,
   "formatters": {
     "simple": {
-      "format": "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)s:%(funcName)s - %(message)s - exception: %(exc_info)s"
+      "format": "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)s:%(funcName)s - %(message)s"
     }
   },
   "handlers": {

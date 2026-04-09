@@ -34,6 +34,7 @@ class DeviceLogLevel(Enum):
     WARN = "WARN"
     INFO = "INFO"
     DEBUG = "DEBUG"
+    DEBUG_EXTENSIVE = "DEBUG_EXTENSIVE"
 
 @attrs.define()
 class Message:

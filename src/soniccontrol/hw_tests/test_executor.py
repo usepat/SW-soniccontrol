@@ -39,13 +39,13 @@ class TestExecutor(EventManager):
             raise TestExecutionException("cannot load tests for this device, the protocol is too old and does not support the testing feature")
 
         answer_num_tests = await self._device.execute_command(commands.GetNumTests())
-        num_tests = answer_num_tests.field_value_dict[EFieldName.COUNT]
+        num_tests = answer_num_tests[EFieldName.COUNT]
 
         tests: List[TestInfo] = []
         for i in range(num_tests):
             answer_test_info = await self._device.execute_command(commands.GetTestInfo(i))
-            test_name = answer_test_info.field_value_dict[EFieldName.TEST_NAME]
-            test_suite_name = answer_test_info.field_value_dict[EFieldName.TEST_SUITE_NAME]
+            test_name = answer_test_info[EFieldName.TEST_NAME]
+            test_suite_name = answer_test_info[EFieldName.TEST_SUITE_NAME]
             tests.append(TestInfo(i, test_name, test_suite_name))
         return tests
 
@@ -77,8 +77,8 @@ class TestExecutor(EventManager):
 
         for i in range(num_args):
             answer = await self._device.execute_command(commands.GetTestValidationArg(i))
-            name = answer.field_value_dict[EFieldName.NAME]
-            value = answer.field_value_dict[EFieldName.VALUE]
+            name = answer[EFieldName.NAME]
+            value = answer[EFieldName.VALUE]
             fetched_args[name] = value
 
         return fetched_args
@@ -92,11 +92,11 @@ class TestExecutor(EventManager):
             while True:
                 answer = await self._device.execute_command(commands.RunTest(test.index))
 
-                test_result_value = answer.field_value_dict[EFieldName.TEST_RESULT]
-                test_step_index = answer.field_value_dict[EFieldName.TEST_STEP_INDEX]
-                interaction_type = answer.field_value_dict[EFieldName.TEST_INTERACTION]
-                num_test_validation_args = answer.field_value_dict[EFieldName.NUM_TEST_VALIDATION_ARGS]
-                msg = answer.field_value_dict[EFieldName.MESSAGE]
+                test_result_value = answer[EFieldName.TEST_RESULT]
+                test_step_index = answer[EFieldName.TEST_STEP_INDEX]
+                interaction_type = answer[EFieldName.TEST_INTERACTION]
+                num_test_validation_args = answer[EFieldName.NUM_TEST_VALIDATION_ARGS]
+                msg = answer[EFieldName.MESSAGE]
 
                 if test_result_value == ProtocolTestResult.COMPLETED:
                     break # after Semi Automated step Needs user validation, the device responds with "test completed"

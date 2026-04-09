@@ -143,7 +143,9 @@ class _UIStringsEN:
     SERIAL_MONITOR_LABEL: Final[str] = "Serial Monitor"
     LOGS_LABEL: Final[str] = "Logs"
     APP_LOGS_LABEL: Final[str] = "Application Logs"
+    APP_LOG_SETTINGS_LABEL: Final[str] = "Application Log Settings"
     DEVICE_LOGS_LABEL: Final[str] = "Device Logs"
+    DEVICE_LOG_SETTINGS_LABEL: Final[str] = "Device Log Settings"
     FLASHER_LABEL: Final[str] = "Flasher"
     PROCEDURES_LABEL: Final[str] = "Procedures"
     SONIC_LABEL: Final[str] = "sonic"
@@ -287,6 +289,7 @@ class _UIStringsEN:
     USER_INTERACTION_NEEDED: Final[str] = "User interaction needed"
     SUCCESS: Final[str] = "Success"
     FAILURE: Final[str] = "Failure"
+    RELOAD_LOGGERS: Final[str] = "Reload loggers"
     
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()
