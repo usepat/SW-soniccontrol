@@ -26,7 +26,7 @@ class RemoteServerConnection(Connection):
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:  
         client = RemoteClient(self.url)
         try:
-            is_port_already_connected = client.is_port_free(self.port)
+            is_port_already_connected = await client.is_port_free(self.port)
             if is_port_already_connected:
                 # need to remove previous connection
                 need_remove_conn = self.force_remove_connection \

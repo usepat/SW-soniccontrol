@@ -67,7 +67,7 @@ def scan_available_ports():
     ports = [port.device for port in get_comports()]
     return jsonify({ "ports": ports }), HTTP_OK
 
-@server_bp.post("/is_port_free/<string:port>")
+@server_bp.get("/is_port_free/<string:port>")
 def is_port_free(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     return jsonify({ "is_connected": port in connections }), HTTP_OK
