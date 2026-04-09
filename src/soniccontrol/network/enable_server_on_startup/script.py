@@ -4,7 +4,6 @@ import subprocess
 import jinja2
 import importlib.resources as rs
 import soniccontrol
-import pwd
 import os
 import sys
 
@@ -18,6 +17,8 @@ def enable_server_on_startup(port: int):
 
         You have to run this script with sudo.
     """
+    import pwd
+
     uid = os.getuid()
     user = pwd.getpwuid(uid).pw_name
     python_venv = Path(sys.prefix)
