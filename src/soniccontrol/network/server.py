@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Any, Callable, Coroutine, Dict
+from typing import Any, Callable, Coroutine, Dict, Generator, Optional
 from flask import Flask, Response, request, abort, jsonify, Blueprint, current_app
 from serial.tools.list_ports import comports as get_comports
 import time
@@ -15,6 +15,24 @@ from soniccontrol.app_config import get_simulation_exe
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.network.plugin import register_server_plugins
 
+
+# TODO: move device detection into sonic control
+def _iter_descendants(dev: pyudev.Device) -> Generator[pyudev.Device, Any, None]:
+    for child in dev.children:
+        yield child
+        yield from _iter_descendants(child)
+
+
+def _get_descendant_device(
+    dev: pyudev.Device,
+    subsystem: Optional[str] = "block",
+    device_type: Optional[str] = "disk",
+) -> Optional[pyudev.Device]:
+    assert dev.device_type == "usb_device", "The device passed needs to be a usb device"
+    for descendant in _iter_descendants(dev):
+        if descendant.subsystem == subsystem and descendant.device_type == device_type:
+            return descendant
+    return None
 
 def get_tty_device_from_name(name: str) -> pyudev.Device | None:
     context = pyudev.Context()
@@ -31,7 +49,7 @@ def get_tty_device_from_name(name: str) -> pyudev.Device | None:
         return None
 
     if device.subsystem == "usb":
-        device = device.find_parent(subsystem="tty")
+        device = _get_descendant_device(device, subsystem="tty", device_type=None)
         
     return device
 
