@@ -117,7 +117,8 @@ async def connect(port: str):
         if tty_device is None:
             abort(HTTP_SERVER_ERROR, description=f"The given port {port} does not exist or is not a tty or usb device")
         
-        port_path = Path(tty_device.sys_path)        
+        assert tty_device.device_node, "the tty device has no registered device node"
+        port_path = Path(tty_device.device_node)        
         baudrate = request.args.get("baudrate", 9600, type=int)
         connection = SerialConnection(port, port_path, baudrate)
     
