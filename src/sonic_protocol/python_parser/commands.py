@@ -458,6 +458,8 @@ class StartConfigurator(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.START_CONFIGURATOR)
 
+    value: str = attrs.field(alias=EFieldName.PASSWORD_HASHED.name)
+
 
 # Legacy specific commands
 

@@ -7,12 +7,33 @@ import time
 import threading
 import attrs
 import click
+import pyudev
 from functools import wraps
 from werkzeug.exceptions import HTTPException
 
 from soniccontrol.app_config import get_simulation_exe
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.network.plugin import register_server_plugins
+
+
+def get_tty_device_from_name(name: str) -> pyudev.Device | None:
+    context = pyudev.Context()
+    device: pyudev.Device | None = None
+    for subsystem in ["tty", "usb"]:
+        try: 
+            device = pyudev.Devices.from_name(context, subsystem, name)
+        except pyudev.DeviceNotFoundByNameError:
+            pass
+        else:
+            break
+    
+    if device is None:
+        return None
+
+    if device.subsystem == "usb":
+        device = device.find_parent(subsystem="tty")
+        
+    return device
 
 
 @attrs.define()
@@ -88,11 +109,12 @@ async def connect(port: str):
         connection = CLIConnection("simulation", simulation_exe_path, cmd_args)
 
     else:
-        baudrate = request.args.get("baudrate", 9600, type=int)
-        port_path = Path("/dev") / port
-        if not port_path.exists():
-            abort(HTTP_SERVER_ERROR, description=f"The given port {port} is not registered in dev")
+        tty_device = get_tty_device_from_name(port)
+        if tty_device is None:
+            abort(HTTP_SERVER_ERROR, description=f"The given port {port} does not exist or is not a tty or usb device")
         
+        port_path = Path(tty_device.sys_path)        
+        baudrate = request.args.get("baudrate", 9600, type=int)
         connection = SerialConnection(port, port_path, baudrate)
     
     reader, writer = await connection.open_connection()
