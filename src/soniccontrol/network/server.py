@@ -16,24 +16,6 @@ from soniccontrol.communication.connection import CLIConnection, Connection, Ser
 from soniccontrol.network.plugin import register_server_plugins
 
 
-# TODO: move device detection into sonic control
-def _iter_descendants(dev: pyudev.Device) -> Generator[pyudev.Device, Any, None]:
-    for child in dev.children:
-        yield child
-        yield from _iter_descendants(child)
-
-
-def _get_descendant_device(
-    dev: pyudev.Device,
-    subsystem: Optional[str] = "block",
-    device_type: Optional[str] = "disk",
-) -> Optional[pyudev.Device]:
-    assert dev.device_type == "usb_device", "The device passed needs to be a usb device"
-    for descendant in _iter_descendants(dev):
-        if descendant.subsystem == subsystem and descendant.device_type == device_type:
-            return descendant
-    return None
-
 def get_tty_device_from_name(name: str) -> pyudev.Device | None:
     context = pyudev.Context()
     device: pyudev.Device | None = None
@@ -49,8 +31,12 @@ def get_tty_device_from_name(name: str) -> pyudev.Device | None:
         return None
 
     if device.subsystem == "usb":
-        device = _get_descendant_device(device, subsystem="tty", device_type=None)
-        
+        for tty_dev in context.list_devices(subsystem="tty"):
+            parent_dev = tty_dev.find_parent(subsystem="usb", device_type="usb_device")
+            if parent_dev and parent_dev.sys_name == device.sys_name:
+                return tty_dev
+        return None
+
     return device
 
 
