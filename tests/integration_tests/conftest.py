@@ -56,6 +56,10 @@ def pytest_configure(config):
         "markers",
         "allowed_devices(*device_list): mark test to run only for certain selected devices",
     )
+    config.addinivalue_line(
+        "markers",
+        "skip_remote_test_setup: skip the default remote test state reset fixture",
+    )
 
     profile = Profile[config.getoption("--profile")]
     url = config.getoption("--url")

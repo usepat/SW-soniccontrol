@@ -75,6 +75,7 @@ addopts = [
 
 [tool.pytest.ini_options]
 # tell the coverage tool to look how much of soniccontrol stastements was covered by the test
+asyncio_default_fixture_loop_scope = "package"
 addopts = [
     "--cov=soniccontrol", 
     "--import-mode=importlib",

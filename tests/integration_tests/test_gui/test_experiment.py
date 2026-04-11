@@ -7,14 +7,54 @@ import pytest_asyncio
 from soniccontrol_gui.utils.testing.workflows import fill_out_experiment_data, send_over_serial_monitor, start_ramp_capture, start_spectrum_measure_capture
 
 
+async def reset_experiment_state() -> None:
+    controller = GuiController()
+    controller.switch_to_tab(widget_names.MEASURING_TAB)
+
+    await send_over_serial_monitor("!stop")
+    await send_over_serial_monitor("!OFF")
+    await controller.execute_events_until_idle()
+
+    for _ in range(4):
+        label_control_button = controller.get_widget_text(widget_names.MEASURING_CONTROL_BUTTON)
+        if label_control_button == ui_labels.NEW_EXPERIMENT:
+            return
+        if label_control_button == ui_labels.END_CAPTURE:
+            controller.clear_text_changed_flag_of_widget(widget_names.MEASURING_CONTROL_BUTTON)
+            controller.press_button(widget_names.MEASURING_CONTROL_BUTTON)
+            await controller.wait_for_widget_to_change_text(widget_names.MEASURING_CONTROL_BUTTON, 5.0)
+            await controller.execute_events_until_idle()
+            continue
+        if label_control_button == ui_labels.START_CAPTURE:
+            controller.clear_text_changed_flag_of_widget(widget_names.MEASURING_CONTROL_BUTTON)
+            controller.press_button(widget_names.MEASURING_CONTROL_BUTTON)
+            await controller.wait_for_widget_to_change_text(widget_names.MEASURING_CONTROL_BUTTON, 5.0)
+            await controller.execute_events_until_idle()
+            continue
+
+        controller.press_button(widget_names.MEASURING_CONTROL_BUTTON)
+        await controller.execute_events_until_idle()
+
+        if label_control_button == ui_labels.FINISH_LABEL:
+            fill_out_experiment_data()
+            await controller.execute_events_until_idle()
+        elif label_control_button == ui_labels.SELECTED:
+            controller.set_widget_text(widget_names.MEASURING_TARGET_COMBOBOX, "Free")
+            await controller.execute_events_until_idle()
+
+    raise AssertionError("Could not reset experiment state to 'New Experiment'")
+
+
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
 async def experiment_tab_fixture():
     controller = GuiController()
     controller.switch_to_tab(widget_names.MEASURING_TAB)
+    await reset_experiment_state()
     controller.clear_text_changed_flags()
 
     yield
 
+    await reset_experiment_state()
     controller.clear_text_changed_flags()
 
 
