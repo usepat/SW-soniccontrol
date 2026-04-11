@@ -26,6 +26,7 @@ CONNECTIONS_REGISTRY = "connections"
 EVENT_LOOP = "event_loop"
 
 ALREADY_ACTIVE_CONNECTION_ERROR_STR = "there is already an active connection for this port"
+NO_ACTIVE_CONNECTION_ERROR_STR = "there is no active connection for this port"
 
 HTTP_OK = 200
 HTTP_CLIENT_ERROR = 400
@@ -105,7 +106,7 @@ async def connect(port: str):
 async def write(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
-        abort(HTTP_CLIENT_ERROR, description="there is no active connection for this port")
+        abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
 
     if request.content_type != "application/octet-stream":
         abort(HTTP_CLIENT_ERROR, description="Invalid content type")
@@ -123,7 +124,7 @@ async def write(port: str):
 async def read(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
-        abort(HTTP_CLIENT_ERROR, description="there is no active connection for this port")
+        abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
 
     reader = connections[port].reader
 
@@ -141,7 +142,7 @@ async def read(port: str):
 async def disconnect(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
-        abort(HTTP_CLIENT_ERROR, description="there is no active connection for this port")
+        abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
 
     await connections[port].connection.close_connection()
     del connections[port]
