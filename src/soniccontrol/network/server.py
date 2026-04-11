@@ -1,13 +1,13 @@
 import asyncio
 from pathlib import Path
 from typing import Any, Callable, Coroutine, Dict, Generator, Optional
+import sys
 from flask import Flask, Response, request, abort, jsonify, Blueprint, current_app
 from serial.tools.list_ports import comports as get_comports
 import time
 import threading
 import attrs
 import click
-import pyudev
 from functools import wraps
 from werkzeug.exceptions import HTTPException
 
@@ -15,10 +15,18 @@ from soniccontrol.app_config import get_simulation_exe
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.network.plugin import register_server_plugins
 
+if sys.platform.startswith("linux"):
+    import pyudev
+else:
+    pyudev = None
 
-def get_tty_device_from_name(name: str) -> pyudev.Device | None:
+
+def get_tty_device_from_name(name: str) -> Any | None:
+    if pyudev is None:
+        return None
+
     context = pyudev.Context()
-    device: pyudev.Device | None = None
+    device: Any | None = None
     for subsystem in ["tty", "usb"]:
         try: 
             device = pyudev.Devices.from_name(context, subsystem, name)
