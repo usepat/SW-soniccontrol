@@ -68,9 +68,9 @@ class PlottingView(View):
         self._zero_filter_button = ttk.Checkbutton(
             self._toggle_button_frame,
             text="Filter 0s",
-            variable=self._filter_zero_values
+            variable=self._filter_zero_values,
         )
-        self._zero_filter_button["bootstyle"] = "round-toggle"
+        self._zero_filter_button.configure(bootstyle="round-toggle")
         
         self._plot_frame.bind('<Configure>', lambda _e: self.update_plot())
         self._figure_canvas.draw()
@@ -119,9 +119,9 @@ class PlottingView(View):
             self._toggle_button_frame, 
             text=line_label, 
             variable=self._line_visibilities[attrName],
-            command=toggle_command
+            command=toggle_command,
         )
-        toggle_button["bootstyle"] = "round-toggle"
+        toggle_button.configure(bootstyle="round-toggle")
         toggle_button.grid(row=0, column=len(self._line_toggle_buttons) + 1, padx=sizes.SMALL_PADDING)
         self._line_toggle_buttons[attrName] = toggle_button
 
