@@ -32,6 +32,7 @@ async def modbus_client(request, remote_controller):
         prot_parity = Parity.NO
     await remote_controller.send_command(commands.SetModbusParity(prot_parity))
     await remote_controller.send_command(commands.SetModbusBaudrate(baudrate))
+    await remote_controller.send_command(commands.SetModbusServerAddress(1))
 
     port: str = request.config._sonic_control_plugin.modbus_serial_port
     client = AsyncModbusSerialClient(port, baudrate=baudrate, parity=parity, timeout=1.5, retries=1)
@@ -45,9 +46,9 @@ async def test_modbus_write_and_read_multiple_registers(modbus_client: AsyncModb
     # because that address corresponds to the execute_command_flag, 
     # that we do not want to set
     data = [0, 1, 2, 3, 0]
-    answer = await modbus_client.write_registers(1024, data)
+    answer = await modbus_client.write_registers(1024, data, device_id=1)
     assert not answer.isError(), "modbus write failed"
-    answer = await modbus_client.read_input_registers(1024, count=len(data))
+    answer = await modbus_client.read_input_registers(1024, count=len(data), device_id=1)
     assert not answer.isError(), "modbus read failed"
 
     assert answer.registers == data, "The data read does not correspond to the data written"
