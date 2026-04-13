@@ -26,7 +26,7 @@ async def remote_controller(request, tmp_path_factory, create_worker_process):
     plugin_config = request.config._sonic_control_plugin
     is_simulation: bool = plugin_config.is_simulation
     device_type: DeviceType = plugin_config.device_type
-    url: str = plugin_config.url
+    url: str = plugin_config.serial_port
     log_path: Path = plugin_config.log_path
 
     data_dir: Path = tmp_path_factory.mktemp("data")

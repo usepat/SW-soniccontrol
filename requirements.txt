@@ -7,6 +7,7 @@ allure-python-commons==2.15.3
 altair==5.5.0
 altgraph==0.17.4
 appdirs==1.4.4
+asgiref==3.11.1
 astroid==3.2.4
 asttokens==2.4.1
 async-tkinter-loop==0.9.3
@@ -125,6 +126,7 @@ pyinstaller==6.9.0
 pyinstaller-hooks-contrib==2024.7
 pylint==3.2.6
 pyLucidIo==2.1.1
+pymodbus==3.13.0
 PyNaCl==1.5.0
 pyparsing==3.1.2
 pyppeteer==2.0.0

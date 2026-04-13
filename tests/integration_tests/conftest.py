@@ -23,7 +23,8 @@ class Profile(Enum):
 @attrs.define()
 class SonicControlPlugin:
     is_simulation: bool = attrs.field()
-    url: str | None = attrs.field()
+    serial_port: str | None = attrs.field()
+    modbus_serial_port: str | None = attrs.field()
     device_type: DeviceType = attrs.field()
     simulation_exe_path: Path = attrs.field()
     log_path: Path = attrs.field()
@@ -38,10 +39,14 @@ def pytest_addoption(parser):
         help="Choose a profile to execute",
     )
     parser.addoption(
-        "--url",
+        "--serial-port",
         action="store",
         default=os.getenv("TEST_URL", None),
-        help="Choose the url for the serial port over that the device is connected",
+    )
+    parser.addoption(
+        "--modbus-serial-port",
+        action="store",
+        default=os.getenv("TEST_MODBUS_SERIAL_PORT", None),
     )
     parser.addoption(
         "--log-path",
@@ -62,7 +67,8 @@ def pytest_configure(config):
     )
 
     profile = Profile[config.getoption("--profile")]
-    url = config.getoption("--url")
+    serial_port = config.getoption("--serial-port")
+    modbus_serial_port = config.getoption("--modbus-serial-port")
     log_path = config.getoption("--log-path")
   
     device = None
@@ -84,7 +90,10 @@ def pytest_configure(config):
 
     simulation_exe_path = get_simulation_exe()
     assert simulation_exe_path is not None, "Firmware build dir was not set in the environment variables"
-    config._sonic_control_plugin = SonicControlPlugin(is_simulation, url, device, simulation_exe_path, log_path)
+    config._sonic_control_plugin = SonicControlPlugin(
+        is_simulation, serial_port, modbus_serial_port,
+        device, simulation_exe_path, log_path
+    )
 
 
 def pytest_runtest_setup(item):

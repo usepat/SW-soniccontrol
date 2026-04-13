@@ -147,7 +147,7 @@
                 "pytest",
                 "tests/integration_tests/test_remote",
                 "--profile=device_worker",
-                "--url=/dev/${input:serialPort}"
+                "--serial-port=/dev/${input:serialPort}"
             ],
             "group": "test"
         }
