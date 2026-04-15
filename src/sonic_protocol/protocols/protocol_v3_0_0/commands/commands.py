@@ -27,7 +27,7 @@ from ..types import types as t
 import numpy as np
 
 get_update_worker_v3_0_0 = copy.deepcopy(cmd_v2.get_update_worker_v2_0_0)
-
+get_update_worker_v3_0_0.code = CommandCode.GET_UPDATE_WORKER_V3_0_0
 for idx, field in enumerate(get_update_worker_v3_0_0.answer_def.fields):
     if field.field_name == EFieldName.IRMS:
         get_update_worker_v3_0_0.answer_def.fields[idx] = f.irms_field
@@ -41,6 +41,7 @@ for idx, field in enumerate(get_update_worker_v3_0_0.answer_def.fields):
     #     get_update_worker_v3_0_0.answer_def.fields[idx] = f.frequency_field
 
 get_update_descale_v3_0_0 = copy.deepcopy(cmd_v2.get_update_descale_v2_0_0)
+get_update_descale_v3_0_0.code = CommandCode.GET_UPDATE_DESCALE_V3_0_0
 for idx, field in enumerate(get_update_descale_v3_0_0.answer_def.fields):
     if field.field_name == EFieldName.IRMS:
         get_update_descale_v3_0_0.answer_def.fields[idx] = f.irms_field

@@ -10,7 +10,7 @@ from sonic_protocol.python_parser.answer_validator_builder import AnswerValidato
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
-from sonic_protocol.schema import DeviceType, ICommandCode, Protocol
+from sonic_protocol.schema import DeviceType, ICommandCode, Protocol, Version
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.communication.serial_communicator import Communicator
 from sonic_protocol.python_parser import commands
@@ -55,6 +55,10 @@ class SonicDevice:
     @property
     def protocol(self) -> Protocol:
         return self._protocol
+    
+    @property
+    def update_command(self) -> Command | None:
+        return self.update_command
 
     def has_commands(self, commands: List[CommandCode | Command]) -> bool:
         return all(map(self.has_command, commands))
@@ -194,15 +198,31 @@ class SonicDevice:
     async def get_overview(self) -> Answer:
         return await self.execute_command("?", raise_exception=False)
     
-    def _resolve_update_command(self) -> Command:
-        # TODO: use different update commands  for different devices.
+    def _resolve_update_command(self) -> Command | None:
+        # Let the device logic decide which command to execute for an update
+        # Keep in the protocol multiple update versions for different devices,
+        # instead of overriding them (to avoid breaking changes).
+        if self.info.protocol_version < Version(3, 0, 0):
+            return commands.GetUpdate()
+
         match self.info.device_type:
             case DeviceType.POSTMAN:
                 return commands.GetConnectionStatus()
+            case DeviceType.MVP_WORKER:
+                return commands.GetUpdateWorker()
+            case DeviceType.DESCALE:
+                return commands.GetUpdateDescale()
             case _:
-                return commands.GetUpdate()
+                return None
     
     async def get_update(self, raise_exception:bool=False, should_log:bool=False) -> Answer:
+        if self._update_command is None:
+            err_msg = "There is no update command available for this device type"
+            if raise_exception:
+                raise NotImplementedError(err_msg)
+            else:
+                return Answer(err_msg, False, True)
+            
         return await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
 
     async def stop_procedures(self):
@@ -234,4 +254,7 @@ class SonicDevice:
                 break         
 
             await asyncio.sleep(0.2)
+
+    async def restart_device(self):
+        pass # TODO
     

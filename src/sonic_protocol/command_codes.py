@@ -89,6 +89,8 @@ class CommandCode(ICommandCode):
     GET_PROG_STATE = 102 # readable version of update
     GET_POSTMAN_UPDATE = 103 # update version for postman, needs only transducer state, signal, system_state, and device state
     GET_CONNECTION_STATUS = 104
+    GET_UPDATE_WORKER_V3_0_0 = 105
+    GET_UPDATE_DESCALE_V3_0_0 = 106
 
     # 200 - 399 are reserved for commands that involve the transducer directly
     GET_HELP = 200

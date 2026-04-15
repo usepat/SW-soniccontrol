@@ -139,10 +139,10 @@ async def test_getter_commands_are_allowed_during_procedure_run(remote_controlle
 @pytest.mark.asyncio(loop_scope="package")
 async def test_stop_turns_off_procedure(remote_controller, disable_procedure_logger):
     await send_command_and_check_response(remote_controller, commands.SetRamp())
-    assert_answer(await remote_controller.send_command(commands.GetUpdate()), {EFieldName.PROCEDURE: Procedure.RAMP})
+    assert_answer(await remote_controller.get_update(), {EFieldName.PROCEDURE: Procedure.RAMP})
 
     await send_command_and_check_response(remote_controller, commands.SetStop())
-    assert_answer(await remote_controller.send_command(commands.GetUpdate()), {EFieldName.PROCEDURE: Procedure.NO_PROC})
+    assert_answer(await remote_controller.get_update(), {EFieldName.PROCEDURE: Procedure.NO_PROC})
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
@@ -151,7 +151,7 @@ async def test_if_ramp_resets_running_proc_and_signal(remote_controller, disable
     await send_command_and_check_response(remote_controller, commands.SetRamp())
 
     await asyncio.sleep(12) # ramp needs 12 seconds to execute
-    answer = await remote_controller.send_command(commands.GetUpdate())
+    answer = await remote_controller.get_update()
     assert_answer(answer, {EFieldName.PROCEDURE: Procedure.NO_PROC, EFieldName.SIGNAL: Signal.OFF})
 
 
@@ -162,5 +162,5 @@ async def test_if_wipe_does_not_crash(remote_controller, disable_procedure_logge
 
     for _ in range(10):
         await asyncio.sleep(2)
-        answer = await remote_controller.send_command(commands.GetUpdate())
+        answer = await remote_controller.get_update()
         assert_answer(answer, {EFieldName.PROCEDURE: Procedure.WIPE})
