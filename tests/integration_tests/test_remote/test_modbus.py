@@ -2,6 +2,7 @@ import pytest
 import pytest_asyncio
 from pymodbus.client import AsyncModbusSerialClient
 from pymodbus.exceptions import NoSuchIdException
+from sonic_protocol.schema import DeviceType
 from soniccontrol import commands, Parity
 
 """
@@ -34,12 +35,17 @@ async def modbus_client(request, remote_controller):
     await remote_controller.send_command(commands.SetModbusBaudrate(baudrate))
     await remote_controller.send_command(commands.SetModbusServerAddress(1))
 
-    port: str = request.config._sonic_control_plugin.modbus_serial_port
+    port: str | None = request.config._sonic_control_plugin.modbus_serial_port
+
+    if port is None:
+        pytest.skip("No modbus serial port was set. Skip modbus compliance tests")
+
     client = AsyncModbusSerialClient(port, baudrate=baudrate, parity=parity, timeout=1.5, retries=1)
     await client.connect()
     yield client
     client.close()
 
+@pytest.mark.allowed_devices(DeviceType.POSTMAN, DeviceType.MVP_WORKER)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_modbus_write_and_read_multiple_registers(modbus_client: AsyncModbusSerialClient):
     # note. first register should be 0, 

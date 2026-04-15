@@ -5,11 +5,36 @@ from sonic_protocol.schema import ICommandCode
 
 @unique
 class BaseCommandCode(ICommandCode):
+    # first 100 commands reserved for base command codes
+    GET_PROTOCOL = 0
+
+    GET_INFO = 1
+
+    GET_LOGGER_LIST_SIZE = 10
+    GET_LOGGER_LIST_ITEM = 11
+    SET_LOG_LEVEL = 12
+
+    SET_DATETIME = 20
+    GET_DATETIME = 21
+
+    GET_ERROR_HISTO_SIZE = 30
+    POP_ERROR_HISTO_MESSAGE = 31
+
+    RESTART_DEVICE = 40 
+    START_DIAGNOSTIC_TOOL = 41
+    START_OPERATOR = 42
+    START_CONFIGURATOR = 43
+
+    SET_FLASH_USB = 50
+    SET_FLASH_9600 = 51
+    SET_FLASH_115200 = 52
+    
     NOTIFY_MESSAGE = 18000
 
     # This allows to nest apis inside each other. 
     # Useful for using the command architecture also for internal commands that should not be exposed in the protocol
-    INTERNAL_COMMAND = 19030 
+    # However it is cleaner to avoid this. TODO: remove this in the future
+    INTERNAL_COMMAND = 19000 
 
     E_INTERNAL_DEVICE_ERROR = 20000
     E_COMMAND_NOT_KNOWN = 20001
@@ -31,192 +56,180 @@ class CommandCode(ICommandCode):
     They are used as a unique identifier and to separate the protocol and definition logic,
     from the actual command and answer implementation.
     """
+   # first 100 commands reserved for base command codes
 
-    GET_PROTOCOL = 0
-    GET_INFO = 1
-    GET_HELP = 2
-    GET_UPDATE = 3
-    GET_PROG_STATE = 4 # readable version of update
-    GET_POSTMAN_UPDATE = 5 # update version for postman, needs only transducer state, signal, system_state, and device state
+    GET_PROTOCOL = BaseCommandCode.GET_PROTOCOL.value
+
+    GET_INFO = BaseCommandCode.GET_INFO.value
+
+    GET_LOGGER_LIST_SIZE = BaseCommandCode.GET_LOGGER_LIST_SIZE.value
+    GET_LOGGER_LIST_ITEM = BaseCommandCode.GET_LOGGER_LIST_ITEM.value
+    SET_LOG_LEVEL = BaseCommandCode.SET_LOG_LEVEL.value
+
+    SET_DATETIME = BaseCommandCode.SET_DATETIME.value
+    GET_DATETIME = BaseCommandCode.GET_DATETIME.value
+
+    GET_ERROR_HISTO_SIZE = BaseCommandCode.GET_ERROR_HISTO_SIZE.value
+    POP_ERROR_HISTO_MESSAGE = BaseCommandCode.POP_ERROR_HISTO_MESSAGE.value
+
+    RESTART_DEVICE = BaseCommandCode.RESTART_DEVICE.value
+    START_DIAGNOSTIC_TOOL = BaseCommandCode.START_DIAGNOSTIC_TOOL.value
+    START_OPERATOR = BaseCommandCode.START_OPERATOR.value
+    START_CONFIGURATOR = BaseCommandCode.START_CONFIGURATOR.value
+
+    SET_FLASH_USB = BaseCommandCode.SET_FLASH_USB.value
+    SET_FLASH_9600 = BaseCommandCode.SET_FLASH_9600.value
+    SET_FLASH_115200 = BaseCommandCode.SET_FLASH_115200.value
+
+
+    # 101 - 9999 are reserved for operator command codes
+
+    # 101 - 199 are for update commands
+    GET_UPDATE = 101
+    GET_PROG_STATE = 102 # readable version of update
+    GET_POSTMAN_UPDATE = 103 # update version for postman, needs only transducer state, signal, system_state, and device state
+    GET_CONNECTION_STATUS = 104
+
+    # 200 - 399 are reserved for commands that involve the transducer directly
+    GET_HELP = 200
+
+    GET_SWF = 210
+    SET_SWF = 211
+
+    GET_FREQ = 220
+    SET_FREQ = 221
+
+    GET_ATF = 230
+    SET_ATF = 231
+    GET_ATF_LIST = 232
+
+    GET_ATK = 240
+    SET_ATK = 241
+    GET_ATK_LIST = 242
+
+    GET_ATT = 250
+    SET_ATT = 251
+    GET_ATT_LIST = 252
+
+    GET_GAIN = 260
+    SET_GAIN = 261
+
+    GET_SIGNAL = 270
+    SET_OFF = 271
+    SET_ON = 272
+
+    GET_WAVEFORM = 280
+    SET_WAVEFORM = 281
+
+    GET_TRANSDUCER_ID = 290
+    SET_TRANSDUCER_ID = 291
+
+    # measurements needed for experiments. Read only
+    GET_TEMP = 300
+    GET_TMCU = 301
+    GET_UIPT = 302
+    GET_UIPT_RAW = 303
+    GET_IRMS = 304
+    GET_ADC = 305
+
+    GET_DAC = 310
+    SET_DAC = 311
+
+
+    # 400 - 500 is reserved for procedure commands
+
+    GET_DUTY_CYCLE = 400
+    SET_DUTY_CYCLE = 401
+    SET_DUTY_CYCLE_T_OFF = 402
+    SET_DUTY_CYCLE_T_ON = 403
+
+    GET_RAMP = 410
+    SET_RAMP = 411
+    SET_RAMP_F_START = 412
+    SET_RAMP_F_STOP = 413
+    SET_RAMP_F_STEP = 414
+    SET_RAMP_T_ON = 415
+    SET_RAMP_T_OFF = 416
+    SET_RAMP_GAIN = 417
+
+    GET_SCAN = 420
+    SET_SCAN = 421
+    SET_SCAN_F_RANGE = 422 
+    SET_SCAN_F_STEP = 423
+    SET_SCAN_T_STEP = 424
+    SET_SCAN_GAIN = 425
+    SET_SCAN_F_SHIFT = 426
+
+    GET_TUNE = 430
+    SET_TUNE = 431
+    SET_TUNE_F_STEP = 432
+    SET_TUNE_T_TIME = 433
+    SET_TUNE_T_STEP = 434
+    SET_TUNE_F_SHIFT = 435
+    SET_TUNE_N_STEPS = 436
+    SET_TUNE_GAIN = 437
+
+    GET_WIPE = 440
+    SET_WIPE = 441
+    SET_WIPE_F_RANGE = 442
+    SET_WIPE_F_STEP = 443
+    SET_WIPE_T_ON = 444
+    SET_WIPE_T_OFF = 445
+    SET_WIPE_T_PAUSE = 446
+    SET_WIPE_GAIN = 447
+
+    GET_AUTO = 450
+    SET_AUTO = 451
+
+    # everything afterwards is for general control and customization
+
+    SET_STOP = 500
+    SET_CONTINUE = 501
+    SET_PAUSE = 502
+
+    GET_NUM_TESTS = 510
+    GET_TEST_INFO = 511
+    GET_TEST_VALIDATION_ARG = 512
+    RUN_TEST = 513
+    ABORT_TEST = 514
+
+    GET_MODBUS_SETTINGS = 520
+    BROADCAST_MODBUS_SERVER_ID = 521
+    SET_MODBUS_INTERFACE = 522
+    SET_MODBUS_BAUDRATE = 523
+    SET_MODBUS_PARITY = 524
+    SET_MODBUS_SLAVE_ADDRESS = 525
     
-    # Those commands have a corresponding setter command
-    GET_SWF = 10
-    GET_FREQ = 20
-    GET_GAIN = 30
-    GET_TRANSDUCER_ID = 90
+    GET_CONTROL_MODE = 530
+    SET_CONTROL_MODE = 531
 
-    GET_ATF = 101
-    GET_ATK = 111
-    GET_ATT = 121
+    GET_ON_TIMER = 540
+    RESET_ON_TIMER = 541
 
-    # Those codes are only needed for isValidCode implementation
-    GET_ATF2 = 102
-    GET_ATF3 = 103
-    GET_ATF4 = 104
-    GET_ATK2 = 112
-    GET_ATK3 = 113
-    GET_ATK4 = 114
-    GET_ATT2 = 122
-    GET_ATT3 = 123
-    GET_ATT4 = 124
+    SONIC_FORCE = 550
 
-    GET_DATETIME = 130
-    GET_WAVEFORM = 140
-    GET_LOG_LEVEL = 150
+    GO_INTO_DEVICE_STATE = 560
 
-    GET_LOGGER_LIST_SIZE = 160
-    GET_LOGGER_LIST_ITEM = 161
+    CLEAR_ERRORS = 570  # clears all errors currently only used by the device internal but later we will make this a legit command
 
+    SET_COM_PROT = 580
 
-    # THOSE ONES DO NOT HAVE A corresponding setter
-    GET_SIGNAL = 40
-    GET_TEMP = 50
-    GET_TMCU = 60
-    GET_UIPT = 70
-    GET_IRMS = 80
-    
-    GET_ATF_LIST = 100
-    GET_ATK_LIST = 110
-    GET_ATT_LIST = 120
+    SET_TERMINATION = 590
 
-    GET_DUTY_CYCLE = 300
-    GET_RAMP = 310
-    GET_SCAN = 320
-    GET_TUNE = 330
-    GET_WIPE = 340
-    GET_AUTO = 350
-    GET_ADC = 360
-    GET_CONTROL_MODE = 370
-    GET_ERROR_HISTO_SIZE = 380
-    GET_DAC = 390
-    # GET_MODBUS_SERVER_ID = 400
-    GET_ON_TIMER = 410
+    SET_DEFAULT = 600
 
-    GET_UIPT_RAW = 420
-    GET_CONNECTION_STATUS = 430
-    GET_NUM_TESTS = 440
-    GET_TEST_INFO = 441
-    GET_TEST_VALIDATION_ARG = 442
-
-    GET_MODBUS_SETTINGS = 450
-
-    # Setters with corresponding getters
-    SET_SWF = 1010
-    SET_FREQ = 1020
-    SET_GAIN = 1030
-    SET_TRANSDUCER_ID = 1090
-
-    SET_ATF = 1101
-    SET_ATK = 1111
-    SET_ATT = 1121
-
-    # Those codes are only needed for isValidCode implementation
-    SET_ATF2 = 1102
-    SET_ATF3 = 1103
-    SET_ATF4 = 1104
-    SET_ATK2 = 1112
-    SET_ATK3 = 1113
-    SET_ATK4 = 1114
-    SET_ATT2 = 1122
-    SET_ATT3 = 1123
-    SET_ATT4 = 1124
-
-    SET_DATETIME = 1130
-    SET_WAVEFORM = 1140
-    SET_LOG_LEVEL = 1150
-
-
-    SET_DEFAULT = 9000
-
-    # Setters with no corresponding getters
-    SET_OFF = 1040
-    SET_ON = 1041
-
-    SET_DUTY_CYCLE_T_OFF = 1301
-    SET_DUTY_CYCLE_T_ON = 1302
-    SET_RAMP_F_START = 1311
-    SET_RAMP_F_STOP = 1312
-    SET_RAMP_F_STEP = 1313
-    SET_RAMP_T_ON = 1314
-    SET_RAMP_T_OFF = 1315
-    SET_RAMP_GAIN = 1316
-    SET_SCAN_F_RANGE = 1321 
-    SET_SCAN_F_STEP = 1322
-    SET_SCAN_T_STEP = 1323
-    SET_SCAN_GAIN = 1324
-    SET_SCAN_F_SHIFT = 1325
-    SET_TUNE_F_STEP = 1331
-    SET_TUNE_T_TIME = 1332
-    SET_TUNE_T_STEP = 1333
-    SET_TUNE_F_SHIFT = 1334
-    SET_TUNE_N_STEPS = 1335
-    SET_TUNE_GAIN = 1336
-    SET_WIPE_F_RANGE = 1341
-    SET_WIPE_F_STEP = 1342
-    SET_WIPE_T_ON = 1343
-    SET_WIPE_T_OFF = 1344
-    SET_WIPE_T_PAUSE = 1345
-    SET_WIPE_GAIN = 1346
-
-    SET_DAC = 1390
-    RUN_TEST = 1440
-    ABORT_TEST = 1441
-    # SET_MODBUS_SERVER_ID = 1400
-
-    
-    SET_CONTROL_MODE = 2000
-    SET_COM_PROT = 2010
-    SET_PHYS_COM_CHANNEL = 2020 
-    SET_TERMINATION = 2030
-    CLEAR_ERRORS = 2040  # clears all errors currently only used by the device internal but later we will make this a legit command
-    POP_ERROR_HISTO_MESSAGE = 2050
-    BROADCAST_MODBUS_SERVER_ID = 2060
-    RESET_ON_TIMER = 2070
-    START_DIAGNOSTIC_TOOL = 2080
-    START_OPERATOR = 2081
-
-    SET_MODBUS_INTERFACE = 2090
-    SET_MODBUS_BAUDRATE = 2091
-    SET_MODBUS_PARITY = 2092
-    SET_MODBUS_SLAVE_ADDRESS = 2093
-    
-
-    # commands that execute something
-
-    SET_DUTY_CYCLE = 1300
-    SET_RAMP = 1310
-    SET_SCAN = 1320
-    SET_TUNE = 1330
-    SET_WIPE = 1340
-    SET_AUTO = 1350
-
-    SET_STOP = 3000
-    SET_CONTINUE = 3010
-    SET_PAUSE = 3020
-
-    SET_FLASH_USB = 7001
-    SET_FLASH_9600 = 7002
-    SET_FLASH_115200 = 7003
-    START_CONFIGURATOR = 8000
-
+    # can we delete those?
+    # SET_PHYS_COM_CHANNEL = 2020 
 
     # commands from 18000 to 19000 are pure notifications
 
     NOTIFY_MESSAGE = BaseCommandCode.NOTIFY_MESSAGE.value
-    # NOTIFY_TUNE = 18001
     NOTIFY_PROCEDURE_FAILURE = 18100
 
     # commands from 19000 are for debugging
-    GET_DATETIME_PICO = 19000 
-    RESTART_DEVICE = 19010
-
     INTERNAL_COMMAND = BaseCommandCode.INTERNAL_COMMAND.value
-    SONIC_FORCE = 19040
-    GO_INTO_DEVICE_STATE = 19050
 
-    # internal command of the device, that is not part of the protocol
-    # the firmware uses this for internal commands, that should not be exposed to the user
-    # this enum member just functions as a placeholder for the command code
+    GET_DATETIME_PICO = 19030 
 
     # Error codes
     E_INTERNAL_DEVICE_ERROR = BaseCommandCode.E_INTERNAL_DEVICE_ERROR.value
