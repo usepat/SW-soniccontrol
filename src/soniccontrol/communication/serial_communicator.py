@@ -42,13 +42,10 @@ class SerialCommunicator(Communicator):
         self._message_fetcher._device_logger.addHandler(handler)
 
     async def open_communication(
-        self, connection: Connection,
-        baudrate = 9600
+        self, connection: Connection
     ) -> None:
         self._connection = connection
         self._logger.debug("try open communication")
-        if isinstance(connection, SerialConnection):
-            connection.baudrate = baudrate
 
         self._restart = False 
         self._reader, self._writer = await self._connection.open_connection()

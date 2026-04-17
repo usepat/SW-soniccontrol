@@ -8,7 +8,8 @@ import tkinter as tk
 
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import APP_CONFIG
-from soniccontrol.network.client import RemoteClient
+from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
+from soniccontrol.fw_device.resolvers import create_connection_to_device, create_device_discovery
 from soniccontrol.network.connection import RemoteServerConnection
 from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
 from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
@@ -16,7 +17,7 @@ from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
+from soniccontrol.communication.connection import CLIConnection, Connection
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logger.utils import create_logger_for_connection
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
@@ -153,16 +154,14 @@ class ConnectionWindow(UIComponent):
         self._view.set_connect_to_simulation_button_command(self._on_connect_to_simulation)
         self._view.set_refresh_button_command(self._refresh_ports)
         self._refresh_ports()
+        self._dev_infos: Dict[str, FwDeviceInfo] = {}
 
     @async_handler
     async def _refresh_ports(self):
-        if APP_CONFIG.remote_server_url is None:
-            ports = [port.device for port in list_ports.comports()]
-        else:
-            client = RemoteClient(APP_CONFIG.remote_server_url)
-            ports = await client.scan_available_ports()
-            await client.close_client()
-        self._view.set_ports(ports)
+        device_discovery = create_device_discovery(APP_CONFIG.remote_server_url)
+        dev_infos = await device_discovery.list_fw_device_infos(include_disks=False)
+        self._dev_infos = { dev_info.device_display_name: dev_info for dev_info in dev_infos }
+        self._view.set_ports(list(self._dev_infos.keys()))
 
     async def wait_until_connected(self):
         await self._finished_connecting.wait()
@@ -173,17 +172,12 @@ class ConnectionWindow(UIComponent):
         assert (not self._is_connecting)
         self._is_connecting = True
 
-        url = self._view.get_url()
+        dev_display_name = self._view.get_dev_name()
         baudrate = 9600
-        connection_name = Path(url).name
 
-        if APP_CONFIG.remote_server_url is None:
-            connection = SerialConnection(connection_name, url=url, baudrate=baudrate)
-        else:
-            # The remote server only expects the port name without the path.
-            connection = RemoteServerConnection(connection_name, APP_CONFIG.remote_server_url, 
-                                                force_remove_connection=self._on_connection_already_open, 
-                                                port=connection_name, baudrate=baudrate)
+        dev_info = self._dev_infos[dev_display_name]
+        # force_remove_connection is only used for remote devices at the moment. But may change in the future
+        connection = create_connection_to_device(dev_info, baudrate, force_remove_connection=self._on_connection_already_open)
         
         await self._attempt_connection(connection, self._view.is_legacy_device, self._view.should_start_configurator)
 
@@ -379,7 +373,7 @@ class ConnectionWindowView(ttk.Window, View):
     def loading_text(self, value: str) -> None:
         self._loading_text.set(value)
 
-    def get_url(self) -> str:
+    def get_dev_name(self) -> str:
         return self._port.get()
 
     def set_connect_via_url_button_command(self, command: Callable[[], None]) -> None:

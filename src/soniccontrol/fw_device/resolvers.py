@@ -1,16 +1,17 @@
 import logging
 
 from soniccontrol.app_config import PLATFORM, System
-from soniccontrol.fw_device.device_controller import DeviceController
+from soniccontrol.communication.connection import Connection, SerialConnection
 from soniccontrol.fw_device.device_discovery import DeviceDiscovery
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
+from soniccontrol.fw_device.remote.remote_device_discovery import RemoteDeviceDiscovery
+from soniccontrol.network.connection import RemoteServerConnection
 
 
 def create_device_discovery(server_url: str | None = None) -> DeviceDiscovery:
     if server_url is not None:
-        pass
-
-    if PLATFORM == System.WINDOWS:
+        return RemoteDeviceDiscovery(server_url)
+    elif PLATFORM == System.WINDOWS:
         from .windows.windows_device_discovery import WindowsDeviceDiscovery
         return WindowsDeviceDiscovery()
     elif PLATFORM == System.LINUX:
@@ -19,15 +20,11 @@ def create_device_discovery(server_url: str | None = None) -> DeviceDiscovery:
     else:
         assert False, f"Device discovery is not supported for this platform {PLATFORM}"
 
-def create_device_controller(dev_info: FwDeviceInfo, logger: logging.Logger = logging.getLogger()) -> DeviceController:
+
+def create_connection_to_device(dev_info: FwDeviceInfo, baudrate: int = 9600, **kwargs) -> Connection:
     if dev_info.is_remote:
-        pass
+        assert dev_info.remote_server_url is not None
+        return RemoteServerConnection(dev_info.sys_name, dev_info.remote_server_url, dev_info.device_path, baudrate=baudrate, **kwargs)
     
-    if PLATFORM == System.WINDOWS:
-        from .windows.windows_device_controller import WindowsDeviceController
-        return WindowsDeviceController(dev_info, logger)
-    elif PLATFORM == System.LINUX:
-        from .linux.linux_device_controller import LinuxDeviceController
-        return LinuxDeviceController(dev_info, logger)
-    else:
-        assert False, "No device controller available for this device"
+    assert dev_info.device_path, "The device has no device path set"
+    return SerialConnection(dev_info.sys_name, dev_info.device_path, baudrate)

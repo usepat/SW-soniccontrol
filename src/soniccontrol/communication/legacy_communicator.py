@@ -43,13 +43,13 @@ class LegacyCommunicator(Communicator):
         return self._connection_opened
     
     async def open_communication(
-        self, connection: Connection,
-        baudrate = 115200
+        self, connection: Connection
     ) -> None:
         self._connection = connection
         self._logger.info("try open communication")
+        
         if isinstance(connection, SerialConnection):
-            connection.baudrate = baudrate
+            connection.baudrate = 9600
 
         self._restart = False 
         self._reader, self._writer = await self._connection.open_connection()
