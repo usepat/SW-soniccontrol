@@ -27,14 +27,6 @@ class SP_DEVINFO_DATA(ctypes.Structure):
     ]
 
 
-DEVPKEY_Device_LocationInfo = DEVPROPKEY(
-    Data1=0xa45c254e,
-    Data2=0xdf1c,
-    Data3=0x4efd,
-    Data4=[0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0],
-    pid=15
-) 
-
 DEVINST = wintypes.DWORD
 
 class PropType(Enum):
@@ -44,7 +36,24 @@ class PropType(Enum):
 
 
 cfgmgr32 = ctypes.WinDLL("cfgmgr32")
-setupapi = ctypes.WinDLL("setupapi") 
+setupapi = ctypes.WinDLL("setupapi")
+advapi32 = ctypes.WinDLL("advapi32") 
+
+
+DIGCF_PRESENT = 0x00000002
+DIGCF_ALLCLASSES = 0x00000004
+
+DIREG_DEV = 0x00000001
+KEY_READ = 0x20019
+
+
+DEVPKEY_Device_LocationInfo = DEVPROPKEY(
+    Data1=0xa45c254e,
+    Data2=0xdf1c,
+    Data3=0x4efd,
+    Data4=[0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0],
+    pid=15
+) 
 
 
 def setup_di_get_device_property_w(device_info_set, device_info_data, prop_key):
@@ -179,13 +188,16 @@ def iter_ancestors_of_device(instance_id: DEVINST) -> Generator[DEVINST]:
         current_id = parent
 
 
+def is_usb_device(instance_id: DEVINST):
+    id_str  = get_instance_id_from_devinst(instance_id)
+    return id_str.startswith("USB\\VID_")
+
 def get_usb_device_instance_id(instance_id: str | DEVINST) -> DEVINST | None:
     if isinstance(instance_id, str):
         instance_id = get_devinst_from_instance_id(instance_id)
 
     for ancestor_id in iter_ancestors_of_device(instance_id):
-        id_str  = get_instance_id_from_devinst(ancestor_id)
-        if id_str.startswith("USB\\VID_"):
+        if is_usb_device(ancestor_id):
             return ancestor_id
     return None
 
@@ -213,6 +225,41 @@ def get_device_property(instance_id: DEVINST, prop_key: DEVPROPKEY, prop_type: P
     
     assert False, "No device found with the given instance id"
 
+def get_port_name_from_devinfo(device_info_set, dev_info):
+    hkey = setupapi.SetupDiOpenDevRegKey(
+        device_info_set,
+        ctypes.byref(dev_info),
+        0x00000001,  # DICS_FLAG_GLOBAL
+        0,
+        DIREG_DEV,
+        KEY_READ
+    )
+
+    if hkey == wintypes.HANDLE(-1).value:
+        return None
+
+    try:
+        value_name = ctypes.create_unicode_buffer("PortName")
+        data = ctypes.create_unicode_buffer(256)
+        data_size = wintypes.DWORD(ctypes.sizeof(data))
+
+        res = advapi32.RegQueryValueExW(
+            hkey,
+            value_name,
+            None,
+            None,
+            ctypes.byref(data),
+            ctypes.byref(data_size)
+        )
+
+        if res != 0:
+            return None
+
+        return data.value
+
+    finally:
+        advapi32.RegCloseKey(hkey)
+
 def get_physical_location_path_of_device(instance_id: str | DEVINST) -> str:
     usb_devinst = get_usb_device_instance_id(instance_id)
     assert usb_devinst is not None, "The device is not a usb device and has no ancestor that is that"
@@ -220,7 +267,29 @@ def get_physical_location_path_of_device(instance_id: str | DEVINST) -> str:
     location: str = get_device_property(usb_devinst, DEVPKEY_Device_LocationInfo, PropType.STRING)
     return location
 
-def get_device_instance_id_from_com_port(com_port: str) -> DEVINST:
-    ... # TODO
 
-# Note: for storage devices just use the pnp_device_id as instance id. 
+def get_device_instance_id_from_com_port(com_port: str) -> DEVINST | None:
+    # Note: for storage devices just use the pnp_device_id as instance id. 
+    device_info_set = get_device_info_set()
+    
+    for dev_info in iter_devices(device_info_set):
+        port_name: str | None = get_port_name_from_devinfo(device_info_set, dev_info)
+        if port_name and port_name == com_port:
+            return dev_info.DevInst
+    
+    return None
+
+def is_there_usb_device_on_location(location: str) -> bool:
+    device_info_set = get_device_info_set()
+    
+    for dev_info in iter_devices(device_info_set):
+        if not is_usb_device(dev_info.DevInst):
+            continue
+
+        device_location: str = get_device_property(dev_info.DevInst, DEVPKEY_Device_LocationInfo, PropType.STRING)
+        if device_location == location:
+            return True
+        
+    return False
+        
+

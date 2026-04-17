@@ -5,20 +5,15 @@ from soniccontrol.fw_device.device_discovery import DeviceDiscovery
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 
 
-import asyncio
-import logging
-import ctypes
-from ctypes import wintypes
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import psutil
-import serial
 import attrs
 import serial.tools.list_ports as list_ports
 import wmi
 
-from soniccontrol.fw_device.windows.windows_api import get_device_instance_id_from_com_port, get_physical_location_path_of_device
+from soniccontrol.fw_device.windows.device_event_watcher import get_device_event_watcher
+from soniccontrol.fw_device.windows.windows_api import get_device_instance_id_from_com_port, get_physical_location_path_of_device, is_there_usb_device_on_location
 
 RASPBERRY_PI_USB_VID = 0x2E8A
 PICO_MODEL_MARKERS = ("RPI-RP2", "RP2", "PICO")
@@ -76,8 +71,30 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
             devices.extend(self._list_boot_disks())
         return devices
 
+
     async def wait_for_device_redetection(self, device_info: FwDeviceInfo) -> FwDeviceInfo:
-        ...
+        event_queue = get_device_event_watcher().event_queue
+
+        last_seen_present = True
+        while True:
+            await event_queue.get() # wait for device removed or connected event
+
+            # windows does not tell us which device appeared, so we have to scan it by ourself
+            is_enumerated = is_there_usb_device_on_location(device_info.usb_sys_name)
+
+            if last_seen_present and not is_enumerated:
+                last_seen_present = False
+
+            if not last_seen_present and is_enumerated:
+                # device reappeared
+                break
+
+        fw_dev_infos = await self.list_fw_device_infos()
+        return next(iter([ 
+            fw_dev for fw_dev in fw_dev_infos 
+            if fw_dev.usb_sys_name == device_info.usb_sys_name
+        ]))
+
 
 
     def _list_serial_devices(self) -> List[FwDeviceInfo]:
@@ -94,6 +111,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
             usb_model: str | None = getattr(port, "product", None) or getattr(port, "description", None)
             device_path = port.device
             dev_inst = get_device_instance_id_from_com_port(port.name)
+            assert dev_inst is not None
             devices.append(
                 FwDeviceInfo(
                     sys_name=port.name,
