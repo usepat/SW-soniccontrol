@@ -127,17 +127,18 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
 
             if action == "remove":
                 seen_remove = True
-
             elif action == "add" and seen_remove:
                 usb_device = device
                 break
             
             await asyncio.sleep(0.5)
     
+        await asyncio.sleep(0.5) # wait for enumeration of children
         device = _get_descendant_device(usb_device, [
             PyudevDeviceQuery("tty", None), 
             PyudevDeviceQuery("block", "disk")
         ])
         assert device is not None, "usb device added, but no tty or block device detected"
         return _get_pico_device_info(device)
+        
 
