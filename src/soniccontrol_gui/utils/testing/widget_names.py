@@ -105,8 +105,11 @@ PROC_CONTROLLING_RUNNING_PROC_LABEL = 'proc_controlling.running_proc_label'
 
 # Ramp constants
 RAMP_F_START = 'proc_controlling.Ramp.f_start.entry_str'
+RAMP_F_START_UNIT = 'proc_controlling.Ramp.f_start.unit_combobox'
 RAMP_F_STOP = 'proc_controlling.Ramp.f_stop.entry_str'
+RAMP_F_STOP_UNIT = 'proc_controlling.Ramp.f_stop.unit_combobox'
 RAMP_F_STEP = 'proc_controlling.Ramp.f_step.entry_str'
+RAMP_F_STEP_UNIT = 'proc_controlling.Ramp.f_step.unit_combobox'
 RAMP_T_ON_TIME = 'proc_controlling.Ramp.t_on.time_str'
 RAMP_T_ON_UNIT = 'proc_controlling.Ramp.t_on.unit_str'
 RAMP_T_OFF_TIME = 'proc_controlling.Ramp.t_off.time_str'

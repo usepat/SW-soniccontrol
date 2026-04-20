@@ -1,26 +1,30 @@
 import logging
-import matplotlib
 from matplotlib.figure import Figure
+from matplotlib.axes import Axes
+from matplotlib.lines import Line2D
 import pandas as pd
 
 from typing import Dict, Optional
-import datetime
 
-from soniccontrol.events import Event, EventManager, PropertyChangeEvent
+from soniccontrol.events import EventManager, PropertyChangeEvent
 
 
 class Plot(EventManager):
-    def __init__(self, subplot: matplotlib.axes.Axes, dataAttrNameXAxis: str, xlabel: str):
+    def __init__(self, subplot: Axes, dataAttrNameXAxis: str, xlabel: str):
         super().__init__()
-        self._plot: matplotlib.axes.Axes = subplot
-        self._fig: Figure = subplot.get_figure()
+        self._plot: Axes = subplot
+        figure = subplot.get_figure()
+        assert figure is not None
+        self._fig: Figure = figure
         self._plot.set_xlabel(xlabel)
         self._plot.tick_params(axis="x", rotation=45)
         self._plot.spines['right'].set_visible(False)
         self._plot.spines['left'].set_visible(False)
         self._dataAttrNameXAxis = dataAttrNameXAxis
-        self._lines: Dict[str, matplotlib.lines.Line2D] = {}
-        self._axes: Dict[str, matplotlib.axes.Axes] = {}
+        self._lines: Dict[str, Line2D] = {}
+        self._axes: Dict[str, Axes] = {}
+        self._data: Optional[pd.DataFrame] = None
+        self._filterZeroValues = False
         self._logger = logging.getLogger(__name__)
         self._plot.legend(
             loc="upper left",
@@ -35,11 +39,11 @@ class Plot(EventManager):
         }
 
     @property
-    def plot(self) -> matplotlib.axes.Axes:
+    def plot(self) -> Axes:
         return self._plot
     
     @property
-    def lines(self) -> matplotlib.lines.Line2D:
+    def lines(self) -> Dict[str, Line2D]:
         return self._lines
 
     @property
@@ -104,13 +108,28 @@ class Plot(EventManager):
         self._lines[dataAttrName].set_visible(isVisible)
         self.emit(PropertyChangeEvent("plot", self._plot, self._plot))
 
+    def set_filter_zero_values(self, shouldFilter: bool) -> None:
+        self._filterZeroValues = shouldFilter
+        if self._data is not None:
+            self._apply_data_to_lines()
+        self.emit(PropertyChangeEvent("plot", self._plot, self._plot))
+
 
     def update_plot(self):
         for _, axis in self._axes.items():
             axis.relim()
             axis.autoscale_view()
 
-           
+    def _apply_data_to_lines(self) -> None:
+        assert self._data is not None
+        x_values = self._data[self._dataAttrNameXAxis]
+        for attrName, line in self._lines.items():
+            y_values = self._data[attrName]
+            if self._filterZeroValues:
+                mask = y_values != 0
+                line.set_data(x_values[mask], y_values[mask])
+            else:
+                line.set_data(x_values, y_values)
 
     def update_data(self, data: pd.DataFrame):
         #print(f"📦 update_data received timestamp dtype: {data['timestamp'].dtype} | id={id(data)}")
@@ -121,8 +140,7 @@ class Plot(EventManager):
                 self._logger.error("Timestamp column is of type object instead of type datetime64[ns]")
                 raise TypeError("Timestamp column is of type object instead of type datetime64[ns]")
 
-        for attrName, line in self._lines.items():
-                # print(f"data[{self._dataAttrNameXAxis}]:{data[self._dataAttrNameXAxis]}    data[{attrName}]:{data[attrName]}")
-                line.set_data(data[self._dataAttrNameXAxis], data[attrName])
+        self._data = data
+        self._apply_data_to_lines()
         self.update_plot()
         self.emit(PropertyChangeEvent("plot", self._plot, self._plot))

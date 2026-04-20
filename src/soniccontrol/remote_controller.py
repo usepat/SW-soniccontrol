@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Optional
 import attrs
 
+from sonic_protocol.python_parser import commands
 from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import DeviceType
@@ -191,6 +192,11 @@ class RemoteController:
             print(answer[EFieldName.ATF]) 
         ```
         """
+        if isinstance(command, str):
+            assert command != "-", "Do not send the update command directly. use the get_update() function instead"
+        else:
+            assert command != commands.GetUpdate(), "Do not send the update command directly. use the get_update() function instead"
+        
         return await self._device.execute_command(command, raise_exception=raise_exception)
     
     async def get_update(self) -> Answer:

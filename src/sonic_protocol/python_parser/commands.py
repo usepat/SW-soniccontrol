@@ -37,7 +37,17 @@ class GetUpdate(Command):
         super().__init__(code=CommandCode.GET_UPDATE)
 
 @attrs.define()
-class GetUpdateRaw(Command):
+class GetUpdateWorker(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_UPDATE_WORKER_V3_0_0)
+
+@attrs.define()
+class GetUpdateDescale(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_UPDATE_DESCALE_V3_0_0)
+
+@attrs.define()
+class GetUiptRaw(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.GET_UIPT_RAW)
         

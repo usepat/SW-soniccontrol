@@ -1,6 +1,6 @@
 import attrs
 from soniccontrol import DeviceParamConstantType, Answer, EFieldName, DeviceType, CommandCode
-from tests.integration_tests.test_remote.conftest import format_command
+from tests.integration_tests.test_remote.conftest import format_command, reset_remote_controller_state
 
 from .asserts import assert_answer, assert_answer_is_not_error
 import pytest
@@ -38,6 +38,7 @@ async def test_if_gain_can_be_set_and_retrieved(remote_controller):
     assert_answer(answer, { EFieldName.GAIN: consts.max_gain })
     
 
+@pytest.mark.skip_remote_test_setup
 @pytest.mark.asyncio(loop_scope="package")
 async def test_deduced_commands(remote_controller, progress_writer):
     @attrs.define()
@@ -87,18 +88,14 @@ async def test_deduced_commands(remote_controller, progress_writer):
                 errors.append(DeducedCommandError(command, answer, i, str(e)))
                 lifecycle = AllureLifecycle()
                 lifecycle.update_step(
-                    lambda step_result: step_result.update(
+                    lambda step_result, err=e: step_result.update(
                         status=Status.FAILED,
-                        statusDetails=StatusDetails(message=str(e))
+                        statusDetails=StatusDetails(message=str(err))
                     )
                 )
                 progress_writer(f"Error: {answer}, {e}")
 
-        await remote_controller.send_command("!log[global]=ERROR")
-        await remote_controller.send_command("!stop")
-        await remote_controller.send_command("!sonic_force")
-        await remote_controller.send_command("!clear_errors")
-        await remote_controller.send_command("!control_mode=remote")
+        await reset_remote_controller_state(remote_controller)
 
     error_json = json.dumps([{ 
         "full_error_msg": str(e), 

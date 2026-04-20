@@ -62,7 +62,7 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
 
     is_simulation = request.config._sonic_control_plugin.is_simulation
     device_type = request.config._sonic_control_plugin.device_type
-    url: str = request.config._sonic_control_plugin.url
+    url: str = request.config._sonic_control_plugin.serial_port
     data_dir = tmp_path_factory.mktemp("data")
 
     if not is_simulation:

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any, Dict
 
@@ -15,6 +16,13 @@ import sonic_protocol.python_parser.commands as cmds
 
 
 class DeviceBuilder:
+    CONFIGURATOR_RESTART_DELAY_S = 1.0
+    _EXPECTED_CONFIGURATOR_DISCONNECT_MESSAGES = (
+        "returned no data",
+        "connection was closed",
+        "device is not responding",
+    )
+
     def __init__(self, protocol_factories: Dict[DeviceType, ProtocolList] = {}, logger: logging.Logger = logging.getLogger()):
         self._logger = logger
         self._builder_logger = logging.getLogger(logger.name + "." + DeviceBuilder.__name__)
@@ -105,3 +113,34 @@ class DeviceBuilder:
         await self._update_info(device)
 
         return device
+
+
+    async def build_configurator(self, connection: Connection, try_deduce_protocol_used: bool = True) -> SonicDevice:
+        communicator = SerialCommunicator(logger=self._logger) # type: ignore
+        await communicator.open_communication(connection)
+
+        device = await self.build_amp(communicator, try_deduce_protocol_used=try_deduce_protocol_used)
+        if device.info.device_type == DeviceType.CONFIGURATOR:
+            return device
+
+        start_configurator_command = cmds.StartConfigurator("secure_password")
+        if not device.has_command(start_configurator_command):
+            raise ConnectionError("Device does not support start_configurator")
+
+        answer = await device.execute_command(start_configurator_command, raise_exception=False)
+        if answer.is_error_msg:
+            raise ConnectionError(answer.message)
+        if not answer.valid and not self._is_expected_configurator_disconnect(answer.message):
+            raise ConnectionError(answer.message)
+
+        await device.disconnect()
+        await asyncio.sleep(self.CONFIGURATOR_RESTART_DELAY_S)
+
+        communicator = SerialCommunicator(logger=self._logger) # type: ignore
+        await communicator.open_communication(connection)
+        return await self.build_amp(communicator, try_deduce_protocol_used=try_deduce_protocol_used)
+
+
+    def _is_expected_configurator_disconnect(self, message: str) -> bool:
+        normalized_message = message.lower()
+        return any(expected in normalized_message for expected in self._EXPECTED_CONFIGURATOR_DISCONNECT_MESSAGES)

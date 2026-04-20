@@ -144,7 +144,10 @@ class RamperRemote(Ramper):
 
         gain = int(args.gain.to_prefix(SIPrefix.NONE))
         if device.info.protocol_version >= Version(3, 0, 0):
-            await device.execute_command(commands.SetRampGain(gain))
+            try:
+                await device.execute_command(commands.SetRampGain(gain))
+            except Exception as _:
+                pass
         elif not configure_only:
             await device.execute_command(commands.SetGain(gain))
 

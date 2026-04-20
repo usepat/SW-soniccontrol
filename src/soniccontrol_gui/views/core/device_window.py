@@ -168,7 +168,9 @@ class KnownDeviceWindow(DeviceWindow):
                 CaptureTargets.SPECTRUM_MEASURE: CaptureSpectrumMeasure(self._updater, self._proc_controller, self._spectrum_measure_model)
             }
 
-            update_answer_fields = self._device.protocol.command_contracts[CommandCode.GET_UPDATE].answer_def.fields
+            update_command = self._device.update_command
+            assert update_command is not None, "The device has not an update command"
+            update_answer_fields = self._device.protocol.command_contracts[update_command.code].answer_def.fields
 
             # Components
             self._logger.debug("Create views")

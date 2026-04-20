@@ -4,7 +4,8 @@ from soniccontrol_gui.view import View
 import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from typing import Callable, Dict
 
@@ -15,12 +16,15 @@ from soniccontrol_gui.utils.plotlib.plot import Plot
 class Plotting(UIComponent):
     def __init__(self, parent: UIComponent, plot: Plot, **kwargs):
         self._plot = plot
-        self._figure: Figure = plot.plot.get_figure()
+        figure = plot.plot.get_figure()
+        assert figure is not None
+        self._figure: Figure = figure
         self._view = PlottingView(parent.view, self._figure, **kwargs)
         super().__init__(parent, self._view)
 
+        self._view.set_zero_filter_callback(self.create_zero_filter_callback())
         for (attrName, line) in self._plot.lines.items():
-            self._view.add_line(attrName, line.get_label(), self.create_toggle_line_callback(attrName))
+            self._view.add_line(attrName, str(line.get_label()), self.create_toggle_line_callback(attrName))
             
         self._plot.subscribe_property_listener("plot", lambda _: self._view.update_plot())
 
@@ -30,6 +34,12 @@ class Plotting(UIComponent):
             is_visible = self._view.get_line_visibility(attrName)
             self._plot.toggle_line(attrName, is_visible)
         return toggle_line
+
+    def create_zero_filter_callback(self) -> Callable[[], None]:
+        def toggle_zero_filter() -> None:
+            should_filter = self._view.get_zero_filter_enabled()
+            self._plot.set_filter_zero_values(should_filter)
+        return toggle_zero_filter
     
     def set_data_provider_size_change_callback(self, command: Callable[[int], None]) -> None:
         self._view.set_send_max_size_callback(command)
@@ -54,6 +64,13 @@ class PlottingView(View):
         self._toggle_button_frame: ttk.Frame = ttk.Frame(self)
         self._line_toggle_buttons: Dict[str, ttk.Checkbutton] = {}
         self._line_visibilities: Dict[str, tk.BooleanVar] = {}
+        self._filter_zero_values = tk.BooleanVar(value=False)
+        self._zero_filter_button = ttk.Checkbutton(
+            self._toggle_button_frame,
+            text="Filter 0s",
+            variable=self._filter_zero_values,
+        )
+        self._zero_filter_button.configure(bootstyle="round-toggle")
         
         self._plot_frame.bind('<Configure>', lambda _e: self.update_plot())
         self._figure_canvas.draw()
@@ -71,6 +88,7 @@ class PlottingView(View):
         # packing order is important because of expand attribute
         self._toolbar.pack(side=ttk.TOP, fill=ttk.X)
         self._toggle_button_frame.pack(side=ttk.BOTTOM, fill=ttk.NONE)
+        self._zero_filter_button.grid(row=0, column=0, padx=sizes.SMALL_PADDING)
         if self._use_max_size_entry:
             # Pack label, entry, and button side by side in the row frame
             self._max_size_label.pack(side=ttk.LEFT, padx=(0, 4))
@@ -86,8 +104,14 @@ class PlottingView(View):
         self._figure_canvas.draw_idle()
         self.root.update_idletasks() # do not call self._figure_canvas.flush_events() it is badly implemented and calls root.update()
 
+    def get_zero_filter_enabled(self) -> bool:
+        return self._filter_zero_values.get()
+
     def get_line_visibility(self, attrName: str) -> bool:
         return self._line_visibilities[attrName].get()
+
+    def set_zero_filter_callback(self, command: Callable[[], None]) -> None:
+        self._zero_filter_button.configure(command=command)
 
     def add_line(self, attrName: str, line_label: str, toggle_command: Callable[[], None]) -> None:
         self._line_visibilities[attrName] = tk.BooleanVar(value=True)
@@ -96,9 +120,9 @@ class PlottingView(View):
             text=line_label, 
             variable=self._line_visibilities[attrName],
             command=toggle_command,
-            bootstyle="round-toggle"
         )
-        toggle_button.grid(row=0, column=len(self._line_toggle_buttons), padx=sizes.SMALL_PADDING)
+        toggle_button.configure(bootstyle="round-toggle")
+        toggle_button.grid(row=0, column=len(self._line_toggle_buttons) + 1, padx=sizes.SMALL_PADDING)
         self._line_toggle_buttons[attrName] = toggle_button
 
     def set_send_max_size_callback(self, command: Callable[[int], None]) -> None:

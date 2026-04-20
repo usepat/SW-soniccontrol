@@ -2,7 +2,7 @@ import logging
 # forward imports
 from soniccontrol.remote_controller import RemoteController 
 from sonic_protocol.python_parser import commands
-from sonic_protocol.python_parser.commands import Command
+from sonic_protocol.python_parser.commands import Command, Parity
 from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.command_codes import CommandCode

@@ -31,9 +31,12 @@ async def proceed_without_experiment():
 
 def set_ramp_args():
     controller = GuiController()
-    controller.set_widget_text(widget_names.RAMP_F_START, "100000")
-    controller.set_widget_text(widget_names.RAMP_F_STOP, "200000")
-    controller.set_widget_text(widget_names.RAMP_F_STEP, "10000")
+    controller.set_widget_text(widget_names.RAMP_F_START, "1")
+    #controller.set_widget_text(widget_names.RAMP_F_START_UNIT, "Hz")
+    controller.set_widget_text(widget_names.RAMP_F_STOP, "2")
+    #controller.set_widget_text(widget_names.RAMP_F_STOP_UNIT, "Hz")
+    controller.set_widget_text(widget_names.RAMP_F_STEP, "100")
+    #controller.set_widget_text(widget_names.RAMP_F_STEP_UNIT, "Hz")
     controller.set_widget_text(widget_names.RAMP_T_ON_TIME, "1000")
     controller.set_widget_text(widget_names.RAMP_T_ON_UNIT, "ms")
     controller.set_widget_text(widget_names.RAMP_T_OFF_TIME, "1000")
@@ -45,13 +48,13 @@ def set_spectrum_measure_args():
     controller = GuiController()
     controller.set_widget_text(widget_names.SPECTRUM_MEASURE_GAIN, "50")
     controller.set_widget_text(widget_names.SPECTRUM_MEASURE_F_START, "100000")
-    controller.set_widget_text(widget_names.SPECTRUM_MEASURE_F_STOP, "105000")
+    controller.set_widget_text(widget_names.SPECTRUM_MEASURE_F_STOP, "110000")
     controller.set_widget_text(widget_names.SPECTRUM_MEASURE_F_STEP, "1000")
-    controller.set_widget_text(widget_names.SPECTRUM_MEASURE_T_ON_TIME, "250")
+    controller.set_widget_text(widget_names.SPECTRUM_MEASURE_T_ON_TIME, "1000")
     controller.set_widget_text(widget_names.SPECTRUM_MEASURE_T_ON_UNIT, "ms")
-    controller.set_widget_text(widget_names.SPECTRUM_MEASURE_T_OFF_TIME, "250")
+    controller.set_widget_text(widget_names.SPECTRUM_MEASURE_T_OFF_TIME, "0")
     controller.set_widget_text(widget_names.SPECTRUM_MEASURE_T_OFF_UNIT, "ms")
-    controller.set_widget_text(widget_names.SPECTRUM_MEASURE_T_OFFSET_TIME, "500")
+    controller.set_widget_text(widget_names.SPECTRUM_MEASURE_T_OFFSET_TIME, "0")
     controller.set_widget_text(widget_names.SPECTRUM_MEASURE_T_OFFSET_UNIT, "ms")
 
 
@@ -124,7 +127,7 @@ async def start_spectrum_measure_capture():
     await controller.execute_events_until_idle()
     controller.clear_text_changed_flag_of_widget(widget_names.MEASURING_CONTROL_BUTTON)
     controller.press_button(widget_names.MEASURING_CONTROL_BUTTON)
-
+    await asyncio.sleep(0.5)
     label_control_button = await controller.wait_for_widget_to_change_text(
         widget_names.MEASURING_CONTROL_BUTTON, 
         timeout_s=2.0

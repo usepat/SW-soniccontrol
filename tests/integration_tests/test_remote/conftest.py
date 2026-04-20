@@ -10,13 +10,23 @@ from tests.integration_tests.conftest import create_worker_process_impl
 
 create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope="package", loop_scope="package")
 
+
+async def reset_remote_controller_state(remote_controller: RemoteController) -> None:
+    await remote_controller.send_command("!log[global]=ERROR")
+    await remote_controller.send_command("!control=remote")
+    await remote_controller.send_command("!clear_errors")
+    await remote_controller.send_command("!sonic_force")
+    await remote_controller.send_command("!stop")
+    await remote_controller.send_command("!OFF")
+
+
 @pytest_asyncio.fixture(scope="package", loop_scope="package", autouse=True)
 async def remote_controller(request, tmp_path_factory, create_worker_process):
     # setup
     plugin_config = request.config._sonic_control_plugin
     is_simulation: bool = plugin_config.is_simulation
     device_type: DeviceType = plugin_config.device_type
-    url: str = plugin_config.url
+    url: str = plugin_config.serial_port
     log_path: Path = plugin_config.log_path
 
     data_dir: Path = tmp_path_factory.mktemp("data")
@@ -60,6 +70,16 @@ async def remote_controller(request, tmp_path_factory, create_worker_process):
 
     # teardown
     await controller.disconnect()
+
+
+@pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
+async def default_remote_test_setup(request, remote_controller):
+    if request.node.get_closest_marker("skip_remote_test_setup") is not None:
+        yield
+        return
+
+    await reset_remote_controller_state(remote_controller)
+    yield
 
 
 def format_command(command_fmt_str: str, *args, consts: DeviceParamConstants | None = None):    
