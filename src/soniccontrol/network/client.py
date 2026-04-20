@@ -30,7 +30,7 @@ class RemoteClient:
         await self.close_client()
 
 
-    def _create_polling_future_task(self, future_id: uuid.UUID) -> asyncio.Task:
+    async def wait_for_future(self, future_id: uuid.UUID) -> Any:
         async def _poll_task():
             assert self._session
             while True:
@@ -45,7 +45,13 @@ class RemoteClient:
                         return data["result"]
         
         task =  asyncio.get_running_loop().create_task(_poll_task())
-        return task
+        await task
+
+        exc = task.exception()
+        if exc:
+            raise exc
+    
+        return task.result()
 
     async def _check_response_ok(self, response: aiohttp.ClientResponse):
         if response.status != 200:
@@ -123,13 +129,8 @@ class RemoteClient:
             await self._check_response_ok(response)
             future_id: str = (await response.json())["future_id"]
         
-        task = self._create_polling_future_task(uuid.UUID(future_id))
-        await task
+        future_result = self.wait_for_future(uuid.UUID(future_id))
 
-        exc = task.exception()
-        if exc:
-            raise exc
-    
-        new_dev_info = cattrs.structure(task.result(), FwDeviceInfo)
+        new_dev_info = cattrs.structure(future_result, FwDeviceInfo)
         return new_dev_info
         

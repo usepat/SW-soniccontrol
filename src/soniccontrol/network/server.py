@@ -1,10 +1,9 @@
 import asyncio
 from pathlib import Path
-from typing import Any, Callable, Coroutine, Dict, Generator, List, Optional
+from typing import Any, Callable, Coroutine, Dict, List
 import sys
 import cattrs
 from flask import Flask, Response, request, abort, jsonify, Blueprint, current_app
-from serial.tools.list_ports import comports as get_comports
 import time
 import threading
 import attrs
@@ -16,7 +15,7 @@ from werkzeug.exceptions import HTTPException
 from soniccontrol.app_config import get_simulation_exe
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
-from soniccontrol.fw_device.resolvers import create_device_discovery
+from soniccontrol.fw_device import create_device_discovery
 from soniccontrol.network.plugin import register_server_plugins
 
 if sys.platform.startswith("linux"):

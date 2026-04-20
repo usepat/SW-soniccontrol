@@ -2,14 +2,13 @@ import asyncio
 from pathlib import Path
 from typing import Awaitable, Callable, Dict, List, Optional
 from async_tkinter_loop import async_handler
-import serial.tools.list_ports as list_ports
 import ttkbootstrap as ttk
 import tkinter as tk
 
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
-from soniccontrol.fw_device.resolvers import create_connection_to_device, create_device_discovery
+from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
 from soniccontrol.network.connection import RemoteServerConnection
 from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
 from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
@@ -160,7 +159,7 @@ class ConnectionWindow(UIComponent):
     async def _refresh_ports(self):
         device_discovery = create_device_discovery(APP_CONFIG.remote_server_url)
         dev_infos = await device_discovery.list_fw_device_infos(include_disks=False)
-        self._dev_infos = { dev_info.device_display_name: dev_info for dev_info in dev_infos }
+        self._dev_infos = { dev_info.display_name: dev_info for dev_info in dev_infos }
         self._view.set_ports(list(self._dev_infos.keys()))
 
     async def wait_until_connected(self):

@@ -5,7 +5,7 @@ from soniccontrol.fw_device.device_discovery import DeviceDiscovery
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 
 
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import psutil
 import attrs
