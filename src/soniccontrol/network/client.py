@@ -64,12 +64,13 @@ class RemoteClient:
     async def get_devices(self, include_ttys: bool = True, include_disks: bool = True) -> List[FwDeviceInfo]:
         assert self._session
         
+        # aiohttp requires that the params are strings
         params = {
-            "include_ttys": include_ttys,
-            "include_disks": include_disks,
+            "include_ttys": str(include_ttys),
+            "include_disks": str(include_disks),
         }
         
-        async with self._session.get("/devices", params=params) as response:
+        async with self._session.get(self._url + "/devices", params=params) as response:
             await self._check_response_ok(response)
             data = await response.json()
 

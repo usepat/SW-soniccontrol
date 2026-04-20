@@ -4,7 +4,6 @@ import asyncio
 
 from soniccontrol.communication.connection import Connection
 from soniccontrol.network.client import RemoteClient
-from soniccontrol.network.server import ALREADY_ACTIVE_CONNECTION_ERROR_STR
 from soniccontrol.network.transport import open_remote_connection
 
 @attrs.define()

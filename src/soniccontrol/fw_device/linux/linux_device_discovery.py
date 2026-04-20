@@ -14,7 +14,7 @@ PICO_VENDOR = "Raspberry_Pi"
 PICO_MODELS = {"RPI-RP2", "Pico", "RP2_Boot"}
 
 
-@attrs.define()
+@attrs.define(hash=True)
 class PyudevDeviceQuery:
     subsystem: Optional[str]
     device_type: Optional[str]

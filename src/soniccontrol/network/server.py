@@ -99,11 +99,15 @@ def handle_exception(e) -> tuple[Response, int]:
     return jsonify({"error": str(e)}), HTTP_SERVER_ERROR
 
 
-@server_bp.get("/pico_devices")
+def is_it_true(value):
+  return value.lower() == 'true'
+
+@server_bp.get("/devices")
 @execute_in_event_loop
-async def get_pico_devices():
-    include_ttys = request.args.get("include_ttys", True, type=bool)
-    include_disks = request.args.get("include_disks", True, type=bool)
+async def get_devices():
+    # type is a callable that converts the param string to the value
+    include_ttys = request.args.get("include_ttys", True, type=is_it_true) 
+    include_disks = request.args.get("include_disks", True, type=is_it_true)
     device_infos: List[FwDeviceInfo] = await create_device_discovery().list_fw_device_infos(include_ttys, include_disks)
     plain_data = cattrs.Converter().unstructure(device_infos)
     return jsonify(plain_data), HTTP_OK
