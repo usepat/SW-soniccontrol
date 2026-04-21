@@ -45,7 +45,7 @@ class FwDeviceInfo:
         return self.remote_server_url is not None
 
     @property
-    def device_display_name(self) -> str:
+    def display_name(self) -> str:
         if not self.usb_model:
             return self.sys_name
         return f"{self.usb_model} ({self.sys_name})"

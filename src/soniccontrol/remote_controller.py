@@ -192,11 +192,9 @@ class RemoteController:
             print(answer[EFieldName.ATF]) 
         ```
         """
-        if isinstance(command, str):
-            assert command != "-", "Do not send the update command directly. use the get_update() function instead"
-        else:
+        if not isinstance(command, str):
             assert command != commands.GetUpdate(), "Do not send the update command directly. use the get_update() function instead"
-        
+
         return await self._device.execute_command(command, raise_exception=raise_exception)
     
     async def get_update(self) -> Answer:

@@ -25,10 +25,10 @@ class PostmanProxyCommunicator(Communicator):
         return self._connection_opened
 
     async def open_communication(
-        self, connection: Connection | None = None, baudrate: int = 0
+        self, connection: Connection | None = None
     ): 
         if connection:
-            await self._communicator.open_communication(connection, baudrate)        
+            await self._communicator.open_communication(connection)        
         if self._communicator.connection_opened.is_set():
             self._connection_opened.set()
 
