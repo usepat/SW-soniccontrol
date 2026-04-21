@@ -55,7 +55,7 @@ class ATConfig:
 @attrs.define(auto_attribs=True)
 class TransducerConfig():
     # the name should not be stored inside the json file, but should be retrieved from the file name
-    version: Version = attrs.field(default=Version(1, 0, 0))
+    version: Version = attrs.field(default=Version(1, 0, 0), metadata={"field_view_kwargs": {"editable": False, "order": -100}})
     name: str = attrs.field(default="no name")
     init_script_path: Optional[Path] = attrs.field(default=None, metadata={"field_view_kwargs": file_dialog_opts.SONIC_SCRIPT})
     atconfigs: Tuple[ATConfig, ATConfig, ATConfig, ATConfig] = attrs.field(factory=lambda: tuple(ATConfig() for _ in range(4))) #type: ignore

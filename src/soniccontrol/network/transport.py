@@ -20,6 +20,7 @@ class RemoteClientTransport(asyncio.Transport):
         super().__init__()
     
     async def start_client(self, **kwargs):
+        self._client.start_session()
         await self._client.connect(self._port, **kwargs)
         self._poll_task = asyncio.Task(self._poll())
 

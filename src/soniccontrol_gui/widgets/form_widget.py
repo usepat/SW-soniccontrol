@@ -233,6 +233,88 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self._callback = command
 
 
+class ReadOnlyFieldView(FieldViewBase[Any]):
+    def __init__(
+        self,
+        master: TkinterView,
+        field_name: str,
+        *args,
+        default_value: Any = None,
+        field_type: Any = None,
+        converter: Optional[cattrs.Converter] = None,
+        **kwargs,
+    ):
+        self._field_name = field_name
+        self._field_type = field_type
+        self._converter = converter
+        self._default_value = self._coerce_value(default_value)
+        self._value = self._default_value
+        self._callback: Callable[[Any], None] = lambda _: None
+        self._display_value = ttk.StringVar(value=self._stringify(self._default_value))
+        field_view_kwargs = kwargs.pop("field_view_kwargs", {})
+        parent_widget_name = kwargs.pop("parent_widget_name", "")
+        self._widget_name = parent_widget_name + "." + self._field_name
+        super().__init__(master, *args, **kwargs)
+        # We pop earlier so that the super__init__ does not fail,
+        # but we need restore because other the same Object might be used for other views(ATConfig)
+        kwargs['field_view_kwargs'] = field_view_kwargs
+
+    def _coerce_value(self, value: Any) -> Any:
+        if value is None:
+            return None
+
+        if self._converter is None or self._field_type is None:
+            return value
+
+        if isinstance(value, dict):
+            return self._converter.structure(value, self._field_type)
+
+        return value
+
+    def _stringify(self, value: Any) -> str:
+        try:
+            return str(value)
+        except Exception as exc:
+            raise AssertionError(f"str() failed for read-only field '{self._field_name}'") from exc
+
+    def _initialize_children(self) -> None:
+        self.label = ttk.Label(self, text=self._field_name)
+        self.value_label = ttk.Label(self, textvariable=self._display_value)
+
+    def _initialize_publish(self) -> None:
+        self.grid_columnconfigure(0, weight=0, minsize=80)
+        self.grid_columnconfigure(1, weight=1, minsize=120)
+        self.grid_rowconfigure(0, weight=1)
+
+        self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
+        self.value_label.grid(row=0, column=1, padx=5, pady=5, sticky=ttk.W)
+
+    @property
+    def field_name(self) -> str:
+        return self._field_name
+
+    @property
+    def valid(self) -> bool:
+        return True
+
+    @property
+    def default(self) -> Any:
+        return self._default_value
+
+    @property
+    def value(self) -> Any:
+        return self._value
+
+    @value.setter
+    def value(self, v: Any) -> None:
+        self._value = self._coerce_value(v)
+        self._display_value.set(self._stringify(self._value))
+        self._callback(self._value)
+
+    def bind_value_change(self, command: Callable[[Any], None]) -> None:
+        self._callback = command
+
+
 T = TypeVar("T", int, float)
 
 class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
@@ -1395,6 +1477,18 @@ class DynamicFieldViewFactory:
         self._field_hooks = field_hooks
 
     def from_type(self, field_name, field_type: type, slot: TkinterView, parent_widget_name: str, top_scroll_frame: Optional[ScrolledFrame] = None, **kwargs) -> FieldViewBase:
+        field_view_kwargs = kwargs.get("field_view_kwargs", {})
+        if field_view_kwargs.get("editable", True) is False:
+            return ReadOnlyFieldView(
+                slot,
+                field_name,
+                field_type=field_type,
+                converter=self._converter,
+                parent_widget_name=parent_widget_name,
+                top_scroll_frame=top_scroll_frame,
+                **kwargs,
+            )
+
         # is compares for addresses. If variables point to the same underlying object
         # is compares for types. (needed for windows) 
         # == compares for equality. (needed for linux) 
@@ -1409,7 +1503,6 @@ class DynamicFieldViewFactory:
             return BasicTypeFieldView[str](slot, str, field_name, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif inspect.isclass(field_type) and issubclass(field_type, SIVar):
             # Handle direct SIVar subclasses like TemperatureSIVar, AtfSiVar
-            field_view_kwargs = kwargs.get("field_view_kwargs", {})
             field_view_kwargs["si_var_class"] = field_type
             field_view_kwargs["is_optional"] = False  # Explicitly mark as non-optional based on type hint
             kwargs["field_view_kwargs"] = field_view_kwargs
@@ -1430,7 +1523,6 @@ class DynamicFieldViewFactory:
             if inspect.isclass(inner_type) and issubclass(inner_type, SIVar):
                 # This is Optional[TemperatureSIVar] or similar SIVar subclass
                 # Pass the subclass in field_view_kwargs for the factory
-                field_view_kwargs = kwargs.get("field_view_kwargs", {})
                 field_view_kwargs["si_var_class"] = inner_type
                 field_view_kwargs["is_optional"] = True  # Explicitly mark as optional based on type hint
                 kwargs["field_view_kwargs"] = field_view_kwargs
@@ -1461,7 +1553,6 @@ class DynamicFieldViewFactory:
         elif get_origin(field_type) is tuple or field_type is tuple:
             return TupleFieldView(slot, field_name, field_type, self, parent_widget_name=parent_widget_name, top_scroll_frame=top_scroll_frame, **kwargs)
         elif field_type and attrs.has(field_type):
-            field_view_kwargs = kwargs.get("field_view_kwargs", {})
             kwargs.pop("default_value", None) # We do not use default values here. We deduce them later through attrs.Attribute
             if field_view_kwargs.get("expandable", False):
                 return ExpandableFrame(
@@ -1796,8 +1887,15 @@ class ObjectFieldView(FieldViewBase[dict]):
             self._frame.grid_rowconfigure(i, weight=1)
 
     def _add_fields_to_widget(self):
-        fields = attrs.fields_dict(self._obj_class)
-        for field_name, field in fields.items():
+        fields = sorted(
+            attrs.fields(self._obj_class),
+            key=lambda field: (
+                field.metadata.get("field_view_kwargs", {}).get("order", 0),
+                field.name,
+            ),
+        )
+        for field in fields:
+            field_name = field.name
             field_view = self._field_view_factory.from_attribute(field_name, field, self._obj_class, self._frame, self._widget_name, top_scroll_frame=self._top_scroll_frame)
             self._fields[field_name] = field_view
             self._value[field_name] = field_view.value

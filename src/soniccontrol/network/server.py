@@ -1,18 +1,21 @@
 import asyncio
 from pathlib import Path
-from typing import Any, Callable, Coroutine, Dict, Generator, Optional
+from typing import Any, Callable, Coroutine, Dict, List
 import sys
+import cattrs
 from flask import Flask, Response, request, abort, jsonify, Blueprint, current_app
-from serial.tools.list_ports import comports as get_comports
 import time
 import threading
 import attrs
 import click
+import uuid
 from functools import wraps
 from werkzeug.exceptions import HTTPException
 
 from soniccontrol.app_config import get_simulation_exe
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
+from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
+from soniccontrol.fw_device import create_device_discovery
 from soniccontrol.network.plugin import register_server_plugins
 
 if sys.platform.startswith("linux"):
@@ -56,6 +59,7 @@ class ConnectionObject:
     timestamp: float = attrs.field(factory=time.time)
 
 CONNECTIONS_REGISTRY = "connections"
+FUTURE_REGISTRY = "futures"
 EVENT_LOOP = "event_loop"
 
 ALREADY_ACTIVE_CONNECTION_ERROR_STR = "there is already an active connection for this port"
@@ -95,10 +99,23 @@ def handle_exception(e) -> tuple[Response, int]:
     return jsonify({"error": str(e)}), HTTP_SERVER_ERROR
 
 
-@server_bp.get("/scan_available_ports")
-def scan_available_ports():
-    ports = [port.device for port in get_comports()]
-    return jsonify({ "ports": ports }), HTTP_OK
+def is_it_true(value):
+  return value.lower() == 'true'
+
+@server_bp.get("/devices")
+@execute_in_event_loop
+async def get_devices():
+    # type is a callable that converts the param string to the value
+    include_ttys = request.args.get("include_ttys", True, type=is_it_true) 
+    include_disks = request.args.get("include_disks", True, type=is_it_true)
+    include_unverified_ttys = request.args.get("include_unverified_ttys", False, type=is_it_true)
+    device_infos: List[FwDeviceInfo] = await create_device_discovery().list_fw_device_infos(
+        include_ttys,
+        include_disks,
+        include_unverified_ttys,
+    )
+    plain_data = cattrs.Converter().unstructure(device_infos)
+    return jsonify(plain_data), HTTP_OK
 
 @server_bp.get("/is_port_free/<string:port>")
 def is_port_free(port: str):
@@ -183,6 +200,52 @@ async def disconnect(port: str):
 
     return http_ok()
 
+@server_bp.get("/poll_future/<uuid:future_id>")
+@execute_in_event_loop
+async def poll_future(future_id: uuid.UUID):
+    future_registry: Dict[uuid.UUID, asyncio.Future] = current_app.extensions[FUTURE_REGISTRY]
+
+    if future_id not in future_registry:
+        abort(HTTP_CLIENT_ERROR, description="there exists no future with this id")
+
+    future = future_registry[future_id]
+    if future.done():
+        del future_registry[future_id]
+
+    result = None
+    exception = None
+    if future.done():
+        if future.cancelled():
+            exception = "Future was cancelled"
+        elif future.exception():
+            exception =str(future.exception())
+        else:
+            result = future.result()
+
+    return jsonify({ "done": future.done(), "result": result, "exception": exception }), HTTP_OK
+
+
+@server_bp.post("/wait_for_device_redetection")
+def wait_for_device_redetection():
+    if request.content_type != "application/json":
+        abort(HTTP_CLIENT_ERROR, description="Invalid content type")
+
+    data = request.get_json()
+    dev_info = cattrs.Converter().structure(data, FwDeviceInfo)
+
+    async def redetection_task(): 
+        coro = create_device_discovery().wait_for_device_redetection(dev_info)
+        dev_info_new = await asyncio.wait_for(coro, 3 * 60) # 3 minutes timeout
+        return dev_info_new
+    
+    future_registry: Dict[uuid.UUID, asyncio.Future] = current_app.extensions[FUTURE_REGISTRY]
+    loop: asyncio.AbstractEventLoop = current_app.extensions[EVENT_LOOP]
+
+    future_id = uuid.uuid4()
+    future_registry[future_id] = loop.create_task(redetection_task())
+
+    return jsonify({ "future_id", str(future_id) }), HTTP_OK
+
 
 @click.command()
 @click.option("--host", default=None)
@@ -209,9 +272,12 @@ def start_server(host: str | None, port: int | None):
             await asyncio.sleep(60)  # run every minute
     asyncio.run_coroutine_threadsafe(cleanup_task(), loop)
 
+    future_registry: Dict[uuid.UUID, asyncio.Future] = {}
+
     app = Flask(__name__)
     app.extensions[CONNECTIONS_REGISTRY] = connection_registry
     app.extensions[EVENT_LOOP] = loop
+    app.extensions[FUTURE_REGISTRY] = future_registry
     app.register_blueprint(server_bp)
     register_server_plugins(app)
 

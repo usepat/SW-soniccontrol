@@ -58,7 +58,7 @@ class SonicDevice:
     
     @property
     def update_command(self) -> Command | None:
-        return self.update_command
+        return self._update_command
 
     def has_commands(self, commands: List[CommandCode | Command]) -> bool:
         return all(map(self.has_command, commands))

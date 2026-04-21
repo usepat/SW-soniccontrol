@@ -4,7 +4,6 @@ import asyncio
 
 from soniccontrol.communication.connection import Connection
 from soniccontrol.network.client import RemoteClient
-from soniccontrol.network.server import ALREADY_ACTIVE_CONNECTION_ERROR_STR
 from soniccontrol.network.transport import open_remote_connection
 
 @attrs.define()
@@ -24,8 +23,7 @@ class RemoteServerConnection(Connection):
     _writer: asyncio.StreamWriter = attrs.field(init=False)
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:  
-        client = RemoteClient(self.url)
-        try:
+        async with RemoteClient(self.url) as client:
             is_port_already_connected = await client.is_port_free(self.port)
             if is_port_already_connected:
                 # need to remove previous connection
@@ -34,8 +32,6 @@ class RemoteServerConnection(Connection):
                     else await self.force_remove_connection()
                 if need_remove_conn:
                     await client.disconnect(self.port)
-        finally:
-            await client.close_client()
 
         reader, self._writer = await open_remote_connection(
                 self.url, self.port, cmd_args=self.cmd_args, baudrate=self.baudrate)
