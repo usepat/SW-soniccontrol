@@ -61,13 +61,19 @@ class RemoteClient:
                 error_message = await response.content.read()
             raise Exception(error_message)
 
-    async def get_devices(self, include_ttys: bool = True, include_disks: bool = True) -> List[FwDeviceInfo]:
+    async def get_devices(
+        self,
+        include_ttys: bool = True,
+        include_disks: bool = True,
+        include_unverified_ttys: bool = False,
+    ) -> List[FwDeviceInfo]:
         assert self._session
         
         # aiohttp requires that the params are strings
         params = {
             "include_ttys": str(include_ttys),
             "include_disks": str(include_disks),
+            "include_unverified_ttys": str(include_unverified_ttys),
         }
         
         async with self._session.get(self._url + "/devices", params=params) as response:

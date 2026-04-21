@@ -63,13 +63,24 @@ def _build_drive_mapping() -> Dict[str, DriveInfo]:
 
 
 class WindowsDeviceDiscovery(DeviceDiscovery):
-    async def list_fw_device_infos(self, include_ttys: bool = True, include_disks: bool = True) -> List[FwDeviceInfo]:
-        devices: List[FwDeviceInfo] = []
+    async def list_fw_device_infos(
+        self,
+        include_ttys: bool = True,
+        include_disks: bool = True,
+        include_unverified_ttys: bool = False,
+    ) -> List[FwDeviceInfo]:
+        devices_by_key: dict[tuple[str, str], FwDeviceInfo] = {}
+
+        def _add_device(device: FwDeviceInfo) -> None:
+            devices_by_key[(device.subsystem, device.sys_name)] = device
+
         if include_ttys:
-            devices.extend(self._list_serial_devices())
+            for device in self._list_serial_devices(include_unverified_ttys=include_unverified_ttys):
+                _add_device(device)
         if include_disks:
-            devices.extend(self._list_boot_disks())
-        return devices
+            for device in self._list_boot_disks():
+                _add_device(device)
+        return list(devices_by_key.values())
 
 
     async def wait_for_device_redetection(self, device_info: FwDeviceInfo) -> FwDeviceInfo:
@@ -97,7 +108,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
 
 
 
-    def _list_serial_devices(self) -> List[FwDeviceInfo]:
+    def _list_serial_devices(self, include_unverified_ttys: bool = False) -> List[FwDeviceInfo]:
         devices: List[FwDeviceInfo] = []
         for port in list_ports.comports():
             is_pico = port.vid == RASPBERRY_PI_USB_VID or _contains_pico_marker(
@@ -105,19 +116,27 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
                 getattr(port, "product", None),
                 getattr(port, "description", None),
             )
-            if not is_pico:
+
+            if not is_pico and not include_unverified_ttys:
+                continue
+
+            dev_inst = get_device_instance_id_from_com_port(port.name)
+            if dev_inst is None:
+                continue
+
+            try:
+                usb_sys_name = get_physical_location_path_of_device(dev_inst)
+            except AssertionError:
                 continue
 
             usb_model: str | None = getattr(port, "product", None) or getattr(port, "description", None)
             device_path = port.device
-            dev_inst = get_device_instance_id_from_com_port(port.name)
-            assert dev_inst is not None
             devices.append(
                 FwDeviceInfo(
                     sys_name=port.name,
                     subsystem="tty",
                     usb_model=usb_model,
-                    usb_sys_name=get_physical_location_path_of_device(dev_inst),
+                    usb_sys_name=usb_sys_name,
                     device_path=device_path,
                 )
             )

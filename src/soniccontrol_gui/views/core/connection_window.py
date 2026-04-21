@@ -158,7 +158,10 @@ class ConnectionWindow(UIComponent):
     @async_handler
     async def _refresh_ports(self):
         device_discovery = create_device_discovery(APP_CONFIG.remote_server_url)
-        dev_infos = await device_discovery.list_fw_device_infos(include_disks=False)
+        dev_infos = await device_discovery.list_fw_device_infos(
+            include_disks=False,
+            include_unverified_ttys=True,
+        )
         self._dev_infos = { dev_info.display_name: dev_info for dev_info in dev_infos }
         self._view.set_ports(list(self._dev_infos.keys()))
 
