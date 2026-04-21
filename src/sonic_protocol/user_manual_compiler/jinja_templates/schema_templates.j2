@@ -182,6 +182,10 @@
                 {% if text_example is not none and text_example|trim != "" %}
                     <p class="text-sm text-slate-600 mb-3">Example command: <code>{{ text_example }}</code></p>
                 {% endif %}
+                {% set answer_example = deduce_answer_command_example_for_contract(protocol_consts, command_contract) %}
+                {% if answer_example is not none and answer_example|trim != "" %}
+                    <p class="text-sm text-slate-600 mb-3">Example answer: <code>{{ answer_example }}</code></p>
+                {% endif %}
             {% endif %}
         {% endif %}
     </article>

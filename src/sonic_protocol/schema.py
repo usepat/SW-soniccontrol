@@ -308,6 +308,11 @@ class DeviceParamConstants:
 
     min_n_steps: int = attrs.field(default=1)
 
+    def get_constant_value_from_type(self, type: "DeviceParamConstantType"):
+        return getattr(self, type.value)
+
+
+
 
 class DeviceParamConstantType(Enum):
     MAX_TRANSDUCER_INDEX = "max_transducer_index"

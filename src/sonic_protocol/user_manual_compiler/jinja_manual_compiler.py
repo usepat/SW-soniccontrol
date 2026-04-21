@@ -24,6 +24,7 @@ from sonic_protocol.schema import (
 )
 import sonic_protocol
 from sonic_protocol.user_manual_compiler.command_example_utils import (
+    deduce_answer_example_for_contract,
     deduce_single_command_example_for_contract,
 )
 from sonic_protocol.user_manual_compiler.manual_compiler import ManualCompiler
@@ -172,6 +173,7 @@ class HtmlManualCompiler(ManualCompiler):
             "protocol_constants": attrs.asdict(protocol.consts), # FIXME: It would be better to pass this as render variable, but I am lazy
             "protocol_consts": protocol.consts,
             "deduce_single_command_example_for_contract": deduce_single_command_example_for_contract,
+            "deduce_answer_command_example_for_contract": deduce_answer_example_for_contract,
             "device_name_to_label": device_name_to_label,
             "anchor_group": lambda gid: f"group-{str(gid).replace('.', '-')}",
             "anchor_cmd": lambda code: f"cmd-{int(code.value)}",
@@ -215,7 +217,7 @@ def main():
     for mode, basename in targets:
         manual = manual_compiler.compile_manual_for_specific_device(
             DeviceType.MVP_WORKER,
-            Version(3, 0, 0),
+            Version(2, 0, 0),
             True,
             mode=mode,
         )

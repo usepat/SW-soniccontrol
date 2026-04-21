@@ -74,7 +74,7 @@ get_uipt = CommandContract(
     user_manual_attrs=UserManualAttrs(
         description="Retrieves transducer voltage, current, and phase from the device."
     ),
-    is_release=False,
+    is_release=True,
     group_id=GROUPS.measurements,
     tags=["transducer"]
 )

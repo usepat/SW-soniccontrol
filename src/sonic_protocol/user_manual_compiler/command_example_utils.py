@@ -1,11 +1,15 @@
+import numbers
 from enum import Enum
 from typing import List, Optional
 
 from sonic_protocol.schema import (
+    AnswerFieldDef,
     CommandContract,
     CommandParamDef,
     DeviceParamConstantType,
     DeviceParamConstants,
+    Timestamp,
+    Version,
 )
 
 
@@ -116,3 +120,59 @@ def deduce_single_command_example_for_contract(
     if len(examples) == 0:
         return None
     return examples[0]
+
+
+
+def generate_answer_field_example(field_def: AnswerFieldDef, consts: DeviceParamConstants) -> str:
+    field_example = field_def.sonic_text_attrs.prefix
+    field_type = field_def.field_type
+    example_value = None
+    if field_type.allowed_values:
+        example_value = field_type.allowed_values[0]
+    elif field_type.min_value is not None: 
+        if isinstance(field_type.min_value, DeviceParamConstantType):
+            example_value = consts.get_constant_value_from_type(field_type.min_value)
+        else:
+            example_value = field_type.min_value
+    elif field_type.max_value is not None:
+        if isinstance(field_type.max_value, DeviceParamConstantType):
+            example_value = consts.get_constant_value_from_type(field_type.max_value)
+        else:
+            example_value = field_type.min_value
+    elif field_type is bool:
+        example_value = "true"
+    elif _is_enum_field_type(field_type.field_type):
+        enum_members = [member.value for member in getattr(field_type.field_type, "__members__", {}).values()]
+        example_value = enum_members[0]
+    elif issubclass(field_type.field_type, Version):
+        vs = Version(1, 0, 0)
+        example_value = str(vs)
+    elif issubclass(field_type.field_type, str):
+        example_value = "example string"
+    elif issubclass(field_type.field_type, Timestamp):
+        ts = Timestamp(12, 30 , 15, 15, 10, 2000)
+        example_value = str(ts)
+    elif issubclass(field_type.field_type, numbers.Integral):
+        example_value = "0"
+    elif issubclass(field_type.field_type, numbers.Real):
+        example_value = "0.0"
+    if example_value is None:
+        raise ValueError("Answer field example value missing")
+    field_example += str(example_value) + " "
+    if field_type.si_prefix:
+        field_example += field_type.si_prefix.value
+    if field_type.si_unit:
+        field_example += field_type.si_unit.value
+    return field_example
+
+
+def deduce_answer_example_for_contract(
+    consts: DeviceParamConstants,
+    command_contract: CommandContract,
+) -> Optional[str]:
+    ans_prefix = f"ANS#0={command_contract.code}#"
+    answer = ans_prefix
+    for field in command_contract.answer_def.fields:
+        answer += generate_answer_field_example(field, consts) + "#"
+    return answer[:-1]
+    
