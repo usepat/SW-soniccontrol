@@ -93,7 +93,8 @@ class SonicDevice:
         code: ICommandCode | None = None
         if "#" in response_str:
             code_str, response_str  = response_str.split(sep="#", maxsplit=1)
-            code = self._protocol.command_code_cls(int(code_str))
+            code_int = self._protocol.convert_command_code_for_validation(int(code_str))
+            code = self._protocol.command_code_cls(code_int)
 
         ERROR_CODES_START = 20000
         if code is not None and code.value >= ERROR_CODES_START:

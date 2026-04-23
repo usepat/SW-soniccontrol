@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, Dict
 import numpy as np
+from sonic_protocol.command_codes_deprecated import CommandCodeDeprecated
 from sonic_protocol.groups import GROUPS
 from sonic_protocol.protocols.contract_generators import create_version_field
 from sonic_protocol.schema import (
@@ -88,6 +89,17 @@ class Protocol_v1_0_0(ProtocolList):
     @property
     def command_code_cls(self) -> type[ICommandCode]:
         return CommandCode
+    
+    def convert_command_code_for_validation(self, code: int) -> int:
+        try:
+            legacy_code = CommandCodeDeprecated(code)
+        except ValueError:
+            return code
+
+        remapped_code = CommandCode.__members__.get(legacy_code.name)
+        if remapped_code is not None:
+            return remapped_code.value
+        return code
 
     @property
     def custom_data_types(self) -> Dict[str, type]:

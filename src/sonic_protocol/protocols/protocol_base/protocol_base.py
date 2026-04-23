@@ -35,6 +35,9 @@ class Protocol_base(ProtocolList):
             "E_BUILD_TYPE": BuildType,
         }
 
+    def convert_command_codes_for_validation(self, code: int) -> int:
+        return code
+
     def supports_device_type(self, device_type: DeviceType) -> bool:
         return True
 

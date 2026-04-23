@@ -1,5 +1,5 @@
 from enum import Enum, IntEnum, auto
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Generic, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Generic, Union
 import attrs
 import numpy as np
 
@@ -502,5 +502,9 @@ class Protocol:
     command_code_cls: type[ICommandCode] = attrs.field()
     field_name_cls: type[IEFieldName] = attrs.field()
     command_contracts: Dict[ICommandCode, CommandContract] = attrs.field()
-    consts: DeviceParamConstants= attrs.field(default=DeviceParamConstants())
+    command_code_for_validation_converter: Callable[[int], int] = attrs.field()
+    consts: DeviceParamConstants = attrs.field(factory=DeviceParamConstants)
+
+    def convert_command_code_for_validation(self, code: int) -> int:
+        return self.command_code_for_validation_converter(code)
 

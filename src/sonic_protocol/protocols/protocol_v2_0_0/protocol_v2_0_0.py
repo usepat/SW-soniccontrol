@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List
 from sonic_protocol.command_codes import CommandCode, ICommandCode
+from sonic_protocol.command_codes_deprecated import CommandCodeDeprecated
 from sonic_protocol.schema import Anomaly, SystemState, TransducerState, AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, ControlMode, ConverterType, DeviceParamConstantType, DeviceType, FieldType, IEFieldName, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
@@ -43,6 +44,9 @@ class Protocol_v2_0_0(ProtocolList):
     @property
     def command_code_cls(self) -> type[ICommandCode]:
         return CommandCode
+    
+    def convert_command_code_for_validation(self, code: int) -> int:
+        return self._previous_protocol.convert_command_code_for_validation(code)
 
     @property
     def custom_data_types(self) -> Dict[str, type]:

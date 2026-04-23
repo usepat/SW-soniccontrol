@@ -6,8 +6,8 @@ from typing import Any, Callable, Dict, List,  Optional, Type
 import attrs
 
 from sonic_protocol.python_parser.converters import Converter
-from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import IEFieldName
+from sonic_protocol.schema import ICommandCode
 
 
 @attrs.define()    
@@ -27,7 +27,7 @@ class Answer:
         and no validator for it could be deduced. 
         Therefore it is recommended to always use Command Objects instead of strings 
         for sending commands to the device.
-    command_code: CommandCode | None
+    command_code: ICommandCode | None
         The command code returned from the device. Is the same as for the command sent, 
         if the device could execute the command successfully
     field_value_dict: Dict[EFieldName, Any]
@@ -40,7 +40,7 @@ class Answer:
     # TODO: probably better to make an enum ValidationStatus and merge valid and was_validated
     valid: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
     was_validated: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
-    command_code: CommandCode | None = attrs.field(default=None)
+    command_code: ICommandCode | None = attrs.field(default=None)
     field_value_dict: Dict[IEFieldName, Any] = attrs.field(default={})
     # received_timestamp: float = attrs.field(factory=time.time, init=False, on_setattr=attrs.setters.NO_OP)
 
