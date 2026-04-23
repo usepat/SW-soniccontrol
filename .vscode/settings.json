@@ -11,7 +11,7 @@
     "python.autoComplete.extraPaths": [
         "${workspaceFolder}/tests"
     ],
-    "debugpy.debugJustMyCode": false,
+    "debugpy.debugJustMyCode": true,
     "editor.detectIndentation": true,
     "files.associations": {
         "optional": "cpp",

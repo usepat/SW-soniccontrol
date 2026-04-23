@@ -155,35 +155,57 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
 
         return list(devices_by_key.values())
 
-    async def wait_for_device_redetection(self, device_info: FwDeviceInfo) -> FwDeviceInfo:
-        assert device_info.usb_sys_name is not None, "The usb_sys_name must be set on the device"
-        context = pyudev.Context()
-        monitor = pyudev.Monitor.from_netlink(context)
-        monitor.filter_by(subsystem="usb")
+    async def wait_for_device_redetection(
+        self,
+        device_info: FwDeviceInfo,
+        timeout: float = 15.0,
+        poll_interval: float = 0.5,
+    ) -> FwDeviceInfo:
+        deadline = asyncio.get_event_loop().time() + timeout
+        while True:
+            try:
+                fw_dev_infos = await self.list_fw_device_infos()
+                matched = self._match_redetected_device(device_info, fw_dev_infos)
+                if matched is not None and (
+                    matched.subsystem != device_info.subsystem
+                    or matched.sys_name != device_info.sys_name
+                ):
+                    return matched
+            except Exception:
+                pass  # retry on next poll
 
-        seen_remove = False
+            remaining = deadline - asyncio.get_event_loop().time()
+            if remaining <= 0:
+                raise TimeoutError(
+                    f"Device {device_info.sys_name!r} did not reappear within {timeout:.1f}s"
+                )
+            await asyncio.sleep(min(poll_interval, remaining))
 
-        usb_device = None
-        for device in iter(monitor.poll, None):
-            if device.sys_name != device_info.usb_sys_name:
-                continue
+    def _match_redetected_device(
+        self,
+        previous_device: FwDeviceInfo,
+        candidates: List[FwDeviceInfo],
+    ) -> FwDeviceInfo | None:
+        for candidate in candidates:
+            if candidate.usb_sys_name == previous_device.usb_sys_name:
+                return candidate
 
-            action = device.action
+        if previous_device.subsystem == "tty":
+            pico_block_candidates = [
+                c for c in candidates
+                if c.subsystem == "block"
+            ]
+            if len(pico_block_candidates) == 1:
+                return pico_block_candidates[0]
 
-            if action == "remove":
-                seen_remove = True
-            elif action == "add" and seen_remove:
-                usb_device = device
-                break
-            
-            await asyncio.sleep(0.5)
-    
-        await asyncio.sleep(0.5) # wait for enumeration of children
-        device = _get_descendant_device(usb_device, [
-            PyudevDeviceQuery("tty", None), 
-            PyudevDeviceQuery("block", "disk")
-        ])
-        assert device is not None, "usb device added, but no tty or block device detected"
-        return _get_device_info(device)
+        if previous_device.subsystem == "block":
+            pico_tty_candidates = [
+                c for c in candidates
+                if c.subsystem == "tty"
+            ]
+            if len(pico_tty_candidates) == 1:
+                return pico_tty_candidates[0]
+
+        return None
         
 

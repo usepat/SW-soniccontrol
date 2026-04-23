@@ -14,8 +14,14 @@ class GUID(ctypes.Structure):
     ]
 
 
-class DEVPROPKEY(GUID):
-    _fields_ = [*GUID._fields_, ("pid", wintypes.DWORD)]
+class DEVPROPKEY(ctypes.Structure):
+    _fields_ = [
+        ("Data1", wintypes.DWORD),
+        ("Data2", wintypes.WORD),
+        ("Data3", wintypes.WORD),
+        ("Data4", ctypes.c_byte * 8),
+        ("pid", wintypes.DWORD),
+    ]
 
 
 class SP_DEVINFO_DATA(ctypes.Structure):
@@ -51,7 +57,7 @@ DEVPKEY_Device_LocationInfo = DEVPROPKEY(
     Data1=0xa45c254e,
     Data2=0xdf1c,
     Data3=0x4efd,
-    Data4=[0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0],
+    Data4=(ctypes.c_byte * 8)(0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0),
     pid=15
 ) 
 
@@ -176,7 +182,7 @@ def get_parent_devinst(devinst: DEVINST) -> DEVINST | None:
 
     return parent
 
-def iter_ancestors_of_device(instance_id: DEVINST) -> Generator[DEVINST]:
+def iter_ancestors_of_device(instance_id: DEVINST) -> Generator[DEVINST, None, None]:
     current_id = instance_id
     while True:
         yield current_id
@@ -262,10 +268,28 @@ def get_port_name_from_devinfo(device_info_set, dev_info):
 
 def get_physical_location_path_of_device(instance_id: str | DEVINST) -> str:
     usb_devinst = get_usb_device_instance_id(instance_id)
-    assert usb_devinst is not None, "The device is not a usb device and has no ancestor that is that"
+    if usb_devinst is not None:
+        location: str = get_device_property(usb_devinst, DEVPKEY_Device_LocationInfo, PropType.STRING)
+        return location
 
-    location: str = get_device_property(usb_devinst, DEVPKEY_Device_LocationInfo, PropType.STRING)
-    return location
+    # Some device stacks (notably USB mass-storage / USBSTOR) may not expose a
+    # USB\\VID_* ancestor in this enumeration path, but still provide a stable
+    # location on one of their ancestors.
+    if isinstance(instance_id, str):
+        devinst = get_devinst_from_instance_id(instance_id)
+    else:
+        devinst = instance_id
+
+    for ancestor in iter_ancestors_of_device(devinst):
+        try:
+            location = get_device_property(ancestor, DEVPKEY_Device_LocationInfo, PropType.STRING)
+        except Exception:
+            continue
+
+        if isinstance(location, str) and location.strip():
+            return location
+
+    assert False, "The device has no ancestor with a physical location property"
 
 
 def get_device_instance_id_from_com_port(com_port: str) -> DEVINST | None:
