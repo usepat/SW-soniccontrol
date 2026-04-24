@@ -139,16 +139,18 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
         poll_interval: float = 0.5,
     ) -> FwDeviceInfo:
         try:
-            initial_devices = await self.list_fw_device_infos(include_unverified_ttys=True)
+            initial_devices = await self.list_fw_device_infos()
         except Exception:
             initial_devices = []
 
         known_keys = {(device.subsystem, device.sys_name) for device in initial_devices}
+        previous_key = (device_info.subsystem, device_info.sys_name)
+        previous_missing_at_start = previous_key not in known_keys
 
         deadline = asyncio.get_event_loop().time() + timeout
         while True:
             try:
-                fw_dev_infos = await self.list_fw_device_infos(include_unverified_ttys=True)
+                fw_dev_infos = await self.list_fw_device_infos()
 
                 # Always allow strict usb_sys_name matching against the full list.
                 for candidate in fw_dev_infos:
@@ -166,7 +168,19 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
                     if (candidate.subsystem, candidate.sys_name) not in known_keys
                 ]
 
-                matched = self._match_redetected_device(device_info, new_candidates)
+                if device_info.subsystem == "tty":
+                    # tty -> bootloader block: allow matching from full scan, because
+                    # the add event may happen before this wait loop starts.
+                    candidates_for_matching = fw_dev_infos
+                elif previous_missing_at_start:
+                    # We likely started late (already after reboot), so allow full scan.
+                    candidates_for_matching = fw_dev_infos
+                else:
+                    # block -> tty verification: only trust newly appeared devices to
+                    # avoid validating against unrelated pre-existing ports.
+                    candidates_for_matching = new_candidates
+
+                matched = self._match_redetected_device(device_info, candidates_for_matching)
                 if matched is not None and (
                     matched.subsystem != device_info.subsystem
                     or matched.sys_name != device_info.sys_name
