@@ -129,6 +129,48 @@ def _list_usb_tty_devices() -> List[pyudev.Device]:
 
 
 class LinuxDeviceDiscovery(DeviceDiscovery):
+    @staticmethod
+    def _has_device_changed(previous_device: FwDeviceInfo, candidate: FwDeviceInfo) -> bool:
+        return (
+            candidate.subsystem != previous_device.subsystem
+            or candidate.sys_name != previous_device.sys_name
+        )
+
+    @staticmethod
+    def _find_strict_redetection_match(
+        previous_device: FwDeviceInfo,
+        candidates: List[FwDeviceInfo],
+    ) -> FwDeviceInfo | None:
+        for candidate in candidates:
+            if (
+                candidate.usb_sys_name == previous_device.usb_sys_name
+                and LinuxDeviceDiscovery._has_device_changed(previous_device, candidate)
+            ):
+                return candidate
+        return None
+
+    @staticmethod
+    def _get_new_candidates(
+        candidates: List[FwDeviceInfo],
+        known_keys: set[tuple[str, str]],
+    ) -> List[FwDeviceInfo]:
+        return [
+            candidate
+            for candidate in candidates
+            if (candidate.subsystem, candidate.sys_name) not in known_keys
+        ]
+
+    @staticmethod
+    def _select_candidates_for_matching(
+        previous_device: FwDeviceInfo,
+        all_candidates: List[FwDeviceInfo],
+        known_keys: set[tuple[str, str]],
+        previous_missing_at_start: bool,
+    ) -> List[FwDeviceInfo]:
+        if previous_device.subsystem == "tty" or previous_missing_at_start:
+            return all_candidates
+        return LinuxDeviceDiscovery._get_new_candidates(all_candidates, known_keys)
+
     async def list_fw_device_infos(
         self,
         include_ttys: bool = True,
@@ -161,15 +203,33 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         timeout: float = 15.0,
         poll_interval: float = 0.5,
     ) -> FwDeviceInfo:
+        try:
+            initial_devices = await self.list_fw_device_infos()
+        except Exception:
+            initial_devices = []
+
+        known_keys = {(device.subsystem, device.sys_name) for device in initial_devices}
+        previous_key = (device_info.subsystem, device_info.sys_name)
+        previous_missing_at_start = previous_key not in known_keys
+
         deadline = asyncio.get_event_loop().time() + timeout
         while True:
             try:
                 fw_dev_infos = await self.list_fw_device_infos()
-                matched = self._match_redetected_device(device_info, fw_dev_infos)
-                if matched is not None and (
-                    matched.subsystem != device_info.subsystem
-                    or matched.sys_name != device_info.sys_name
-                ):
+
+                strict_match = self._find_strict_redetection_match(device_info, fw_dev_infos)
+                if strict_match is not None:
+                    return strict_match
+
+                candidates_for_matching = self._select_candidates_for_matching(
+                    device_info,
+                    fw_dev_infos,
+                    known_keys,
+                    previous_missing_at_start,
+                )
+
+                matched = self._match_redetected_device(device_info, candidates_for_matching)
+                if matched is not None and self._has_device_changed(device_info, matched):
                     return matched
             except Exception:
                 pass  # retry on next poll
@@ -186,9 +246,12 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         previous_device: FwDeviceInfo,
         candidates: List[FwDeviceInfo],
     ) -> FwDeviceInfo | None:
+        previous_candidate: FwDeviceInfo | None = None
         for candidate in candidates:
             if candidate.usb_sys_name == previous_device.usb_sys_name:
-                return candidate
+                if self._has_device_changed(previous_device, candidate):
+                    return candidate
+                previous_candidate = candidate
 
         if previous_device.subsystem == "tty":
             pico_block_candidates = [
@@ -206,6 +269,6 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
             if len(pico_tty_candidates) == 1:
                 return pico_tty_candidates[0]
 
-        return None
+        return previous_candidate
         
 

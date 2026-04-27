@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 from pathlib import Path
 from typing import Any, Callable, Coroutine, Dict, List
 import sys
@@ -63,6 +64,7 @@ FUTURE_REGISTRY = "futures"
 EVENT_LOOP = "event_loop"
 
 ALREADY_ACTIVE_CONNECTION_ERROR_STR = "there is already an active connection for this port"
+NO_ACTIVE_CONNECTION_ERROR_STR = "there is no active connection for this port"
 
 HTTP_OK = 200
 HTTP_CLIENT_ERROR = 400
@@ -157,7 +159,7 @@ async def connect(port: str):
 async def write(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
-        abort(HTTP_CLIENT_ERROR, description="there is no active connection for this port")
+        abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
 
     if request.content_type != "application/octet-stream":
         abort(HTTP_CLIENT_ERROR, description="Invalid content type")
@@ -175,7 +177,7 @@ async def write(port: str):
 async def read(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
-        abort(HTTP_CLIENT_ERROR, description="there is no active connection for this port")
+        abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
 
     reader = connections[port].reader
 
@@ -193,7 +195,7 @@ async def read(port: str):
 async def disconnect(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
-        abort(HTTP_CLIENT_ERROR, description="there is no active connection for this port")
+        abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
 
     await connections[port].connection.close_connection()
     del connections[port]
@@ -203,7 +205,7 @@ async def disconnect(port: str):
 @server_bp.get("/poll_future/<uuid:future_id>")
 @execute_in_event_loop
 async def poll_future(future_id: uuid.UUID):
-    future_registry: Dict[uuid.UUID, asyncio.Future] = current_app.extensions[FUTURE_REGISTRY]
+    future_registry: Dict[uuid.UUID, concurrent.futures.Future[Any]] = current_app.extensions[FUTURE_REGISTRY]
 
     if future_id not in future_registry:
         abort(HTTP_CLIENT_ERROR, description="there exists no future with this id")
@@ -238,13 +240,14 @@ def wait_for_device_redetection():
         dev_info_new = await asyncio.wait_for(coro, 3 * 60) # 3 minutes timeout
         return dev_info_new
     
-    future_registry: Dict[uuid.UUID, asyncio.Future] = current_app.extensions[FUTURE_REGISTRY]
+    future_registry: Dict[uuid.UUID, concurrent.futures.Future[Any]] = current_app.extensions[FUTURE_REGISTRY]
     loop: asyncio.AbstractEventLoop = current_app.extensions[EVENT_LOOP]
 
     future_id = uuid.uuid4()
-    future_registry[future_id] = loop.create_task(redetection_task())
+    future = asyncio.run_coroutine_threadsafe(redetection_task(), loop)
+    future_registry[future_id] = future
 
-    return jsonify({ "future_id", str(future_id) }), HTTP_OK
+    return jsonify({"future_id": str(future_id)}), HTTP_OK
 
 
 @click.command()
@@ -272,7 +275,7 @@ def start_server(host: str | None, port: int | None):
             await asyncio.sleep(60)  # run every minute
     asyncio.run_coroutine_threadsafe(cleanup_task(), loop)
 
-    future_registry: Dict[uuid.UUID, asyncio.Future] = {}
+    future_registry: Dict[uuid.UUID, concurrent.futures.Future[Any]] = {}
 
     app = Flask(__name__)
     app.extensions[CONNECTIONS_REGISTRY] = connection_registry

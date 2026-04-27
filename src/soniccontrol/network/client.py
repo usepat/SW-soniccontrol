@@ -8,6 +8,10 @@ import cattrs
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 
 
+class RemoteClientError(RuntimeError):
+    pass
+
+
 class RemoteClient:
     def __init__(self, url: str):
         self._url = url
@@ -40,7 +44,7 @@ class RemoteClient:
 
                 if data["done"]:
                     if data["exception"] is not None:
-                        raise Exception(data["exception"])
+                        raise RemoteClientError(data["exception"])
                     else:
                         return data["result"]
         
@@ -59,7 +63,7 @@ class RemoteClient:
                 error_message = (await response.json())["error"]
             else:
                 error_message = await response.content.read()
-            raise Exception(error_message)
+            raise RemoteClientError(str(error_message))
 
     async def get_devices(
         self,
@@ -136,7 +140,7 @@ class RemoteClient:
             await self._check_response_ok(response)
             future_id: str = (await response.json())["future_id"]
         
-        future_result = self.wait_for_future(uuid.UUID(future_id))
+        future_result = await self.wait_for_future(uuid.UUID(future_id))
 
         new_dev_info = cattrs.structure(future_result, FwDeviceInfo)
         return new_dev_info
