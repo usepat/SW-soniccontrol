@@ -218,7 +218,7 @@ def main():
         manual = manual_compiler.compile_manual_for_specific_device(
             DeviceType.MVP_WORKER,
             Version(2, 0, 0),
-            True,
+            False,
             mode=mode,
         )
 
