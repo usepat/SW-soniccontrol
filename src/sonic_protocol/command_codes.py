@@ -24,6 +24,7 @@ class BaseCommandCode(ICommandCode):
     START_DIAGNOSTIC_TOOL = 41
     START_OPERATOR = 42
     START_CONFIGURATOR = 43
+    START_CUSTOMIZER = 44
 
     SET_FLASH_USB = 50
     SET_FLASH_9600 = 51
@@ -76,6 +77,7 @@ class CommandCode(ICommandCode):
     START_DIAGNOSTIC_TOOL = BaseCommandCode.START_DIAGNOSTIC_TOOL.value
     START_OPERATOR = BaseCommandCode.START_OPERATOR.value
     START_CONFIGURATOR = BaseCommandCode.START_CONFIGURATOR.value
+    START_CUSTOMIZER = BaseCommandCode.START_CUSTOMIZER.value
 
     SET_FLASH_USB = BaseCommandCode.SET_FLASH_USB.value
     SET_FLASH_9600 = BaseCommandCode.SET_FLASH_9600.value
