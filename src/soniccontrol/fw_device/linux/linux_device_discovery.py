@@ -1,5 +1,7 @@
 import asyncio
+import functools
 from pathlib import Path
+import time
 from typing import Any, Generator, Iterable, List, Optional, Set
 
 import attrs
@@ -155,9 +157,11 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
 
         return list(devices_by_key.values())
 
+
     async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 10) -> FwDeviceInfo:
         try:
-            dev_info = await asyncio.wait_for(self._wait_for_usb_device_redetection(device_info), timeout_s)
+            future = asyncio.to_thread(self._wait_for_usb_device_redetection, device_info)
+            dev_info = await asyncio.wait_for(future, timeout_s)
         except asyncio.TimeoutError:
             pass
         else:
@@ -179,7 +183,7 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         return dev_info
 
 
-    async def _wait_for_usb_device_redetection(self, device_info: FwDeviceInfo):
+    def _wait_for_usb_device_redetection(self, device_info: FwDeviceInfo):
         assert device_info.usb_sys_name is not None, "The usb_sys_name must be set on the device"
         context = pyudev.Context()
         monitor = pyudev.Monitor.from_netlink(context)
@@ -200,9 +204,7 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
                 usb_device = device
                 break
 
-            await asyncio.sleep(0.5)
-
-        await asyncio.sleep(0.5) # wait for enumeration of children
+        time.sleep(0.5) # wait for enumeration of children
         device = _get_descendant_device(usb_device, [
             PyudevDeviceQuery("tty", None), 
             PyudevDeviceQuery("block", "disk")
