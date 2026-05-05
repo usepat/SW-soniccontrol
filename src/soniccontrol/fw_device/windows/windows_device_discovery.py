@@ -135,7 +135,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
     async def wait_for_device_redetection(
         self,
         device_info: FwDeviceInfo,
-        timeout: float = 15.0,
+        timeout_s: float = 10.0,
         poll_interval: float = 0.5,
     ) -> FwDeviceInfo:
         try:
@@ -147,7 +147,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
         previous_key = (device_info.subsystem, device_info.sys_name)
         previous_missing_at_start = previous_key not in known_keys
 
-        deadline = asyncio.get_event_loop().time() + timeout
+        deadline = asyncio.get_event_loop().time() + timeout_s
         while True:
             try:
                 fw_dev_infos = await self.list_fw_device_infos()
@@ -192,7 +192,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
             remaining = deadline - asyncio.get_event_loop().time()
             if remaining <= 0:
                 raise TimeoutError(
-                    f"Device {device_info.sys_name!r} did not reappear within {timeout:.1f}s"
+                    f"Device {device_info.sys_name!r} did not reappear within {timeout_s:.1f}s"
                 )
             await asyncio.sleep(min(poll_interval, remaining))
 

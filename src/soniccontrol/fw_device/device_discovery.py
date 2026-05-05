@@ -18,7 +18,7 @@ class DeviceDiscovery(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def wait_for_device_redetection(self, device_info: FwDeviceInfo) -> FwDeviceInfo:
+    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 10) -> FwDeviceInfo:
         ...
 
     async def list_fw_device_names(

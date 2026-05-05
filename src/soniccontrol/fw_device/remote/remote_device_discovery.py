@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 
 from soniccontrol.fw_device.device_discovery import DeviceDiscovery
@@ -18,7 +19,7 @@ class RemoteDeviceDiscovery(DeviceDiscovery):
         async with RemoteClient(self._server_url) as client:
             return await client.get_devices(include_ttys, include_disks, include_unverified_ttys)
 
-    async def wait_for_device_redetection(self, device_info: FwDeviceInfo) -> FwDeviceInfo:
+    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 10) -> FwDeviceInfo:
         async with RemoteClient(self._server_url) as client:
-            return await client.wait_for_device_redetection(device_info)
+            return await asyncio.wait_for(client.wait_for_device_redetection(device_info), timeout_s)
 

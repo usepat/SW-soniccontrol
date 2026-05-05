@@ -155,10 +155,31 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
 
         return list(devices_by_key.values())
 
-    async def wait_for_device_redetection(self, device_info: FwDeviceInfo) -> FwDeviceInfo:
+    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 10) -> FwDeviceInfo:
+        try:
+            dev_info = await asyncio.wait_for(self._wait_for_usb_device_redetection(device_info), timeout_s)
+        except asyncio.TimeoutError:
+            pass
+        else:
+            return dev_info
+        
+        dev_infos = await self.list_fw_device_infos()
+        dev_info = next(
+            (dev for dev in dev_infos if dev.usb_sys_name == device_info.usb_sys_name),
+            None
+        )
+
+        if dev_info is None:
+            raise RuntimeError("The device could not be redetected")
+        
         # Note: On restart the device reenumerates itself, it appears with the same subsystem etc. tty -> tty
         # On force into boot or after flashing, this is not the case. tty -> block and block -> tty
         # Therefore checking if the subsystem changed or stayed the same is inapplicable for this problem
+
+        return dev_info
+
+
+    async def _wait_for_usb_device_redetection(self, device_info: FwDeviceInfo):
         assert device_info.usb_sys_name is not None, "The usb_sys_name must be set on the device"
         context = pyudev.Context()
         monitor = pyudev.Monitor.from_netlink(context)

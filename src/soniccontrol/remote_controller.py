@@ -342,7 +342,7 @@ class RemoteController:
             assert connection.dev_info is not None
 
             device_discovery = create_device_discovery(connection.dev_info.remote_server_url)
-            new_dev_info = await device_discovery.wait_for_device_redetection(connection.dev_info)
+            new_dev_info = await device_discovery.wait_for_device_redetection(connection.dev_info, 10)
             new_connection = create_connection_to_device(new_dev_info)
 
         device = await self._build_device(new_connection, self._logger)
