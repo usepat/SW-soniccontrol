@@ -66,7 +66,12 @@ class DeviceWindowManager:
             assert dev_info is not None, "cannot detect new connection, without dev_info"
 
             device_discovery = create_device_discovery(dev_info.remote_server_url)
-            new_dev_info = await device_discovery.wait_for_device_redetection(dev_info)
+            try:
+                new_dev_info = await device_discovery.wait_for_device_redetection(dev_info)
+            except asyncio.TimeoutError:
+                MessageBox.show_error(self._root, "Could not reconnect to the device")
+                return
+            
             new_connection = create_connection_to_device(new_dev_info)
         else:
             new_connection = connection
