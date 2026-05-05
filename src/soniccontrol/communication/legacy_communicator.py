@@ -6,7 +6,7 @@ from typing import Final, List, Optional
 import attrs
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.schema import CommandContract, Protocol
-from soniccontrol.communication.connection import Connection, SerialConnection
+from soniccontrol.fw_device.connection import Connection, SerialConnection
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol
 from soniccontrol.app_config import ENCODING

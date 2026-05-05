@@ -11,7 +11,7 @@ from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
+from soniccontrol.fw_device.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture

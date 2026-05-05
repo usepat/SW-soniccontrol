@@ -2,7 +2,7 @@ import attrs
 from typing import Callable, Coroutine, List, Tuple
 import asyncio
 
-from soniccontrol.communication.connection import Connection
+from soniccontrol.fw_device.connection import Connection
 from soniccontrol.network.client import RemoteClient
 from soniccontrol.network.transport import open_remote_connection
 

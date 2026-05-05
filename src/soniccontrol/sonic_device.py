@@ -11,7 +11,7 @@ from sonic_protocol.python_parser.command_deserializer import CommandDeserialize
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
 from sonic_protocol.schema import DeviceType, ICommandCode, Protocol, Version
-from soniccontrol.communication.connection import CLIConnection, Connection
+from soniccontrol.fw_device.connection import CLIConnection, Connection
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.communication.serial_communicator import Communicator
 from sonic_protocol.python_parser import commands

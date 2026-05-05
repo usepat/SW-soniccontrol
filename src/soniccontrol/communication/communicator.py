@@ -3,7 +3,7 @@ import abc
 import asyncio
 import logging
 
-from soniccontrol.communication.connection import Connection
+from soniccontrol.fw_device.connection import Connection
 from soniccontrol.communication.message_protocol import CommunicationProtocol
 from soniccontrol.events import EventManager
 

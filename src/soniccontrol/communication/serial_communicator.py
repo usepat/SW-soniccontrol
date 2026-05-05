@@ -3,7 +3,7 @@ import logging
 from typing import Final, Optional
 
 import attrs
-from soniccontrol.communication.connection import Connection, SerialConnection
+from soniccontrol.fw_device.connection import Connection, SerialConnection
 from soniccontrol.communication.message_fetcher import MessageFetcher
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol

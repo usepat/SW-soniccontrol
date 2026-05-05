@@ -8,7 +8,7 @@ from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.schema import BuildType, DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName, IEFieldName
 from soniccontrol.communication.communicator import Communicator
-from soniccontrol.communication.connection import Connection
+from soniccontrol.fw_device.connection import Connection
 from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.sonic_device import FirmwareInfo, SonicDevice

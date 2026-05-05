@@ -1,5 +1,5 @@
 from soniccontrol.app_config import PLATFORM, System
-from soniccontrol.communication.connection import Connection, SerialConnection
+from soniccontrol.fw_device.connection import Connection, SerialConnection
 from soniccontrol.fw_device.device_discovery import DeviceDiscovery
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.fw_device.remote.remote_device_discovery import RemoteDeviceDiscovery

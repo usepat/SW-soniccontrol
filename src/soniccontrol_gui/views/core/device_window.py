@@ -5,7 +5,7 @@ import ttkbootstrap as ttk
 import tkinter as tk
 
 from sonic_protocol.command_codes import CommandCode
-from soniccontrol.communication.connection import Connection
+from soniccontrol.fw_device.connection import Connection
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.scripting.new_scripting import NewScriptingFacade

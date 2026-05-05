@@ -16,7 +16,7 @@ from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.communication.connection import CLIConnection, Connection
+from soniccontrol.fw_device.connection import CLIConnection, Connection
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logger.utils import create_logger_for_connection
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation

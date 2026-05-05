@@ -14,7 +14,7 @@ from functools import wraps
 from werkzeug.exceptions import HTTPException
 
 from soniccontrol.app_config import get_simulation_exe
-from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
+from soniccontrol.fw_device.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.fw_device import create_device_discovery, create_connection_to_device
 from soniccontrol.network.plugin import register_server_plugins

@@ -14,7 +14,7 @@ from soniccontrol.procedures.procs import (ScanArgs, AutoArgs, TuneArgs, WipeArg
                                            RamperArgs, SpectrumMeasureArgs)
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.data_capturing.experiment_store import HDF5ExperimentReader, HDF5ExperimentWriter
-from soniccontrol.communication.connection import CLIConnection, SerialConnection
+from soniccontrol.fw_device.connection import CLIConnection, SerialConnection
 from soniccontrol.network.server import start_server
 from soniccontrol.network.enable_server_on_startup.script import enable_server_on_startup
 from soniccontrol.network.connection import RemoteServerConnection

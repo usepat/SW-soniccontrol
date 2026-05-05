@@ -3,7 +3,7 @@ import pytest
 import pytest_asyncio
 from sonic_protocol.schema import DeviceParamConstants
 from soniccontrol import DeviceParamConstantType
-from soniccontrol.communication.connection import CLIConnection
+from soniccontrol.fw_device.connection import CLIConnection
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
 from soniccontrol import RemoteController, DeviceType
 from tests.integration_tests.conftest import create_worker_process_impl
