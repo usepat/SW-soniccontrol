@@ -8,7 +8,7 @@ import cattrs
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 
 
-class RemoteClientError(RuntimeError):
+class RemoteClientError(ConnectionError):
     pass
 
 

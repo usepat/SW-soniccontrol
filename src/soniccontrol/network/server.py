@@ -200,8 +200,11 @@ async def disconnect(port: str):
     if port not in connections:
         abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
 
-    await connections[port].connection.close_connection()
-    del connections[port]
+    try:
+        # if restart was send over the device, it may reset and the connection cannot be closed anymore
+        await connections[port].connection.close_connection()
+    finally:    
+        del connections[port]
 
     return http_ok()
 

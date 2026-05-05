@@ -192,7 +192,7 @@ class ConnectionWindow(UIComponent):
 
     @async_handler
     async def _on_connect_via_url(self):
-        assert (not self._is_connecting)
+        assert (not self._is_connecting), "already connecting"
         self._is_connecting = True
 
         dev_display_name = self._view.get_dev_name()

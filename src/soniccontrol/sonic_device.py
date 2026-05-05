@@ -260,8 +260,12 @@ class SonicDevice:
 
     async def restart(self):
         try:
-            await self.execute_command(commands.RestartDevice())
-        except ConnectionError:
+            await self.execute_command(commands.RestartDevice()) 
+        except (ConnectionError, ConnectionRefusedError, ConnectionResetError, ConnectionAbortedError):
             pass # could throw a connection error, device may not respond anymore, because it is restarting
-        finally:
+        
+        try:
             await self.disconnect()
+        except (ConnectionError, ConnectionRefusedError, ConnectionResetError, ConnectionAbortedError):
+            pass # could throw a connection error, device may not respond anymore, because it is restarting
+        
