@@ -10,6 +10,7 @@ from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fie
     field_type_gain
 )
 
+from ...protocol_v1_0_0.flashing_commands.flashing_commands import field_success
 #from ...protocol_v1_0_0.transducer_commands import transducer_fields as tf
 
 irms_field_type = FieldType(

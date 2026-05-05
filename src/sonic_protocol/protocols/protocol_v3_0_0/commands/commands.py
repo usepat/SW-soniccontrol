@@ -426,3 +426,20 @@ set_modbus_parity = CommandContract(
     is_release=True,
     group_id=GROUPS.communication.serial_settings
 )
+
+start_customizer = CommandContract(
+    code=CommandCode.START_CUSTOMIZER,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!start_customizer"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[f.field_success]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="Starts the customizer, e.g. used for modbus settings."
+    ),
+    is_release=True,
+    group_id=GROUPS.generic,
+)
