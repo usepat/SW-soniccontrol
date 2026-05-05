@@ -1,7 +1,7 @@
 import asyncio
 from typing import Any
 
-from .client import RemoteClient
+from .client import RemoteClient, RemoteClientError
 
 
 # Source - https://stackoverflow.com/a/46774855
@@ -41,8 +41,12 @@ class RemoteClientTransport(asyncio.Transport):
         return not self._is_open
 
     async def _close(self):
-        await self._client.disconnect(self._port)
-        await self._client.close_client()
+        try:
+            await self._client.disconnect(self._port)
+        except RemoteClientError:
+            pass # in some cases like !restart_device it can be that the device is not responsive anymore afterwards
+        finally:
+            await self._client.close_client()
         self._protocol.connection_lost(None)
 
     def close(self):
