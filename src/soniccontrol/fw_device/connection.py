@@ -118,16 +118,29 @@ class SerialConnection(Connection):
     url: Path | str = attrs.field(init=True)
     baudrate: int = attrs.field(default=9600)
     writer: asyncio.StreamWriter = attrs.field(init=False)
+    _lock: asyncio.Lock = asyncio.Lock()
+    _closed: bool = True # maybe an asyncio event would be an even better fit here
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        # Maybe we need to ensure here also that only one connection at a time can be open
+        assert self._closed, "the last connection is still open"
+        
+        self._closed = False
         reader, self.writer = await open_serial_connection(
             url=str(self.url), baudrate=self.baudrate
         )
         return reader, self.writer
 
     async def close_connection(self):
-        self.writer.close()
-        await self.writer.wait_closed()
+        # use lock and bool var, to ensure the connection cannot get closed twice
+        async with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+
+            if not self.writer.is_closing():
+                self.writer.close()
+            await self.writer.wait_closed()
 
 
 async def main():
