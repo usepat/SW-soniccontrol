@@ -156,28 +156,9 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         return list(devices_by_key.values())
 
     async def wait_for_device_redetection(self, device_info: FwDeviceInfo) -> FwDeviceInfo:
-        try:
-            device_info = await asyncio.wait_for(self._wait_for_usb_device_redetection(device_info), 30)
-        except asyncio.TimeoutError:
-            pass
-        else:
-            return device_info
-
-        # could not redetect new device via pyudev polling.
-        # This can happen when the device very fast goes into boot mode, so fast that we missed the pyudev event.
-        # Try to detect it via normal detection
-        dev_infos = await self.list_fw_device_infos()
-        new_dev = next(( dev_info for dev_info in dev_infos if dev_info.usb_sys_name == device_info.usb_sys_name ), None)
-        if new_dev is None:
-            raise RuntimeError("Device disappeared and could not be redetected anymore")
-        
         # Note: On restart the device reenumerates itself, it appears with the same subsystem etc. tty -> tty
         # On force into boot or after flashing, this is not the case. tty -> block and block -> tty
         # Therefore checking if the subsystem changed or stayed the same is inapplicable for this problem
-        return new_dev
-
-
-    async def _wait_for_usb_device_redetection(self, device_info: FwDeviceInfo) -> FwDeviceInfo:
         assert device_info.usb_sys_name is not None, "The usb_sys_name must be set on the device"
         context = pyudev.Context()
         monitor = pyudev.Monitor.from_netlink(context)
