@@ -153,6 +153,8 @@ class SerialCommunicator(Communicator):
         return await self._message_fetcher.pop_message()
 
     async def close_communication(self, restart : bool = False) -> None:
+        assert self._connection, "Connection is not set"
+        
         self._restart = restart
         await self._message_fetcher.stop()
         self._connection_opened.clear()

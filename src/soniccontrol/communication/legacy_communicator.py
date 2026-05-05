@@ -194,6 +194,8 @@ class LegacyCommunicator(Communicator):
         return await self._messages.get()
 
     async def close_communication(self, restart : bool = False) -> None:
+        assert self._connection, "Connection was not set"
+       
         self._serial_master_task.cancel()
         try:
             await self._serial_master_task

@@ -39,7 +39,7 @@ class DeviceWindowManager:
         self._root = root
         self._id_device_window_counter = 0
         self._opened_device_windows: Dict[int, DeviceConnectionClass] = {}
-        self._attempt_connection_callback: Optional[Callable[..., Awaitable[None]]] = None
+        self._attempt_reconnect_callback: Optional[Callable[..., Awaitable[None]]] = None
 
     def open_rescue_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
         device_window = RescueWindow(sonicamp, self._root, connection.connection_name)
@@ -56,8 +56,23 @@ class DeviceWindowManager:
             DeviceWindow.CLOSE_EVENT, lambda _: self._opened_device_windows.pop(device_window_id) #type: ignore
         )
         device_window.subscribe(
-            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_connection_callback(connection, is_legacy_device, build_configurator)) #type: ignore
-        )    
+            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_reconnect_callback(connection, is_legacy_device, build_configurator)) #type: ignore
+        )   
+
+    async def attempt_reconnection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
+        if not isinstance(connection, CLIConnection):
+            # after restart the device can be enumerated on another port, therefore we need to redetect it
+            dev_info = connection.dev_info
+            assert dev_info is not None, "cannot detect new connection, without dev_info"
+
+            device_discovery = create_device_discovery(dev_info.remote_server_url)
+            new_dev_info = await device_discovery.wait_for_device_redetection(dev_info)
+            new_connection = create_connection_to_device(new_dev_info)
+        else:
+            new_connection = connection
+
+        await self.attempt_connection(new_connection, is_legacy_device, build_configurator)
+
         
     async def attempt_connection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
         logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
@@ -108,8 +123,8 @@ class DeviceWindowManager:
             self.open_rescue_window(sonicamp, connection)
 
 
-    def set_attempt_connection_callback(self, callback: Callable[..., Awaitable[None]]):
-        self._attempt_connection_callback = callback
+    def set_attempt_reconnect_callback(self, callback: Callable[..., Awaitable[None]]):
+        self._attempt_reconnect_callback = callback
 
 
 class ConnectionWindow(UIComponent):
@@ -144,10 +159,16 @@ class ConnectionWindow(UIComponent):
             self._is_connecting = False
             self._finished_connecting.set()
 
+        async def _attempt_reconnection(_connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
+            await self._device_window_manager.attempt_reconnection(_connection, is_legacy_device, build_configurator)
+            self._is_connecting = False
+            self._finished_connecting.set()
+
         self._is_connecting = False
         self._finished_connecting: asyncio.Event = asyncio.Event() 
         self._attempt_connection = decorator(_attempt_connection)
-        self._device_window_manager.set_attempt_connection_callback(self._attempt_connection)
+        self._attempt_reconnection = decorator(_attempt_reconnection)
+        self._device_window_manager.set_attempt_reconnect_callback(self._attempt_reconnection)
         
         self._view.set_connect_via_url_button_command(self._on_connect_via_url)
         self._view.set_connect_to_simulation_button_command(self._on_connect_to_simulation)
@@ -203,10 +224,10 @@ class ConnectionWindow(UIComponent):
   
 
         if APP_CONFIG.remote_server_url is None:
-            connection = CLIConnection(connection_name, bin_file=bin_file, cmd_args=args)
+            connection = CLIConnection(connection_name, None, bin_file=bin_file, cmd_args=args)
         else:
             connection = RemoteServerConnection(
-                connection_name, APP_CONFIG.remote_server_url, 
+                connection_name, None, APP_CONFIG.remote_server_url, 
                 force_remove_connection=True, port="simulation", cmd_args=args)
         
         await self._attempt_connection(connection)

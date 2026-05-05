@@ -16,7 +16,7 @@ from werkzeug.exceptions import HTTPException
 from soniccontrol.app_config import get_simulation_exe
 from soniccontrol.communication.connection import CLIConnection, Connection, SerialConnection
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
-from soniccontrol.fw_device import create_device_discovery
+from soniccontrol.fw_device import create_device_discovery, create_connection_to_device
 from soniccontrol.network.plugin import register_server_plugins
 
 if sys.platform.startswith("linux"):
@@ -137,17 +137,20 @@ async def connect(port: str):
             abort(HTTP_SERVER_ERROR, description="No simulation_exe_path defined in the server environment")
 
         cmd_args = request.args.get("cmd_args", "", type=str).split(" ")
-        connection = CLIConnection("simulation", simulation_exe_path, cmd_args)
+        connection = CLIConnection("simulation", None, simulation_exe_path, cmd_args)
 
     else:
-        tty_device = get_tty_device_from_name(port)
-        if tty_device is None:
+        discovery = create_device_discovery()
+        dev_info = next((
+            dev_info for dev_info in await discovery.list_fw_device_infos()
+            if dev_info.sys_name == port
+        ), None) 
+
+        if dev_info is None:
             abort(HTTP_SERVER_ERROR, description=f"The given port {port} does not exist or is not a tty or usb device")
-        
-        assert tty_device.device_node, "the tty device has no registered device node"
-        port_path = Path(tty_device.device_node)        
+           
         baudrate = request.args.get("baudrate", 9600, type=int)
-        connection = SerialConnection(port, port_path, baudrate)
+        connection = create_connection_to_device(dev_info, baudrate)
     
     reader, writer = await connection.open_connection()
     connections[port] = ConnectionObject(connection, reader, writer)

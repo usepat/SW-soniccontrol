@@ -12,11 +12,16 @@ class Communicator(abc.ABC, EventManager):
     DISCONNECTED_EVENT = "Disconnected"
 
     def __init__(self) -> None:
+        self._connection : Connection | None = None
         super().__init__()
 
     @property
     @abc.abstractmethod
     def connection_opened(self) -> asyncio.Event: ...
+
+    @property
+    def connection(self) -> Connection | None: 
+        return self._connection
 
     @abc.abstractmethod
     async def open_communication(self, connection: Connection): ...

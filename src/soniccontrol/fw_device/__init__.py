@@ -22,7 +22,7 @@ def create_device_discovery(server_url: str | None = None) -> DeviceDiscovery:
 def create_connection_to_device(dev_info: FwDeviceInfo, baudrate: int = 9600, **kwargs) -> Connection:
     if dev_info.is_remote:
         assert dev_info.remote_server_url is not None
-        return RemoteServerConnection(dev_info.sys_name, dev_info.remote_server_url, dev_info.sys_name, baudrate=baudrate, **kwargs)
+        return RemoteServerConnection(dev_info.sys_name, dev_info, dev_info.remote_server_url, dev_info.sys_name, baudrate=baudrate, **kwargs)
     
     assert dev_info.device_path, "The device has no device path set"
-    return SerialConnection(dev_info.sys_name, dev_info.device_path, baudrate)
+    return SerialConnection(dev_info.sys_name, dev_info, dev_info.device_path, baudrate)

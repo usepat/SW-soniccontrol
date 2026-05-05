@@ -3,7 +3,8 @@ import pytest
 import pytest_asyncio
 from sonic_protocol.schema import DeviceParamConstants
 from soniccontrol import DeviceParamConstantType
-from soniccontrol.communication.connection import CLIConnection, SerialConnection
+from soniccontrol.communication.connection import CLIConnection
+from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
 from soniccontrol import RemoteController, DeviceType
 from tests.integration_tests.conftest import create_worker_process_impl
 
@@ -43,9 +44,12 @@ async def remote_controller(request, tmp_path_factory, create_worker_process):
                 cmd_args = ["--profile=postman", "--name=test_postman", data_dir_arg]
             case _:
                 raise NotImplementedError(f"connection setup not implemented for device {device_type}")
-        connection = CLIConnection(device_type.name, plugin_config.simulation_exe_path, cmd_args=cmd_args)
+        connection = CLIConnection(device_type.name, None, plugin_config.simulation_exe_path, cmd_args=cmd_args)
     else:
-        connection = SerialConnection(device_type.name, url)
+        dev_infos = await create_device_discovery().list_fw_device_infos()
+        dev = next((dev for dev in dev_infos if dev.device_path == url), None)
+        assert dev is not None, "No device detected for the given url"
+        connection = create_connection_to_device(dev)
 
     controller = await RemoteController.connect(connection, log_path)
     await controller.stop_updater()

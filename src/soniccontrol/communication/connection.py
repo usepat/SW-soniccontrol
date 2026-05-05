@@ -7,12 +7,26 @@ from typing import List, Tuple
 from serial_asyncio import open_serial_connection
 import logging
 
+from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
+
 
 # TODO: implement proper factory pattern and
 # close_connection should be as destructor on the connection object RAII
 @attrs.define()
 class Connection(abc.ABC):
-    connection_name : str = attrs.field(init=True)
+    """
+        Attributes
+        ==========
+        connection_name:
+            Used for displaying purposes only
+
+        dev_info:
+            os level information about the device. It is allowed also to set this to None, 
+            but in that case reconnect logic in RemoteController and DeviceWindowManager will break.
+            For simulations just leave it None.
+    """
+    connection_name: str = attrs.field(init=True, on_setattr=None)
+    dev_info: FwDeviceInfo | None = attrs.field(init=True, on_setattr=None)
 
     @abc.abstractmethod
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
@@ -21,6 +35,8 @@ class Connection(abc.ABC):
     @abc.abstractmethod
     async def close_connection(self) -> None:
         ...
+
+    
 
 
 class StreamWriterWrapper():
@@ -118,7 +134,7 @@ async def main():
     # Replace 'cat' with the path to your actual binary, if different
     # conn = CLIConnection(bin_file=Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp"),
     #                      connection_name="cli_simulation_mvp")
-    conn = SerialConnection(url="COM23", baudrate=9600, connection_name="serial_connection")
+    conn = SerialConnection("serial_connection", None, url="COM23", baudrate=9600)
     reader, writer = await conn.open_connection()
     await writer.drain()
     await asyncio.sleep(2)  # Give some time for the process to start

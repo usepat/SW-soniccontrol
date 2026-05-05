@@ -17,6 +17,7 @@ from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
+from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
 from soniccontrol.logger.utils import create_logger_for_connection
 from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
@@ -78,23 +79,34 @@ class RemoteController:
         await controller.disconnect()
         ```
         """
-        if isinstance(url, str):
-            url = Path(url)
-        return await RemoteController.connect(SerialConnection(url.name, url, baudrate), log_path)
+        if isinstance(url, Path):
+            url = str(url)
+
+        discovery = create_device_discovery()
+        dev_info = await discovery.get_fw_device_info_of(url)
+        assert dev_info is not None, "No device detected on the given port"
+        connection = create_connection_to_device(dev_info, baudrate)
+        return await RemoteController.connect(connection, log_path)
 
     @staticmethod
     async def connect_via_simulation(simulation_executable: Path, cmd_args: List[str] = [""], log_path: Optional[Path]=None) -> "RemoteController":
-        return await RemoteController.connect(CLIConnection("simulation", simulation_executable, cmd_args), log_path)
+        return await RemoteController.connect(CLIConnection("simulation", None, simulation_executable, cmd_args), log_path)
 
     @staticmethod
-    async def connect(connection: Connection, log_path: Optional[Path]=None) -> "RemoteController":
-        logger = create_logger_for_connection(connection.connection_name, log_path if log_path is not None else Path("."))   
-
+    async def _build_device(connection: Connection, logger: logging.Logger):
         device_builder = DeviceBuilder(logger=logger)
 
         communicator = SerialCommunicator(logger=logger) # type: ignore
         await communicator.open_communication(connection)
         device = await device_builder.build_amp(communicator)
+
+        return device
+
+    @staticmethod
+    async def connect(connection: Connection, log_path: Optional[Path]=None) -> "RemoteController":
+        logger = create_logger_for_connection(connection.connection_name, log_path if log_path is not None else Path("."))   
+
+        device = await RemoteController._build_device(connection, logger)
         
         return RemoteController(device, logger)
     
@@ -316,6 +328,25 @@ class RemoteController:
     async def disconnect(self) -> None:
         await self._updater.stop()
         await self._device.disconnect()
+
+    async def restart(self) -> None:
+        await self._updater.stop()
+        await self._device.restart()
+
+        connection = self._device.communicator.connection
+        assert connection is not None
+
+        if isinstance(connection, CLIConnection):
+            new_connection = connection
+        else:
+            assert connection.dev_info is not None
+
+            device_discovery = create_device_discovery(connection.dev_info.remote_server_url)
+            new_dev_info = await device_discovery.wait_for_device_redetection(connection.dev_info)
+            new_connection = create_connection_to_device(new_dev_info)
+
+        device = await self._build_device(new_connection, self._logger)
+        self.__init__(device, self._logger)
     
     @property 
     def protocol_consts(self):
