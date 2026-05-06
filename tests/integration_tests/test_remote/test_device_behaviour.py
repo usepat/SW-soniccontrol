@@ -6,13 +6,12 @@ from sonic_protocol.schema import ControlMode
 
 
 @pytest.mark.asyncio(loop_scope="package")
-@pytest.mark.skip
 async def test_if_devices_saves_transducer_state(remote_controller):
     gain = 96
     await send_command_and_check_response(remote_controller, commands.SetGain(gain))
 
-    # FIXME: how in the world should this test work. this cannot work 
-    await remote_controller.send_command(commands.RestartDevice())
+    await remote_controller.restart()
+    await remote_controller.stop_running_processes()
 
     answer = await remote_controller.get_update()
     assert_answer(answer, { EFieldName.GAIN: gain })

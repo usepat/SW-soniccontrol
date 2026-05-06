@@ -29,6 +29,7 @@ async def remote_controller(request, tmp_path_factory, create_worker_process):
     device_type: DeviceType = plugin_config.device_type
     url: str = plugin_config.serial_port
     log_path: Path = plugin_config.log_path
+    remote_server_url: str | None = plugin_config.remote_server_url
 
     data_dir: Path = tmp_path_factory.mktemp("data")
     data_dir_arg = f"--data-dir={data_dir}"
@@ -46,7 +47,7 @@ async def remote_controller(request, tmp_path_factory, create_worker_process):
                 raise NotImplementedError(f"connection setup not implemented for device {device_type}")
         connection = CLIConnection(device_type.name, None, plugin_config.simulation_exe_path, cmd_args=cmd_args)
     else:
-        dev_infos = await create_device_discovery().list_fw_device_infos()
+        dev_infos = await create_device_discovery(remote_server_url).list_fw_device_infos()
         dev = next((dev for dev in dev_infos if dev.device_path == url), None)
         assert dev is not None, "No device detected for the given url"
         connection = create_connection_to_device(dev)

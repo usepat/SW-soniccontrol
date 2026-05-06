@@ -330,6 +330,15 @@ class RemoteController:
         await self._device.disconnect()
 
     async def restart(self) -> None:
+        """
+        Restarting can do that a other application is started on the device. 
+        Meaning that also another protocol may be used. So references to protocol_consts and other attributes of this class
+        are being invalidated by calling this function.
+
+        Also remember to call stop_running_processes() afterwards if needed.
+        """
+        was_updater_running = self._updater.running.is_set()
+
         await self._updater.stop()
         await self._device.restart()
 
@@ -347,6 +356,11 @@ class RemoteController:
 
         device = await self._build_device(new_connection, self._logger)
         self.__init__(device, self._logger)
+
+        if was_updater_running:
+            self.start_updater()
+        else:
+            await self.stop_updater()
     
     @property 
     def protocol_consts(self):

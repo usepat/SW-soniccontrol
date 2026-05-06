@@ -21,6 +21,7 @@ class Updater(EventManager):
         return self._running
 
     def start(self) -> None:
+        assert not self._running.is_set(), "The updater is already running"
         self._running.set()
         self._task = asyncio.create_task(self._loop())
 

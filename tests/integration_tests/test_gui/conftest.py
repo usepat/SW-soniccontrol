@@ -6,6 +6,7 @@ import pytest_asyncio
 from ttkbootstrap.utility import enable_high_dpi_awareness
 
 from soniccontrol import DeviceType
+from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.app_config import PLATFORM, System
 from soniccontrol_gui.plugins.device_plugin import register_device_plugins
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -27,7 +28,10 @@ async def connection_window(request):
     loop = asyncio.get_running_loop()
 
     simulation_exe_path: Path = request.config._sonic_control_plugin.simulation_exe_path
+    remote_server_url: str | None = request.config._sonic_control_plugin.remote_server_url
 
+    APP_CONFIG.remote_server_url = remote_server_url
+    
     ImageLoader.clear_resources()
     WidgetRegistry.set_up(loop)
     register_device_plugins()

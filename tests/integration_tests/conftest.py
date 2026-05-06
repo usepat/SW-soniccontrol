@@ -22,12 +22,13 @@ class Profile(Enum):
 
 @attrs.define()
 class SonicControlPlugin:
-    is_simulation: bool = attrs.field()
-    serial_port: str | None = attrs.field()
-    modbus_serial_port: str | None = attrs.field()
-    device_type: DeviceType = attrs.field()
-    simulation_exe_path: Path = attrs.field()
-    log_path: Path = attrs.field()
+    is_simulation: bool
+    serial_port: str | None
+    modbus_serial_port: str | None
+    device_type: DeviceType
+    simulation_exe_path: Path
+    log_path: Path
+    remote_server_url: str | None
 
 
 def pytest_addoption(parser):
@@ -54,6 +55,11 @@ def pytest_addoption(parser):
         default=Path("./output/test_logs"),
         help="Choose the directory, where the logs should be placed",
     )
+    parser.addoption(
+        "--remote-server-url",
+        action="store",
+        default=os.getenv("TEST_REMOTE_SERVER_URL", None),
+    )
 
 
 def pytest_configure(config):
@@ -70,6 +76,7 @@ def pytest_configure(config):
     serial_port = config.getoption("--serial-port")
     modbus_serial_port = config.getoption("--modbus-serial-port")
     log_path = config.getoption("--log-path")
+    remote_server_url = config.getoption("--remote-server-url")
   
     device = None
     match profile:
@@ -92,7 +99,7 @@ def pytest_configure(config):
     assert simulation_exe_path is not None, "Firmware build dir was not set in the environment variables"
     config._sonic_control_plugin = SonicControlPlugin(
         is_simulation, serial_port, modbus_serial_port,
-        device, simulation_exe_path, log_path
+        device, simulation_exe_path, log_path, remote_server_url
     )
 
 
@@ -166,5 +173,7 @@ async def create_worker_process_impl(request, tmp_path_factory):
     else:
         # For some reason return breaks the code. Probably because pytest_async expects a Generator
         # However yielding works fine
-        yield
+        
+        # In case that no simulation is running, we need nothing to set it up. So just empty dummy here
+        yield 
     
