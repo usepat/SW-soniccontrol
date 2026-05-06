@@ -112,7 +112,7 @@ class MessageFetcher:
                 log_level = self._convert_log_levels(message.log_level)
                 self._device_logger.log(log_level, message.content)
             else:
-                raise Exception(f"Received unexpected message type: {type(message)}, content is: {message.content}")
+                raise TypeError(f"Received unexpected message type: {type(message)}, content is: {message.content}")
                 
 
     async def _read_response(self) -> str:

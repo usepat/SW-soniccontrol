@@ -261,11 +261,11 @@ class SonicDevice:
     async def restart(self):
         try:
             await self.execute_command(commands.RestartDevice()) 
-        except ConnectionError:
+        except (ConnectionError, asyncio.IncompleteReadError):
             pass # could throw a connection error, device may not respond anymore, because it is restarting
-        
+
         try:
             await self.disconnect()
-        except ConnectionError:
+        except (ConnectionError, asyncio.IncompleteReadError):
             pass # could throw a connection error, device may not respond anymore, because it is restarting
         

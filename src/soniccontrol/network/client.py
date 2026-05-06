@@ -143,5 +143,6 @@ class RemoteClient:
         future_result = await self.wait_for_future(uuid.UUID(future_id))
 
         new_dev_info = cattrs.structure(future_result, FwDeviceInfo)
+        new_dev_info = attrs.evolve(new_dev_info, remote_server_url=self._url)
         return new_dev_info
         
