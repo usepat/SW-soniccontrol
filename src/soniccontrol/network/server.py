@@ -143,7 +143,7 @@ async def connect(port: str):
         discovery = create_device_discovery()
         dev_info = next((
             dev_info for dev_info in await discovery.list_fw_device_infos()
-            if dev_info.sys_name == port
+            if dev_info.sys_name == port or dev_info.usb_sys_name == port
         ), None) 
 
         if dev_info is None:
