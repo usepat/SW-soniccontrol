@@ -229,6 +229,9 @@ async def poll_future(future_id: uuid.UUID):
             exception =str(future.exception())
         else:
             result = future.result()
+            
+    # make the result json serializable
+    result = cattrs.Converter().unstructure(result)
 
     return jsonify({ "done": future.done(), "result": result, "exception": exception }), HTTP_OK
 
