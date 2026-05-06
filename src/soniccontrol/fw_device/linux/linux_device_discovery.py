@@ -204,12 +204,16 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
                 usb_device = device
                 break
 
-        time.sleep(0.5) # wait for enumeration of children
-        device = _get_descendant_device(usb_device, [
-            PyudevDeviceQuery("tty", None), 
-            PyudevDeviceQuery("block", "disk")
-        ])
-        assert device is not None, "usb device added, but no tty or block device detected"
-        return _get_device_info(device)
+        while True:
+            device = _get_descendant_device(usb_device, [
+                PyudevDeviceQuery("tty", None), 
+                PyudevDeviceQuery("block", "partition")
+            ])
+
+            if device is not None:
+                return _get_device_info(device)
+
+            time.sleep(0.5)
+
         
 
