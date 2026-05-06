@@ -74,21 +74,23 @@ class LogSettingsTab(UIComponent):
         self._view = LogSettingsTabView(parent.view)
         super().__init__(parent, self._view)
 
+        self._lock = asyncio.Lock()
         self._logger_entries: List[LoggerEntry] = []
         asyncio.run_coroutine_threadsafe(self._reload_loggers(), asyncio.get_running_loop())
 
         self._view.set_reload_loggers_command(async_handler(self._reload_loggers))
 
     async def _reload_loggers(self):
-        # destroy previous log entries
-        for logger_entry in self._logger_entries:
-            logger_entry.view.destroy()
+        async with self._lock:
+            # destroy previous log entries
+            for logger_entry in self._logger_entries:
+                logger_entry.view.destroy()
 
-        loggers = await self._logger_discovery.discover_loggers()
-        self._logger_entries = [
-            LoggerEntry(self, self._view.logger_slot, logger)
-            for logger in loggers
-        ]
+            loggers = await self._logger_discovery.discover_loggers()
+            self._logger_entries = [
+                LoggerEntry(self, self._view.logger_slot, logger)
+                for logger in loggers
+            ]
 
     
 class LogSettingsTabView(TabView):
