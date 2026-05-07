@@ -69,6 +69,10 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
+        "skip_if_proc_not_enabled(proc): mark test to run only if the proc is enabled on the device",
+    )
+    config.addinivalue_line(
+        "markers",
         "skip_remote_test_setup: skip the default remote test state reset fixture",
     )
 
@@ -115,7 +119,7 @@ def pytest_runtest_setup(item):
     
     device_type = item.config._sonic_control_plugin.device_type
     if device_type not in allowed_devices:
-        pytest.skip(f"The device type {device_type.name} is not supported for this test")
+        pytest.skip(f"The device type {device_type.name} is not supported for this test")  
 
 
 def kill_all(process_name: str):

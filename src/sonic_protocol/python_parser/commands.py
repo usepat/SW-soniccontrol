@@ -54,6 +54,11 @@ class GetUiptRaw(Command):
 
 @attrs.define()
 class RestartDevice(Command):
+    """
+    This command should only be used by sonic_device internally.
+
+    If you want to restart the device, use the restart function of SonicDevice or RemoteController instead.
+    """
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.RESTART_DEVICE)
 

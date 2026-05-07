@@ -136,6 +136,7 @@ MEASURING_CONTROL_BUTTON = 'measuring.control_button'
 MESSAGE_BOX = "MessageBox"
 MESSAGE_BOX_MSG = "MessageBox.message"
 MESSAGE_BOX_OPTION_PROCEED = "MessageBox.PROCEED"
+MESSAGE_BOX_OPTION_YES = "MessageBox.YES"
 
 
 EXPERIMENT_DATA_EXPERIMENT_NAME = "experiment.Experiment Data.experiment_name.entry_str"

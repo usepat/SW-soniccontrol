@@ -92,8 +92,15 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
             raise NotImplementedError(f"For the {device_type} no case is implemented")
 
         controller.press_button(widget_names.CONNECTION_CONNECT_TO_SIMULATION_BUTTON)
-    await connection_window.wait_until_connected()
 
+    # This is for the edge case, that if we connect to a remote device with an already ongoing connection
+    # In that case remove the old connection, by pressing yes on the message box
+    # TODO: not sure if this works
+    await controller.execute_events_until_idle()
+    if controller.is_widget_registered(widget_names.MESSAGE_BOX):
+        controller.press_button(widget_names.MESSAGE_BOX_OPTION_YES)
+
+    await connection_window.wait_until_connected()
     # handle all events from tkinter. Ensure everything is loaded
     await controller.execute_events_until_idle()
 

@@ -81,6 +81,8 @@ class InterpreterEngine(EventManager):
         self._logger.info("Start script")
         assert self._interpreter_state != InterpreterState.RUNNING
         assert self._script is not None
+        assert self._proc_controller.are_procedures_loaded, "Proc controller needs to load the procedures first"
+        
         if self._execution_steps is None:
             self._execution_steps = iter(self._script)
         
@@ -91,6 +93,8 @@ class InterpreterEngine(EventManager):
         self._logger.info("Start script")
         assert self._interpreter_state != InterpreterState.RUNNING
         assert self._script is not None
+        assert self._proc_controller.are_procedures_loaded, "Proc controller needs to load the procedures first"
+
         if self._execution_steps is None:
             self._execution_steps = iter(self._script)
 

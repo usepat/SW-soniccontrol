@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Callable, Dict, Iterable
 
@@ -48,7 +49,6 @@ class ProcControlling(UIComponent):
         self._view = ProcControllingView(parent.view)
         self._proc_widgets: Dict[ProcedureType, FormWidget] = {}
         super().__init__(parent, self._view, self._logger)
-        self._add_proc_widgets()
         
         self._view.set_procedure_selected_command(self._on_proc_selected)
         self._view.set_start_button_command(self._on_run_pressed)
@@ -58,11 +58,9 @@ class ProcControlling(UIComponent):
         self._proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, self.on_procedure_stopped)
         self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._on_execution_state_changed)
         
-        # setup view to have ramp as default 
-        if ProcedureType.RAMP in proc_controller.proc_args_list:
-            self._view.selected_procedure = ProcedureType.RAMP.value 
-            self._on_proc_selected()
         self.on_procedure_stopped(None) # type: ignore
+
+        asyncio.run_coroutine_threadsafe(self._add_proc_widgets(), asyncio.get_running_loop())
 
     def _on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state
@@ -78,7 +76,8 @@ class ProcControlling(UIComponent):
             # while flashing, a script running or a disconnect
             self._view.set_start_button_enabled(False)
 
-    def _add_proc_widgets(self):
+    async def _add_proc_widgets(self):
+        await self._proc_controller.load_procs()
         for proc_type, args_class in self._proc_controller.proc_args_list.items():
             proc_dict = {}
             proc_widget = FormWidget(
@@ -94,6 +93,11 @@ class ProcControlling(UIComponent):
             self._proc_widgets[proc_type] = proc_widget
         proc_names = map(lambda proc_type: proc_type.value, self._proc_controller.proc_args_list.keys())
         self._view.set_procedure_combobox_items(proc_names)
+
+        # setup view to have ramp as default 
+        if ProcedureType.RAMP in self._proc_controller.proc_args_list:
+            self._view.selected_procedure = ProcedureType.RAMP.value 
+            self._on_proc_selected()
 
     @async_handler
     async def _on_proc_selected(self):

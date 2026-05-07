@@ -24,13 +24,25 @@ class ProcedureController(EventManager):
         self._device = device
 
         self._logger.debug("Instantiate procedures")
-        proc_instantiator = ProcedureInstantiator()
-        self._procedures: Dict[ProcedureType, Procedure] = proc_instantiator.instantiate_procedures(self._device)
-        self._ramp: Optional[Procedure] = self._procedures.get(ProcedureType.RAMP, None)
+        self._procedures: Dict[ProcedureType, Procedure] = {}
         self._running_proc_task: Optional[asyncio.Task] = None
         self._remote_procedure_state = RemoteProcedureState()
+        self._are_procedures_loaded = False
 
         updater.subscribe("update", self._on_update)
+
+    async def load_procs(self):
+        """
+        This function needs to be called once to populate the internal procedure list.
+
+        Call this once before using the procedure controller.
+        """
+        self._procedures = await ProcedureInstantiator().instantiate_procedures(self._device)
+        self._are_procedures_loaded = True
+
+    @property
+    def are_procedures_loaded(self):
+        return self._are_procedures_loaded
 
     @property
     def proc_args_list(self) -> Dict[ProcedureType, Type[ProcedureArgs]]:
@@ -85,7 +97,6 @@ class ProcedureController(EventManager):
         self.emit(Event(ProcedureController.PROCEDURE_RUNNING, proc_type=proc_type))
 
     async def fetch_args(self, proc_type: ProcedureType) -> Dict[str, Any]:
-        assert(proc_type in self._procedures)
         procedure = self._procedures.get(proc_type, None)
         if procedure is None:
             raise Exception(f"The procedure {repr(proc_type)} is not available for the current device")

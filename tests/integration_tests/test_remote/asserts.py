@@ -12,7 +12,7 @@ def assert_answer(answer: Answer, expected_fields: Dict[EFieldName, Any], should
     with check:
         for field_name, value in expected_fields.items():
             assert field_name in answer.field_value_dict, f"The answer does not contain the field with name {field_name.name}"
-            assert answer[field_name] == value, "The field of the answer has a different value than expected"
+            assert answer[field_name] == value, f"The field '{field_name.name}' of the answer has a different value '{answer[field_name]}' than expected '{value}'"
         
 
 def assert_answer_is_not_error(answer: Answer, errors_to_check: List[CommandCode] | None = None):

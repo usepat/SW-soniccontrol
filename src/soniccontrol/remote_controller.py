@@ -46,6 +46,10 @@ class RemoteController:
     """
 
     def __init__(self, device: SonicDevice, logger: logging.Logger):
+        """
+        Do not use the constructor explicitly for creating a RemoteController, 
+        instead use one of the provided static connect methods
+        """
         self._device: SonicDevice = device
         self._logger = logger    
         self._updater: Updater = Updater(self._device)
@@ -108,7 +112,12 @@ class RemoteController:
 
         device = await RemoteController._build_device(connection, logger)
         
-        return RemoteController(device, logger)
+        controller = RemoteController(device, logger)
+        
+        # ensure procedures are being loaded
+        await controller.load_init()
+
+        return controller 
     
     async def connect_to_worker(self):
         """
@@ -139,8 +148,24 @@ class RemoteController:
             lambda _: loop.run_until_complete(self._device.disconnect())
         )
 
-        return RemoteController(worker_device, self._logger)
+        controller = RemoteController(worker_device, self._logger)
 
+        # ensure procedures are being loaded
+        await controller.load_init()
+
+        return controller
+
+    async def load_init(self):
+        """
+        This function loads procedures and other information from the device
+        needed for procedure controller and other components
+
+        Note
+        ----
+        This function gets called automatically when using the RemoteController.connect_* functions,
+        but not when using solely the constructor.
+        """
+        await self._proc_controller.load_procs()
 
     def is_connected(self) -> bool:
         return self._device.communicator.connection_opened.is_set()
@@ -243,6 +268,9 @@ class RemoteController:
         interpreter.start()
         await interpreter.wait_for_script_to_halt()
 
+    def is_procedure_enabled(self, procedure: ProcedureType) -> bool:
+        return procedure in self._proc_controller.proc_args_list
+
     def start_procedure(self, procedure: ProcedureType, args: dict | ProcedureArgs, event_loop: asyncio.AbstractEventLoop | None=None) -> None:
         """
         Starts a procedure
@@ -263,7 +291,12 @@ class RemoteController:
         ----
         This function will start a procedure in the background. 
         When you want to halt execution, you should call wait_for_procedure_to_finish()
+
+        Also you have to check if the procedure is enabled before starting it.
+        You cannot execute disabled procedures
         """
+        assert self.is_procedure_enabled(procedure), "The procedure is not enabled"
+
         if event_loop is None:
             event_loop = asyncio.get_running_loop()
 

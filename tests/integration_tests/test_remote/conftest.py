@@ -50,7 +50,9 @@ async def remote_controller(request, tmp_path_factory, create_worker_process):
         dev_infos = await create_device_discovery(remote_server_url).list_fw_device_infos()
         dev = next((dev for dev in dev_infos if dev.device_path == url), None)
         assert dev is not None, "No device detected for the given url"
-        connection = create_connection_to_device(dev)
+        # force remove connection is used for remote devices. 
+        # To say remove the previous connection, if ti is still up
+        connection = create_connection_to_device(dev, force_remove_connection=True)
 
     controller = await RemoteController.connect(connection, log_path)
     await controller.stop_updater()

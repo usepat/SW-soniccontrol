@@ -2,6 +2,7 @@ import pytest
 import pytest_asyncio
 
 from sonic_protocol.schema import Loglevel, Signal, SIPrefix
+from soniccontrol.procedures.procedure import ProcedureType
 from .asserts import assert_answer, send_command_and_check_response
 from soniccontrol import EFieldName, Procedure, RamperArgs, WipeArgs, commands, DeviceType
 import asyncio
@@ -84,15 +85,30 @@ async def setup_valid_at_configs(remote_controller) -> None:
 
 
 @pytest_asyncio.fixture(autouse=True, scope="function", loop_scope="package")
-async def setup_procedures(remote_controller):
+async def setup_procedures(request, remote_controller):
+    # Here we check for each test, it can be execute 
+    # by checking if the given procedure is enabled by the skip_if_proc_not_enabled marker
+
+    for mark in request.node.iter_markers(name="skip_if_proc_not_enabled"):
+        if not mark.args:
+            raise ValueError("skip_if_proc_not_enabled requires a Procedure argument")
+        
+        proc: ProcedureType = mark.args[0]
+        proc_enabled = remote_controller.is_procedure_enabled(proc)
+
+        if not proc_enabled:
+            pytest.skip(f"The device has not the procedure {proc.name} enabled")
+
+    # even if the procedures are not enabled, setting attributes of them works always
+    # so no checks needed here
     await setup_valid_at_configs(remote_controller)
     await setup_valid_ramp_args(remote_controller)
     await setup_valid_wipe_args(remote_controller)
 
-
     yield
 
     await remote_controller.send_command(commands.SetStop())
+
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package")
 async def disable_procedure_logger(remote_controller):
@@ -103,7 +119,7 @@ async def disable_procedure_logger(remote_controller):
     await remote_controller.send_command(commands.SetLogLevel("procedureLogger", Loglevel.ERROR))
 
 
-@pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
+@pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_procedure_returns_error_if_f_start_and_f_stop_are_the_same(remote_controller):
     val = 100100
@@ -115,6 +131,7 @@ async def test_procedure_returns_error_if_f_start_and_f_stop_are_the_same(remote
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
+@pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_setter_commands_get_blocked_during_procedure_run(remote_controller):
     answer = await remote_controller.send_command(commands.SetRamp())
@@ -125,6 +142,7 @@ async def test_setter_commands_get_blocked_during_procedure_run(remote_controlle
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
+@pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_getter_commands_are_allowed_during_procedure_run(remote_controller):
     
@@ -136,6 +154,7 @@ async def test_getter_commands_are_allowed_during_procedure_run(remote_controlle
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
+@pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_stop_turns_off_procedure(remote_controller, disable_procedure_logger):
     await send_command_and_check_response(remote_controller, commands.SetRamp())
@@ -146,6 +165,7 @@ async def test_stop_turns_off_procedure(remote_controller, disable_procedure_log
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
+@pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_if_ramp_resets_running_proc_and_signal(remote_controller, disable_procedure_logger):
     await send_command_and_check_response(remote_controller, commands.SetRamp())
@@ -156,6 +176,7 @@ async def test_if_ramp_resets_running_proc_and_signal(remote_controller, disable
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
+@pytest.mark.skip_if_proc_not_enabled(ProcedureType.WIPE)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_if_wipe_does_not_crash(remote_controller, disable_procedure_logger):
     await send_command_and_check_response(remote_controller, commands.SetWipe())
