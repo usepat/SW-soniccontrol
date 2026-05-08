@@ -44,7 +44,7 @@ async def modbus_client(request, remote_controller):
     yield client
     client.close()
 
-@pytest.mark.allowed_devices(DeviceType.POSTMAN, DeviceType.MVP_WORKER)
+@pytest.mark.allowed_devices(DeviceType.POSTMAN, DeviceType.MVP_WORKER, DeviceType.DESCALE)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_modbus_write_and_read_multiple_registers(modbus_client: AsyncModbusSerialClient):
     # note. first register should be 0, 

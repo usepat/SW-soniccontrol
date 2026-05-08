@@ -4,10 +4,13 @@ from pathlib import Path
 import attrs
 from typing import List, Tuple
 
+from pymodbus import FramerType
 from serial_asyncio import open_serial_connection
 import logging
 
+from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
+from pymodbus.client import AsyncModbusSerialClient
 
 
 # TODO: implement proper factory pattern and
@@ -35,6 +38,10 @@ class Connection(abc.ABC):
     @abc.abstractmethod
     async def close_connection(self) -> None:
         ...
+
+    async def open_modbus_connection(self) -> AsyncModbusSerialClient:
+        raise NotImplementedError("Modbus is special")
+
 
     
 
@@ -142,6 +149,46 @@ class SerialConnection(Connection):
                 self.writer.close()
             await self.writer.wait_closed()
 
+@attrs.define()
+class ModbusConnection(Connection):
+    url: Path | str = attrs.field(init=True)
+    baudrate: int = attrs.field(default=9600)
+    parity: Parity = attrs.field(default=Parity.NO)
+
+    _lock: asyncio.Lock = asyncio.Lock()
+    _closed: bool = True # maybe an asyncio event would be an even better fit here
+    _client: AsyncModbusSerialClient = attrs.field(init=False)
+
+    async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        raise NotImplementedError("Can't open serial connection with modbus")
+
+    async def close_connection(self):
+        # use lock and bool var, to ensure the connection cannot get closed twice
+        async with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+            self._client.close()
+
+    def parity_to_string(self) -> str:
+        if self.parity == Parity.EVEN:
+            return "E"
+        elif self.parity == Parity.ODD:
+            return "O"
+        elif self.parity == Parity.NO:
+            return "N"
+        assert(False)
+
+    async def open_modbus_connection(self) -> AsyncModbusSerialClient:
+        assert self._closed, "the last connection is still open"
+        self._closed = False
+        self._client = AsyncModbusSerialClient(str(self.url), 
+            baudrate=self.baudrate, 
+            parity=self.parity_to_string(), 
+            timeout=1.5, 
+            retries=1
+        )
+        return self._client
 
 async def main():
     # Replace 'cat' with the path to your actual binary, if different

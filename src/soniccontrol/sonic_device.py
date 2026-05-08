@@ -11,6 +11,7 @@ from sonic_protocol.python_parser.command_deserializer import CommandDeserialize
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
 from sonic_protocol.schema import DeviceType, ICommandCode, Protocol, Version
+from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.fw_device.connection import CLIConnection, Connection
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.communication.serial_communicator import Communicator
@@ -74,6 +75,9 @@ class SonicDevice:
         assert command_contract is not None, f"The command {command} is not known for the protocol" # throw error?
         assert command_contract.command_def is not None, f"For the command_code of {command} exists a message (notify or error), but there exists no command" 
         assert not isinstance(command_contract.command_def.sonic_text_attrs, list)
+
+        if isinstance(self._communicator, ModbusCommunicator):
+            return await self._communicator.send_command_and_validate(command_contract, command)
 
         request_str = self._command_serializer.serialize_command(command)
         
