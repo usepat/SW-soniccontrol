@@ -1,10 +1,10 @@
 import pytest
 import asyncio
-from soniccontrol_gui.utils.testing import widget_names
-from soniccontrol_gui.utils.testing.gui_controller import GuiController
+from sonic_pytest.gui import widget_names
+from sonic_pytest.gui.gui_controller import GuiController
 from soniccontrol_gui.constants import ui_labels
 import pytest_asyncio
-from soniccontrol_gui.utils.testing.workflows import fill_out_experiment_data, send_over_serial_monitor, start_ramp_capture, start_spectrum_measure_capture
+from sonic_pytest.gui.workflows import fill_out_experiment_data, send_over_serial_monitor, start_ramp_capture, start_spectrum_measure_capture
 
 
 async def reset_experiment_state() -> None:

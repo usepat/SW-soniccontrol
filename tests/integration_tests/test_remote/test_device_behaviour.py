@@ -1,6 +1,6 @@
 import pytest
 
-from .asserts import assert_answer, send_command_and_check_response
+from sonic_pytest.remote_controller.asserts import assert_answer, send_command_and_check_response
 from soniccontrol import EFieldName, commands, DeviceType
 from sonic_protocol.schema import ControlMode
 

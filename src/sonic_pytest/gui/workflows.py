@@ -1,6 +1,6 @@
 import asyncio
-from soniccontrol_gui.utils.testing import widget_names
-from soniccontrol_gui.utils.testing.gui_controller import GuiController
+from sonic_pytest.gui import widget_names
+from sonic_pytest.gui.gui_controller import GuiController
 from soniccontrol_gui.constants import ui_labels
 
 async def send_over_serial_monitor(command: str) -> str:

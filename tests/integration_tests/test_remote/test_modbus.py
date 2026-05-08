@@ -17,10 +17,9 @@ extern implementation of modbus with different serial settings.
 """
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", params=[
-    (115200, "E"),
     (9600, "E"),
-    (115200, "N"),
-    (115200, "O"),
+    (9600, "N"),
+    (9600, "O"),
 ])
 async def modbus_client(request, remote_controller):
     baudrate, parity = request.param

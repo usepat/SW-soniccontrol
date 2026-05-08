@@ -3,7 +3,7 @@ import pytest_asyncio
 
 from sonic_protocol.schema import Loglevel, Signal, SIPrefix
 from soniccontrol.procedures.procedure import ProcedureType
-from .asserts import assert_answer, send_command_and_check_response
+from sonic_pytest.remote_controller.asserts import assert_answer, send_command_and_check_response
 from soniccontrol import EFieldName, Procedure, RamperArgs, WipeArgs, commands, DeviceType
 import asyncio
 

@@ -1,5 +1,5 @@
-from soniccontrol_gui.utils.testing import widget_names
-from soniccontrol_gui.utils.testing.gui_controller import GuiController
+from sonic_pytest.gui import widget_names
+from sonic_pytest.gui.gui_controller import GuiController
 import pytest
 from soniccontrol import DeviceType
 

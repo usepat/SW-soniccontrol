@@ -1,10 +1,10 @@
 import pytest
-from soniccontrol_gui.utils.testing import widget_names
-from soniccontrol_gui.utils.testing.gui_controller import GuiController
+from sonic_pytest.gui import widget_names
+from sonic_pytest.gui.gui_controller import GuiController
 import asyncio
 import pytest_asyncio
 from soniccontrol_gui.constants import ui_labels
-from soniccontrol_gui.utils.testing.workflows import proceed_without_experiment, start_ramp_procedure
+from sonic_pytest.gui.workflows import proceed_without_experiment, start_ramp_procedure
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
 async def procedure_tab_fixture():

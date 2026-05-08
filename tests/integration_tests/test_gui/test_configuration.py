@@ -1,9 +1,9 @@
 import pytest
 import asyncio
-from soniccontrol_gui.utils.testing import widget_names
-from soniccontrol_gui.utils.testing.gui_controller import GuiController
+from sonic_pytest.gui import widget_names
+from sonic_pytest.gui.gui_controller import GuiController
 from soniccontrol_gui.constants import ui_labels
-from soniccontrol_gui.utils.testing.workflows import send_over_serial_monitor
+from sonic_pytest.gui.workflows import send_over_serial_monitor
 import pytest_asyncio
 from soniccontrol import DeviceType
 

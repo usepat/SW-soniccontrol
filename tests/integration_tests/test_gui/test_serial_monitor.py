@@ -1,8 +1,8 @@
-from soniccontrol_gui.utils.testing import widget_names
-from soniccontrol_gui.utils.testing.gui_controller import GuiController
+from sonic_pytest.gui import widget_names
+from sonic_pytest.gui.gui_controller import GuiController
 import pytest
 
-from soniccontrol_gui.utils.testing.workflows import send_over_serial_monitor
+from sonic_pytest.gui.workflows import send_over_serial_monitor
 
 
 @pytest.mark.asyncio(loop_scope="package")
