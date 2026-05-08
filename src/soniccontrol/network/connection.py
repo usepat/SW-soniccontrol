@@ -23,8 +23,6 @@ class RemoteServerConnection(Connection):
     baudrate: int = attrs.field(default=9600)
     force_remove_connection: bool | Callable[[], Coroutine[None, None, bool]] = attrs.field(default=False)
     _writer: asyncio.StreamWriter = attrs.field(init=False)
-    _closed: bool = True
-    _lock: asyncio.Lock = asyncio.Lock()
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:  
         assert self._closed, "There is already a connection open"

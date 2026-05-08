@@ -8,7 +8,7 @@ import tkinter as tk
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
-from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
+from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, redetect_connection
 from soniccontrol.network.connection import RemoteServerConnection
 from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
 from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
@@ -60,23 +60,13 @@ class DeviceWindowManager:
         )   
 
     async def attempt_reconnection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
-        if not isinstance(connection, CLIConnection):
-            # after restart the device can be enumerated on another port, therefore we need to redetect it
-            dev_info = connection.dev_info
-            assert dev_info is not None, "cannot detect new connection, without dev_info"
-
-            device_discovery = create_device_discovery(dev_info.remote_server_url)
-            try:
-                new_dev_info = await device_discovery.wait_for_device_redetection(dev_info)
-            except asyncio.TimeoutError:
-                MessageBox.show_error(self._root, "Could not reconnect to the device")
-                return
-            
-            new_connection = create_connection_to_device(new_dev_info)
+        try:
+            new_connection = await redetect_connection(connection)
+        except asyncio.TimeoutError:
+            MessageBox.show_error(self._root, "Could not reconnect to the device")
+            return
         else:
-            new_connection = connection
-
-        await self.attempt_connection(new_connection, is_legacy_device, build_configurator)
+            await self.attempt_connection(new_connection, is_legacy_device, build_configurator)
 
         
     async def attempt_connection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):

@@ -17,7 +17,7 @@ from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
-from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
+from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, redetect_connection
 from soniccontrol.logger.utils import create_logger_for_connection
 from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
@@ -378,14 +378,7 @@ class RemoteController:
         connection = self._device.communicator.connection
         assert connection is not None
 
-        if isinstance(connection, CLIConnection):
-            new_connection = connection
-        else:
-            assert connection.dev_info is not None
-
-            device_discovery = create_device_discovery(connection.dev_info.remote_server_url)
-            new_dev_info = await device_discovery.wait_for_device_redetection(connection.dev_info, 10)
-            new_connection = create_connection_to_device(new_dev_info)
+        new_connection = await redetect_connection(connection)
 
         device = await self._build_device(new_connection, self._logger)
         self.__init__(device, self._logger)

@@ -1,5 +1,5 @@
 from soniccontrol.app_config import PLATFORM, System
-from soniccontrol.fw_device.connection import Connection, SerialConnection
+from soniccontrol.fw_device.connection import Connection, SerialConnection, CLIConnection
 from soniccontrol.fw_device.device_discovery import DeviceDiscovery
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.fw_device.remote.remote_device_discovery import RemoteDeviceDiscovery
@@ -26,3 +26,22 @@ def create_connection_to_device(dev_info: FwDeviceInfo, baudrate: int = 9600, **
     
     assert dev_info.device_path, "The device has no device path set"
     return SerialConnection(dev_info.sys_name, dev_info, dev_info.device_path, baudrate)
+
+
+async def redetect_connection(connection: Connection) -> Connection:
+    """
+    Tries to redetect the connection and gives back a new valid connection class.
+
+    Note
+    ====
+    This method does not open or close the connection.
+    """
+
+    if isinstance(connection, CLIConnection):
+        return connection
+
+    dev_info = connection.dev_info
+    assert dev_info is not None, "dev_info was not set"
+    device_discovery = create_device_discovery(dev_info.remote_server_url)
+    new_dev_info = await device_discovery.wait_for_device_redetection(dev_info)
+    return create_connection_to_device(new_dev_info)

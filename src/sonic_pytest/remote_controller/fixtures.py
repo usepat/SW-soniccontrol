@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 import pytest
 import pytest_asyncio
 from sonic_protocol.schema import DeviceParamConstants
@@ -6,7 +7,7 @@ from soniccontrol import DeviceParamConstantType
 from soniccontrol.fw_device.connection import CLIConnection
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
 from soniccontrol import RemoteController, DeviceType
-from sonic_pytest.plugin import create_worker_process_impl
+from sonic_pytest.plugin import SonicControlPlugin, create_worker_process_impl
 
 
 create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope="package", loop_scope="package")
@@ -21,39 +22,49 @@ async def reset_remote_controller_state(remote_controller: RemoteController) -> 
     await remote_controller.send_command("!OFF")
 
 
-@pytest_asyncio.fixture(scope="package", loop_scope="package", autouse=True)
-async def remote_controller(request, tmp_path_factory, create_worker_process):
-    # setup
-    plugin_config = request.config._sonic_control_plugin
+async def create_connection(plugin_config: SonicControlPlugin, data_dir: Path | None, simulation_args: List[str] = []):
     is_simulation: bool = plugin_config.is_simulation
     device_type: DeviceType = plugin_config.device_type
-    url: str = plugin_config.serial_port
-    log_path: Path = plugin_config.log_path
+    serial_port: str | None = plugin_config.serial_port
     remote_server_url: str | None = plugin_config.remote_server_url
 
-    data_dir: Path = tmp_path_factory.mktemp("data")
-    data_dir_arg = f"--data-dir={data_dir}"
-
-    connection = None
     if is_simulation:
         match device_type:
             case DeviceType.MVP_WORKER:
-                cmd_args = ["--profile=worker", "--name=test_worker", data_dir_arg]
+                cmd_args = ["--profile=worker", "--name=test_worker"]
             case DeviceType.DESCALE:
-                cmd_args = ["--profile=descale", "--name=test_descale", data_dir_arg]
+                cmd_args = ["--profile=descale", "--name=test_descale"]
             case DeviceType.POSTMAN:
-                cmd_args = ["--profile=postman", "--name=test_postman", data_dir_arg]
+                cmd_args = ["--profile=postman", "--name=test_postman"]
             case _:
                 raise NotImplementedError(f"connection setup not implemented for device {device_type}")
+        cmd_args.extend(simulation_args)
+        if data_dir:
+            cmd_args.append(f"--data-dir={data_dir}")
+            
         connection = CLIConnection(device_type.name, None, plugin_config.simulation_exe_path, cmd_args=cmd_args)
     else:
         dev_infos = await create_device_discovery(remote_server_url).list_fw_device_infos()
-        dev = next((dev for dev in dev_infos if dev.device_path == url), None)
+        dev = next((dev for dev in dev_infos if dev.device_path == serial_port), None)
         assert dev is not None, "No device detected for the given url"
         # force remove connection is used for remote devices. 
         # To say remove the previous connection, if ti is still up
         connection = create_connection_to_device(dev, force_remove_connection=True)
+    
+    return connection
 
+
+@pytest_asyncio.fixture(scope="package", loop_scope="package", autouse=True)
+async def remote_controller(request, tmp_path_factory, create_worker_process):
+    # setup
+    plugin_config = request.config._sonic_control_plugin
+    device_type: DeviceType = plugin_config.device_type
+    log_path: Path = plugin_config.log_path
+
+    data_dir: Path = tmp_path_factory.mktemp("data")
+
+    connection = await create_connection(plugin_config, data_dir)
+    
     controller = await RemoteController.connect(connection, log_path)
     await controller.stop_updater()
     await controller.stop_running_processes()

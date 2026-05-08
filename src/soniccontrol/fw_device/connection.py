@@ -30,6 +30,13 @@ class Connection(abc.ABC):
     """
     connection_name: str = attrs.field(init=True, on_setattr=None)
     dev_info: FwDeviceInfo | None = attrs.field(init=True, on_setattr=None)
+    dev_info: FwDeviceInfo | None = attrs.field(init=True, on_setattr=None)
+    _closed: bool = attrs.field(init=False, default=True) # maybe an asyncio event would be an even better fit here
+    _lock: asyncio.Lock = attrs.field(init=False)
+
+    @property
+    def is_open(self):
+        return not self._closed
 
     @abc.abstractmethod
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
@@ -83,6 +90,8 @@ class CLIConnection(Connection):
     process: asyncio.subprocess.Process = attrs.field(init=False)     
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        self._closed = False
+        
         expanded_bin_file = Path(self.bin_file).expanduser().resolve()
 
         self.process = await asyncio.create_subprocess_exec(
@@ -102,6 +111,8 @@ class CLIConnection(Connection):
     async def close_connection(self):     
         if self.process.returncode is not None:
             return # process already closed
+
+        self._closed = True
 
         if self.process.stdin:
             self.process.stdin.close()
@@ -125,8 +136,6 @@ class SerialConnection(Connection):
     url: Path | str = attrs.field(init=True)
     baudrate: int = attrs.field(default=9600)
     writer: asyncio.StreamWriter = attrs.field(init=False)
-    _lock: asyncio.Lock = asyncio.Lock()
-    _closed: bool = True # maybe an asyncio event would be an even better fit here
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
         # Maybe we need to ensure here also that only one connection at a time can be open
@@ -155,8 +164,6 @@ class ModbusConnection(Connection):
     baudrate: int = attrs.field(default=9600)
     parity: Parity = attrs.field(default=Parity.NO)
 
-    _lock: asyncio.Lock = asyncio.Lock()
-    _closed: bool = True # maybe an asyncio event would be an even better fit here
     _client: AsyncModbusSerialClient = attrs.field(init=False)
 
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:

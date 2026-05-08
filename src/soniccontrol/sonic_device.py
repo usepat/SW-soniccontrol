@@ -101,7 +101,7 @@ class SonicDevice:
             code_str, response_str  = response_str.split(sep="#", maxsplit=1)
             code_int = self._protocol.convert_command_code_for_validation(int(code_str))
             code = self._protocol.command_code_cls(code_int)
-
+            
         ERROR_CODES_START = 20000
         if code is not None and code.value >= ERROR_CODES_START:
             return Answer(response_str, False, True, code)
@@ -262,9 +262,21 @@ class SonicDevice:
 
             await asyncio.sleep(0.2)
 
-    async def restart(self):
+    async def restart(self, restart_command: commands.Command = commands.RestartDevice()):
+        """
+        Restarts the device. 
+        This class is not usable afterwards anymore, you have to create a new connection and then build a new device.
+        Because the old connection may not be valid anymore (device can re enumerate on another port).
+
+        Params
+        ======
+        restart_command:
+            Some commands force not only a restart, but also force the device to open another application afterwards, like start_configurator
+        """
+        assert isinstance(restart_command, (commands.RestartDevice, commands.StartConfigurator))
+        
         try:
-            await self.execute_command(commands.RestartDevice()) 
+            await self.execute_command(restart_command) 
         except (ConnectionError, asyncio.IncompleteReadError):
             pass # could throw a connection error, device may not respond anymore, because it is restarting
 

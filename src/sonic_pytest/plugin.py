@@ -20,6 +20,8 @@ class Profile(Enum):
     device_descale = auto()
     device_postman_worker = auto()
 
+
+
 @attrs.define()
 class SonicControlPlugin:
     is_simulation: bool
