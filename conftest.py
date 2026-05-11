@@ -1,0 +1,1 @@
+pytest_plugins = ["sonic_pytest.plugin"]

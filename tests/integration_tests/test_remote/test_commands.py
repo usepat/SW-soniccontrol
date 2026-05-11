@@ -1,10 +1,11 @@
 import attrs
 from soniccontrol import DeviceParamConstantType, Answer, EFieldName, DeviceType, CommandCode
-from tests.integration_tests.test_remote.conftest import format_command, reset_remote_controller_state
+from sonic_protocol.python_parser import commands
+from tests.integration_tests.test_remote.conftest import format_command, reset_remote_controller_state, resolve_protocol_arg
 
 from sonic_pytest.remote_controller.asserts import assert_answer, assert_answer_is_not_error
 import pytest
-from sonic_protocol.user_manual_compiler.deduce_command_examples import deduce_command_examples
+from sonic_protocol.user_manual_compiler.deduce_command_examples import deduce_command_examples_as_commands
 import allure
 import json
 from allure_commons.lifecycle import AllureLifecycle 
@@ -22,6 +23,9 @@ from allure_commons.model2 import Status, StatusDetails
     ("get_gain", None),
 ], indirect=True)
 async def test_if_aliases_are_working(formatted_command_str, remote_controller):
+    if remote_controller._device._uses_modbus():
+        pytest.skip("Command aliases only apply to sonic text communication, not Modbus")
+
     answer = await remote_controller.send_command(formatted_command_str)
     assert answer.valid, "Answer should be valid"
 
@@ -29,12 +33,12 @@ async def test_if_aliases_are_working(formatted_command_str, remote_controller):
 async def test_if_gain_can_be_set_and_retrieved(remote_controller):
     consts = remote_controller.protocol_consts
 
-    await remote_controller.send_command(format_command("!gain={}", consts.min_gain))
-    answer = await remote_controller.send_command("?gain")
+    await remote_controller.send_command(commands.SetGain(consts.min_gain))
+    answer = await remote_controller.send_command(commands.GetGain())
     assert_answer(answer, { EFieldName.GAIN: consts.min_gain })
 
-    await remote_controller.send_command(format_command("!gain={}", consts.max_gain))
-    answer = await remote_controller.send_command("?gain")
+    await remote_controller.send_command(commands.SetGain(consts.max_gain))
+    answer = await remote_controller.send_command(commands.GetGain())
     assert_answer(answer, { EFieldName.GAIN: consts.max_gain })
     
 
@@ -43,14 +47,14 @@ async def test_if_gain_can_be_set_and_retrieved(remote_controller):
 async def test_deduced_commands(remote_controller, progress_writer):
     @attrs.define()
     class DeducedCommandError(Exception):
-        command: str = attrs.field()
+        command: commands.Command = attrs.field()
         answer: Answer = attrs.field()
         step: int = attrs.field()
         assert_msg: str = attrs.field()
 
         def __str__(self) -> str:
             return f"Error on {self.step}-th command:\n" + \
-                    f"'{self.command}' returned '{self.answer.message}'\n" + \
+                    f"'{self.command.code.name} {self.command.args}' returned '{self.answer.message}'\n" + \
                     f"triggered assertion: '{self.assert_msg}'"
 
 
@@ -66,16 +70,16 @@ async def test_deduced_commands(remote_controller, progress_writer):
         CommandCode.SET_FLASH_9600,
         CommandCode.SET_FLASH_USB
     ]
-    commands = deduce_command_examples(
+    deduced_commands = deduce_command_examples_as_commands(
         info.protocol_version, info.device_type, info.is_release, 
         skip_command_codes=commands_to_skip
     )
 
-    num_commands = len(commands)
+    num_commands = len(deduced_commands)
     errors = []
-    for i, command in enumerate(commands):
-        progress_writer(f"executing {i + 1}/{num_commands}: {command}")
-        with allure.step(f"executing {i}/{num_commands}: '{command}'"):
+    for i, command in enumerate(deduced_commands):
+        progress_writer(f"executing {i + 1}/{num_commands}: {command.code.name} {command.args}")
+        with allure.step(f"executing {i}/{num_commands}: '{command.code.name} {command.args}'"):
             answer = await remote_controller.send_command(command)
             try:
                 assert_answer_is_not_error(answer, errors_to_check=[
@@ -100,7 +104,7 @@ async def test_deduced_commands(remote_controller, progress_writer):
     error_json = json.dumps([{ 
         "full_error_msg": str(e), 
         "index": e.step, 
-        "command": e.command, 
+        "command": {"code": e.command.code.name, "args": e.command.args}, 
         "answer": e.answer.message, 
         "assert_msg": e.assert_msg 
     } for e in errors ])
@@ -123,27 +127,29 @@ async def test_deduced_commands(remote_controller, progress_writer):
     ("?gainappendedtext", []),
 ], indirect=True)
 async def test_if_invalid_syntax_throws_error(remote_controller, formatted_command_str):
+    if remote_controller._device._uses_modbus():
+        pytest.skip("Invalid string syntax tests only apply to sonic text communication, not Modbus")
+
     answer = await remote_controller.send_command(formatted_command_str)
     assert not answer.valid, "Answer should be not valid"
 
 
-# TODO: use more consts
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
 @pytest.mark.asyncio(loop_scope="package")
-@pytest.mark.parametrize("formatted_command_str", [
-    ("!gain=100", []),
-    ("!frequency={}", [DeviceParamConstantType.MIN_FREQUENCY]),
-    ("!att4=0", []),
-    ("!atk1=100", []),
-    ("!atf2={}", [DeviceParamConstantType.MIN_FREQUENCY]),
-    ("!wipe_f_step={}", [DeviceParamConstantType.MIN_FREQUENCY]),
-    ("!wipe_t_on=100", []),
-    ("!scan_f_step=1000", []),
-    ("!ramp_f_start={}", [DeviceParamConstantType.MIN_FREQUENCY]),
-    ("!tune_f_step=1000", []),
-], indirect=True)
-async def test_if_basic_setter_commands_work(remote_controller, formatted_command_str):
-    answer = await remote_controller.send_command(formatted_command_str)
+@pytest.mark.parametrize("command_builder", [
+    pytest.param(lambda consts: commands.SetGain(100), id="set-gain"),
+    pytest.param(lambda consts: commands.SetFrequency(consts.min_frequency), id="set-frequency"),
+    pytest.param(lambda consts: commands.SetAtt(4, 0), id="set-att"),
+    pytest.param(lambda consts: commands.SetAtk(1, 100), id="set-atk"),
+    pytest.param(lambda consts: commands.SetAtf(2, consts.min_frequency), id="set-atf"),
+    pytest.param(lambda consts: commands.SetWipeFStep(consts.min_frequency), id="set-wipe-f-step"),
+    pytest.param(lambda consts: commands.SetWipeTOn(100), id="set-wipe-t-on"),
+    pytest.param(lambda consts: commands.SetScanFStep(1000), id="set-scan-f-step"),
+    pytest.param(lambda consts: commands.SetRampFStart(consts.min_frequency), id="set-ramp-f-start"),
+    pytest.param(lambda consts: commands.SetTuneFStep(1000), id="set-tune-f-step"),
+])
+async def test_if_basic_setter_commands_work(remote_controller, command_builder):
+    answer = await remote_controller.send_command(command_builder(remote_controller.protocol_consts))
     assert answer.valid, "Answer was not valid"
 
 
@@ -152,36 +158,36 @@ async def test_if_basic_setter_commands_work(remote_controller, formatted_comman
 async def test_if_freq_set_by_setter_can_be_retrieved_with_getter(remote_controller):
     consts = remote_controller.protocol_consts
 
-    await remote_controller.send_command(format_command("!freq={}", consts.min_frequency))
-    answer = await remote_controller.send_command("?freq")
+    await remote_controller.send_command(commands.SetFrequency(consts.min_frequency))
+    answer = await remote_controller.send_command(commands.GetFreq())
     assert_answer(answer, {EFieldName.FREQUENCY: consts.min_frequency})
 
-    await remote_controller.send_command(format_command("!freq={}", consts.max_frequency))
-    answer = await remote_controller.send_command("?freq")
+    await remote_controller.send_command(commands.SetFrequency(consts.max_frequency))
+    answer = await remote_controller.send_command(commands.GetFreq())
     assert_answer(answer, {EFieldName.FREQUENCY: consts.max_frequency})
 
-    await remote_controller.send_command(format_command("!atf{}={}", consts.min_transducer_index, consts.min_frequency))
-    answer = await remote_controller.send_command(format_command("?atf{}", consts.min_transducer_index))
+    await remote_controller.send_command(commands.SetAtf(consts.min_transducer_index, consts.min_frequency))
+    answer = await remote_controller.send_command(commands.GetAtf(consts.min_transducer_index))
     assert_answer(answer, {EFieldName.ATF: consts.min_frequency})
 
-    await remote_controller.send_command(format_command("!atf{}={}", consts.min_transducer_index, consts.max_frequency))
-    answer = await remote_controller.send_command(format_command("?atf{}", consts.min_transducer_index))
+    await remote_controller.send_command(commands.SetAtf(consts.min_transducer_index, consts.max_frequency))
+    answer = await remote_controller.send_command(commands.GetAtf(consts.min_transducer_index))
     assert_answer(answer, {EFieldName.ATF: consts.max_frequency})
 
 @pytest.mark.asyncio(loop_scope="package")
-@pytest.mark.parametrize("command_str, const, is_upper_bound", [
-    ("!gain={}", DeviceParamConstantType.MAX_GAIN, True),
-    ("!gain={}", DeviceParamConstantType.MIN_GAIN, False),
-    pytest.param("?atf{}", DeviceParamConstantType.MAX_TRANSDUCER_INDEX, True, marks=pytest.mark.allowed_devices(DeviceType.MVP_WORKER)),
-    pytest.param("?atf{}", DeviceParamConstantType.MIN_TRANSDUCER_INDEX, False, marks=pytest.mark.allowed_devices(DeviceType.MVP_WORKER)),
+@pytest.mark.parametrize("command_builder, const, is_upper_bound", [
+    (lambda value: commands.SetGain(value), DeviceParamConstantType.MAX_GAIN, True),
+    (lambda value: commands.SetGain(value), DeviceParamConstantType.MIN_GAIN, False),
+    pytest.param(lambda value: commands.GetAtf(value), DeviceParamConstantType.MAX_TRANSDUCER_INDEX, True, marks=pytest.mark.allowed_devices(DeviceType.MVP_WORKER)),
+    pytest.param(lambda value: commands.GetAtf(value), DeviceParamConstantType.MIN_TRANSDUCER_INDEX, False, marks=pytest.mark.allowed_devices(DeviceType.MVP_WORKER)),
 ])
-async def test_limits_of_parameter(remote_controller, command_str, const, is_upper_bound):
-    const_value = getattr(remote_controller.protocol_consts, const.value)
-    valid_command = command_str.format(const_value)
+async def test_limits_of_parameter(remote_controller, command_builder, const, is_upper_bound):
+    const_value = resolve_protocol_arg(const, remote_controller.protocol_consts)
+    valid_command = command_builder(const_value)
     answer = await remote_controller.send_command(valid_command)
     assert answer.valid, "Answer should be valid, because the param is in the bounds"
 
-    invalid_command = command_str.format(const_value + (+1 if is_upper_bound else -1))
+    invalid_command = command_builder(const_value + (+1 if is_upper_bound else -1))
     answer = await remote_controller.send_command(invalid_command)
     assert not answer.valid, "Answer should be not valid, because param is expected to be out of bounds"
 
@@ -191,10 +197,10 @@ async def test_limits_of_parameter(remote_controller, command_str, const, is_upp
 async def test_if_swf_set_by_setter_can_be_retrieved_with_getter(remote_controller):
     consts = remote_controller.protocol_consts
 
-    await remote_controller.send_command(format_command("!swf={}", consts.min_swf))
-    answer = await remote_controller.send_command("?swf")
+    await remote_controller.send_command(commands.SetSwf(consts.min_swf))
+    answer = await remote_controller.send_command(commands.GetSwf())
     assert_answer(answer, {EFieldName.SWF: consts.min_swf})
 
-    await remote_controller.send_command(format_command("!swf={}", consts.max_swf))
-    answer = await remote_controller.send_command("?swf")
+    await remote_controller.send_command(commands.SetSwf(consts.max_swf))
+    answer = await remote_controller.send_command(commands.GetSwf())
     assert_answer(answer, {EFieldName.SWF: consts.max_swf})

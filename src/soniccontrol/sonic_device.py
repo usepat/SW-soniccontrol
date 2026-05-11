@@ -2,7 +2,6 @@ import asyncio
 from typing import List
 import logging
 
-import attrs
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import BaseFieldName, EFieldName
 from sonic_protocol.python_parser.answer import Answer, AnswerValidator
@@ -12,11 +11,9 @@ from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
 from sonic_protocol.schema import DeviceType, ICommandCode, Protocol, Version
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
-from soniccontrol.fw_device.connection import CLIConnection, Connection
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.communication.serial_communicator import Communicator
 from sonic_protocol.python_parser import commands
-from soniccontrol.fw_device import create_device_discovery, create_connection_to_device
 
 class CommandValidationError(Exception):
     """Raised when a command's response fails validation."""
@@ -43,6 +40,8 @@ class SonicDevice:
         self._command_deserializer = CommandDeserializer(self._protocol)
         self._command_serializer = CommandSerializer(self._protocol)
         self._should_validate_answers = should_validate_answers
+        self._modbus_operation_lock = asyncio.Lock()
+        self._modbus_pending_command_count = 0
 
         self._update_command = self._resolve_update_command()
 
@@ -69,6 +68,12 @@ class SonicDevice:
     def has_command(self, command: CommandCode | Command) -> bool:
         command_code = command.code if isinstance(command, Command) else command
         return command_code in self._protocol.command_contracts and self._protocol.command_contracts[command_code].command_def is not None
+
+    def _uses_modbus(self) -> bool:
+        return isinstance(self._communicator, ModbusCommunicator)
+
+    def _has_pending_modbus_commands(self) -> bool:
+        return self._modbus_pending_command_count > 0
 
     async def _send_command(self, command: Command, should_log: bool = True) -> Answer:
         command_contract = self._protocol.command_contracts.get(command.code)
@@ -128,7 +133,7 @@ class SonicDevice:
             self._logger.info("Disconnect")
             await self._communicator.close_communication()
 
-    async def execute_command(
+    async def _execute_command_impl(
         self,
         command: Command | str,
         should_log: bool = True,
@@ -189,6 +194,36 @@ class SonicDevice:
         
         return answer
 
+    async def execute_command(
+        self,
+        command: Command | str,
+        should_log: bool = True,
+        try_deduce_command_if_str: bool = True,
+        raise_exception: bool = True,
+        **kwargs
+    ) -> Answer:
+        if not self._uses_modbus():
+            return await self._execute_command_impl(
+                command,
+                should_log=should_log,
+                try_deduce_command_if_str=try_deduce_command_if_str,
+                raise_exception=raise_exception,
+                **kwargs,
+            )
+
+        self._modbus_pending_command_count += 1
+        try:
+            async with self._modbus_operation_lock:
+                return await self._execute_command_impl(
+                    command,
+                    should_log=should_log,
+                    try_deduce_command_if_str=try_deduce_command_if_str,
+                    raise_exception=raise_exception,
+                    **kwargs,
+                )
+        finally:
+            self._modbus_pending_command_count -= 1
+
 
     async def set_signal_off(self) -> Answer:
         if self.has_command(SetOff()):
@@ -229,8 +264,19 @@ class SonicDevice:
                 raise NotImplementedError(err_msg)
             else:
                 return Answer(err_msg, False, True)
-            
-        return await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
+
+        if not self._uses_modbus():
+            return await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
+
+        if self._has_pending_modbus_commands() or self._modbus_operation_lock.locked():
+            return Answer("Skipped update polling while command is running", False, False)
+
+        async with self._modbus_operation_lock:
+            return await self._execute_command_impl(
+                self._update_command,
+                raise_exception=raise_exception,
+                should_log=should_log,
+            )
 
     async def stop_procedures(self):
         if self.has_command(commands.SetStop()):
@@ -277,8 +323,9 @@ class SonicDevice:
         
         try:
             await self.execute_command(restart_command) 
-        except (ConnectionError, asyncio.IncompleteReadError):
+        except (ConnectionError, asyncio.IncompleteReadError, CommandValidationError):
             pass # could throw a connection error, device may not respond anymore, because it is restarting
+            # When using modbus the command can not be validated because the device restarts during the validation stage
 
         try:
             await self.disconnect()

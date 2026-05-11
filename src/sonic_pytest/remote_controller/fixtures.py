@@ -2,9 +2,11 @@ from pathlib import Path
 from typing import List
 import pytest
 import pytest_asyncio
-from sonic_protocol.schema import DeviceParamConstants
+from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
+from sonic_protocol.schema import ControlMode, DeviceParamConstants, Loglevel
 from soniccontrol import DeviceParamConstantType
-from soniccontrol.fw_device.connection import CLIConnection
+from sonic_protocol.python_parser import commands
+from soniccontrol.fw_device.connection import CLIConnection, ModbusConnection
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
 from soniccontrol import RemoteController, DeviceType
 from sonic_pytest.plugin import SonicControlPlugin, create_worker_process_impl
@@ -14,18 +16,27 @@ create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope
 
 
 async def reset_remote_controller_state(remote_controller: RemoteController) -> None:
-    await remote_controller.send_command("!log[global]=ERROR")
-    await remote_controller.send_command("!control=remote")
-    await remote_controller.send_command("!clear_errors")
-    await remote_controller.send_command("!sonic_force")
-    await remote_controller.send_command("!stop")
-    await remote_controller.send_command("!OFF")
+    await remote_controller.send_command(commands.SetLogLevel("global", Loglevel.ERROR))
+    await remote_controller.send_command(commands.SetControlMode(ControlMode.REMOTE))
+    await remote_controller.send_command(commands.ClearErrors())
+    await remote_controller.send_command(commands.SonicForce())
+    await remote_controller.send_command(commands.SetStop())
+    await remote_controller.send_command(commands.SetOff())
+
+
+def resolve_protocol_arg(arg, consts: DeviceParamConstants | None = None):
+    if consts is None:
+        return arg
+    if isinstance(arg, DeviceParamConstantType):
+        return getattr(consts, arg.value)
+    return arg
 
 
 async def create_connection(plugin_config: SonicControlPlugin, data_dir: Path | None, simulation_args: List[str] = []):
     is_simulation: bool = plugin_config.is_simulation
     device_type: DeviceType = plugin_config.device_type
     serial_port: str | None = plugin_config.serial_port
+    modbus_serial_port: str | None = plugin_config.modbus_serial_port
     remote_server_url: str | None = plugin_config.remote_server_url
 
     if is_simulation:
@@ -43,8 +54,13 @@ async def create_connection(plugin_config: SonicControlPlugin, data_dir: Path | 
             cmd_args.append(f"--data-dir={data_dir}")
             
         connection = CLIConnection(device_type.name, None, plugin_config.simulation_exe_path, cmd_args=cmd_args)
+    elif modbus_serial_port is not None:
+        dev_infos = await create_device_discovery(remote_server_url).list_fw_device_infos(include_unverified_ttys=True)
+        dev = next((dev for dev in dev_infos if dev.device_path == modbus_serial_port), None)
+        assert dev is not None, "No device detected for the given url"
+        connection = ModbusConnection(f"modbus:{modbus_serial_port}", dev, modbus_serial_port, baudrate = 9600, parity = Parity.EVEN)
     else:
-        dev_infos = await create_device_discovery(remote_server_url).list_fw_device_infos()
+        dev_infos = await create_device_discovery(remote_server_url).list_fw_device_infos(include_unverified_ttys=True)
         dev = next((dev for dev in dev_infos if dev.device_path == serial_port), None)
         assert dev is not None, "No device detected for the given url"
         # force remove connection is used for remote devices. 
@@ -110,10 +126,7 @@ def format_command(command_fmt_str: str, *args, consts: DeviceParamConstants | N
     if consts is None:
         return command_fmt_str.format(*args)
 
-    deduced_args = []
-    for arg in args:
-        deduced_arg = getattr(consts, arg.value) if isinstance(arg, DeviceParamConstantType) else arg
-        deduced_args.append(deduced_arg)
+    deduced_args = [resolve_protocol_arg(arg, consts) for arg in args]
 
     return command_fmt_str.format(*deduced_args)
     

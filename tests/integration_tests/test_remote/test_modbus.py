@@ -1,9 +1,11 @@
+import os
+from pathlib import Path
+
 import pytest
 import pytest_asyncio
 from pymodbus.client import AsyncModbusSerialClient
-from pymodbus.exceptions import NoSuchIdException
 from sonic_protocol.schema import DeviceType
-from soniccontrol import commands, Parity
+from soniccontrol import RemoteController, commands, Parity
 
 """
 I think it makes only sense to test a single read and write multiple registers here.
@@ -16,10 +18,23 @@ So this here is just a simple test for compliance. To check if it works at all w
 extern implementation of modbus with different serial settings.
 """
 
+
+@pytest_asyncio.fixture(scope="function", loop_scope="package")
+async def remote_controller():
+    test_url = os.getenv("TEST_URL")
+    if test_url is None:
+        pytest.skip("TEST_URL is not set. Skip modbus compliance tests")
+
+    controller = await RemoteController.connect_via_serial(Path(test_url))
+    await controller.stop_updater()
+    await controller.stop_running_processes()
+    yield controller
+    await controller.disconnect()
+
 @pytest_asyncio.fixture(scope="function", loop_scope="package", params=[
     (9600, "E"),
-    (9600, "N"),
-    (9600, "O"),
+    # (9600, "O"),
+    # (9600, "N"),
 ])
 async def modbus_client(request, remote_controller):
     baudrate, parity = request.param

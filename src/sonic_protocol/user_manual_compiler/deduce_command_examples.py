@@ -7,9 +7,12 @@ from sonic_protocol.schema import (
 )
 from sonic_protocol.protocol import protocol_list as operator_protocol_factory
 from sonic_protocol.user_manual_compiler.command_example_utils import (
+    deduce_command_examples_for_contract_as_commands,
     deduce_command_examples_for_contract,
+    deduce_single_command_example_for_contract_as_command,
     deduce_single_command_example_for_contract,
 )
+from sonic_protocol.python_parser.commands import Command
     
 
 def _build_protocol(protocol_version: Version, device_type: DeviceType, is_release: bool):
@@ -71,3 +74,44 @@ def deduce_single_command_example(
         return None
 
     return deduce_single_command_example_for_contract(protocol.consts, command_contract)
+
+
+def deduce_command_examples_as_commands(
+    protocol_version: Version,
+    device_type: DeviceType,
+    is_release: bool = False,
+    options: str = "",
+    skip_command_codes: Optional[List[CommandCode]] = None,
+) -> List[Command]:
+    _ = options
+    if skip_command_codes is None:
+        skip_command_codes = []
+
+    command_examples: List[Command] = []
+    protocol = _build_protocol(protocol_version, device_type, is_release)
+
+    for command_contract in protocol.command_contracts.values():
+        if command_contract.command_def is None:
+            continue
+        if command_contract.code in skip_command_codes:
+            continue
+
+        command_examples.extend(
+            deduce_command_examples_for_contract_as_commands(protocol.consts, command_contract)
+        )
+
+    return command_examples
+
+
+def deduce_single_command_example_as_command(
+    protocol_version: Version,
+    device_type: DeviceType,
+    command_code: CommandCode,
+    is_release: bool = False,
+) -> Optional[Command]:
+    protocol = _build_protocol(protocol_version, device_type, is_release)
+    command_contract = protocol.command_contracts.get(command_code)
+    if command_contract is None:
+        return None
+
+    return deduce_single_command_example_for_contract_as_command(protocol.consts, command_contract)

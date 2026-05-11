@@ -1,5 +1,5 @@
 from soniccontrol.app_config import PLATFORM, System
-from soniccontrol.fw_device.connection import Connection, SerialConnection, CLIConnection
+from soniccontrol.fw_device.connection import Connection, SerialConnection, CLIConnection, ModbusConnection
 from soniccontrol.fw_device.device_discovery import DeviceDiscovery
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.fw_device.remote.remote_device_discovery import RemoteDeviceDiscovery
@@ -44,4 +44,15 @@ async def redetect_connection(connection: Connection) -> Connection:
     assert dev_info is not None, "dev_info was not set"
     device_discovery = create_device_discovery(dev_info.remote_server_url)
     new_dev_info = await device_discovery.wait_for_device_redetection(dev_info)
+
+    if isinstance(connection, ModbusConnection):
+        assert new_dev_info.device_path, "The device has no device path set"
+        return ModbusConnection(
+            f"modbus:{new_dev_info.device_path}",
+            new_dev_info,
+            new_dev_info.device_path,
+            baudrate=connection.baudrate,
+            parity=connection.parity,
+        )
+
     return create_connection_to_device(new_dev_info)
