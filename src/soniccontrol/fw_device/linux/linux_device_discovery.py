@@ -167,7 +167,7 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         else:
             return dev_info
         
-        dev_infos = await self.list_fw_device_infos()
+        dev_infos = await self.list_fw_device_infos(include_unverified_ttys=True)
         dev_info = next(
             (dev for dev in dev_infos if dev.usb_sys_name == device_info.usb_sys_name),
             None

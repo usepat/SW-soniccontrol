@@ -26,6 +26,14 @@ error_code_field = AnswerFieldDef(
 
 param_type_timestamp = FieldType(
     field_type=Timestamp,
+    min_value=Timestamp(
+        hour= 0,
+        minute= 0,
+        second= 0,
+        day= 1,
+        month= 1,
+        year= 1970
+    ),
     converter_ref=ConverterType.TIMESTAMP
 )
 

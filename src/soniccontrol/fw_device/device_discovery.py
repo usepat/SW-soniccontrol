@@ -48,7 +48,7 @@ class DeviceDiscovery(abc.ABC):
             device_path = str(device_path)
 
         dev_info = next((
-            dev_info for dev_info in await self.list_fw_device_infos()
+            dev_info for dev_info in await self.list_fw_device_infos(include_unverified_ttys=True)
             if dev_info.device_path == device_path
         ), None)
         return dev_info

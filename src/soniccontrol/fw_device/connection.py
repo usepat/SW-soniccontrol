@@ -4,7 +4,6 @@ from pathlib import Path
 import attrs
 from typing import List, Tuple
 
-from pymodbus import FramerType
 from serial_asyncio import open_serial_connection
 import logging
 
@@ -30,9 +29,8 @@ class Connection(abc.ABC):
     """
     connection_name: str = attrs.field(init=True, on_setattr=None)
     dev_info: FwDeviceInfo | None = attrs.field(init=True, on_setattr=None)
-    dev_info: FwDeviceInfo | None = attrs.field(init=True, on_setattr=None)
     _closed: bool = attrs.field(init=False, default=True) # maybe an asyncio event would be an even better fit here
-    _lock: asyncio.Lock = attrs.field(init=False)
+    _lock: asyncio.Lock = attrs.field(init=False, factory=asyncio.Lock)
 
     @property
     def is_open(self):

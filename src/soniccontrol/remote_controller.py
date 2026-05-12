@@ -11,7 +11,9 @@ from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.fw_device.connection import CLIConnection, Connection, SerialConnection
+from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
+from soniccontrol.communication.modbus_communicator import ModbusCommunicator
+from soniccontrol.fw_device.connection import CLIConnection, Connection, ModbusConnection
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
@@ -33,6 +35,8 @@ class SpectrumArgsAdapter(CaptureSpectrumArgs):
 
 
 class RemoteController:
+    MODBUS_UPDATE_INTERVAL_MS = 100
+
     """
     The RemoteController follows a Facade pattern. It is a simple abstraction that hides the complex logic behind.
     Used for controlling the device, by sending commands, executing procedures, scripts and conducting experiments.
@@ -52,10 +56,21 @@ class RemoteController:
         """
         self._device: SonicDevice = device
         self._logger = logger    
-        self._updater: Updater = Updater(self._device)
-        self._updater.start()
+        update_interval_ms = (
+            self.MODBUS_UPDATE_INTERVAL_MS
+            if isinstance(device.communicator, ModbusCommunicator)
+            else 0
+        )
+        self._updater: Updater = Updater(
+            self._device,
+            time_waiting_between_updates_ms=update_interval_ms,
+        )
         self._proc_controller: ProcedureController = ProcedureController(self._device, updater=self._updater)
         self._scripting: NewScriptingFacade = NewScriptingFacade()
+
+    @staticmethod
+    def _should_auto_start_updater(device: SonicDevice) -> bool:
+        return not isinstance(device.communicator, ModbusCommunicator)
 
 
     @staticmethod
@@ -93,6 +108,21 @@ class RemoteController:
         return await RemoteController.connect(connection, log_path)
 
     @staticmethod
+    async def connect_via_modbus(
+        url: Path | str,
+        baudrate: int = 9600,
+        parity: Parity = Parity.EVEN,
+        log_path: Optional[Path] = None,
+    ) -> "RemoteController":
+        if isinstance(url, Path):
+            url = str(url)
+        discovery = create_device_discovery()
+        dev_info = await discovery.get_fw_device_info_of(url)
+        assert dev_info is not None, "No device detected on the given port"
+        connection = ModbusConnection(dev_info.sys_name, None, str(url), baudrate=baudrate, parity=parity)
+        return await RemoteController.connect(connection, log_path)
+
+    @staticmethod
     async def connect_via_simulation(simulation_executable: Path, cmd_args: List[str] = [""], log_path: Optional[Path]=None) -> "RemoteController":
         return await RemoteController.connect(CLIConnection("simulation", None, simulation_executable, cmd_args), log_path)
 
@@ -100,7 +130,11 @@ class RemoteController:
     async def _build_device(connection: Connection, logger: logging.Logger):
         device_builder = DeviceBuilder(logger=logger)
 
-        communicator = SerialCommunicator(logger=logger) # type: ignore
+        if isinstance(connection, ModbusConnection):
+            communicator = ModbusCommunicator()
+        else:
+            communicator = SerialCommunicator(logger=logger) # type: ignore
+
         await communicator.open_communication(connection)
         device = await device_builder.build_amp(communicator)
 
@@ -116,6 +150,8 @@ class RemoteController:
         
         # ensure procedures are being loaded
         await controller.load_init()
+        if RemoteController._should_auto_start_updater(device):
+            controller.start_updater()
 
         return controller 
     
@@ -152,6 +188,8 @@ class RemoteController:
 
         # ensure procedures are being loaded
         await controller.load_init()
+        if RemoteController._should_auto_start_updater(self._device):
+            controller.start_updater()
 
         return controller
 
@@ -178,7 +216,7 @@ class RemoteController:
         ----
         For running procedures, the updater needs to run. Else the controller is not able to detect anymore, when a procedure finished.
         """
-        if not self._updater.running.set():
+        if not self._updater.running.is_set():
             self._updater.start()
 
     async def stop_updater(self):
@@ -189,7 +227,7 @@ class RemoteController:
         ----
         For running procedures, the updater needs to run. Else the controller is not able to detect anymore, when a procedure finished.
         """
-        if self._updater.running:
+        if self._updater.running.is_set():
             await self._updater.stop()
 
     async def send_command(self, command: str | Command, raise_exception: bool = False) -> Answer:
@@ -409,17 +447,22 @@ async def main():
         raise ValueError("Environment variable 'FIRMWARE_BUILD_DIR_PATH' is not set.")
     exe_path = firmware_dir / 'linux/platform_linux/src/device/device_main'
 
-    controller = await RemoteController.connect_via_simulation(
-        exe_path, 
-        ['--profile=worker']
-    )
+    # controller = await RemoteController.connect_via_simulation(
+    #     exe_path, 
+    #     ['--profile=worker']
+    # )
+    modbus_url = environ.get('TEST_MODBUS_SERIAL_PORT')
+    assert modbus_url is not None
+    modbus_url = Path(modbus_url).expanduser().resolve()
 
-    # it is allowed but discouraged to send strings
-    answer = await controller.send_command("?protocol")
-    print(answer.message)
+    controller = await RemoteController.connect_via_modbus(modbus_url)
+    answer = await controller.send_command(cmds.SetGain(50))
+    # # it is allowed but discouraged to send strings
+    # answer = await controller.send_command("?protocol")
+    # print(answer.message)
 
     # use instead the cmds classes. Avoids typos and will stay compatible with future protocols
-    await controller.send_command(cmds.GetProtocol())
+    # await controller.send_command(cmds.GetProtocol())
 
     # ensures not procedure is running and service mode not active
     await controller.stop_running_processes() 

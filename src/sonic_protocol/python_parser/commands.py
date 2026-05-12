@@ -3,7 +3,7 @@ import attrs
 from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity, UartInterface
-from sonic_protocol.schema import Loglevel
+from sonic_protocol.schema import ControlMode, Loglevel
 
 
 class Command:
@@ -388,6 +388,18 @@ class GetConnectionStatus(Command):
 class GetNumTests(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.GET_NUM_TESTS)
+
+@attrs.define()
+class SetControlMode(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_CONTROL_MODE)
+
+    value: ControlMode = attrs.field(alias=EFieldName.CONTROL_MODE.name)
+
+@attrs.define()
+class ClearErrors(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.CLEAR_ERRORS)
 
 @attrs.define()
 class GetTestInfo(Command):

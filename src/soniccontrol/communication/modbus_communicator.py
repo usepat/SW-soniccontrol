@@ -14,8 +14,8 @@ from sonic_protocol.command_codes import BaseCommandCode, CommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
 from sonic_protocol.python_parser.answer import Answer
-from sonic_protocol.python_parser.commands import Command, GetSwf, GetUpdate, GetUpdateDescale, SetOff, SetOn, SetSwf
-from sonic_protocol.schema import CommandContract, CommandParamDef, DeviceType, FieldType, ProtocolType, Timestamp, Version
+from sonic_protocol.python_parser.commands import Command, GetSwf, GetUpdateDescale, SetOff, SetOn, SetSwf
+from sonic_protocol.schema import BuildType, CommandContract, CommandParamDef, DeviceType, FieldType, ProtocolType, Timestamp, Version
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.fw_device.connection import Connection, ModbusConnection
 
@@ -30,6 +30,25 @@ class ModbusCommunicator(Communicator):
     RESPONSE_HEADER_REGISTERS = 2
     RESPONSE_POLL_INTERVAL_S = 0.05
     RESPONSE_TIMEOUT_S = 2.0
+    TRANSACTION_TIMEOUT_S = 3.0
+    MAX_RETRIES = 3
+    GENERIC_DEVICE_ERROR = "Device returned an error"
+    FIRMWARE_ENUM_MEMBER_ORDER = {
+        DeviceType: (
+            DeviceType.UNKNOWN,
+            DeviceType.CONFIGURATOR,
+            DeviceType.MVP_WORKER,
+            DeviceType.DESCALE,
+            DeviceType.POSTMAN,
+            DeviceType.CRYSTAL,
+            DeviceType.SIMULATION,
+            DeviceType.DIAGNOSTICS_TOOL,
+        ),
+        BuildType: (
+            BuildType.RELEASE,
+            BuildType.DEBUG,
+        ),
+    }
 
     _connection_opened: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
     _modbus_client: Optional[AsyncModbusSerialClient] = attrs.field(
@@ -55,7 +74,7 @@ class ModbusCommunicator(Communicator):
         self._connection = connection
         self._modbus_client = await connection.open_modbus_connection()
         await self._modbus_client.connect()
-        response = await self._modbus_client.read_input_registers(
+        response = await self._read_input_registers(
             self.MAILBOX_RESPONSE_ADDRESS,
             count=1,
             device_id=self.DEFAULT_DEVICE_ID,
@@ -84,6 +103,28 @@ class ModbusCommunicator(Communicator):
             self._messages.get_nowait()
         self._messages.put_nowait(message)
 
+    async def _read_input_registers(self, address: int, count: int, device_id: int):
+        assert self._modbus_client is not None
+        return await asyncio.wait_for(
+            self._modbus_client.read_input_registers(
+                address,
+                count=count,
+                device_id=device_id,
+            ),
+            timeout=self.TRANSACTION_TIMEOUT_S,
+        )
+
+    async def _write_registers(self, address: int, values: list[int], device_id: int):
+        assert self._modbus_client is not None
+        return await asyncio.wait_for(
+            self._modbus_client.write_registers(
+                address,
+                values,
+                device_id=device_id,
+            ),
+            timeout=self.TRANSACTION_TIMEOUT_S,
+        )
+
     def _pack_command_registers(
         self, command_contract: CommandContract, command: Command
     ) -> list[int]:
@@ -106,6 +147,18 @@ class ModbusCommunicator(Communicator):
             registers.extend(self.value_to_registers(args["value"], cmd_def.setter_param))
 
         return registers
+
+    @staticmethod
+    def _has_unsupported_string_index(
+        command_contract: CommandContract, command: Command
+    ) -> bool:
+        command_def = command_contract.command_def
+        if command_def is None or command_def.index_param is None:
+            return False
+        return (
+            "index" in command.args
+            and command_def.index_param.param_type.field_type is str
+        )
 
     def value_to_registers(self, value: Any, param_def: CommandParamDef) -> list[int]:
         return self.field_value_to_registers(value, param_def.param_type)
@@ -141,6 +194,8 @@ class ModbusCommunicator(Communicator):
 
     @staticmethod
     def enum_member_to_firmware_value(enum_type: type[Enum], value: Any) -> int:
+        firmware_member_order = ModbusCommunicator.FIRMWARE_ENUM_MEMBER_ORDER.get(enum_type)
+
         if isinstance(value, enum_type):
             member = value
         else:
@@ -150,7 +205,7 @@ class ModbusCommunicator(Communicator):
                 if isinstance(value, str):
                     member = enum_type[value]
                 else:
-                    members = tuple(enum_type)
+                    members = firmware_member_order if firmware_member_order is not None else tuple(enum_type)
                     if 0 <= int(value) < len(members):
                         return int(value)
                     raise ValueError(f"{value} is not a valid {enum_type.__name__}")
@@ -158,11 +213,12 @@ class ModbusCommunicator(Communicator):
         if isinstance(member.value, int):
             return int(member.value)
 
-        return tuple(enum_type).index(member)
+        members = firmware_member_order if firmware_member_order is not None else tuple(enum_type)
+        return members.index(member)
 
     @staticmethod
     def firmware_value_to_enum_member(enum_type: type[Enum], raw_value: int) -> Enum:
-        members = tuple(enum_type)
+        members = ModbusCommunicator.FIRMWARE_ENUM_MEMBER_ORDER.get(enum_type, tuple(enum_type))
         if not members:
             raise ValueError(f"Enum {enum_type.__name__} has no members")
 
@@ -211,12 +267,14 @@ class ModbusCommunicator(Communicator):
         return int(value)
 
     async def _read_response_header(self) -> list[int] | None:
-        assert self._modbus_client is not None
-        response = await self._modbus_client.read_input_registers(
-            self.MAILBOX_RESPONSE_ADDRESS,
-            count=self.RESPONSE_HEADER_REGISTERS,
-            device_id=self.DEFAULT_DEVICE_ID,
-        )
+        try:
+            response = await self._read_input_registers(
+                self.MAILBOX_RESPONSE_ADDRESS,
+                count=self.RESPONSE_HEADER_REGISTERS,
+                device_id=self.DEFAULT_DEVICE_ID,
+            )
+        except asyncio.TimeoutError:
+            return None
         if response.isError():
             return None
         return list(response.registers)
@@ -246,69 +304,104 @@ class ModbusCommunicator(Communicator):
         assert self._modbus_client is not None
         assert self._modbus_client.connected
 
+        if self._has_unsupported_string_index(command_contract, command):
+            return Answer(
+                "Modbus does not support commands with string index parameters",
+                False,
+                False,
+                command.code,
+            )
+
         async with self._lock:
-            payload = self._pack_command_registers(command_contract, command)
-            write_result = await self._modbus_client.write_registers(
+            last_error: Answer | None = None
+            for attempt in range(1, self.MAX_RETRIES + 1):
+                answer, should_retry = await self._send_command_once(command_contract, command)
+                if not should_retry:
+                    return answer
+
+                last_error = answer
+                self._logger.warning(
+                    "Modbus command attempt %d/%d failed for %s: %s",
+                    attempt,
+                    self.MAX_RETRIES,
+                    command,
+                    answer.message,
+                )
+
+            assert last_error is not None
+            return last_error
+
+    async def _send_command_once(
+        self, command_contract: CommandContract, command: Command
+    ) -> tuple[Answer, bool]:
+        payload = self._pack_command_registers(command_contract, command)
+        try:
+            write_result = await self._write_registers(
                 self.MAILBOX_COMMAND_ADDRESS,
                 payload,
                 device_id=self.DEFAULT_DEVICE_ID,
             )
-            if write_result.isError():
-                return Answer("Error sending modbus command", False, True, command.code)
+        except asyncio.TimeoutError:
+            return Answer("Timeout writing modbus command", False, True, command.code), True
+        if write_result.isError():
+            return Answer("Error sending modbus command", False, True, command.code), True
 
-            response_len, error_message = await self._wait_for_response_ready()
-            if error_message is not None:
-                return Answer(error_message, False, True, command.code)
-            if response_len <= 0:
-                return Answer("Empty modbus response", False, True, command.code)
+        response_len, error_message = await self._wait_for_response_ready()
+        if error_message is not None:
+            return Answer(error_message, False, True, command.code), True
+        if response_len <= 0:
+            return Answer("Empty modbus response", False, True, command.code), True
 
-            response = await self._modbus_client.read_input_registers(
+        try:
+            response = await self._read_input_registers(
                 self.MAILBOX_RESPONSE_ADDRESS + self.RESPONSE_HEADER_REGISTERS,
                 count=response_len,
                 device_id=self.DEFAULT_DEVICE_ID,
             )
-            if response.isError():
-                return Answer("Error reading modbus response", False, True, command.code)
+        except asyncio.TimeoutError:
+            return Answer("Timeout reading modbus response", False, True, command.code), True
+        if response.isError():
+            return Answer("Error reading modbus response", False, True, command.code), True
 
-            payload_registers = list(response.registers)
-            response_code = payload_registers[0]
-            response_fields = payload_registers[1:]
-            response_code_enum = self.resolve_command_code(command, response_code)
+        payload_registers = list(response.registers)
+        response_code = payload_registers[0]
+        response_fields = payload_registers[1:]
+        response_code_enum = self.resolve_command_code(command, response_code)
 
-            if response_code != int(command.code):
-                error_text = self.parse_error_message(response_fields)
-                answer = Answer(
-                    error_text,
-                    False,
-                    True,
-                    response_code_enum,
-                    field_value_dict={EFieldName.ERROR_MESSAGE: error_text},
-                )
-                self._queue_message(answer.message)
-                return answer
-
-            answer_dict = self.registers_to_dict(response_fields, command_contract)
-            message = self.answer_message_from_fields(answer_dict)
+        if response_code != int(command.code):
+            error_text = self.parse_error_message(response_fields)
             answer = Answer(
-                message,
-                True,
+                error_text,
+                False,
                 True,
                 response_code_enum,
-                field_value_dict=answer_dict,
+                field_value_dict={EFieldName.ERROR_MESSAGE: error_text},
             )
             self._queue_message(answer.message)
-            return answer
+            return answer, False
+
+        answer_dict = self.registers_to_dict(response_fields, command_contract)
+        message = self.answer_message_from_fields(answer_dict)
+        answer = Answer(
+            message,
+            True,
+            True,
+            response_code_enum,
+            field_value_dict=answer_dict,
+        )
+        self._queue_message(answer.message)
+        return answer, False
 
     def parse_error_message(self, registers: list[int]) -> str:
         if not registers:
-            return "Device returned an error"
+            return self.GENERIC_DEVICE_ERROR
 
         try:
             value, _ = self.parse_param(FieldType(str), registers, 0)
         except Exception:
-            return "Device returned an error"
+            return self.GENERIC_DEVICE_ERROR
 
-        return value if isinstance(value, str) and value else "Device returned an error"
+        return value if isinstance(value, str) and value else self.GENERIC_DEVICE_ERROR
 
     @staticmethod
     def answer_message_from_fields(answer_dict: dict[Any, Any]) -> str:
