@@ -14,7 +14,7 @@ from soniccontrol_gui.views.core.connection_window import ConnectionWindow
 from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
 from sonic_pytest.gui.workflows import send_over_serial_monitor
-from sonic_pytest.plugin import create_worker_process_impl
+from sonic_pytest.fixtures import create_worker_process_impl
 
 
 # NOTE: If you write a Test, it will automatically use the fixtures below, because they are autouse=True
