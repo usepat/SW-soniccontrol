@@ -98,9 +98,11 @@ async def test_experiment_capture_ends_if_procedure_finishes():
     await start_ramp_capture()
     await asyncio.sleep(2)
 
+    controller = GuiController()
+    controller.clear_text_changed_flags()
+
     await send_over_serial_monitor("!stop")
 
-    controller = GuiController()
     label_control_button = await controller.wait_for_widget_to_change_text(widget_names.MEASURING_CONTROL_BUTTON, 2.0)
     assert label_control_button == ui_labels.NEW_EXPERIMENT
 
@@ -110,6 +112,8 @@ async def test_procedure_stops_if_capture_ends():
     await asyncio.sleep(2)
 
     controller = GuiController()
+    controller.clear_text_changed_flags()
+    
     controller.press_button(widget_names.MEASURING_CONTROL_BUTTON)
     
     proc_label, label_control_button = await controller.wait_for_multiple_widgets_to_change_text(

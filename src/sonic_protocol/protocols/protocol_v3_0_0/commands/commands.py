@@ -167,7 +167,7 @@ get_logger_list_item = CommandContract(
     code=CommandCode.GET_LOGGER_LIST_ITEM,
     command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?logger"),
-        index_param=CommandParamDef(EFieldName.INDEX, FieldType(np.uint8))
+        index_param=p.param_index_uint8
     ),
     answer_def=AnswerDef([
         AnswerFieldDef(EFieldName.LOGGER_NAME, FieldType(str)),

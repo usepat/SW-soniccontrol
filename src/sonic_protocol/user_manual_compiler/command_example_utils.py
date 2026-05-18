@@ -60,7 +60,11 @@ def _append_type_specific_examples(param_limits: List[Any], field_type: type) ->
     if field_type is bool:
         _append_unique(param_limits, True)
         _append_unique(param_limits, False)
-    if _is_enum_field_type(field_type):
+        
+    elif field_type is str:
+        _append_unique(param_limits, "SomeString")
+
+    elif _is_enum_field_type(field_type):
         enum_members = list(getattr(field_type, "__members__", {}).values())
         for value in enum_members:
             _append_unique(param_limits, value)

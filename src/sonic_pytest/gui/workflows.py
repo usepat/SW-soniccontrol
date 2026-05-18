@@ -31,12 +31,15 @@ async def proceed_without_experiment():
 
 def set_ramp_args():
     controller = GuiController()
+    # You have to set units before setting the values.
+    # Some weird bug, probably units do not update the validity of the value, I guess
+    # And with invalid args it will not start the procedure
+    controller.set_widget_text(widget_names.RAMP_F_START_UNIT, "MHz")
     controller.set_widget_text(widget_names.RAMP_F_START, "1")
-    #controller.set_widget_text(widget_names.RAMP_F_START_UNIT, "Hz")
+    controller.set_widget_text(widget_names.RAMP_F_STOP_UNIT, "MHz")
     controller.set_widget_text(widget_names.RAMP_F_STOP, "2")
-    #controller.set_widget_text(widget_names.RAMP_F_STOP_UNIT, "Hz")
+    controller.set_widget_text(widget_names.RAMP_F_STEP_UNIT, "kHz")
     controller.set_widget_text(widget_names.RAMP_F_STEP, "100")
-    #controller.set_widget_text(widget_names.RAMP_F_STEP_UNIT, "Hz")
     controller.set_widget_text(widget_names.RAMP_T_ON_TIME, "1000")
     controller.set_widget_text(widget_names.RAMP_T_ON_UNIT, "ms")
     controller.set_widget_text(widget_names.RAMP_T_OFF_TIME, "1000")
@@ -102,6 +105,8 @@ async def start_ramp_capture():
     set_ramp_args()
     await controller.execute_events_until_idle()
     controller.clear_text_changed_flag_of_widget(widget_names.MEASURING_CONTROL_BUTTON)
+    controller.clear_text_changed_flag_of_widget(widget_names.STATUS_BAR_PROCEDURE_LABEL)
+    
     controller.press_button(widget_names.MEASURING_CONTROL_BUTTON)
 
     proc_label, label_control_button = await controller.wait_for_multiple_widgets_to_change_text(

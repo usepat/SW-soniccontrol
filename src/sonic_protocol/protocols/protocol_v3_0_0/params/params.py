@@ -24,7 +24,7 @@ atf_param = CommandParamDef(
 
 param_index_uint8 = CommandParamDef(
     name=EFieldName.INDEX,
-    param_type=FieldType(field_type=np.uint8)
+    param_type=FieldType(field_type=np.uint8, min_value=np.uint8(0))
 )
 
 param_dac_mV = CommandParamDef(

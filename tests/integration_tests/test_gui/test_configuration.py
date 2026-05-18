@@ -53,6 +53,7 @@ async def test_send_atf_configs_to_device():
 @pytest.mark.asyncio(loop_scope="package")
 async def test_configure_device_with_init_script(tmp_path):
     controller = GuiController()
+    controller.clear_text_changed_flags()
 
     init_script_path = tmp_path / "init_script_test.sonic"
     init_script_content = """frequency 690420\ngain 10\n"""
