@@ -1,19 +1,35 @@
 from typing import Any, Generator
 import pytest
+import pytest_asyncio
 from unittest.mock import Mock
 import asyncio
 
+from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine, InterpreterState
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
 from soniccontrol.scripting.new_scripting import NewScriptingFacade, RunnableScript, ExecutionStep
 
+import logging
 
 @pytest.fixture
-def interpreter_engine():
+def logger():
+    logger = Mock(logging.Logger)
+    logger.name = "root"
+    logger.info = Mock()
+    logger.debug = Mock()
+    logger.warning = Mock()
+    logger.error = Mock()
+    return logger
+
+@pytest_asyncio.fixture
+async def interpreter_engine(logger):
     device = Mock(SonicDevice)
     updater = Mock(Updater)
-    interpreter = InterpreterEngine(device, updater)
+    proc_controller = ProcedureController(device, updater, logger)
+    await proc_controller.load_procs()
+
+    interpreter = InterpreterEngine(device, updater, proc_controller, logger)
     interpreter._set_interpreter_state = Mock(wraps=interpreter._set_interpreter_state)
     
     return interpreter

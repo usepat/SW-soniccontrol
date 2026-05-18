@@ -277,7 +277,6 @@ class Editor(UIComponent):
 
     def _handle_script_error(self, e: ScriptException):
         self._view.highlight_line(e.line_begin, color_background="#ff2c2c")
-        MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
         
 
 

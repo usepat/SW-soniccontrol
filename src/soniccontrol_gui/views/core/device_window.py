@@ -158,7 +158,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._proc_controlling_model = ProcControllingModel()
             self._scripting = NewScriptingFacade()
             self._script_file = ScriptFile(logger=self._logger)
-            self._interpreter = InterpreterEngine(self._device, self._updater, self._logger)
+            self._interpreter = InterpreterEngine(self._device, self._updater, self._proc_controller, self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
             self._capture = Capture(files.MEASUREMENTS_DIR, self._logger)
@@ -184,7 +184,7 @@ class KnownDeviceWindow(DeviceWindow):
             if is_legacy_device:
                 self._configuration = LegacyConfiguration(self, self._device, self._proc_controller)
             else:
-                self._configuration = Configuration(self, self._device, self._updater)
+                self._configuration = Configuration(self, self._device, self._updater, self._interpreter)
             self._settings = Settings(self, self._device, self._updater)
             
             self._proc_controlling = ProcControlling(self, self._proc_controller, self._proc_controlling_model, self.app_state)
@@ -219,8 +219,14 @@ class KnownDeviceWindow(DeviceWindow):
                 self._logging.view, 
             ], right_one=True)
 
-            
             self._logger.debug("add callbacks and listeners to event emitters")
+            
+            def show_script_error(e):
+                error = e.data["exception"]
+                MessageBox.show_error(self._view.root, f"{error.__class__.__name__}: {str(error)}")
+
+            self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, show_script_error)
+
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
             self._updater.start()

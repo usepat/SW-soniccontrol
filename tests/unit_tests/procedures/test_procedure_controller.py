@@ -2,6 +2,8 @@ import asyncio
 import pytest
 from unittest.mock import Mock, AsyncMock
 import logging
+
+import pytest_asyncio
 from soniccontrol.events import Event
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
@@ -12,16 +14,16 @@ from soniccontrol.updater import Updater
 
 
 
-@pytest.fixture
-def proc_controller(monkeypatch, request):
+@pytest_asyncio.fixture
+async def proc_controller(request):
     proc_name = request.param
-    if proc_name == "ramper_local":
-        monkeypatch.setattr(ProcedureInstantiator, "instantiate_ramp", Mock(return_value=RamperLocal()))
-    else:
-        monkeypatch.setattr(ProcedureInstantiator, "instantiate_ramp", Mock(return_value=None))
 
     # We have to patch the function in the module it is used and not in the module where it is declared
     proc_controller = ProcedureController(Mock(spec=SonicDevice), Mock(spec=Updater), logging.getLogger())
+    await proc_controller.load_procs()
+
+    if proc_name == "ramper_local":
+        proc_controller._procedures[ProcedureType.RAMP] = RamperLocal()
 
     return proc_controller
 
