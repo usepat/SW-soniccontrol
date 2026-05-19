@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterable, List
 from async_tkinter_loop import async_handler
 
 import matplotlib.figure
+from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.data_capturing.capture_target import CaptureTarget, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment
@@ -51,29 +52,28 @@ class Measuring(UIComponent):
         self._view = MeasuringView(parent.view)
         super().__init__(parent, self._view, self._logger)
 
-
         self._experiment_form = ExperimentForm(
             self,
             "experiment",
             self._view._metadata_form_frame,
         )
 
+        is_descale = firmware_info.device_type == DeviceType.DESCALE
+
         self._time_figure = matplotlib.figure.Figure(dpi=100)
         self._time_subplot = self._time_figure.add_subplot(1, 1, 1)
-        self._timeplot = PlotBuilder.create_timeplot_fuip(self._time_subplot)
+        if is_descale:
+            # descale has no phase, frequency and urms. So we will only plot irms
+            self._timeplot = PlotBuilder.create_timeplot_irms(self._time_subplot)
+        else:
+            self._timeplot = PlotBuilder.create_timeplot_fuip(self._time_subplot)
         self._timeplottab = Plotting(self, self._timeplot, max_size_editable = True)
         self._timeplottab.set_data_provider_size_change_callback(self._capture._data_provider.change_dataqueue_max_size)
 
-        self._spectral_figure = matplotlib.figure.Figure(dpi=100)
-        self._spectral_subplot = self._spectral_figure.add_subplot(1, 1, 1)
-        self._spectralplot = PlotBuilder.create_spectralplot_uip(self._spectral_subplot)
-        self._spectralplottab = Plotting(self, self._spectralplot)
-        
         self._csv_table = CsvTable(self)
 
         self._view.add_tabs({
             ui_labels.LIVE_PLOT: self._timeplottab.view, 
-            ui_labels.SONIC_MEASURE_LABEL: self._spectralplottab.view, 
             ui_labels.CSV_TAB_TITLE: self._csv_table.view
         })
         target_strs = map(lambda k: k.value, self._capture_targets.keys())
@@ -84,9 +84,21 @@ class Measuring(UIComponent):
         self._capture.data_provider.subscribe_property_listener(
             "data", lambda e: self._timeplot.update_data(e.new_value))
         self._capture.data_provider.subscribe_property_listener(
-            "data", lambda e: self._spectralplot.update_data(e.new_value))
-        self._capture.data_provider.subscribe_property_listener(
             "data", lambda e: self._csv_table.on_update_data(e.new_value))
+
+        if not is_descale:
+            # descale has no phase and therefore this plot cannot be used for it
+            self._spectral_figure = matplotlib.figure.Figure(dpi=100)
+            self._spectral_subplot = self._spectral_figure.add_subplot(1, 1, 1)
+            self._spectralplot = PlotBuilder.create_spectralplot_uip(self._spectral_subplot)
+            self._spectralplottab = Plotting(self, self._spectralplot)
+
+            self._view.add_tabs({
+                ui_labels.SONIC_MEASURE_LABEL: self._spectralplottab.view, 
+            })
+
+            self._capture.data_provider.subscribe_property_listener(
+                "data", lambda e: self._spectralplot.update_data(e.new_value))
 
         self._capture.subscribe(Capture.START_CAPTURE_EVENT, 
                                 lambda _e: setattr(self, "experiment_execution_state", ExperimentExecutionState.CAPTURING))

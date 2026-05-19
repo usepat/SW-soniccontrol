@@ -7,10 +7,11 @@ from typing import Any, Dict
 from async_tkinter_loop import async_handler
 
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.schema import DeviceType
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureTarget
 from soniccontrol.data_capturing.data_provider import DataProvider
 from soniccontrol.data_capturing.experiment import Experiment
-from soniccontrol.data_capturing.experiment_store import ExperimentWriter, HDF5ExperimentWriter
+from soniccontrol.data_capturing.experiment_store import DataTableDescale, DataTableWorker, ExperimentWriter, HDF5ExperimentWriter
 from soniccontrol.events import Event, EventManager
 
 
@@ -50,7 +51,9 @@ class Capture(EventManager):
 
         timestamp_str = experiment.date_time.strftime("%Y%m%d_%H%M%S")
         file_name = self._output_dir / f"sonic_measure_{timestamp_str}"
-        self._experiment_writer = HDF5ExperimentWriter(file_name)
+        is_descale = self._experiment.firmware_info.device_type == DeviceType.DESCALE
+        data_table_type = DataTableDescale if is_descale else DataTableWorker
+        self._experiment_writer = HDF5ExperimentWriter(file_name, data_table_type)
         self._experiment_writer.write_metadata(self._experiment)
 
         self._target = capture_target
