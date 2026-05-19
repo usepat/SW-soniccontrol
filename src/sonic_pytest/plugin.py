@@ -58,7 +58,7 @@ def pytest_configure(config):
     profile = Profile[config.getoption("--profile")]
     serial_port = config.getoption("--serial-port")
     modbus_serial_port = config.getoption("--modbus-serial-port")
-    log_path = config.getoption("--log-path")
+    log_path = Path(config.getoption("--log-path"))
     remote_server_url = config.getoption("--remote-server-url")
   
     device = None

@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from pathlib import Path
 from async_tkinter_loop import main_loop
 import pytest_asyncio
@@ -21,6 +22,7 @@ from sonic_pytest.fixtures import create_worker_process_impl
 # Also their scope is package, so they are executed once for the whole folder.
 # They have an own event loop and you have to set loop_scope="package" on the Tests, 
 # in order to tell pytest_asyncio, that the same event loop should be used to run the tests.
+
 
 @pytest_asyncio.fixture(scope="package")
 async def connection_window(request):
@@ -47,7 +49,8 @@ async def connection_window(request):
     yield connection_window
 
     tk_task.cancel()
-    await tk_task
+    with contextlib.suppress(asyncio.CancelledError):
+        await tk_task
 
     root.update_idletasks()
     root.destroy()
