@@ -20,10 +20,21 @@ class Updater(EventManager):
     def running(self) -> asyncio.Event:
         return self._running
 
+
     def start(self) -> None:
         assert not self._running.is_set(), "The updater is already running"
         self._running.set()
+
+        def propagate_task_exception(task):
+            try:
+                # this will raise the exception inside asyncio event loop,
+                #  the global exception handler will handle it
+                task.result()
+            except asyncio.CancelledError:
+                pass 
+                
         self._task = asyncio.create_task(self._loop())
+        self._task.add_done_callback(propagate_task_exception)
 
     async def stop(self) -> None:
         self._running.clear()
@@ -57,5 +68,6 @@ class Updater(EventManager):
         except asyncio.CancelledError:
             pass
         except Exception as e:
+            self._device._logger.exception("Updater background task crashed")
             raise
         
