@@ -318,7 +318,7 @@ class ConnectionWindowView(ttk.Window, View):
             textvariable=self._profile,
             style=ttk.DARK,
             state=ttk.READONLY,
-            values=["postman", "worker", "diagnostics_tool", "none"]
+            values=["postman", "worker", "descale", "diagnostics_tool", "none"]
         )
 
         # --- plugin container (NEW) ---
