@@ -277,7 +277,6 @@ class Editor(UIComponent):
 
     def _handle_script_error(self, e: ScriptException):
         self._view.highlight_line(e.line_begin, color_background="#ff2c2c")
-        MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
         
 
 
@@ -295,6 +294,9 @@ class EditorView(TabView):
 
     def _initialize_children(self) -> None:
         tab_name = "editor"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
+            
         self._main_frame: ttk.Frame = ttk.Frame(self)
 
         SCRIPTING_PADDING: Final[tuple[int, int, int, int]] = (6, 1, 6, 7)

@@ -13,7 +13,9 @@ from sonic_protocol.schema import DeviceParamConstantType, Procedure, Loglevel, 
 from soniccontrol.procedures.procs import (ScanArgs, AutoArgs, TuneArgs, WipeArgs, 
                                            RamperArgs, SpectrumMeasureArgs)
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
-from soniccontrol.data_capturing.experiment_store import HDF5ExperimentReader, HDF5ExperimentWriter
+from soniccontrol.data_capturing.experiment_store import (
+    HDF5ExperimentReader, HDF5ExperimentWriter, DataTableWorker, DataTableDescale
+)
 from soniccontrol.fw_device.connection import CLIConnection, SerialConnection
 from soniccontrol.network.server import start_server
 from soniccontrol.network.enable_server_on_startup.script import enable_server_on_startup

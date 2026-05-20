@@ -12,6 +12,14 @@ class UIComponent(EventManager):
         self._view = view
         self._logger = logger
 
+    @property 
+    def top_level_window(self) -> "UIComponent | None":
+        return self._parent.top_level_window if self._parent else None
+    
+    @property
+    def component_name(self) -> str | None:
+        return None
+
     @property
     def view(self):
         return self._view

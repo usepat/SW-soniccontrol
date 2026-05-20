@@ -21,7 +21,7 @@ from soniccontrol_gui.widgets.message_box import MessageBox
 class SerialMonitor(UIComponent):
     def __init__(self, parent: UIComponent, communicator: Communicator):
         self._logger = logging.getLogger(parent.logger.name + "." + SerialMonitor.__name__)
-        self._view = SerialMonitorView(parent.view)
+        self._view = SerialMonitorView(parent.view, parent_widget_name=parent.component_name)
         super().__init__(parent, self._view, self._logger)
 
         # decorate send and receive with loading animation
@@ -144,6 +144,9 @@ class SerialMonitorView(TabView):
 
     def _initialize_children(self) -> None:
         tab_name = "serial_monitor"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
+            
         self._main_frame: ttk.Frame = ttk.Frame(self)
         self._output_frame: ttk.Labelframe = ttk.Labelframe(
             self._main_frame, text=ui_labels.OUTPUT_LABEL

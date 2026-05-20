@@ -7,6 +7,7 @@ TkinterView = ttk.tk.Widget | ttk.Window | ttk.Frame | ttk.LabelFrame
 
 class View(ttk.Frame):
     def __init__(self, master: TkinterView, *args, **kwargs) -> None:
+        self._parent_widget_name: str | None = kwargs.pop("parent_widget_name", None)
         super().__init__(master, *args, **kwargs)
         self._master: TkinterView = master
         self._initialize_children()

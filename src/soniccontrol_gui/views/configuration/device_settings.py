@@ -37,7 +37,7 @@ class DeviceSettingsTab(UIComponent):
         self._device = device
 
         self._logger.debug("Create Device Settings Component")
-        self._view = DeviceSettingsTabView(parent.view, self)
+        self._view = DeviceSettingsTabView(parent.view, parent_widget_name=parent.component_name)
         self._form = FormWidget(
             self, self._view.settings_form_slot, 
             "Device Settings", DeviceSettings, "device_settings_form"
@@ -91,8 +91,7 @@ class DeviceSettingsTab(UIComponent):
 
 
 class DeviceSettingsTabView(TabView):
-    def __init__(self, master: ttk.Frame, presenter: UIComponent, *args, **kwargs):
-        self._presenter = presenter
+    def __init__(self, master: ttk.Frame, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
 
     @property
@@ -105,6 +104,8 @@ class DeviceSettingsTabView(TabView):
 
     def _initialize_children(self) -> None:
         tab_name = "device_settings"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
 
         self._settings_form_slot: ttk.Frame = ttk.Frame(self)
         self._control_frame: ttk.Frame = ttk.Frame(self)

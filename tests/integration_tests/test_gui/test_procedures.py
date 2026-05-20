@@ -1,4 +1,5 @@
 import pytest
+from sonic_protocol.schema import DeviceType
 from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
 import asyncio
@@ -24,7 +25,7 @@ async def procedure_tab_fixture():
     controller.clear_text_changed_flags()
 
 
-
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_run_ramp_procedure():
     controller = GuiController()
@@ -45,6 +46,7 @@ async def test_run_ramp_procedure():
     assert proc_running_label == ui_labels.PROC_NOT_RUNNING, f"procedure still running: '{proc_running_label}'"
 
 
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_stop_ramp_procedure():
     controller = GuiController()

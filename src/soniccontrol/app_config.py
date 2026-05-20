@@ -69,7 +69,8 @@ ENCODING: Final[str] = "utf-8"
 def get_simulation_exe() -> Path | None:
     if "FIRMWARE_BUILD_DIR_PATH" not in os.environ:
         return None
-    return Path(os.environ["FIRMWARE_BUILD_DIR_PATH"]) / "linux/platform_linux/src/device/device_main"
+    firmware_build_dir = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"]).expanduser().resolve()
+    return firmware_build_dir / "linux/platform_linux/src/device/device_main"
 
 @attrs.define()
 class AppConfig:

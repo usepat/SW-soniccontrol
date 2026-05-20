@@ -1,5 +1,6 @@
 import pytest
 import asyncio
+from sonic_protocol.schema import DeviceType
 from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
 from soniccontrol_gui.constants import ui_labels
@@ -93,23 +94,30 @@ async def test_experiment_control_button():
     assert label_control_button == ui_labels.NEW_EXPERIMENT
 
 
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_experiment_capture_ends_if_procedure_finishes():
     await start_ramp_capture()
     await asyncio.sleep(2)
 
+    controller = GuiController()
+    controller.clear_text_changed_flags()
+
     await send_over_serial_monitor("!stop")
 
-    controller = GuiController()
     label_control_button = await controller.wait_for_widget_to_change_text(widget_names.MEASURING_CONTROL_BUTTON, 2.0)
     assert label_control_button == ui_labels.NEW_EXPERIMENT
 
+
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_procedure_stops_if_capture_ends():
     await start_ramp_capture()
     await asyncio.sleep(2)
 
     controller = GuiController()
+    controller.clear_text_changed_flags()
+    
     controller.press_button(widget_names.MEASURING_CONTROL_BUTTON)
     
     proc_label, label_control_button = await controller.wait_for_multiple_widgets_to_change_text(
@@ -120,6 +128,8 @@ async def test_procedure_stops_if_capture_ends():
     assert label_control_button == ui_labels.NEW_EXPERIMENT
     assert "none" in proc_label
 
+
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_experiment_capture_ends_if_spectrum_measure_finishes():
     await start_spectrum_measure_capture()
@@ -128,6 +138,8 @@ async def test_experiment_capture_ends_if_spectrum_measure_finishes():
     label_control_button = await controller.wait_for_widget_to_change_text(widget_names.MEASURING_CONTROL_BUTTON, 15.0)
     assert label_control_button == ui_labels.NEW_EXPERIMENT
 
+
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_spectrum_measure_stops_if_capture_ends():
     await start_spectrum_measure_capture()

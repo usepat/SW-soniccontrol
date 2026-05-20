@@ -319,7 +319,8 @@ class SonicDevice:
         restart_command:
             Some commands force not only a restart, but also force the device to open another application afterwards, like start_configurator
         """
-        assert isinstance(restart_command, (commands.RestartDevice, commands.StartConfigurator))
+        allowed_restart_commands = (commands.RestartDevice, commands.StartConfigurator, commands.StartOperator)
+        assert isinstance(restart_command, allowed_restart_commands), "The command is not a valid restart command" 
         
         try:
             await self.execute_command(restart_command) 

@@ -9,7 +9,8 @@ from sonic_protocol.python_parser import commands
 from soniccontrol.fw_device.connection import CLIConnection, ModbusConnection
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
 from soniccontrol import RemoteController, DeviceType
-from sonic_pytest.plugin import SonicControlPlugin, create_worker_process_impl
+from sonic_pytest.plugin_data import SonicControlPlugin
+from sonic_pytest.fixtures import create_worker_process_impl
 
 
 create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope="package", loop_scope="package")

@@ -301,7 +301,7 @@ class RemoteController:
         There are examples for scripts in the script example folder and in the sonic control gui application there is a help guide for scripting.
         """
         runnable_script = self._scripting.parse_script(text)
-        interpreter = InterpreterEngine(self._device, self._updater, self._logger)
+        interpreter = InterpreterEngine(self._device, self._updater, self._proc_controller, self._logger)
         interpreter.script = runnable_script
         interpreter.start()
         await interpreter.wait_for_script_to_halt()

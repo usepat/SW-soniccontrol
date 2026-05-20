@@ -89,7 +89,7 @@ class FlashingView(TabView):
         )
 
         self._browse_flash_file_button: FileBrowseButtonView = FileBrowseButtonView(
-            self._flash_frame, widget_name, text=ui_labels.SPECIFY_PATH_LABEL
+            self._flash_frame, parent_widget_name=widget_name, text=ui_labels.SPECIFY_PATH_LABEL
         )
         self._submit_button: ttk.Button = ttk.Button(
             self._flash_frame, text=ui_labels.SUBMIT_LABEL, style=ttk.DARK

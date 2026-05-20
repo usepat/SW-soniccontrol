@@ -1,4 +1,5 @@
 import attrs
+import cattrs
 from soniccontrol import DeviceParamConstantType, Answer, EFieldName, DeviceType, CommandCode
 from sonic_protocol.python_parser import commands
 from tests.integration_tests.test_remote.conftest import format_command, reset_remote_controller_state, resolve_protocol_arg
@@ -104,7 +105,10 @@ async def test_deduced_commands(remote_controller, progress_writer):
     error_json = json.dumps([{ 
         "full_error_msg": str(e), 
         "index": e.step, 
-        "command": {"code": e.command.code.name, "args": e.command.args}, 
+        "command": {
+            "code": e.command.code.name, 
+            "args": cattrs.Converter().unstructure(e.command.args)
+        }, 
         "answer": e.answer.message, 
         "assert_msg": e.assert_msg 
     } for e in errors ])

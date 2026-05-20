@@ -63,7 +63,7 @@ class TransducerConfig():
 class Configuration(UIComponent):
     CONFIGURATION_TASK_NAME = "configuring"
 
-    def __init__(self, parent: UIComponent, device: SonicDevice, updater: Updater):
+    def __init__(self, parent: UIComponent, device: SonicDevice, updater: Updater, interpreter: InterpreterEngine):
         self._logger = logging.getLogger(parent.logger.name + "." + Configuration.__name__)
 
 
@@ -82,7 +82,7 @@ class Configuration(UIComponent):
         self._configs: List[TransducerConfig] = []
         self._current_transducer_config: Optional[int] = None
         self._device = device
-        self._interpreter = InterpreterEngine(device, updater)
+        self._interpreter = interpreter
 
         self._view = ConfigurationView(parent.view, self, self._count_atk_atf)
         self._form = FormWidget(
@@ -93,12 +93,6 @@ class Configuration(UIComponent):
             "configuration"
         )
         super().__init__(parent, self._view, self._logger)
-
-        def show_script_error(e):
-            error = e.data["exception"]
-            MessageBox.show_error(self._view.root, f"{error.__class__.__name__}: {str(error)}")
-
-        self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, show_script_error)
 
         self._view.set_save_config_command(self._save_config)
         self._view.set_transducer_config_selected_command(self._on_transducer_config_selected)
@@ -365,6 +359,8 @@ class ConfigurationView(TabView):
 
     def _initialize_children(self) -> None:
         tab_name = "configuration"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
 
         self._config_frame: ttk.Frame = ttk.Frame(self)
         self._add_config_button: ttk.Button = ttk.Button(

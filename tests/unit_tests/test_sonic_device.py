@@ -48,7 +48,8 @@ def simple_protocol():
         },
         custom_data_types=protocol_list.custom_data_types, 
         command_code_cls=protocol_list.command_code_cls,
-        field_name_cls=protocol_list.field_name_cls
+        field_name_cls=protocol_list.field_name_cls,
+        command_code_for_validation_converter=lambda code: code
     )
 
 @pytest.fixture
