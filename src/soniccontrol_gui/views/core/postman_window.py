@@ -30,7 +30,7 @@ class PostmanStatusBar(UIComponent):
     def __init__(self, parent: UIComponent, parent_slot: View):
         self._logger = logging.getLogger(parent.logger.name + "." + PostmanStatusBar.__name__)
 
-        self._view = PostmanStatusBarView(parent_slot)
+        self._view = PostmanStatusBarView(parent_slot, parent_widget_name=parent.component_name)
         super().__init__(parent, self._view, self._logger)
 
     def on_update(self, e: Event):
@@ -49,7 +49,7 @@ class PostmanHomeTab(UIComponent):
         self._connection_name = connection_name
         self._worker_device_window: DeviceWindow | None = None
 
-        self._view = PostmanHomeTabView(parent.view)
+        self._view = PostmanHomeTabView(parent.view, parent_widget_name=parent.component_name)
         super().__init__(parent, self._view, self._logger)
 
         self._info_frame = DeviceInfoFrame(self, self._view.info_frame_slot, "postman_home", self._device)
@@ -108,7 +108,7 @@ class PostmanDeviceWindow(DeviceWindow):
         self._device = device
         try:            
             self._view = DeviceWindowView(root=root, title=f"Device Window - Postman - {connection_name}")
-            super().__init__(self._logger, self._view, self._device.communicator)
+            super().__init__(self._logger, self._view, self._device.communicator, "postman")
 
             self._updater = Updater(self._device)
             self._updater.set_update_interval(1000)
@@ -144,6 +144,11 @@ class PostmanStatusBarView(View):
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
+        tab_name = "status_bar"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
+
+        
         self._status_bar_frame: ttk.Frame = ttk.Frame(self)
 
         self._connection_label_text = ttk.StringVar(self, ui_labels.NOT_CONNECTED_TO_WORKER)
@@ -152,6 +157,9 @@ class PostmanStatusBarView(View):
             textvariable=self._connection_label_text,
             bootstyle=style.INVERSE_SECONDARY
         )
+
+        WidgetRegistry.register_widget(self._connection_label_text, "worker_connection_label", tab_name)
+
 
     def _initialize_publish(self) -> None:
         self.pack(fill=ttk.BOTH, padx=3, pady=3)
@@ -179,7 +187,9 @@ class PostmanHomeTabView(TabView):
         return ui_labels.HOME_LABEL
 
     def _initialize_children(self) -> None:
-        tab_name = "postman_home_tab"
+        tab_name = "home_tab"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
 
         self._main_frame: ScrolledFrame = ScrolledFrame(self, autohide=True)
 

@@ -159,7 +159,7 @@ class DeviceInfoFrame(UIComponent):
     def __init__(self, parent: UIComponent, parent_slot: View, parent_widget_name: str, device: SonicDevice):
         self._device = device
         
-        self._view = DeviceInfoFrameView(parent_slot, parent_widget_name)
+        self._view = DeviceInfoFrameView(parent_slot, parent_widget_name=parent_widget_name)
         super().__init__(parent, self._view)
         self._view.set_disconnect_button_command(self._on_disconnect_pressed)
         self._initialize_info()
@@ -182,11 +182,11 @@ class DeviceInfoFrame(UIComponent):
 
 
 class DeviceInfoFrameView(View):
-    def __init__(self, master: View, parent_widget_name: str, *args, **kwargs) -> None:
-        self._parent_widget_name = parent_widget_name
+    def __init__(self, master: View, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
+        assert self._parent_widget_name is not None, "You have to set parent widget name"
         widget_name = self._parent_widget_name
 
         # info frame - displays device type, protocol type, firmware type

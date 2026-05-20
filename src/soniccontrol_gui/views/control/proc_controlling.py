@@ -168,6 +168,9 @@ class ProcControllingView(TabView):
     
     def _initialize_children(self) -> None:
         tab_name = "proc_controlling"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
+            
         self._selected_procedure_var = ttk.StringVar()
         self._procedure_combobox = ttk.Combobox(self, textvariable=self._selected_procedure_var)
         self._procedure_combobox["state"] = "readonly" # prevent typing a value

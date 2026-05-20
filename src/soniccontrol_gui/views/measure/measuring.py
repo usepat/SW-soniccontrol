@@ -200,6 +200,9 @@ class MeasuringView(TabView):
 
     def _initialize_children(self) -> None:
         tab_name = "measuring"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
+            
         self._main_frame: ttk.Frame = ttk.Frame(self)
         
         self._control_frame = ttk.Frame(self._main_frame)

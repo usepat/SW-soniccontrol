@@ -45,10 +45,11 @@ class DeviceWindow(UIComponent):
     CLOSE_EVENT = "Close"
     RECONNECT_EVENT = "Reconnect"
 
-    def __init__(self, logger: logging.Logger, deviceWindowView: "DeviceWindowView", communicator: Communicator):
+    def __init__(self, logger: logging.Logger, deviceWindowView: "DeviceWindowView", communicator: Communicator, window_name: str | None = None):
         self._logger = logger
         self._communicator = communicator
         self._view = deviceWindowView
+        self._window_name = window_name
         super().__init__(None, self._view, self._logger)
         self._app_state = AppState(self._logger)
 
@@ -60,6 +61,14 @@ class DeviceWindow(UIComponent):
         # This needs to be here, for the edge case, that the communicator got disconnected, before it could be subscribed
         if not self._communicator.connection_opened.is_set():
             self.on_disconnect()
+
+    @property
+    def top_level_window(self) -> UIComponent | None:
+        return self
+
+    @property
+    def component_name(self) -> str | None:
+        return self._window_name
 
     @property
     def app_state(self) -> AppState:

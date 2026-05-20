@@ -139,3 +139,16 @@ async def start_spectrum_measure_capture():
     )
 
     assert label_control_button == ui_labels.END_CAPTURE
+
+
+async def postman_wait_for_worker_to_be_connected(timeout_s=5.0):
+    controller = GuiController()
+
+    status_widget_name = widget_names.widget_of_window(widget_names.POSTMAN, widget_names.WORKER_CONNECTION_STATUS)
+    controller.clear_text_changed_flag_of_widget(status_widget_name)
+    status = controller.get_widget_text(status_widget_name)
+    if status == ui_labels.CONNECTED_TO_WORKER:
+        return
+        
+    status = await controller.wait_for_widget_to_change_text(status_widget_name, timeout_s)
+    assert status == ui_labels.CONNECTED_TO_WORKER, "Postman not connected to worker"

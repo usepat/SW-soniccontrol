@@ -199,7 +199,7 @@ class HwTestingTabView(TabView):
         self._control_frame = ttk.Frame(self)
         self._run_all_tests_button = ttk.Button(self, text=ui_labels.RUN_ALL_TESTS)
         self._stop_button = ttk.Button(self, text=ui_labels.STOP_LABEL)
-        self._file_path_button = FileBrowseButtonView(self, "TestingTab", text=ui_labels.SPECIFY_PATH_LABEL, action=FileBrowseAction.SAVE_FILE)
+        self._file_path_button = FileBrowseButtonView(self, parent_widget_name="TestingTab", text=ui_labels.SPECIFY_PATH_LABEL, action=FileBrowseAction.SAVE_FILE)
         self._create_report_button = ttk.Button(self, text=ui_labels.CREATE_TEST_REPORT)
 
     def _initialize_publish(self) -> None:

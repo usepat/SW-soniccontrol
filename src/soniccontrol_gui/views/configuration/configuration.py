@@ -359,6 +359,8 @@ class ConfigurationView(TabView):
 
     def _initialize_children(self) -> None:
         tab_name = "configuration"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
 
         self._config_frame: ttk.Frame = ttk.Frame(self)
         self._add_config_button: ttk.Button = ttk.Button(

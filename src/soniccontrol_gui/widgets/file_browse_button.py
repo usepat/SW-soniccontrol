@@ -13,15 +13,15 @@ class FileBrowseAction(Enum):
     SAVE_FILE = auto()
 
 class FileBrowseButtonView(View):
-    def __init__(self, master: Any, parent_widget_name: str, *args, 
+    def __init__(self, master: Any, *args, 
                  text: str = "", defaultextension: str | None = None, filetypes = None, 
                  action: FileBrowseAction = FileBrowseAction.OPEN_FILE, **kwargs):
-        self._parent_widget_name = parent_widget_name
         self._text = text
         self._defaultextension = defaultextension
         self._filetypes = filetypes
         self._action = action
         super().__init__(master, *args, **kwargs)
+        assert self._parent_widget_name is not None
         
     def _initialize_children(self) -> None:
         self._path_str = ttk.StringVar(self, value="")

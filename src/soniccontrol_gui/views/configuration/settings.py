@@ -54,6 +54,8 @@ class SettingsView(TabView):
 
     def _initialize_children(self) -> None:
         tab_name = "configuration"
+        if self._parent_widget_name:
+            tab_name = self._parent_widget_name + "." + tab_name 
 
         self._settings_frame: ttk.Frame = ttk.Frame(self)
         self._apply_settings_button: ttk.Button = ttk.Button(

@@ -1238,7 +1238,7 @@ class OptionalPathFieldView(FieldViewBase[Optional[Path]]):
         self._widget_name = parent_widget_name + "." + self._field_name
 
         super().__init__(master, *args, **kwargs)
-        self._browse_button = FileBrowseButtonView(self, self._widget_name, text=self._field_name, **field_view_kwargs)
+        self._browse_button = FileBrowseButtonView(self, parent_widget_name=self._widget_name, text=self._field_name, **field_view_kwargs)
         self._browse_button.pack(fill=ttk.X, expand=True, pady=sizes.SMALL_PADDING, padx=sizes.SMALL_PADDING)
 
     def _initialize_children(self) -> None: 

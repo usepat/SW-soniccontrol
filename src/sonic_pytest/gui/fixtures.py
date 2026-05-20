@@ -14,7 +14,7 @@ from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
 from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
-from sonic_pytest.gui.workflows import send_over_serial_monitor
+from sonic_pytest.gui.workflows import postman_wait_for_worker_to_be_connected, send_over_serial_monitor
 from sonic_pytest.fixtures import create_worker_process_impl
 
 
@@ -107,9 +107,11 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
     await controller.execute_events_until_idle()
 
     if device_type == DeviceType.POSTMAN:
+        await postman_wait_for_worker_to_be_connected()
+
         # connect to the worker over the postman window
         # the fixture create_worker_process is responsible for starting the worker simulation process
-        controller.press_button(widget_names.POSTMAN_CONNECT_TO_WORKER_BUTTON)
+        controller.press_button(widget_names.widget_of_window(widget_names.POSTMAN, widget_names.CONNECT_TO_WORKER_BUTTON))
         # We just wait until some worker specific widget got registered.
         # FIXME: I have no idea how I should implement waiting for the worker to be connected. Maybe registering the device window. Idk.
         await controller.wait_for_widget_to_be_registered(widget_names.SPECTRUM_MEASURE_TAB, 5.0)

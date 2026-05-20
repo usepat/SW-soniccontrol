@@ -1,6 +1,17 @@
 from soniccontrol_gui.widgets.message_box import DialogOptions
 
 
+POSTMAN = "postman"
+
+def widget_of_window(window_name: str, widget_name: str) -> str:
+    """
+    Used to differentiate between widgets of different windows
+
+    The Postman device window has the "postman." prefix
+    The descale and worker window have no prefix
+    """
+    return window_name + "." + widget_name
+
 
 RIGHT_NOTEBOOK = "right_notebook"
 LEFT_NOTEBOOK = "left_notebook"
@@ -19,7 +30,9 @@ CONFIGURATION_TAB = "left_notebook.Configuration_tab"
 MEASURING_TAB = "right_notebook.Sonic Measure_tab"
 SPECTRUM_MEASURE_TAB = "left_notebook.Spectrum Measure_tab"
 
-POSTMAN_CONNECT_TO_WORKER_BUTTON = "postman_home_tab.connect_to_worker_button"
+# only in postman device window
+CONNECT_TO_WORKER_BUTTON = "home_tab.connect_to_worker_button"
+WORKER_CONNECTION_STATUS = "status_bar.worker_connection_label"
 
 # Connection constants
 CONNECTION_PORTS_COMBOBOX = 'connection.ports_combobox'

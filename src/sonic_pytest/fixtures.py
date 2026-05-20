@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 import sys
 from sonic_protocol.schema import DeviceType
 import pytest
@@ -46,7 +47,11 @@ async def create_worker_process_impl(request, tmp_path_factory):
         simulation_file = plugin_config.simulation_exe_path
         process = await asyncio.create_subprocess_exec(
             str(simulation_file),
-            "--profile=worker_modbus", "--name=test_worker_with_postman", f"--data-dir={data_dir}",
+            "--profile=worker_modbus", 
+            "--name=test_worker_with_postman", 
+            "--gui=false",
+            "--board-type=simulation",
+            f"--data-dir={data_dir}",
             stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.DEVNULL,
