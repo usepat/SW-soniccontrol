@@ -42,10 +42,14 @@ for idx, field in enumerate(get_update_worker_v3_0_0.answer_def.fields):
 
 get_update_descale_v3_0_0 = copy.deepcopy(cmd_v2.get_update_descale_v2_0_0)
 get_update_descale_v3_0_0.code = CommandCode.GET_UPDATE_DESCALE_V3_0_0
+irms_index = None
 for idx, field in enumerate(get_update_descale_v3_0_0.answer_def.fields):
     if field.field_name == EFieldName.IRMS:
         get_update_descale_v3_0_0.answer_def.fields[idx] = f.irms_field
-        get_update_descale_v3_0_0.answer_def.fields.insert(idx, f.ipp_field)
+        irms_index = idx
+        break
+assert irms_index is not None, "IRMS fieldname not found in descale update command"
+get_update_descale_v3_0_0.answer_def.fields.insert(irms_index, f.ipp_field)
 
 get_frequency_v3_0_0 = copy.deepcopy(trcmd_v1.get_frequency)
 for idx, field in enumerate(get_frequency_v3_0_0.answer_def.fields):
