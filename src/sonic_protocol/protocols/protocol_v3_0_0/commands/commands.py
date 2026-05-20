@@ -45,7 +45,7 @@ get_update_descale_v3_0_0.code = CommandCode.GET_UPDATE_DESCALE_V3_0_0
 for idx, field in enumerate(get_update_descale_v3_0_0.answer_def.fields):
     if field.field_name == EFieldName.IRMS:
         get_update_descale_v3_0_0.answer_def.fields[idx] = f.irms_field
-
+        get_update_descale_v3_0_0.answer_def.fields.insert(idx, f.ipp_field)
 
 get_frequency_v3_0_0 = copy.deepcopy(trcmd_v1.get_frequency)
 for idx, field in enumerate(get_frequency_v3_0_0.answer_def.fields):

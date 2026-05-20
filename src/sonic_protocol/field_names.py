@@ -162,5 +162,7 @@ class EFieldName(IEFieldName):
     UART_INTERFACE = 200
     BAUDRATE = 201
 
+    IPP = 202
+
     
 

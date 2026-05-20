@@ -22,7 +22,20 @@ irms_field_type = FieldType(
 irms_field = AnswerFieldDef(
     EFieldName.IRMS, 
     field_type=irms_field_type, 
-    sonic_text_attrs=SonicTextAnswerFieldAttrs()
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="RMS: ")
+)
+
+ipp_field_type = FieldType(
+    field_type=np.uint16,
+    si_unit=SIUnit.AMPERE,
+    si_prefix=SIPrefix.MILLI,
+)
+
+
+ipp_field = AnswerFieldDef(
+    EFieldName.IPP, 
+    field_type=ipp_field_type, 
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="PP: ")
 )
 
 urms_field_type = FieldType(

@@ -5,6 +5,7 @@ from datetime import datetime
 from enum import Enum
 import os
 import shutil
+import tempfile
 os.environ.setdefault("PYPPETEER_CHROMIUM_REVISION", "1181217")
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -254,36 +255,66 @@ def main():
 
         return None
 
-    async def get_browser():
+    async def get_browser() -> tuple:
         exe = find_browser()
         if not exe:
             raise RuntimeError(
                 "No system browser found. Install Google Chrome or Microsoft Edge, "
                 "or set PYPPETEER_EXECUTABLE_PATH to the browser executable."
             )
-        return await launch(executablePath=exe, headless=True)
+
+        user_data_dir = tempfile.mkdtemp(prefix="pyppeteer-profile-")
+        launch_args = [f"--user-data-dir={user_data_dir}"]
+
+        if os.name != "nt":
+            launch_args.extend(["--no-sandbox", "--disable-setuid-sandbox"])
+
+        try:
+            browser = await launch(
+                executablePath=exe,
+                headless=True,
+                args=launch_args,
+                autoClose=False,
+                handleSIGINT=False,
+                handleSIGTERM=False,
+                handleSIGHUP=False,
+            )
+        except Exception:
+            shutil.rmtree(user_data_dir, ignore_errors=True)
+            raise
+
+        return browser, user_data_dir
 
     def convert_html_to_pdf(html_path: str, pdf_path: str) -> None:
         async def _pdf():
-            browser = await get_browser()
-            page = await browser.newPage()
-            await page.goto("file://" + str(Path(html_path).absolute()), {"waitUntil": "networkidle0"})
-            await page.waitForFunction("document.fonts && document.fonts.status === 'loaded'")
-            await page.emulateMedia("print")
-            await page.evaluate("window.updateTocPageNumbers && window.updateTocPageNumbers()")
+            browser, user_data_dir = await get_browser()
+            try:
+                page = await browser.newPage()
+                await page.goto("file://" + str(Path(html_path).absolute()), {"waitUntil": "networkidle0"})
+                await page.waitForFunction("document.fonts && document.fonts.status === 'loaded'")
+                await page.emulateMedia("print")
+                await page.evaluate("window.updateTocPageNumbers && window.updateTocPageNumbers()")
 
-            client = page._client
-            cdp_options = {
-                "printBackground": True,
-                "preferCSSPageSize": True,
-                "generateTaggedPDF": True,
-                "generateDocumentOutline": True,
-            }
-            result = await client.send("Page.printToPDF", cdp_options)
-            Path(pdf_path).write_bytes(base64.b64decode(result["data"]))
-            await browser.close()
+                client = page._client
+                cdp_options = {
+                    "printBackground": True,
+                    "preferCSSPageSize": True,
+                    "generateTaggedPDF": True,
+                    "generateDocumentOutline": True,
+                }
+                result = await client.send("Page.printToPDF", cdp_options)
+                Path(pdf_path).write_bytes(base64.b64decode(result["data"]))
+            finally:
+                await browser.close()
+                shutil.rmtree(user_data_dir, ignore_errors=True)
 
-        asyncio.get_event_loop().run_until_complete(_pdf())
+        loop = asyncio.new_event_loop()
+        try:
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(_pdf())
+        finally:
+            asyncio.set_event_loop(None)
+            loop.close()
 
     for mode, basename in targets:
         html_path = f"./output/{basename}.html"
