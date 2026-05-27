@@ -87,7 +87,7 @@ class EFieldName(IEFieldName):
     TRANSDUCER_STATE = 129
     SYSTEM_STATE = 130
 
-    TIMING = 131
+    TIMING = 131 # This field should not be used for answers or commands, it is provided by sonic_device for the Ping
 
     ATF = 132
     ATK = 133

@@ -3,6 +3,7 @@ import logging
 import struct
 from datetime import datetime
 from enum import Enum
+import time
 from typing import Any, Optional
 
 import attrs
@@ -315,7 +316,12 @@ class ModbusCommunicator(Communicator):
         async with self._lock:
             last_error: Answer | None = None
             for attempt in range(1, self.MAX_RETRIES + 1):
+                start = time.perf_counter()
                 answer, should_retry = await self._send_command_once(command_contract, command)
+                end = time.perf_counter()
+                time_passed = end - start
+                answer.field_value_dict[EFieldName.TIMING] = time_passed
+
                 if not should_retry:
                     return answer
 
