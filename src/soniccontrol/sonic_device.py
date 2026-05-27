@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import List
 import logging
 
@@ -99,8 +100,13 @@ class SonicDevice:
 
     async def _send_message(self, message: str, answer_validator: AnswerValidator| None = None, 
                             try_deduce_answer_validator: bool = False, should_log: bool = True, **kwargs) -> Answer:
+        start = time.perf_counter()
+        
         response_str = await self._communicator.send_and_wait_for_response(message, should_log=should_log, **kwargs)
         
+        end = time.perf_counter()
+        time_needed = end - start
+
         code: ICommandCode | None = None
         if "#" in response_str:
             code_str, response_str  = response_str.split(sep="#", maxsplit=1)
@@ -109,7 +115,9 @@ class SonicDevice:
             
         ERROR_CODES_START = 20000
         if code is not None and code.value >= ERROR_CODES_START:
-            return Answer(response_str, False, True, code)
+            answer = Answer(response_str, False, True, code)
+            answer.field_value_dict[EFieldName.TIMING] = time_needed
+            return answer
         
         if try_deduce_answer_validator and answer_validator is None:
             command_code = self._command_deserializer.get_deserialized_command_code(message.strip())
@@ -125,6 +133,7 @@ class SonicDevice:
             answer = answer_validator.validate(response_str)
         
         answer.command_code = code
+        answer.field_value_dict[EFieldName.TIMING] = time_needed
         return answer
 
 

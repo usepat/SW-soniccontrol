@@ -28,7 +28,7 @@ class StatusBar(UIComponent):
         if EFieldName.TEMPERATURE in self._field_converters:
             # Convert mK to °C
             self._field_converters[EFieldName.TEMPERATURE] = AnswerFieldToStringConverter(field_temperature_celsius)
-
+        
         self._logger.debug("Create Statusbar")
         self._view = StatusBarView(parent_slot, self._field_converters.keys())
         self._status_panel = StatusPanel(self, self._view.panel_frame, answer_field_defs)
@@ -73,6 +73,9 @@ class StatusBar(UIComponent):
         }
 
         self._view.update_labels(status_field_text_representations)
+
+        ping = int(status[EFieldName.TIMING] * 1000) # get the timing in ms 
+        self._view.set_ping_label_text(f"Ping: {ping}")
 
         # update background of anomaly detection label
         if EFieldName.ANOMALY_DETECTION in status.keys():
@@ -189,6 +192,13 @@ class StatusBarView(View):
         self._status_field_labels[EFieldName.SIGNAL] = signal_label
         WidgetRegistry.register_widget(signal_label, "signal_label", tab_name)
 
+        self._ping_label = ttk.Label(
+            self._signal_frame,
+            bootstyle=style.INVERSE_SECONDARY,
+            padding=ICON_LABEL_PADDING,
+        )
+        self._ping_label.pack(side=ttk.RIGHT, ipadx=3)
+
         self.configure(bootstyle=ttk.SECONDARY)
 
 
@@ -224,6 +234,9 @@ class StatusBarView(View):
         if field_name in self._status_field_labels:
             label =  self._status_field_labels[field_name]
             label.configure(background=color)
+
+    def set_ping_label_text(self, ping: str) -> None:
+        self._ping_label.configure(text=ping)
 
 
 
