@@ -168,11 +168,13 @@ class ConnectionWindow(UIComponent):
         self._view.set_connect_via_url_button_command(self._on_connect_via_url)
         self._view.set_connect_to_simulation_button_command(self._on_connect_to_simulation)
         self._view.set_refresh_button_command(self._refresh_ports)
-        self._refresh_ports()
         self._dev_infos: Dict[str, FwDeviceInfo] = {}
+        self._loaded_ports = asyncio.Event()
+        self._refresh_ports()
 
     @async_handler
     async def _refresh_ports(self):
+        self._loaded_ports.clear()
         device_discovery = create_device_discovery(APP_CONFIG.remote_server_url)
         dev_infos = await device_discovery.list_fw_device_infos(
             include_disks=False,
@@ -180,6 +182,7 @@ class ConnectionWindow(UIComponent):
         )
         self._dev_infos = { dev_info.display_name: dev_info for dev_info in dev_infos }
         self._view.set_ports(list(self._dev_infos.keys()))
+        self._loaded_ports.set()
 
     async def wait_until_connected(self):
         await self._finished_connecting.wait()
@@ -193,7 +196,12 @@ class ConnectionWindow(UIComponent):
         dev_display_name = self._view.get_dev_name()
         baudrate = 9600
 
-        dev_info = self._dev_infos[dev_display_name]
+        
+        # assures ports were already loaded, needed for tests
+        await self._loaded_ports.wait()
+
+        dev_info = next(dev_info for dev_info in self._dev_infos.values() if dev_info.device_path == dev_display_name)
+        assert dev_info is not None
         # force_remove_connection is only used for remote devices at the moment. But may change in the future
         connection = create_connection_to_device(dev_info, baudrate, force_remove_connection=self._on_connection_already_open)
         

@@ -36,7 +36,7 @@ def cli(ctx: click.Context, log_dir: pathlib.Path, port: pathlib.Path, connectio
     click.echo("Connecting to the device...")
 
     remote_controller = RemoteController(log_path=log_dir)
-    async_loop = asyncio.get_event_loop()
+    async_loop = asyncio.new_event_loop()
 
     match ConnectionType(connection):
         case ConnectionType.PROCESS:

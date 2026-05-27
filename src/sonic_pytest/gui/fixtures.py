@@ -24,7 +24,7 @@ from sonic_pytest.fixtures import create_worker_process_impl
 # in order to tell pytest_asyncio, that the same event loop should be used to run the tests.
 
 
-@pytest_asyncio.fixture(scope="package")
+@pytest_asyncio.fixture(loop_scope="package", scope="package")
 async def connection_window(request):
     loop = asyncio.get_running_loop()
 
@@ -62,7 +62,7 @@ async def connection_window(request):
 
 create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope="package")
 
-@pytest_asyncio.fixture(scope="package", autouse=True)
+@pytest_asyncio.fixture(loop_scope="package", scope="package", autouse=True)
 async def device_window(request, connection_window, tmp_path_factory, create_worker_process):
     controller = GuiController()    
 
@@ -97,9 +97,11 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
 
     # This is for the edge case, that if we connect to a remote device with an already ongoing connection
     # In that case remove the old connection, by pressing yes on the message box
-    # TODO: not sure if this works
-    await controller.execute_events_until_idle()
-    if controller.is_widget_registered(widget_names.MESSAGE_BOX):
+    try:
+        await controller.wait_for_widget_to_be_registered(widget_names.MESSAGE_BOX_OPTION_YES, 2.0)
+    except asyncio.TimeoutError:
+        pass
+    else:
         controller.press_button(widget_names.MESSAGE_BOX_OPTION_YES)
 
     await connection_window.wait_until_connected()

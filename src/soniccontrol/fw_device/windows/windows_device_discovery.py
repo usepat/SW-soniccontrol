@@ -147,7 +147,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
         previous_key = (device_info.subsystem, device_info.sys_name)
         previous_missing_at_start = previous_key not in known_keys
 
-        deadline = asyncio.get_event_loop().time() + timeout_s
+        deadline = asyncio.get_running_loop().time() + timeout_s
         while True:
             try:
                 fw_dev_infos = await self.list_fw_device_infos()
@@ -189,7 +189,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
             except Exception:
                 pass
 
-            remaining = deadline - asyncio.get_event_loop().time()
+            remaining = deadline - asyncio.get_running_loop().time()
             if remaining <= 0:
                 raise TimeoutError(
                     f"Device {device_info.sys_name!r} did not reappear within {timeout_s:.1f}s"

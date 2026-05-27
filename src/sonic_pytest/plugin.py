@@ -6,8 +6,6 @@ import pytest
 
 from soniccontrol.app_config import get_simulation_exe
 from sonic_pytest.plugin_data import SonicControlPlugin, Profile
-from sonic_pytest.fixtures import process_management
-
 
 
 def pytest_addoption(parser):

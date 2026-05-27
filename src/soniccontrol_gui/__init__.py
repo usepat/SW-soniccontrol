@@ -78,13 +78,15 @@ def start_gui(remote_server_url: str | None):
     # very tedious to propagate a single variable through 10 functions
     APP_CONFIG.remote_server_url = remote_server_url
 
+    loop = asyncio.new_event_loop()
+
     register_device_plugins()
     register_ui_plugins()
 
     in_dev_env = "FIRMWARE_BUILD_DIR_PATH" in os.environ
     if in_dev_env:
         # We could do this somehow else. But this is easy and simple
-        WidgetRegistry.set_up()
+        WidgetRegistry.set_up(loop)
 
     main_window = ConnectionWindow(
         simulation_exe_path=get_simulation_exe()
@@ -102,7 +104,6 @@ def start_gui(remote_server_url: str | None):
             soniccontrol_logger.error(str(exception))
             MessageBox.show_error(root, str(exception))
     
-    loop = asyncio.get_event_loop()
     loop.set_exception_handler(global_exception_handler)
     asyncio.set_event_loop(loop)
 
