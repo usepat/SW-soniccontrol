@@ -79,6 +79,7 @@ def start_gui(remote_server_url: str | None):
     APP_CONFIG.remote_server_url = remote_server_url
 
     loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     register_device_plugins()
     register_ui_plugins()

@@ -76,7 +76,8 @@ class LogSettingsTab(UIComponent):
 
         self._lock = asyncio.Lock()
         self._logger_entries: List[LoggerEntry] = []
-        asyncio.run_coroutine_threadsafe(self._reload_loggers(), asyncio.get_running_loop())
+        
+        self.top_level_window.pass_loading_task(self._reload_loggers())
 
         self._view.set_reload_loggers_command(async_handler(self._reload_loggers))
 

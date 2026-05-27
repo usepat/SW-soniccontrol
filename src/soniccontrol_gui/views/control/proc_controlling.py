@@ -60,7 +60,8 @@ class ProcControlling(UIComponent):
         
         self.on_procedure_stopped(None) # type: ignore
 
-        asyncio.run_coroutine_threadsafe(self._add_proc_widgets(), asyncio.get_running_loop())
+        self.top_level_window.pass_loading_task(self._add_proc_widgets())
+
 
     def _on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state

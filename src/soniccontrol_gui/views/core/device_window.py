@@ -1,15 +1,13 @@
-from typing import Callable, List, Optional, cast
+from typing import Callable, List, Optional
 import logging
 from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
 import tkinter as tk
 
-from sonic_protocol.command_codes import CommandCode
-from soniccontrol.fw_device.connection import Connection
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
-from soniccontrol_gui.ui_component import UIComponent
+from soniccontrol_gui.ui_component import TopLevelWindow, UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.communication.communicator import Communicator
@@ -41,7 +39,7 @@ from soniccontrol_gui.resources import images
 from soniccontrol_gui.constants import files
 
 
-class DeviceWindow(UIComponent):
+class DeviceWindow(TopLevelWindow):
     CLOSE_EVENT = "Close"
     RECONNECT_EVENT = "Reconnect"
 
@@ -61,10 +59,6 @@ class DeviceWindow(UIComponent):
         # This needs to be here, for the edge case, that the communicator got disconnected, before it could be subscribed
         if not self._communicator.connection_opened.is_set():
             self.on_disconnect()
-
-    @property
-    def top_level_window(self) -> UIComponent | None:
-        return self
 
     @property
     def component_name(self) -> str | None:

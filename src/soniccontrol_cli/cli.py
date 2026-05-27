@@ -37,6 +37,7 @@ def cli(ctx: click.Context, log_dir: pathlib.Path, port: pathlib.Path, connectio
 
     remote_controller = RemoteController(log_path=log_dir)
     async_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(async_loop)
 
     match ConnectionType(connection):
         case ConnectionType.PROCESS:

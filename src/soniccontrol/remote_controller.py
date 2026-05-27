@@ -74,7 +74,7 @@ class RemoteController:
 
 
     @staticmethod
-    async def connect_via_serial(url: Path | str, baudrate: int = 9600, log_path: Optional[Path]=None) -> "RemoteController":
+    async def connect_via_serial(url: Path | str, baudrate: int = 115200, log_path: Optional[Path]=None) -> "RemoteController":
         """
         Creates a RemoteController by establishing a connection to a device over serial.
 

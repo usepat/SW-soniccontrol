@@ -149,7 +149,7 @@ async def connect(port: str):
         if dev_info is None:
             abort(HTTP_SERVER_ERROR, description=f"The given port {port} does not exist or is not a tty or usb device")
            
-        baudrate = request.args.get("baudrate", 9600, type=int)
+        baudrate = request.args.get("baudrate", 115200, type=int)
         connection = create_connection_to_device(dev_info, baudrate)
     
     reader, writer = await connection.open_connection()
@@ -263,6 +263,7 @@ def wait_for_device_redetection():
 @click.option("--port", type=click.INT, default=None)
 def start_server(host: str | None, port: int | None):
     loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     threading.Thread(target=lambda: loop.run_forever(), daemon=True).start()
 
     connection_registry: Dict[str, ConnectionObject] = {}

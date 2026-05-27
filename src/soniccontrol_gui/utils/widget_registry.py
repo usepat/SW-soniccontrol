@@ -111,10 +111,8 @@ class WidgetRegistry:
         if full_widget_name not in WidgetRegistry._widget_registration_events:
             WidgetRegistry._widget_registration_events[full_widget_name] = asyncio.Event()
 
-        try:
-            await WidgetRegistry._widget_registration_events[full_widget_name].wait()
-        except asyncio.CancelledError:
-            return
+        await WidgetRegistry._widget_registration_events[full_widget_name].wait()
+        # do not catch asyncio.CancelledError here, as that would interfer with asyncio.wait_for
 
     @staticmethod
     def clear_text_changed_flags():

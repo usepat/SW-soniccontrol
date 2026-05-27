@@ -5,9 +5,11 @@ from async_tkinter_loop import main_loop
 import pytest_asyncio
 from ttkbootstrap.utility import enable_high_dpi_awareness
 
+from sonic_pytest.plugin_data import SonicControlPlugin
 from soniccontrol import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.app_config import PLATFORM, System
+from soniccontrol.fw_device import create_device_discovery
 from soniccontrol_gui.plugins.device_plugin import register_device_plugins
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -66,13 +68,17 @@ create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope
 async def device_window(request, connection_window, tmp_path_factory, create_worker_process):
     controller = GuiController()    
 
-    is_simulation = request.config._sonic_control_plugin.is_simulation
-    device_type = request.config._sonic_control_plugin.device_type
-    url: str = request.config._sonic_control_plugin.serial_port
+    plugin: SonicControlPlugin = request.config._sonic_control_plugin
+    device_type = plugin.device_type
     data_dir = tmp_path_factory.mktemp("data")
 
-    if not is_simulation:
-        controller.set_widget_text(widget_names.CONNECTION_PORTS_COMBOBOX, url)
+    if not plugin.is_simulation:
+        port: str | None = plugin.serial_port
+        assert port is not None, "You have to provide a port"
+        dev_info = await create_device_discovery(plugin.remote_server_url).get_fw_device_info_of(port)
+        assert dev_info is not None, "Could find no device on the given port"
+        
+        controller.set_widget_text(widget_names.CONNECTION_PORTS_COMBOBOX, dev_info.display_name)
         controller.press_button(widget_names.CONNECTION_CONNECT_VIA_URL_BUTTON)
     else:
         if device_type == DeviceType.DESCALE:
@@ -97,6 +103,7 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
 
     # This is for the edge case, that if we connect to a remote device with an already ongoing connection
     # In that case remove the old connection, by pressing yes on the message box
+    await controller.execute_events_until_idle()
     try:
         await controller.wait_for_widget_to_be_registered(widget_names.MESSAGE_BOX_OPTION_YES, 2.0)
     except asyncio.TimeoutError:

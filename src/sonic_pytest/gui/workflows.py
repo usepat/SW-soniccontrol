@@ -18,7 +18,7 @@ async def send_over_serial_monitor(command: str) -> str:
             return answer
         
         await controller.execute_events_until_idle()
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.5)
     
     raise AssertionError("No answer could be received")
 
@@ -89,6 +89,9 @@ async def start_ramp_procedure():
         widget_names.STATUS_BAR_PROCEDURE_LABEL,
         timeout_s=10.0
     )
+    
+    controller.clear_text_changed_flag_of_widget(widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL)
+    controller.clear_text_changed_flag_of_widget(widget_names.STATUS_BAR_PROCEDURE_LABEL)
 
 
 async def start_ramp_capture():

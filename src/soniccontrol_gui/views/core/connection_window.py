@@ -12,7 +12,7 @@ from soniccontrol.fw_device import create_connection_to_device, create_device_di
 from soniccontrol.network.connection import RemoteServerConnection
 from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
 from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
-from soniccontrol_gui.ui_component import UIComponent
+from soniccontrol_gui.ui_component import TopLevelWindow, UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
@@ -41,13 +41,13 @@ class DeviceWindowManager:
         self._opened_device_windows: Dict[int, DeviceConnectionClass] = {}
         self._attempt_reconnect_callback: Optional[Callable[..., Awaitable[None]]] = None
 
-    def open_rescue_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
+    async def open_rescue_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
         device_window = RescueWindow(sonicamp, self._root, connection.connection_name)
-        self._open_device_window(device_window, connection)
+        await self._open_device_window(device_window, connection)
         
         return device_window
     
-    def _open_device_window(self, device_window: DeviceWindow, connection : Connection, is_legacy_device: bool = False, build_configurator: bool = False):
+    async def _open_device_window(self, device_window: DeviceWindow, connection : Connection, is_legacy_device: bool = False, build_configurator: bool = False):
         device_window._view.focus_set()  # grab focus and bring window to front
         self._id_device_window_counter += 1
         device_window_id = self._id_device_window_counter
@@ -57,7 +57,9 @@ class DeviceWindowManager:
         )
         device_window.subscribe(
             DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_reconnect_callback(connection, is_legacy_device, build_configurator)) #type: ignore
-        )   
+        ) 
+        await device_window.wait_finished_loading()  
+        
 
     async def attempt_reconnection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
         try:
@@ -113,16 +115,17 @@ class DeviceWindowManager:
             assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
 
             device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
-            self._open_device_window(device_window, connection, is_legacy_device=is_legacy_device, build_configurator=build_configurator)
+            await self._open_device_window(device_window, connection, is_legacy_device=is_legacy_device, build_configurator=build_configurator)
+            await device_window.wait_finished_loading()
         else:
-            self.open_rescue_window(sonicamp, connection)
+            await self.open_rescue_window(sonicamp, connection)
 
 
     def set_attempt_reconnect_callback(self, callback: Callable[..., Awaitable[None]]):
         self._attempt_reconnect_callback = callback
 
 
-class ConnectionWindow(UIComponent):
+class ConnectionWindow(TopLevelWindow):
     def __init__(self, simulation_exe_path: Optional[Path] = None):        
         show_simulation_button = simulation_exe_path is not None or APP_CONFIG.remote_server_url is not None
         self._view: ConnectionWindowView = ConnectionWindowView(show_simulation_button)
@@ -150,14 +153,18 @@ class ConnectionWindow(UIComponent):
         self._device_window_manager = DeviceWindowManager(self._view)
         
         async def _attempt_connection(_connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
-            await self._device_window_manager.attempt_connection(_connection, is_legacy_device, build_configurator)
-            self._is_connecting = False
-            self._finished_connecting.set()
+            try:
+                await self._device_window_manager.attempt_connection(_connection, is_legacy_device, build_configurator)
+            finally:
+                self._is_connecting = False
+                self._finished_connecting.set()
 
         async def _attempt_reconnection(_connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
-            await self._device_window_manager.attempt_reconnection(_connection, is_legacy_device, build_configurator)
-            self._is_connecting = False
-            self._finished_connecting.set()
+            try:
+                await self._device_window_manager.attempt_reconnection(_connection, is_legacy_device, build_configurator)
+            finally:
+                self._is_connecting = False
+                self._finished_connecting.set()
 
         self._is_connecting = False
         self._finished_connecting: asyncio.Event = asyncio.Event() 
@@ -167,12 +174,13 @@ class ConnectionWindow(UIComponent):
         
         self._view.set_connect_via_url_button_command(self._on_connect_via_url)
         self._view.set_connect_to_simulation_button_command(self._on_connect_to_simulation)
-        self._view.set_refresh_button_command(self._refresh_ports)
+        self._on_refresh_ports = async_handler(self._refresh_ports)
+        self._view.set_refresh_button_command(self._on_refresh_ports)
         self._dev_infos: Dict[str, FwDeviceInfo] = {}
         self._loaded_ports = asyncio.Event()
-        self._refresh_ports()
+        self.pass_loading_task(self._refresh_ports())
 
-    @async_handler
+
     async def _refresh_ports(self):
         self._loaded_ports.clear()
         device_discovery = create_device_discovery(APP_CONFIG.remote_server_url)
@@ -194,14 +202,13 @@ class ConnectionWindow(UIComponent):
         self._is_connecting = True
 
         dev_display_name = self._view.get_dev_name()
-        baudrate = 9600
+        baudrate = 115200
 
         
         # assures ports were already loaded, needed for tests
         await self._loaded_ports.wait()
 
-        dev_info = next(dev_info for dev_info in self._dev_infos.values() if dev_info.device_path == dev_display_name)
-        assert dev_info is not None
+        dev_info = self._dev_infos[dev_display_name]
         # force_remove_connection is only used for remote devices at the moment. But may change in the future
         connection = create_connection_to_device(dev_info, baudrate, force_remove_connection=self._on_connection_already_open)
         
@@ -242,6 +249,7 @@ class ConnectionWindow(UIComponent):
         if answer is None:
             return False
         return answer == DialogOptions.YES
+    
 
 class ConnectionWindowView(ttk.Window, View):
     def __init__(self, show_simulation_button: bool, *args, **kwargs) -> None:

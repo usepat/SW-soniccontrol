@@ -21,3 +21,5 @@ async def test_sending_a_command_displays_it_in_the_monitor():
     command_entry = controller.get_text_of_widget_child(widget_names.SERIAL_MONITOR_SCROLL_FRAME, -2)
     assert command in command_entry, f"The command '{command}' is not part of the serial monitor output '{command_entry}'"
 
+
+# add test where monitor gets cleared and then used afterwards
