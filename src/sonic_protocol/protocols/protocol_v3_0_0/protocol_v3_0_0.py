@@ -12,7 +12,8 @@ from .commands.commands import (
     get_logger_list_item, get_logger_list_size, get_connection_status, 
     get_num_tests, get_test_info, run_test, abort_test, get_test_validation_arg,
     start_diagnostic_tool, start_operator, set_dac_mV, 
-    get_modbus_settings, set_modbus_baudrate, set_modbus_parity, set_modbus_server_id, set_modbus_uart_interface
+    get_modbus_settings, set_modbus_baudrate, set_modbus_parity, set_modbus_server_id, set_modbus_uart_interface,
+    start_customizer
 )
 from .types.types import TestInteraction, TestResult, Parity, UartInterface
 
@@ -117,7 +118,8 @@ class Protocol_v3_0_0(ProtocolList):
             set_modbus_baudrate, 
             set_modbus_parity, 
             set_modbus_server_id, 
-            set_modbus_uart_interface
+            set_modbus_uart_interface,
+            start_customizer
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_update_descale_v3_0_0])
