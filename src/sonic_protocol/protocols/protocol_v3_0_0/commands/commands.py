@@ -49,7 +49,7 @@ for idx, field in enumerate(get_update_descale_v3_0_0.answer_def.fields):
         irms_index = idx
         break
 assert irms_index is not None, "IRMS fieldname not found in descale update command"
-get_update_descale_v3_0_0.answer_def.fields.insert(irms_index, f.ipp_field)
+get_update_descale_v3_0_0.answer_def.fields.insert(irms_index + 1, f.ipp_field)
 
 get_frequency_v3_0_0 = copy.deepcopy(trcmd_v1.get_frequency)
 for idx, field in enumerate(get_frequency_v3_0_0.answer_def.fields):
