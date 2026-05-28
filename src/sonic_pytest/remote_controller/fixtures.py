@@ -80,7 +80,8 @@ async def remote_controller(request, tmp_path_factory, create_worker_process):
 
     data_dir: Path = tmp_path_factory.mktemp("data")
 
-    connection = await create_connection(plugin_config, data_dir)
+    
+    connection = await create_connection(plugin_config, data_dir, ["--board-type=simulation"])
     
     controller = await RemoteController.connect(connection, log_path)
     await controller.stop_updater()

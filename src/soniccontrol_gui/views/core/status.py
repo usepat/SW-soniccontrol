@@ -55,6 +55,7 @@ class StatusBar(UIComponent):
             EFieldName.SWF: "Switching Freq",
             EFieldName.GAIN: "Gain",
             EFieldName.IRMS: "Irms",
+            EFieldName.IPP: "Ipp",
             EFieldName.URMS: "Urms",
             EFieldName.PHASE: "Phase",
             EFieldName.TEMPERATURE: "Temperature",

@@ -40,9 +40,9 @@ async def connection_window(request):
     register_device_plugins()
 
     connection_window = ConnectionWindow(simulation_exe_path)
+    await connection_window.wait_finished_loading()
     root = connection_window.view.root 
     WidgetRegistry.root = root
-
     if PLATFORM != System.WINDOWS:
         enable_high_dpi_awareness(connection_window.view)
 

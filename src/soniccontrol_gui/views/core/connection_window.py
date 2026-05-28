@@ -59,6 +59,7 @@ class DeviceWindowManager:
             DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_reconnect_callback(connection, is_legacy_device, build_configurator)) #type: ignore
         ) 
         await device_window.wait_finished_loading()  
+        device_window.view.root.update_idletasks()
         
 
     async def attempt_reconnection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
@@ -116,7 +117,6 @@ class DeviceWindowManager:
 
             device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
             await self._open_device_window(device_window, connection, is_legacy_device=is_legacy_device, build_configurator=build_configurator)
-            await device_window.wait_finished_loading()
         else:
             await self.open_rescue_window(sonicamp, connection)
 
