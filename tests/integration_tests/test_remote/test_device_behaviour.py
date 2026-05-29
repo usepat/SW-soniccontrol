@@ -6,6 +6,7 @@ from soniccontrol import EFieldName, commands
 
 @pytest.mark.asyncio(loop_scope="package")
 async def test_if_devices_saves_transducer_state(remote_controller):
+    # this test will always fail, if inti_from_flash is set to true
     gain = 96
     await send_command_and_check_response(remote_controller, commands.SetGain(gain))
 

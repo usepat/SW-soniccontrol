@@ -26,6 +26,8 @@ class LogStorage:
             try:
                 log = self.format(record)
                 self._logStorage._queue.put_nowait(log)
+            except asyncio.QueueFull:
+                self._logStorage._queue.get_nowait()
             except:
                 self.handleError(record)
 
