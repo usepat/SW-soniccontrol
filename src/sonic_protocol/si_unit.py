@@ -267,14 +267,14 @@ GAIN_META = SIVarMeta(
     si_unit=SIUnit.PERCENT, 
     si_prefix_min=SIPrefix.NONE, 
     si_prefix_max=SIPrefix.NONE,
-    min_value=(0, SIPrefix.NONE),        # 0%
+    min_value=(1, SIPrefix.NONE),        # 0%
     max_value=(150, SIPrefix.NONE)       # 150%
 )
 
 class GainSIVar(SIVar[int], si_meta=GAIN_META):
     """Gain variable for home UI (single prefix - no combobox)."""
     
-    def __init__(self, value: int = 0, si_prefix: SIPrefix = SIPrefix.NONE):
+    def __init__(self, value: int = 1, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
 

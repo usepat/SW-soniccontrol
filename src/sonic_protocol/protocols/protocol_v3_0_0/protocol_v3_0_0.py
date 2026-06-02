@@ -153,12 +153,14 @@ class Protocol_v3_0_0(ProtocolList):
 
     def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
         assert self.previous_protocol
-
+        constants = None
         match protocol_type.device_type:
             case DeviceType.POSTMAN:
-                return self._get_device_constants_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
+                constants = self._get_device_constants_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
             # case DeviceType.MVP_WORKER:
             #     # Changed from Hz to hHz
             #     return { DeviceParamConstantType.MAX_FREQUENCY: 200000, DeviceParamConstantType.MIN_FREQUENCY: 1000 }
             case _:
-                return self.previous_protocol._get_device_constants_for(protocol_type)
+                constants =  self.previous_protocol._get_device_constants_for(protocol_type)
+        constants[DeviceParamConstantType.MIN_GAIN] = 1
+        return constants

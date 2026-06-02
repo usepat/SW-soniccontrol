@@ -30,7 +30,7 @@ class TransducerState:
     signal: bool = attrs.field(default=False, metadata={"field_view_kwargs":{"bootstyle": "round-toggle" }})
     gain: GainSIVar = attrs.field(
         converter=cls_converter(GainSIVar),
-        default=GainSIVar(value=0),
+        default=GainSIVar(value=1),
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )
 
