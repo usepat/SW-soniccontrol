@@ -202,7 +202,7 @@ class ConnectionWindow(TopLevelWindow):
         self._is_connecting = True
 
         dev_display_name = self._view.get_dev_name()
-        baudrate = 115200
+        baudrate = 9600
 
         
         # assures ports were already loaded, needed for tests

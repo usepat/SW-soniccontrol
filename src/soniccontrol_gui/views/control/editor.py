@@ -293,9 +293,7 @@ class EditorView(TabView):
         return ui_labels.SCRIPTING_LABEL
 
     def _initialize_children(self) -> None:
-        tab_name = "editor"
-        if self._parent_widget_name:
-            tab_name = self._parent_widget_name + "." + tab_name 
+        tab_name = self.scoped_widget_name("editor")
             
         self._main_frame: ttk.Frame = ttk.Frame(self)
 

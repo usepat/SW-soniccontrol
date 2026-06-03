@@ -154,9 +154,7 @@ class StatusBarView(View):
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
-        tab_name = "status_bar"
-        if self._parent_widget_name:
-            tab_name = self._parent_widget_name + "." + tab_name 
+        tab_name = self.scoped_widget_name("status_bar")
 
         self._panel_frame: ttk.Frame = ttk.Frame(self)
         self._status_bar_frame: ttk.Frame = ttk.Frame(self)
@@ -246,9 +244,7 @@ class StatusPanelView(View):
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
-        tab_name = "status_panel"
-        if self._parent_widget_name:
-            tab_name = self._parent_widget_name + "." + tab_name 
+        tab_name = self.scoped_widget_name("status_panel")
 
         self._main_frame: ttk.Frame = ttk.Frame(self)
         self._meter_frame: ttk.Frame = ttk.Frame(self._main_frame)

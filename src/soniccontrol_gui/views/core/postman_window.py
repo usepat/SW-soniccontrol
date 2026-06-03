@@ -144,9 +144,7 @@ class PostmanStatusBarView(View):
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
-        tab_name = "status_bar"
-        if self._parent_widget_name:
-            tab_name = self._parent_widget_name + "." + tab_name 
+        tab_name = self.scoped_widget_name("status_bar")
 
         
         self._status_bar_frame: ttk.Frame = ttk.Frame(self)
@@ -187,9 +185,7 @@ class PostmanHomeTabView(TabView):
         return ui_labels.HOME_LABEL
 
     def _initialize_children(self) -> None:
-        tab_name = "home_tab"
-        if self._parent_widget_name:
-            tab_name = self._parent_widget_name + "." + tab_name 
+        tab_name = self.scoped_widget_name("home_tab")
 
         self._main_frame: ScrolledFrame = ScrolledFrame(self, autohide=True)
 

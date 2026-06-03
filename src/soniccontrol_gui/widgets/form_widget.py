@@ -113,7 +113,12 @@ class FieldViewBase(abc.ABC, Generic[T], View):
             
     def __init__(self, master: TkinterView, *args, top_scroll_frame: Optional["ScrolledFrame"] = None, **kwargs):
         self._top_scroll_frame: Optional["ScrolledFrame"] = top_scroll_frame
+        self._widget_name = self.compose_widget_name(kwargs.get("parent_widget_name", ""), self.field_name)
         View.__init__(self, master, *args, **kwargs)
+
+    @property
+    def widget_name(self) -> str:
+        return self._widget_name
         
 
     @property
@@ -158,9 +163,8 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self._si_unit = field_view_kwargs.get("SI_unit", None)
         self._value: PrimitiveT = _default_value
         self._is_valid: bool = True  # Start with valid default value
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
+
         # We pop earlier so that the super__init__ does not fail,
         # but we need restore because other the same Object might be used for other views(ATConfig)
         kwargs['field_view_kwargs'] = field_view_kwargs
@@ -173,7 +177,7 @@ class BasicTypeFieldView(FieldViewBase[PrimitiveT]):
         self.entry = ttk.Entry(self, textvariable=self._str_value, width=12)
         if self._si_unit is not None:
             self._si_unit_label = ttk.Label(self, text=self._si_unit, state="readonly")
-        WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
+        WidgetRegistry.register_widget(self._str_value, "entry_str", self.widget_name)
         # Subscribe entry focus to scroll bar if available
         if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame is not None:
             self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
@@ -252,8 +256,6 @@ class ReadOnlyFieldView(FieldViewBase[Any]):
         self._callback: Callable[[Any], None] = lambda _: None
         self._display_value = ttk.StringVar(value=self._stringify(self._default_value))
         field_view_kwargs = kwargs.pop("field_view_kwargs", {})
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
         # We pop earlier so that the super__init__ does not fail,
         # but we need restore because other the same Object might be used for other views(ATConfig)
@@ -399,8 +401,6 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
         # metadata={"field_view_kwargs": {"treat_zero_as_none": True}}
         self._treat_zero_as_none = field_view_kwargs.get("treat_zero_as_none", False)
 
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
         # We pop earlier so that the super__init__ does not fail,
         # but we need restore because the same Object might be used for other views(ATConfig)
@@ -653,7 +653,7 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                     self._get_input_widget().configure(style=EntryStyle.DANGER.value)
             
             self.scale.configure(command=_on_scale_change)
-            #WidgetRegistry.register_widget(self.scale, "scale", self._widget_name)
+            #WidgetRegistry.register_widget(self.scale, "scale", self.widget_name)
         
         if self._use_spinbox:
             self.spinbox = ttk.Spinbox(self, textvariable=self._str_value, width=12)
@@ -663,14 +663,14 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                 self._parse_str_value()
             
             self.spinbox.configure(command=_on_spinbox_change)
-            WidgetRegistry.register_widget(self.spinbox, "spinbox", self._widget_name)
+            WidgetRegistry.register_widget(self.spinbox, "spinbox", self.widget_name)
 
         if self.si_prefix_combobox is not None:
-            WidgetRegistry.register_widget(self.si_prefix_combobox, "unit_combobox", self._widget_name)
+            WidgetRegistry.register_widget(self.si_prefix_combobox, "unit_combobox", self.widget_name)
         if self.si_unit_label is not None:
-            WidgetRegistry.register_widget(self.si_unit_label, "unit_label", self._widget_name)
+            WidgetRegistry.register_widget(self.si_unit_label, "unit_label", self.widget_name)
             
-        WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
+        WidgetRegistry.register_widget(self._str_value, "entry_str", self.widget_name)
         # Subscribe entry focus to scroll bar if available
         if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame is not None:
             # Subscribe the appropriate input widget based on what's being used
@@ -1002,9 +1002,6 @@ class BooleanFieldView(FieldViewBase[bool]):
         field_view_kwargs = kwargs.pop("field_view_kwargs", {})
         self._checkbutton_kwargs = field_view_kwargs  # Store for use in _initialize_children
 
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
-
         super().__init__(master, *args, **kwargs)
         # Restore field_view_kwargs for potential reuse
         kwargs['field_view_kwargs'] = field_view_kwargs
@@ -1032,7 +1029,7 @@ class BooleanFieldView(FieldViewBase[bool]):
             ('!selected', 'blue')
         ])
         self._checkbutton = ttk.Checkbutton(self, style='Selected.TCheckbutton', **checkbutton_config)
-        WidgetRegistry.register_widget(self._checkbutton, "checkbutton", self._widget_name)
+        WidgetRegistry.register_widget(self._checkbutton, "checkbutton", self.widget_name)
         self._checkbutton.bind("<Return>", lambda e: self._var.set(not self._var.get()))
         # Subscribe checkbutton to scroll on focus
         if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame:
@@ -1082,8 +1079,6 @@ class EnumFieldView(FieldViewBase[Enum]):
         self._default_value = default_value or list(enum_class)[0]
         self._value = self._default_value
         self._selected_enum_member = ttk.StringVar(value=self._value.name)
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
 
         super().__init__(master, *args, **kwargs)
 
@@ -1107,7 +1102,7 @@ class EnumFieldView(FieldViewBase[Enum]):
             width=combobox_width
         )
 
-        WidgetRegistry.register_widget(self._selected_enum_member, "entry_enum", self._widget_name)
+        WidgetRegistry.register_widget(self._selected_enum_member, "entry_enum", self.widget_name)
         
         # Subscribe combobox to scroll on focus
         if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame:
@@ -1161,8 +1156,6 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
         self._str_value: ttk.StringVar = ttk.StringVar(value=str("" if default_value is None else default_value))
         self._value: Optional[PrimitiveT] = default_value
         self._is_valid: bool = True  # Start with valid state (None is valid for nullable)
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
 
         super().__init__(master, *args, **kwargs)
 
@@ -1174,7 +1167,7 @@ class NullableTypeFieldView(FieldViewBase[Optional[PrimitiveT]]):
         self.label = ttk.Label(self, text=self._field_name)
         self.entry = ttk.Entry(self, textvariable=self._str_value, width=12)
 
-        WidgetRegistry.register_widget(self._str_value, "entry_str", self._widget_name)
+        WidgetRegistry.register_widget(self._str_value, "entry_str", self.widget_name)
         
         # Subscribe entry to scroll on focus
         if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame:
@@ -1233,12 +1226,9 @@ class OptionalPathFieldView(FieldViewBase[Optional[Path]]):
                 default_value: Path | None = None, field_view_kwargs: Dict[str, Any] = {}, **kwargs):
         self._field_name = field_name
         self._default_value: Path | None = default_value 
-        
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
 
         super().__init__(master, *args, **kwargs)
-        self._browse_button = FileBrowseButtonView(self, parent_widget_name=self._widget_name, text=self._field_name, **field_view_kwargs)
+        self._browse_button = FileBrowseButtonView(self, parent_widget_name=self.widget_name, text=self._field_name, **field_view_kwargs)
         self._browse_button.pack(fill=ttk.X, expand=True, pady=sizes.SMALL_PADDING, padx=sizes.SMALL_PADDING)
 
     def _initialize_children(self) -> None: 
@@ -1279,8 +1269,6 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         self._time_value_str: ttk.StringVar = ttk.StringVar(value=str(self._time_value))
         self._unit_value_str: ttk.StringVar = ttk.StringVar(value=self._default_value[1])
         self._is_valid: bool = True  # Start with valid default value
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
 
         self._callback: Callable[[HoldTuple], None] = lambda _: None
@@ -1294,8 +1282,8 @@ class TimeFieldView(FieldViewBase[HoldTuple]):
         self._entry_time = ttk.Entry(self._entry_frame, textvariable=self._time_value_str, width=12)
         self._unit_button = ttk.Button(self._entry_frame, text=self._unit_value_str.get(), command=self._toggle_unit)
 
-        WidgetRegistry.register_widget(self._time_value_str, "time_str", self._widget_name)
-        WidgetRegistry.register_widget(self._unit_value_str, "unit_str", self._widget_name)
+        WidgetRegistry.register_widget(self._time_value_str, "time_str", self.widget_name)
+        WidgetRegistry.register_widget(self._unit_value_str, "unit_str", self.widget_name)
         
         # Subscribe entry to scroll on focus
         if hasattr(self, '_top_scroll_frame') and self._top_scroll_frame:
@@ -1374,7 +1362,6 @@ FieldHookRegistry =  Dict[Tuple[type, str], FieldHook]
 class ExpandableFrame(FieldViewBase):
     def __init__(self, master: TkinterView, field_name: str, field_type: type, field_view_factory: "DynamicFieldViewFactory", *args, **kwargs):
         # Pop and store the parameters we need for the child
-        self._parent_widget_name = kwargs.pop("parent_widget_name", "")
         self._field_view_kwargs = kwargs.pop("field_view_kwargs", {}).copy()
         
         # Remove expandable flag to avoid infinite recursion
@@ -1401,7 +1388,7 @@ class ExpandableFrame(FieldViewBase):
             self._field_name, 
             self._field_type, 
             self._field_view_factory, 
-            parent_widget_name=self._parent_widget_name, 
+            parent_widget_name=self.parent_widget_name, 
             top_scroll_frame=self._top_scroll_frame,
             field_view_kwargs=self._field_view_kwargs
         )
@@ -1610,12 +1597,10 @@ class DictFieldView(FieldViewBase):
         self._default_value = {} if default_value is None else default_value.copy()
         self._field_view_factory = field_view_factory
 
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
         field_view_kwargs = kwargs.pop("field_view_kwargs", {})
         self._types = field_view_kwargs.get("types", None)
         if not self._types:
             self._types = [str]
-        self._widget_name = parent_widget_name + "." + self._field_name
         super().__init__(master, *args, **kwargs)
         kwargs["field_view_kwargs"] = field_view_kwargs
 
@@ -1672,7 +1657,7 @@ class DictFieldView(FieldViewBase):
             if value_field:
                 value_field.destroy()
             value_field = self._field_view_factory.from_type(
-                f"Value {entry_id}", selected_type, row_frame, self._widget_name)
+                f"Value {entry_id}", selected_type, row_frame, self.widget_name)
             # Set value if provided
             if value is not None:
                 value_field.value = value
@@ -1683,7 +1668,7 @@ class DictFieldView(FieldViewBase):
         if len(self._types) == 1:
             # Only one type, use it directly
             value_field = self._field_view_factory.from_type(
-                f"Value {entry_id}", self._types[0], row_frame, self._widget_name)
+                f"Value {entry_id}", self._types[0], row_frame, self.widget_name)
             if value is not None:
                 value_field.value = value
             value_field.grid(column=1, row=0, padx=2, sticky=ttk.EW)
@@ -1790,8 +1775,6 @@ class TupleFieldView(FieldViewBase[tuple]):
         # We need to unstructure the tuple sub types. Else we get problems if we want to structure it back.
         self._value = self._field_view_factory.unstructure_value(default_value, self._tuple_type)
 
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + "." + self._field_name
         self._fields: List[FieldViewBase] = []
         super().__init__(master, *args, **kwargs)
 
@@ -1807,7 +1790,7 @@ class TupleFieldView(FieldViewBase[tuple]):
 
     def _add_fields_to_widget(self):
         for i, class_type in enumerate(self._tuple_elements):
-            field_view = self._field_view_factory.from_type(f"Item {i+1}", class_type, self._frame, self._widget_name, top_scroll_frame=self._top_scroll_frame)
+            field_view = self._field_view_factory.from_type(f"Item {i+1}", class_type, self._frame, self.widget_name, top_scroll_frame=self._top_scroll_frame)
             self._fields.append(field_view)
 
             def bind_index(index):
@@ -1860,11 +1843,6 @@ class ObjectFieldView(FieldViewBase[dict]):
 
         # TODO: handle default values
         self._field_view_factory = field_view_factory
-        if "parent_widget_name" in kwargs:
-            parent_widget_name = kwargs.pop("parent_widget_name", "")
-            self._widget_name = parent_widget_name + "." + self._field_name
-        else:
-            self._widget_name = self._field_name
         self._fields: Dict[str, FieldViewBase] = {}
         field_view_kwargs = kwargs.pop("field_view_kwargs", {}) # Others also rely on it so dont pop
         super().__init__(master, *args, **kwargs)
@@ -1896,7 +1874,7 @@ class ObjectFieldView(FieldViewBase[dict]):
         )
         for field in fields:
             field_name = field.name
-            field_view = self._field_view_factory.from_attribute(field_name, field, self._obj_class, self._frame, self._widget_name, top_scroll_frame=self._top_scroll_frame)
+            field_view = self._field_view_factory.from_attribute(field_name, field, self._obj_class, self._frame, self.widget_name, top_scroll_frame=self._top_scroll_frame)
             self._fields[field_name] = field_view
             self._value[field_name] = field_view.value
 

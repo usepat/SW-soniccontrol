@@ -94,9 +94,7 @@ class ATConfigFrameView(View):
     def __init__(self, master: ttk.Frame, index: int, *args, **kwargs):
         self._index = index
         super().__init__(master, *args, **kwargs)
-
-        assert self._parent_widget_name is not None, "You have to set parent widget name"
-        self._widget_name = self._parent_widget_name + ".at_config." + str(index)
+        self._widget_name = self.scoped_widget_name(f"at_config.{index}")
 
 
     def _initialize_children(self) -> None:

@@ -103,9 +103,7 @@ class DeviceSettingsTabView(TabView):
         return ui_labels.SETTINGS_LABEL
 
     def _initialize_children(self) -> None:
-        tab_name = "device_settings"
-        if self._parent_widget_name:
-            tab_name = self._parent_widget_name + "." + tab_name 
+        tab_name = self.scoped_widget_name("device_settings")
 
         self._settings_form_slot: ttk.Frame = ttk.Frame(self)
         self._control_frame: ttk.Frame = ttk.Frame(self)

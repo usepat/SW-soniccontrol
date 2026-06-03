@@ -143,9 +143,7 @@ class SerialMonitorView(TabView):
         return ui_labels.SERIAL_MONITOR_LABEL
 
     def _initialize_children(self) -> None:
-        tab_name = "serial_monitor"
-        if self._parent_widget_name:
-            tab_name = self._parent_widget_name + "." + tab_name 
+        tab_name = self.scoped_widget_name("serial_monitor")
             
         self._main_frame: ttk.Frame = ttk.Frame(self)
         self._output_frame: ttk.Labelframe = ttk.Labelframe(

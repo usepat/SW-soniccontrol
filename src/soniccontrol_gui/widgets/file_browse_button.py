@@ -21,7 +21,6 @@ class FileBrowseButtonView(View):
         self._filetypes = filetypes
         self._action = action
         super().__init__(master, *args, **kwargs)
-        assert self._parent_widget_name is not None
         
     def _initialize_children(self) -> None:
         self._path_str = ttk.StringVar(self, value="")
@@ -30,8 +29,8 @@ class FileBrowseButtonView(View):
         self._path_entry = ttk.Entry(self._frame, textvariable=self._path_str)
         self._button = ttk.Button(self._frame, text="Browse Files", command=self._browse_files)
 
-        WidgetRegistry.register_widget(self._path_entry, "browse_files_entry", self._parent_widget_name)
-        WidgetRegistry.register_widget(self._button, "browse_files_button", self._parent_widget_name)
+        WidgetRegistry.register_widget(self._path_entry, "browse_files_entry", self.parent_widget_name)
+        WidgetRegistry.register_widget(self._button, "browse_files_button", self.parent_widget_name)
 
     def _initialize_publish(self) -> None:
         self._frame.pack(expand = True, fill=ttk.BOTH)

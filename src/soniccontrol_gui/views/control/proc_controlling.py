@@ -168,9 +168,7 @@ class ProcControllingView(TabView):
         return ui_labels.PROCEDURES_LABEL
     
     def _initialize_children(self) -> None:
-        tab_name = "proc_controlling"
-        if self._parent_widget_name:
-            tab_name = self._parent_widget_name + "." + tab_name 
+        tab_name = self.scoped_widget_name("proc_controlling")
             
         self._selected_procedure_var = ttk.StringVar()
         self._procedure_combobox = ttk.Combobox(self, textvariable=self._selected_procedure_var)

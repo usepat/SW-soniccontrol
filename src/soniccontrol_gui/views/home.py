@@ -186,8 +186,7 @@ class DeviceInfoFrameView(View):
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
-        assert self._parent_widget_name is not None, "You have to set parent widget name"
-        widget_name = self._parent_widget_name
+        widget_name = self.scoped_widget_name()
 
         # info frame - displays device type, protocol type, firmware type
         self._info_frame: ttk.LabelFrame = ttk.LabelFrame(
