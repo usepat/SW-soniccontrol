@@ -144,6 +144,7 @@ class SerialConnection(Connection):
             url=str(self.url), baudrate=self.baudrate
         )
         return reader, self.writer
+    
 
     async def close_connection(self):
         # use lock and bool var, to ensure the connection cannot get closed twice
@@ -190,6 +191,7 @@ class ModbusConnection(Connection):
         self._client = AsyncModbusSerialClient(str(self.url), 
             baudrate=self.baudrate, 
             parity=self.parity_to_string(), 
+            stopbits=1 if self.parity != Parity.NO else 2,
             timeout=1.5, 
             retries=1
         )
@@ -203,6 +205,7 @@ async def main():
     reader, writer = await conn.open_connection()
     await writer.drain()
     await asyncio.sleep(2)  # Give some time for the process to start
+
     try:
         test_string = "-\r"
         print(f"Sending: {test_string.strip()}")
@@ -216,6 +219,21 @@ async def main():
             await asyncio.sleep(1)  # Small delay to avoid busy waiting
     finally:
         await conn.close_connection()
+
+    # conn = ModbusConnection("modbus", None, "/dev/ttyUSB0")
+    # try:
+    #     modbus_client = await conn.open_modbus_connection()
+    #     await modbus_client.connect()
+    #     data = [0, 1, 2, 3, 0]
+    #     answer = await modbus_client.write_registers(1024, data, device_id=1)
+    #     if answer.isError():
+    #         print("modbus write failed")
+    #     answer = await modbus_client.read_input_registers(1024, count=len(data), device_id=1)
+    #     if answer.isError():
+    #         print("modbus read failed")
+    # finally:
+    #     await conn.close_connection()
+        
 
 if __name__ == "__main__":
     asyncio.run(main())

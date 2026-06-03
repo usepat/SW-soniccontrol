@@ -32,7 +32,7 @@ async def remote_controller():
     await controller.disconnect()
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", params=[
-    (9600, "E"),
+    (9600, "N"),
     # (9600, "O"),
     # (9600, "N"),
 ])
