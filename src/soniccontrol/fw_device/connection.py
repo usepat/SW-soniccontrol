@@ -4,6 +4,7 @@ from pathlib import Path
 import attrs
 from typing import List, Tuple
 
+from serial import SerialException
 from serial_asyncio import open_serial_connection
 import logging
 
@@ -138,12 +139,24 @@ class SerialConnection(Connection):
     async def open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
         # Maybe we need to ensure here also that only one connection at a time can be open
         assert self._closed, "the last connection is still open"
-        
-        self._closed = False
-        reader, self.writer = await open_serial_connection(
-            url=str(self.url), baudrate=self.baudrate
-        )
-        return reader, self.writer
+
+        last_error: Exception | None = None
+        for attempt in range(5):
+            try:
+                reader, self.writer = await open_serial_connection(
+                    url=str(self.url), baudrate=self.baudrate
+                )
+            except (OSError, SerialException) as exc:
+                last_error = exc
+                if attempt == 4:
+                    break
+                await asyncio.sleep(0.2)
+            else:
+                self._closed = False
+                return reader, self.writer
+
+        assert last_error is not None
+        raise last_error
     
 
     async def close_connection(self):
@@ -153,9 +166,20 @@ class SerialConnection(Connection):
                 return
             self._closed = True
 
-            if not self.writer.is_closing():
-                self.writer.close()
-            await self.writer.wait_closed()
+            transport = getattr(self.writer, "transport", None)
+            serial_port = getattr(transport, "serial", None) if transport is not None else None
+
+            try:
+                if not self.writer.is_closing():
+                    self.writer.close()
+            finally:
+                if serial_port is not None and getattr(serial_port, "is_open", False):
+                    serial_port.close()
+
+            for _ in range(10):
+                if serial_port is None or not getattr(serial_port, "is_open", False):
+                    break
+                await asyncio.sleep(0.05)
 
 @attrs.define()
 class ModbusConnection(Connection):
@@ -201,38 +225,38 @@ async def main():
     # Replace 'cat' with the path to your actual binary, if different
     # conn = CLIConnection(bin_file=Path(os.environ["FIRMWARE_BUILD_DIR_PATH"] + "/linux/mvp_simulation/test/simulation/cli_simulation_mvp/cli_simulation_mvp"),
     #                      connection_name="cli_simulation_mvp")
-    conn = SerialConnection("serial_connection", None, url="COM23", baudrate=9600)
-    reader, writer = await conn.open_connection()
-    await writer.drain()
-    await asyncio.sleep(2)  # Give some time for the process to start
+    # conn = SerialConnection("serial_connection", None, url="COM23", baudrate=9600)
+    # reader, writer = await conn.open_connection()
+    # await writer.drain()
+    # await asyncio.sleep(2)  # Give some time for the process to start
 
-    try:
-        test_string = "-\r"
-        print(f"Sending: {test_string.strip()}")
-        writer.write(test_string.encode())
-        await writer.drain()
-
-        # Read response (up to a reasonable limit)
-        while True:
-            response = await reader.readline()
-            print(f"Received: {response.decode().strip()}")
-            await asyncio.sleep(1)  # Small delay to avoid busy waiting
-    finally:
-        await conn.close_connection()
-
-    # conn = ModbusConnection("modbus", None, "/dev/ttyUSB0")
     # try:
-    #     modbus_client = await conn.open_modbus_connection()
-    #     await modbus_client.connect()
-    #     data = [0, 1, 2, 3, 0]
-    #     answer = await modbus_client.write_registers(1024, data, device_id=1)
-    #     if answer.isError():
-    #         print("modbus write failed")
-    #     answer = await modbus_client.read_input_registers(1024, count=len(data), device_id=1)
-    #     if answer.isError():
-    #         print("modbus read failed")
+    #     test_string = "-\r"
+    #     print(f"Sending: {test_string.strip()}")
+    #     writer.write(test_string.encode())
+    #     await writer.drain()
+
+    #     # Read response (up to a reasonable limit)
+    #     while True:
+    #         response = await reader.readline()
+    #         print(f"Received: {response.decode().strip()}")
+    #         await asyncio.sleep(1)  # Small delay to avoid busy waiting
     # finally:
     #     await conn.close_connection()
+
+    conn = ModbusConnection("modbus", None, "/dev/ttyUSB0")
+    try:
+        modbus_client = await conn.open_modbus_connection()
+        await modbus_client.connect()
+        data = [0, 1, 2, 3, 0]
+        answer = await modbus_client.write_registers(1024, data, device_id=1)
+        if answer.isError():
+            print("modbus write failed")
+        answer = await modbus_client.read_input_registers(1024, count=len(data), device_id=1)
+        if answer.isError():
+            print("modbus read failed")
+    finally:
+        await conn.close_connection()
         
 
 if __name__ == "__main__":

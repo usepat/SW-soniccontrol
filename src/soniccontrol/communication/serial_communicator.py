@@ -154,13 +154,18 @@ class SerialCommunicator(Communicator):
 
     async def close_communication(self, restart : bool = False) -> None:
         assert self._connection, "Connection is not set"
-        
+
+        if not self._connection_opened.is_set() and self._reader is None and self._writer is None:
+            return
+
         self._restart = restart
-        await self._message_fetcher.stop()
         self._connection_opened.clear()
-        await self._connection.close_connection()
-        self._reader = None
-        self._writer = None
+        try:
+            await asyncio.wait_for(self._connection.close_connection(), 1)
+        finally:
+            await self._message_fetcher.stop()
+            self._reader = None
+            self._writer = None
         self._logger.info("Disconnected from device")
         if not(self._restart):
             self.emit(Event(Communicator.DISCONNECTED_EVENT))

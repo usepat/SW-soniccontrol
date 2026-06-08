@@ -281,6 +281,9 @@ class Timestamp():
 
 @attrs.define(auto_attribs=True)
 class DeviceParamConstants:
+
+    # TODO maybe fix these defaults somewhere more explicitly because if they get changed randomly it might cause
+    ## backwards compatibility issues
     max_transducer_index: int = attrs.field(default=4)
     min_transducer_index: int = attrs.field(default=1)
 

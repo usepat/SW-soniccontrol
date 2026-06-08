@@ -163,4 +163,7 @@ class Protocol_v3_0_0(ProtocolList):
             case _:
                 constants =  self.previous_protocol._get_device_constants_for(protocol_type)
         constants[DeviceParamConstantType.MIN_GAIN] = 1
+        if protocol_type.device_type == DeviceType.DESCALE:
+            constants[DeviceParamConstantType.MAX_GAIN] = 100
+        constants[DeviceParamConstantType.MIN_SWF] = 2
         return constants

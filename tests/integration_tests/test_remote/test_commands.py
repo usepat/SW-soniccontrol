@@ -69,7 +69,8 @@ async def test_deduced_commands(remote_controller, progress_writer):
         CommandCode.RESTART_DEVICE,
         CommandCode.SET_FLASH_115200,
         CommandCode.SET_FLASH_9600,
-        CommandCode.SET_FLASH_USB
+        CommandCode.SET_FLASH_USB,
+        CommandCode.START_CUSTOMIZER
     ]
     deduced_commands = deduce_command_examples_as_commands(
         info.protocol_version, info.device_type, info.is_release, 
