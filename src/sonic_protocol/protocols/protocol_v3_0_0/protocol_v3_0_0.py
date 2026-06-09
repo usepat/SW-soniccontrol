@@ -13,7 +13,7 @@ from .commands.commands import (
     get_num_tests, get_test_info, run_test, abort_test, get_test_validation_arg,
     start_diagnostic_tool, start_operator, set_dac_mV, 
     get_modbus_settings, set_modbus_baudrate, set_modbus_parity, set_modbus_server_id, set_modbus_uart_interface,
-    start_customizer
+    start_customizer, get_duty_cycle_v3_0_0, set_duty_cycle_t_off_v3_0_0, set_duty_cycle_t_on_v3_0_0
 )
 from .types.types import TestInteraction, TestResult, Parity, UartInterface
 
@@ -141,6 +141,9 @@ class Protocol_v3_0_0(ProtocolList):
             command_contract_dict[CommandCode.GET_RAMP] = get_ramp_v3_0_0
             
         command_contract_dict[CommandCode.SET_LOG_LEVEL] = set_log_level_v3_0_0
+        command_contract_dict[CommandCode.GET_DUTY_CYCLE] = get_duty_cycle_v3_0_0
+        command_contract_dict[CommandCode.SET_DUTY_CYCLE_T_OFF] = set_duty_cycle_t_off_v3_0_0
+        command_contract_dict[CommandCode.SET_DUTY_CYCLE_T_ON] = set_duty_cycle_t_on_v3_0_0
 
         # delete unused commands
         command_contract_dict.pop(CommandCode.GET_UPDATE, None) # we use now explicit update commands
@@ -166,4 +169,6 @@ class Protocol_v3_0_0(ProtocolList):
         if protocol_type.device_type == DeviceType.DESCALE:
             constants[DeviceParamConstantType.MAX_GAIN] = 100
         constants[DeviceParamConstantType.MIN_SWF] = 2
+        constants[DeviceParamConstantType.MIN_DUTY_CYCLE_T_OFF] = 1
+        constants[DeviceParamConstantType.MIN_DUTY_CYCLE_T_ON] = 1
         return constants

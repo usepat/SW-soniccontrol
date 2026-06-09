@@ -1,5 +1,7 @@
 
 
+import copy
+
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import Anomaly, AnswerFieldDef, ControlMode, ConverterType, DeviceParamConstantType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SystemState, TransducerState
 
@@ -8,6 +10,10 @@ import numpy as np
 
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import (
     field_type_gain
+)
+
+from sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_fields import (
+    field_duty_cycle_t_off, field_duty_cycle_t_on
 )
 
 from ...protocol_v1_0_0.flashing_commands.flashing_commands import field_success
@@ -220,3 +226,10 @@ modbus_server_id_field = AnswerFieldDef(
     field_name=EFieldName.MODBUS_SERVER_ID,
     field_type=field_type_modbus_server_id
 )
+
+
+field_duty_cycle_t_off_v3_0_0 = copy.deepcopy(field_duty_cycle_t_off)
+field_duty_cycle_t_off_v3_0_0.field_type.si_unit = SIUnit.MINUTE
+
+field_duty_cycle_t_on_v3_0_0 = copy.deepcopy(field_duty_cycle_t_on)
+field_duty_cycle_t_on_v3_0_0.field_type.si_unit = SIUnit.MINUTE

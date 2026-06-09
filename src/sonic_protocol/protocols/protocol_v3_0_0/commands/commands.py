@@ -19,7 +19,9 @@ from ...protocol_v1_0_0.procedure_commands import procedure_commands as prcmd_v1
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import (
     param_index
 )
-
+from sonic_protocol.protocols.protocol_v1_0_0.procedure_commands.procedure_commands import (
+    set_duty_cycle_t_off, set_duty_cycle_t_on, get_duty_cycle
+)
 # These relative imports should always import the files form the current protocol version
 from ..fields import fields as f
 from ..params import params as p
@@ -447,3 +449,14 @@ start_customizer = CommandContract(
     is_release=True,
     group_id=GROUPS.generic,
 )
+
+
+set_duty_cycle_t_off_v3_0_0 = copy.deepcopy(set_duty_cycle_t_off)
+set_duty_cycle_t_off_v3_0_0.answer_def.replace_field_def(f.field_duty_cycle_t_off_v3_0_0)
+
+set_duty_cycle_t_on_v3_0_0 = copy.deepcopy(set_duty_cycle_t_on)
+set_duty_cycle_t_on_v3_0_0.answer_def.replace_field_def(f.field_duty_cycle_t_on_v3_0_0)
+
+get_duty_cycle_v3_0_0 = copy.deepcopy(get_duty_cycle)
+get_duty_cycle_v3_0_0.answer_def.replace_field_def(f.field_duty_cycle_t_off_v3_0_0)
+get_duty_cycle_v3_0_0.answer_def.replace_field_def(f.field_duty_cycle_t_on_v3_0_0)

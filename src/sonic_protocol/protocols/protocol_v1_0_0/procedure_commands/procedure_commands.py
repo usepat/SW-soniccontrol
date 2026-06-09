@@ -425,6 +425,20 @@ notify_proc_failure = CommandContract(
     tags=["Notification", "Procedure"]
 )
 
+set_duty_cycle_t_off = generate_procedure_arg_setter_contract(
+    CommandCode.SET_DUTY_CYCLE_T_OFF,
+    ["!duty_cycle_t_off"],
+    GROUPS.procedures.duty_cycle,
+    response_field=fields.field_duty_cycle_t_off
+)
+
+set_duty_cycle_t_on = generate_procedure_arg_setter_contract(
+        CommandCode.SET_DUTY_CYCLE_T_ON,
+        ["!duty_cycle_t_on"],
+        GROUPS.procedures.duty_cycle,
+        response_field=fields.field_duty_cycle_t_on
+    )
+
 duty_cycle_proc_commands: List[CommandContract] = [
     generate_start_procedure_contract(
         CommandCode.SET_DUTY_CYCLE,
@@ -433,18 +447,8 @@ duty_cycle_proc_commands: List[CommandContract] = [
         description="Starts a duty cycle with the configured behavior."
     ),
     get_duty_cycle,
-    generate_procedure_arg_setter_contract(
-        CommandCode.SET_DUTY_CYCLE_T_OFF,
-        ["!duty_cycle_t_off"],
-        GROUPS.procedures.duty_cycle,
-        response_field=fields.field_duty_cycle_t_off
-    ),
-    generate_procedure_arg_setter_contract(
-        CommandCode.SET_DUTY_CYCLE_T_ON,
-        ["!duty_cycle_t_on"],
-        GROUPS.procedures.duty_cycle,
-        response_field=fields.field_duty_cycle_t_on
-    ),
+    set_duty_cycle_t_off,
+    set_duty_cycle_t_on,
     stop_command,
     continue_command,
     pause_command,

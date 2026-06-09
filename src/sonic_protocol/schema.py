@@ -89,6 +89,9 @@ class SIUnit(Enum):
     DEGREE = "°"
     PERCENT = "%"
 
+    # This is so ugly. We need a better way to transport times
+    MINUTE = "minutes"
+
 @total_ordering
 class SIPrefix(Enum):
     NANO  = 'n'
@@ -467,6 +470,16 @@ class AnswerDef():
 
     def field_defs(self) -> List[FieldDef]:
         return [ answer_field.to_field_def() for answer_field in self.fields ]
+
+    def replace_field_def(self, field: AnswerFieldDef):
+        for i in range(len(self.fields)):
+            if self.fields[i].field_name == field.field_name:
+                self.fields[i] = field
+                
+    
+    def add_field(self, field: AnswerFieldDef):
+        self.fields.append(field)
+            
 
 
 @attrs.define(auto_attribs=True)
