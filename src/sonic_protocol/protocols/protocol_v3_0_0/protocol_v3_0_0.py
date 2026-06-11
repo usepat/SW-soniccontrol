@@ -151,6 +151,8 @@ class Protocol_v3_0_0(ProtocolList):
         command_contract_dict.pop(CommandCode.SET_COM_PROT, None)
         command_contract_dict.pop(CommandCode.SET_TERMINATION, None)
         command_contract_dict.pop(CommandCode.BROADCAST_MODBUS_SERVER_ID, None)
+        command_contract_dict.pop(CommandCode.SET_WAVEFORM, None)
+        command_contract_dict.pop(CommandCode.GET_WAVEFORM, None)
 
         return command_contract_dict
 
