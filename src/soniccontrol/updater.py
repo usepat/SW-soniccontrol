@@ -24,7 +24,7 @@ class Updater(EventManager):
     def start(self) -> None:
         assert not self._running.is_set(), "The updater is already running"
         self._running.set()
-
+        
         def propagate_task_exception(task):
             try:
                 # this will raise the exception inside asyncio event loop,
@@ -32,7 +32,7 @@ class Updater(EventManager):
                 task.result()
             except asyncio.CancelledError:
                 pass 
-                
+
         self._task = asyncio.create_task(self._loop())
         self._task.add_done_callback(propagate_task_exception)
 

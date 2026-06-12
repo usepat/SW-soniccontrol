@@ -486,13 +486,14 @@ get_allocator_stats = CommandContract(
     ),
     answer_def=AnswerDef([
         AnswerFieldDef(EFieldName.ALLOCATOR_NAME, FieldType(str)),
-        AnswerFieldDef(EFieldName.SIZE, FieldType(field_type=np.uint16)),
-        AnswerFieldDef(EFieldName.CURRENT_ALLOCATIONS, FieldType(field_type=np.uint16)),
-        AnswerFieldDef(EFieldName.CURRENT_USAGE, FieldType(field_type=np.uint16)),
-        AnswerFieldDef(EFieldName.CURRENT_WASTED, FieldType(field_type=np.uint16)),
-        AnswerFieldDef(EFieldName.WATERMARK_ALLOCATIONS, FieldType(field_type=np.uint16)),
-        AnswerFieldDef(EFieldName.WATERMARK_USAGE, FieldType(field_type=np.uint16)),
-        AnswerFieldDef(EFieldName.WATERMARK_WASTED, FieldType(field_type=np.uint16))
+        AnswerFieldDef(EFieldName.INDEX, FieldType(field_type=np.uint8), UserManualAttrs("parent index. Allocators are hierarchical")),
+        AnswerFieldDef(EFieldName.SIZE, FieldType(field_type=np.uint32)),
+        AnswerFieldDef(EFieldName.CURRENT_ALLOCATIONS, FieldType(field_type=np.uint32)),
+        AnswerFieldDef(EFieldName.CURRENT_USAGE, FieldType(field_type=np.uint32)),
+        AnswerFieldDef(EFieldName.CURRENT_WASTED, FieldType(field_type=np.uint32)),
+        AnswerFieldDef(EFieldName.WATERMARK_ALLOCATIONS, FieldType(field_type=np.uint32)),
+        AnswerFieldDef(EFieldName.WATERMARK_USAGE, FieldType(field_type=np.uint32)),
+        AnswerFieldDef(EFieldName.WATERMARK_WASTED, FieldType(field_type=np.uint32))
     ]),
     user_manual_attrs=UserManualAttrs(
         description="Retrieves the allocator stats (size, num_allocations, usage, wasted) for a given allocator."

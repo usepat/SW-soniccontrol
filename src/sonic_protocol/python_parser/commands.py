@@ -492,6 +492,18 @@ class StartOperator(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.START_OPERATOR)
 
+@attrs.define()
+class GetNumAllocators(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_NUM_ALLOCATORS)
+
+@attrs.define()
+class GetAllocatorStats(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_ALLOCATOR_STATS)
+
+    index: int = attrs.field(alias=EFieldName.INDEX.name)
+
 
 # Legacy specific commands
 
