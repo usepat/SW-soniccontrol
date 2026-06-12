@@ -13,7 +13,8 @@ from .commands.commands import (
     get_num_tests, get_test_info, run_test, abort_test, get_test_validation_arg,
     start_diagnostic_tool, start_operator, set_dac_mV, 
     get_modbus_settings, set_modbus_baudrate, set_modbus_parity, set_modbus_server_id, set_modbus_uart_interface,
-    start_customizer, get_duty_cycle_v3_0_0, set_duty_cycle_t_off_v3_0_0, set_duty_cycle_t_on_v3_0_0
+    start_customizer, get_duty_cycle_v3_0_0, set_duty_cycle_t_off_v3_0_0, set_duty_cycle_t_on_v3_0_0,
+    get_allocator_stats, get_num_allocators
 )
 from .types.types import TestInteraction, TestResult, Parity, UartInterface
 
@@ -100,7 +101,9 @@ class Protocol_v3_0_0(ProtocolList):
                 CommandCode.GET_TEST_INFO,
                 CommandCode.RUN_TEST,
                 CommandCode.ABORT_TEST,
-                CommandCode.GET_TEST_VALIDATION_ARG
+                CommandCode.GET_TEST_VALIDATION_ARG,
+                CommandCode.GET_NUM_ALLOCATORS,
+                CommandCode.GET_ALLOCATOR_STATS
             ]
             return { key: value for key, value in command_contracts.items() if key in diagnostics_tool_command_codes }
 
@@ -119,7 +122,9 @@ class Protocol_v3_0_0(ProtocolList):
             set_modbus_parity, 
             set_modbus_server_id, 
             set_modbus_uart_interface,
-            start_customizer
+            start_customizer,
+            get_num_allocators,
+            get_allocator_stats
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_update_descale_v3_0_0])

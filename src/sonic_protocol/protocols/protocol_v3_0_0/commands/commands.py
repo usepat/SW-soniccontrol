@@ -460,3 +460,44 @@ set_duty_cycle_t_on_v3_0_0.answer_def.replace_field_def(f.field_duty_cycle_t_on_
 get_duty_cycle_v3_0_0 = copy.deepcopy(get_duty_cycle)
 get_duty_cycle_v3_0_0.answer_def.replace_field_def(f.field_duty_cycle_t_off_v3_0_0)
 get_duty_cycle_v3_0_0.answer_def.replace_field_def(f.field_duty_cycle_t_on_v3_0_0)
+
+
+get_num_allocators = CommandContract(
+    code=CommandCode.GET_NUM_ALLOCATORS,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?num_allocators")
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.COUNT, field_type=FieldType(field_type=np.uint8))
+    ]),
+    user_manual_attrs=UserManualAttrs(
+        description="Retrieves the number of internal allocators."
+    ),
+    is_release=False,
+    group_id=GROUPS.logging,
+    tags=["log"]
+)
+
+get_allocator_stats = CommandContract(
+    code=CommandCode.GET_ALLOCATOR_STATS,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?allocator_stats"),
+        index_param=p.param_index_uint8
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.ALLOCATOR_NAME, FieldType(str)),
+        AnswerFieldDef(EFieldName.SIZE, FieldType(field_type=np.uint16)),
+        AnswerFieldDef(EFieldName.CURRENT_ALLOCATIONS, FieldType(field_type=np.uint16)),
+        AnswerFieldDef(EFieldName.CURRENT_USAGE, FieldType(field_type=np.uint16)),
+        AnswerFieldDef(EFieldName.CURRENT_WASTED, FieldType(field_type=np.uint16)),
+        AnswerFieldDef(EFieldName.WATERMARK_ALLOCATIONS, FieldType(field_type=np.uint16)),
+        AnswerFieldDef(EFieldName.WATERMARK_USAGE, FieldType(field_type=np.uint16)),
+        AnswerFieldDef(EFieldName.WATERMARK_WASTED, FieldType(field_type=np.uint16))
+    ]),
+    user_manual_attrs=UserManualAttrs(
+        description="Retrieves the allocator stats (size, num_allocations, usage, wasted) for a given allocator."
+    ),
+    is_release=False,
+    group_id=GROUPS.logging,
+    tags=["log"]
+)

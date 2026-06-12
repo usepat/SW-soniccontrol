@@ -29,6 +29,9 @@ class BaseCommandCode(ICommandCode):
     SET_FLASH_USB = 50
     SET_FLASH_9600 = 51
     SET_FLASH_115200 = 52
+
+    GET_NUM_ALLOCATORS = 60
+    GET_ALLOCATOR_STATS = 61
     
     NOTIFY_MESSAGE = 18000
 
@@ -83,6 +86,8 @@ class CommandCode(ICommandCode):
     SET_FLASH_9600 = BaseCommandCode.SET_FLASH_9600.value
     SET_FLASH_115200 = BaseCommandCode.SET_FLASH_115200.value
 
+    GET_NUM_ALLOCATORS = BaseCommandCode.GET_NUM_ALLOCATORS.value
+    GET_ALLOCATOR_STATS = BaseCommandCode.GET_ALLOCATOR_STATS.value
 
     # 101 - 9999 are reserved for operator command codes
 

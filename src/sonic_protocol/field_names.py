@@ -33,6 +33,14 @@ class BaseFieldName(IEFieldName):
 
     TIMESTAMP = 21
 
+    ALLOCATOR_NAME = 22
+    SIZE = 23
+    CURRENT_USAGE = 24
+    CURRENT_WASTED = 25
+    CURRENT_ALLOCATIONS = 26
+    WATERMARK_USAGE = 27
+    WATERMARK_WASTED = 28
+    WATERMARK_ALLOCATIONS = 29
 
 
 @unique
@@ -65,6 +73,15 @@ class EFieldName(IEFieldName):
     LOGGER_NAME = BaseFieldName.LOGGER_NAME.value 
 
     TIMESTAMP = BaseFieldName.TIMESTAMP.value 
+
+    ALLOCATOR_NAME = BaseFieldName.ALLOCATOR_NAME.value 
+    SIZE = BaseFieldName.SIZE.value 
+    CURRENT_USAGE = BaseFieldName.CURRENT_USAGE.value 
+    CURRENT_WASTED = BaseFieldName.CURRENT_WASTED.value 
+    CURRENT_ALLOCATIONS = BaseFieldName.CURRENT_ALLOCATIONS.value 
+    WATERMARK_USAGE = BaseFieldName.WATERMARK_USAGE.value 
+    WATERMARK_WASTED = BaseFieldName.WATERMARK_WASTED.value 
+    WATERMARK_ALLOCATIONS = BaseFieldName.WATERMARK_ALLOCATIONS.value 
 
     HELP = 106
 
