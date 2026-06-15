@@ -126,8 +126,6 @@ class CommandCodeDeprecated(ICommandCode):
     SET_LOG_LEVEL = 1150
 
 
-    SET_DEFAULT = 9000
-
     # Setters with no corresponding getters
     SET_OFF = 1040
     SET_ON = 1041

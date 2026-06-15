@@ -227,8 +227,6 @@ class CommandCode(ICommandCode):
 
     SET_TERMINATION = 590
 
-    SET_DEFAULT = 600
-
     # can we delete those?
     # SET_PHYS_COM_CHANNEL = 2020 
 
