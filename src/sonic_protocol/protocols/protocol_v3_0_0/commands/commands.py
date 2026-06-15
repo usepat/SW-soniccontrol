@@ -502,3 +502,26 @@ get_allocator_stats = CommandContract(
     group_id=GROUPS.logging,
     tags=["log"]
 )
+
+get_stack_usage = CommandContract(
+    code=CommandCode.GET_STACK_USAGE,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?stack_usage"),
+        index_param=CommandParamDef(
+            name=EFieldName.INDEX,
+            param_type=FieldType(field_type=np.uint8, min_value=np.uint8(0)),
+            user_manual_attrs=UserManualAttrs("Not used at the moment. But maybe in the future, for getting information about stacks of multiple cores")
+        )
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.SIZE, FieldType(field_type=np.uint32)),
+        AnswerFieldDef(EFieldName.CURRENT_USAGE, FieldType(field_type=np.uint32)),
+        AnswerFieldDef(EFieldName.WATERMARK_USAGE, FieldType(field_type=np.uint32)),
+    ]),
+    user_manual_attrs=UserManualAttrs(
+        description="Retrieves usage stats for the stack of core0"
+    ),
+    is_release=False,
+    group_id=GROUPS.logging,
+    tags=["log"]
+)

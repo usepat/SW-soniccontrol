@@ -504,6 +504,12 @@ class GetAllocatorStats(Command):
 
     index: int = attrs.field(alias=EFieldName.INDEX.name)
 
+@attrs.define()
+class GetStackUsage(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_STACK_USAGE)
+
+    index: int = attrs.field(alias=EFieldName.INDEX.name)
 
 # Legacy specific commands
 

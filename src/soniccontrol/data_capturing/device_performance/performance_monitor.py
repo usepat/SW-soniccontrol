@@ -1,6 +1,6 @@
 import asyncio
 from typing import List, Optional
-from .memory_snapshot import AllocatorInfo, AllocatorUsage, MemorySnapShot
+from .memory_snapshot import AllocatorInfo, AllocatorUsage, MemorySnapShot, StackInfo
 from soniccontrol.events import Event, EventManager
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol import commands as cmds
@@ -51,6 +51,13 @@ class PerformanceMonitor(EventManager):
             # if no connection abort this task
             raise asyncio.CancelledError()
 
+        answer = await self._device.execute_command(cmds.GetStackUsage(0))
+        stack_usage = StackInfo(
+            answer[EFieldName.SIZE],
+            answer[EFieldName.CURRENT_USAGE],
+            answer[EFieldName.WATERMARK_USAGE]
+        )
+
         answer = await self._device.execute_command(cmds.GetNumAllocators())
         num_allocators = answer[EFieldName.COUNT]
 
@@ -79,7 +86,7 @@ class PerformanceMonitor(EventManager):
         self.emit(
             Event(
                 PerformanceMonitor.SAMPLED_SNAP_SHOT_EVENT, 
-                snap_shot=MemorySnapShot(allocator_stats)
+                snap_shot=MemorySnapShot(allocator_stats, stack_usage)
             )
         )
     

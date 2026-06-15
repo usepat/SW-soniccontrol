@@ -32,6 +32,7 @@ class BaseCommandCode(ICommandCode):
 
     GET_NUM_ALLOCATORS = 60
     GET_ALLOCATOR_STATS = 61
+    GET_STACK_USAGE = 62
     
     NOTIFY_MESSAGE = 18000
 
@@ -88,6 +89,7 @@ class CommandCode(ICommandCode):
 
     GET_NUM_ALLOCATORS = BaseCommandCode.GET_NUM_ALLOCATORS.value
     GET_ALLOCATOR_STATS = BaseCommandCode.GET_ALLOCATOR_STATS.value
+    GET_STACK_USAGE = BaseCommandCode.GET_STACK_USAGE.value
 
     # 101 - 9999 are reserved for operator command codes
 

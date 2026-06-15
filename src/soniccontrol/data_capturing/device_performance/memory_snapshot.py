@@ -17,7 +17,7 @@ class AllocatorInfo:
 
     current_usage: AllocatorUsage
     all_high_usage: AllocatorUsage
-
+    
 
 @attrs.define()
 class StackInfo:
@@ -30,6 +30,6 @@ class StackInfo:
 class MemorySnapShot:
     # allocators contain also one describing the RAM.
     allocators: List[AllocatorInfo]
-    stack = StackInfo(0, 0, 0) # TODO
+    stack: StackInfo = StackInfo(0, 0, 0)
 
     time_stamp: datetime.datetime = attrs.field(factory=datetime.datetime.now, init=False)
