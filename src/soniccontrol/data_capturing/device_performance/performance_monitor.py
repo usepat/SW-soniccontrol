@@ -39,14 +39,20 @@ class PerformanceMonitor(EventManager):
     async def _loop(self):
         try:
             while self._running:
-                await self._sample_memory_snapshot()
+                snap_shot = await self.sample_memory_snapshot()
+                self.emit(
+                    Event(
+                        PerformanceMonitor.SAMPLED_SNAP_SHOT_EVENT, 
+                        snap_shot=snap_shot
+                    )
+                )
         except asyncio.CancelledError:
             pass
         except Exception:
             self._device._logger.exception("Performance monitor crashed")
             raise
 
-    async def _sample_memory_snapshot(self):
+    async def sample_memory_snapshot(self):
         if not self._device.communicator.connection_opened.is_set():
             # if no connection abort this task
             raise asyncio.CancelledError()
@@ -83,11 +89,6 @@ class PerformanceMonitor(EventManager):
                 )
             )
         
-        self.emit(
-            Event(
-                PerformanceMonitor.SAMPLED_SNAP_SHOT_EVENT, 
-                snap_shot=MemorySnapShot(allocator_stats, stack_usage)
-            )
-        )
+        return MemorySnapShot(allocator_stats, stack_usage)
     
 
