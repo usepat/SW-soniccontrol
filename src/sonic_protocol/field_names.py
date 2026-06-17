@@ -41,6 +41,7 @@ class BaseFieldName(IEFieldName):
     WATERMARK_USAGE = 27
     WATERMARK_WASTED = 28
     WATERMARK_ALLOCATIONS = 29
+    LIMIT = 30
 
 
 @unique
@@ -82,6 +83,7 @@ class EFieldName(IEFieldName):
     WATERMARK_USAGE = BaseFieldName.WATERMARK_USAGE.value 
     WATERMARK_WASTED = BaseFieldName.WATERMARK_WASTED.value 
     WATERMARK_ALLOCATIONS = BaseFieldName.WATERMARK_ALLOCATIONS.value 
+    LIMIT = BaseFieldName.LIMIT.value
 
     HELP = 106
 

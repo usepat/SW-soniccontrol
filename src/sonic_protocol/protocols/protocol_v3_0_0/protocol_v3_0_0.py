@@ -14,7 +14,7 @@ from .commands.commands import (
     start_diagnostic_tool, start_operator, set_dac_mV, 
     get_modbus_settings, set_modbus_baudrate, set_modbus_parity, set_modbus_server_id, set_modbus_uart_interface,
     start_customizer, get_duty_cycle_v3_0_0, set_duty_cycle_t_off_v3_0_0, set_duty_cycle_t_on_v3_0_0,
-    get_allocator_stats, get_num_allocators, get_stack_usage
+    get_allocator_stats, get_num_allocators, get_stack_usage, get_alloc_histogram_num_bins, get_alloc_histogram_bin
 )
 from .types.types import TestInteraction, TestResult, Parity, UartInterface
 
@@ -125,7 +125,9 @@ class Protocol_v3_0_0(ProtocolList):
             start_customizer,
             get_num_allocators,
             get_allocator_stats,
-            get_stack_usage
+            get_stack_usage,
+            get_alloc_histogram_num_bins,
+            get_alloc_histogram_bin
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             command_contract_list.extend([get_update_descale_v3_0_0])

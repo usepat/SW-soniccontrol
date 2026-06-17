@@ -450,7 +450,7 @@ get_num_allocators = CommandContract(
     ),
     is_release=False,
     group_id=GROUPS.logging,
-    tags=["log"]
+    tags=["log", "performance"]
 )
 
 get_allocator_stats = CommandContract(
@@ -475,7 +475,7 @@ get_allocator_stats = CommandContract(
     ),
     is_release=False,
     group_id=GROUPS.logging,
-    tags=["log"]
+    tags=["log", "performance"]
 )
 
 get_stack_usage = CommandContract(
@@ -498,5 +498,37 @@ get_stack_usage = CommandContract(
     ),
     is_release=False,
     group_id=GROUPS.logging,
-    tags=["log"]
+    tags=["log", "performance"]
+)
+
+get_alloc_histogram_num_bins = CommandContract(
+    code=CommandCode.GET_ALLOC_HISTOGRAM_NUM_BINS,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?alloc_hist_num_bins")
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.COUNT, field_type=FieldType(field_type=np.uint8))
+    ]),
+    user_manual_attrs=UserManualAttrs(
+        description="Retrieves the number of bins in the allocation histogram"
+    ),
+    is_release=False,
+    group_id=GROUPS.logging,
+    tags=["log", "performance"]
+)
+
+get_alloc_histogram_bin = CommandContract(
+    code=CommandCode.GET_ALLOC_HISTOGRAM_BIN,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?alloc_hist_bin"),
+        index_param=p.param_index_uint8
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.VALUE, FieldType(field_type=np.uint32)),
+        AnswerFieldDef(EFieldName.LIMIT, FieldType(field_type=np.uint32), UserManualAttrs("the upper bound of the bin")),
+        AnswerFieldDef(EFieldName.SIZE, FieldType(field_type=np.uint32), UserManualAttrs("the length of the bin")),
+    ]),
+    is_release=False,
+    group_id=GROUPS.logging,
+    tags=["log", "performance"]
 )

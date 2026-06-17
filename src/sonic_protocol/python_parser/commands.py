@@ -511,6 +511,18 @@ class GetStackUsage(Command):
 
     index: int = attrs.field(alias=EFieldName.INDEX.name)
 
+@attrs.define()
+class GetAllocHistogramNumBins(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_ALLOC_HISTOGRAM_NUM_BINS)
+
+@attrs.define()
+class GetAllocHistogramBin(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_ALLOC_HISTOGRAM_BIN)
+
+    index: int = attrs.field(alias=EFieldName.INDEX.name)
+
 # Legacy specific commands
 
 # We need a different auto and wipe command so that procedure instantiator  knows which proc to create

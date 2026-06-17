@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Awaitable, Callable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional
 from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
 import tkinter as tk
@@ -41,7 +41,7 @@ class DeviceWindowManager:
         self._opened_device_windows: Dict[int, DeviceConnectionClass] = {}
         self._attempt_reconnect_callback: Optional[Callable[..., Awaitable[None]]] = None
 
-    async def open_rescue_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
+    async def _open_rescue_window(self, sonicamp: SonicDevice, connection : Connection) -> DeviceWindow:
         device_window = RescueWindow(sonicamp, self._root, connection.connection_name)
         await self._open_device_window(device_window, connection)
         
@@ -60,19 +60,20 @@ class DeviceWindowManager:
         ) 
         await device_window.wait_finished_loading()  
         device_window.view.root.update_idletasks()
+
+        return device_window
         
 
-    async def attempt_reconnection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
+    async def attempt_reconnection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False) -> DeviceWindow:
         try:
             new_connection = await redetect_connection(connection)
         except asyncio.TimeoutError:
-            MessageBox.show_error(self._root, "Could not reconnect to the device")
-            return
+            raise ConnectionError("Could not reconnect to the device")
         else:
-            await self.attempt_connection(new_connection, is_legacy_device, build_configurator)
+            return await self.attempt_connection(new_connection, is_legacy_device, build_configurator)
 
         
-    async def attempt_connection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
+    async def attempt_connection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False) -> DeviceWindow:
         logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
         logger.debug("Established serial connection")
 
@@ -96,7 +97,7 @@ class DeviceWindowManager:
             message_box = MessageBox.show_yes_no(self._root, message)
             user_answer: Optional[DialogOptions] = await message_box.wait_for_answer()
             if user_answer is None or user_answer == DialogOptions.NO: 
-                return
+                raise asyncio.CancelledError()
             
             communicator = SerialCommunicator(logger=logger) # type: ignore
             await communicator.open_communication(connection)
@@ -116,9 +117,11 @@ class DeviceWindowManager:
             assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
 
             device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
-            await self._open_device_window(device_window, connection, is_legacy_device=is_legacy_device, build_configurator=build_configurator)
+            window = await self._open_device_window(device_window, connection, is_legacy_device=is_legacy_device, build_configurator=build_configurator)
         else:
-            await self.open_rescue_window(sonicamp, connection)
+            window = await self._open_rescue_window(sonicamp, connection)
+        
+        return window
 
 
     def set_attempt_reconnect_callback(self, callback: Callable[..., Awaitable[None]]):
@@ -149,27 +152,30 @@ class ConnectionWindow(TopLevelWindow):
         def on_animation_end() -> None:
             self._view.loading_text = ""
         animation = Animator(DotAnimationSequence("Connecting"), set_loading_animation_frame, 2., done_callback=on_animation_end)
-        decorator = load_animation(animation)
+        animation_decorator = load_animation(animation)
         self._device_window_manager = DeviceWindowManager(self._view)
         
-        async def _attempt_connection(_connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
-            try:
-                await self._device_window_manager.attempt_connection(_connection, is_legacy_device, build_configurator)
-            finally:
-                self._is_connecting = False
-                self._finished_connecting.set()
-
-        async def _attempt_reconnection(_connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
-            try:
-                await self._device_window_manager.attempt_reconnection(_connection, is_legacy_device, build_configurator)
-            finally:
-                self._is_connecting = False
-                self._finished_connecting.set()
+        def decorate_connection_func(connection_func: Callable[[Connection, bool, bool], Coroutine[Any, Any, Any]]):
+            # the wrapper is responsible for setting the future and is_connecting variable, as well as handling errors
+            async def _wrapper(_connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
+                try:
+                    window = await connection_func(_connection, is_legacy_device, build_configurator)
+                except asyncio.CancelledError as e:
+                    self._window_opened_future.set_exception(e)
+                except Exception as e:
+                    MessageBox.show_error(self.view.root, str(e))
+                    self._window_opened_future.set_exception(e)
+                else:
+                    self._window_opened_future.set_result(window)
+                finally:
+                    self._is_connecting = False
+            # the decorator is responsible for the controlling the loading animation
+            return animation_decorator(_wrapper)
 
         self._is_connecting = False
-        self._finished_connecting: asyncio.Event = asyncio.Event() 
-        self._attempt_connection = decorator(_attempt_connection)
-        self._attempt_reconnection = decorator(_attempt_reconnection)
+        self._window_opened_future: asyncio.Future[DeviceWindow] = asyncio.Future() 
+        self._attempt_connection = decorate_connection_func(self._device_window_manager.attempt_connection)
+        self._attempt_reconnection = decorate_connection_func(self._device_window_manager.attempt_reconnection)
         self._device_window_manager.set_attempt_reconnect_callback(self._attempt_reconnection)
         
         self._view.set_connect_via_url_button_command(self._on_connect_via_url)
@@ -192,9 +198,12 @@ class ConnectionWindow(TopLevelWindow):
         self._view.set_ports(list(self._dev_infos.keys()))
         self._loaded_ports.set()
 
-    async def wait_until_connected(self):
-        await self._finished_connecting.wait()
-        self._finished_connecting.clear()
+    async def wait_until_window_loaded(self):
+        await self._window_opened_future
+        result = self._window_opened_future.result()
+        self._window_opened_future = asyncio.Future()
+        return result
+
 
     @async_handler
     async def _on_connect_via_url(self):

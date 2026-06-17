@@ -9,6 +9,7 @@ from sonic_pytest.plugin_data import SonicControlPlugin
 from soniccontrol import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.app_config import PLATFORM, System
+from soniccontrol.data_capturing.device_performance.performance_monitor import PerformanceMonitor
 from soniccontrol.fw_device import create_device_discovery
 from soniccontrol_gui.plugins.device_plugin import register_device_plugins
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -18,6 +19,7 @@ from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
 from sonic_pytest.gui.workflows import postman_wait_for_worker_to_be_connected, send_over_serial_monitor
 from sonic_pytest.fixtures import create_worker_process_impl
+from soniccontrol_gui.views.core.postman_window import PostmanDeviceWindow
 
 
 # NOTE: If you write a Test, it will automatically use the fixtures below, because they are autouse=True
@@ -111,7 +113,7 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
     else:
         controller.press_button(widget_names.MESSAGE_BOX_OPTION_YES)
 
-    await connection_window.wait_until_connected()
+    device_window = await connection_window.wait_until_window_loaded()
     # handle all events from tkinter. Ensure everything is loaded
     await controller.execute_events_until_idle()
 
@@ -121,10 +123,23 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
         # connect to the worker over the postman window
         # the fixture create_worker_process is responsible for starting the worker simulation process
         controller.press_button(widget_names.widget_of_window(widget_names.POSTMAN, widget_names.CONNECT_TO_WORKER_BUTTON))
-        # We just wait until some worker specific widget got registered.
-        # FIXME: I have no idea how I should implement waiting for the worker to be connected. Maybe registering the device window. Idk.
-        await controller.wait_for_widget_to_be_registered(widget_names.SPECTRUM_MEASURE_TAB, 5.0)
-        await controller.execute_events_until_idle()
+
+        assert isinstance(device_window, PostmanDeviceWindow) # for correct type hints
+        device_window = await asyncio.wait_for(device_window.wait_until_worker_window_loaded(), 5) 
+        
+    yield device_window
+
+
+@pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
+async def performance_monitor(device_window):
+    device = device_window.device
+    assert device is not None
+
+    monitor = PerformanceMonitor(device)
+    yield monitor
+
+    snap_shot = await monitor.sample_memory_snapshot()
+    snap_shot.check_performance()
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)

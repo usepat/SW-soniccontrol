@@ -1,56 +1,37 @@
 import asyncio
 from typing import List, Optional
-from .memory_snapshot import AllocatorInfo, AllocatorUsage, MemorySnapShot, StackInfo
+
+from soniccontrol.utils.cyclic_task import CyclicTask
+from .memory_snapshot import AllocationHistogramBin, AllocatorInfo, AllocatorUsage, MemorySnapShot, StackInfo
 from soniccontrol.events import Event, EventManager
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol import commands as cmds
 from soniccontrol import EFieldName
 
 
-class PerformanceMonitor(EventManager):
+class PerformanceMonitor(EventManager, CyclicTask):
     SAMPLED_SNAP_SHOT_EVENT = "SAMPLED_SNAP_SHOT_EVENT"
 
-    def __init__(self, device: SonicDevice):
-        super().__init__()
+    def __init__(self, device: SonicDevice, time_between_snapshots_ms: int = 5000):
+        EventManager.__init__(self)
+        CyclicTask.__init__(self, self._sample_and_emit, time_between_snapshots_ms, device._logger)
         self._device = device
-        self._running: asyncio.Event = asyncio.Event()
-        self._task: Optional[asyncio.Task] = None
 
-    def start(self):
-        assert not self._running.is_set(), "The updater is already running"
-        self._running.set()
-        
-        def propagate_task_exception(task):
-            try:
-                # this will raise the exception inside asyncio event loop,
-                #  the global exception handler will handle it
-                task.result()
-            except asyncio.CancelledError:
-                pass 
 
-        self._task = asyncio.create_task(self._loop())
-        self._task.add_done_callback(propagate_task_exception)
-
-    async def stop(self):
-        self._running.clear()
-        if self._task is not None:
-            await self._task
-
-    async def _loop(self):
-        try:
-            while self._running:
-                await self._sample_memory_snapshot()
-        except asyncio.CancelledError:
-            pass
-        except Exception:
-            self._device._logger.exception("Performance monitor crashed")
-            raise
-
-    async def _sample_memory_snapshot(self):
+    async def _sample_and_emit(self):
         if not self._device.communicator.connection_opened.is_set():
-            # if no connection abort this task
-            raise asyncio.CancelledError()
+            # if no connection then make no snap shot. but keep running.
+            return
 
+        snap_shot = await self.sample_memory_snapshot()
+        self.emit(
+            Event(
+                PerformanceMonitor.SAMPLED_SNAP_SHOT_EVENT, 
+                snap_shot=snap_shot
+            )
+        )    
+
+    async def sample_memory_snapshot(self):
         answer = await self._device.execute_command(cmds.GetStackUsage(0))
         stack_usage = StackInfo(
             answer[EFieldName.SIZE],
@@ -82,12 +63,21 @@ class PerformanceMonitor(EventManager):
                     )
                 )
             )
-        
-        self.emit(
-            Event(
-                PerformanceMonitor.SAMPLED_SNAP_SHOT_EVENT, 
-                snap_shot=MemorySnapShot(allocator_stats, stack_usage)
+
+        answer = await self._device.execute_command(cmds.GetAllocHistogramNumBins())
+        num_bins = answer[EFieldName.COUNT]
+
+        allocation_histogram = []
+        for i in range(num_bins):
+            answer = await self._device.execute_command(cmds.GetAllocHistogramBin(i))
+            allocation_histogram.append(
+                AllocationHistogramBin(
+                    answer[EFieldName.VALUE],
+                    answer[EFieldName.LIMIT],
+                    answer[EFieldName.SIZE]
+                )
             )
-        )
+
+        return MemorySnapShot(allocator_stats, allocation_histogram, stack_usage)
     
 
