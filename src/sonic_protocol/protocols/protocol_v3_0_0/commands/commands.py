@@ -39,8 +39,6 @@ for idx, field in enumerate(get_update_worker_v3_0_0.answer_def.fields):
         get_update_worker_v3_0_0.answer_def.fields[idx] = f.phase_field
     if field.field_name == EFieldName.TS_FLAG:
         get_update_worker_v3_0_0.answer_def.fields[idx] = f.ts_flag_field
-    # if field.field_name == EFieldName.FREQUENCY:
-    #     get_update_worker_v3_0_0.answer_def.fields[idx] = f.frequency_field
 
 get_update_descale_v3_0_0 = copy.deepcopy(cmd_v2.get_update_descale_v2_0_0)
 get_update_descale_v3_0_0.code = CommandCode.GET_UPDATE_DESCALE_V3_0_0
@@ -53,29 +51,6 @@ for idx, field in enumerate(get_update_descale_v3_0_0.answer_def.fields):
 assert irms_index is not None, "IRMS fieldname not found in descale update command"
 get_update_descale_v3_0_0.answer_def.fields.insert(irms_index + 1, f.ipp_field)
 
-get_frequency_v3_0_0 = copy.deepcopy(trcmd_v1.get_frequency)
-for idx, field in enumerate(get_frequency_v3_0_0.answer_def.fields):
-    if field.field_name == EFieldName.FREQUENCY:
-        get_frequency_v3_0_0.answer_def.fields[idx] = f.frequency_field
-
-set_frequency_v3_0_0 = copy.deepcopy(trcmd_v1.set_frequency)
-assert(set_frequency_v3_0_0.command_def)
-set_frequency_v3_0_0.command_def.setter_param = p.frequency_param
-for idx, field in enumerate(set_frequency_v3_0_0.answer_def.fields):
-    if field.field_name == EFieldName.FREQUENCY:
-        set_frequency_v3_0_0.answer_def.fields[idx] = f.frequency_field
-
-get_atf_v3_0_0 = copy.deepcopy(trcmd_v1.get_atf)
-for idx, field in enumerate(get_atf_v3_0_0.answer_def.fields):
-    if field.field_name == EFieldName.ATF:
-        get_atf_v3_0_0.answer_def.fields[idx] = f.atf_field
-
-set_atf_v3_0_0 = copy.deepcopy(trcmd_v1.set_atf)
-assert(set_atf_v3_0_0.command_def)
-set_atf_v3_0_0.command_def.setter_param = p.atf_param
-for idx, field in enumerate(set_atf_v3_0_0.answer_def.fields):
-    if field.field_name == EFieldName.ATF:
-        set_atf_v3_0_0.answer_def.fields[idx] = f.atf_field
 
 get_ramp_v3_0_0 = copy.deepcopy(prcmd_v1.get_ramp)
 get_ramp_v3_0_0.answer_def.fields.append(

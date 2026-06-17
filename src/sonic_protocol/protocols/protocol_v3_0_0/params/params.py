@@ -9,18 +9,6 @@ from ..fields import fields as f
 #     param_type=f.template_field_type
 # )
 
-frequency_param = CommandParamDef(
-    name=EFieldName.FREQUENCY,
-    param_type=f.field_type_frequency,
-    user_manual_attrs=UserManualAttrs(
-        description="Frequency of the transducer"
-    )
-)
-
-atf_param = CommandParamDef(
-    name=EFieldName.ATF,
-    param_type=f.field_type_atf
-)
 
 param_index_uint8 = CommandParamDef(
     name=EFieldName.INDEX,
