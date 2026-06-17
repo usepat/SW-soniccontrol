@@ -27,9 +27,17 @@ class StackInfo:
 
 
 @attrs.define()
+class AllocationHistogramBin:
+    value: int
+    upper_bound: int
+    length: int
+
+
+@attrs.define()
 class MemorySnapShot:
     # allocators contain also one describing the RAM.
     allocators: List[AllocatorInfo]
+    allocation_histogram: List[AllocationHistogramBin]
     stack: StackInfo = StackInfo(0, 0, 0)
 
     time_stamp: datetime.datetime = attrs.field(factory=datetime.datetime.now, init=False)

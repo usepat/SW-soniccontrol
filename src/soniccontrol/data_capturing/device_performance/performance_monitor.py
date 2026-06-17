@@ -1,6 +1,6 @@
 import asyncio
 from typing import List, Optional
-from .memory_snapshot import AllocatorInfo, AllocatorUsage, MemorySnapShot, StackInfo
+from .memory_snapshot import AllocationHistogramBin, AllocatorInfo, AllocatorUsage, MemorySnapShot, StackInfo
 from soniccontrol.events import Event, EventManager
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol import commands as cmds
@@ -88,7 +88,21 @@ class PerformanceMonitor(EventManager):
                     )
                 )
             )
-        
-        return MemorySnapShot(allocator_stats, stack_usage)
+
+        answer = await self._device.execute_command(cmds.GetAllocHistogramNumBins())
+        num_bins = answer[EFieldName.COUNT]
+
+        allocation_histogram = []
+        for i in range(num_bins):
+            answer = await self._device.execute_command(cmds.GetAllocHistogramBin(i))
+            allocation_histogram.append(
+                AllocationHistogramBin(
+                    answer[EFieldName.VALUE],
+                    answer[EFieldName.LIMIT],
+                    answer[EFieldName.SIZE]
+                )
+            )
+
+        return MemorySnapShot(allocator_stats, allocation_histogram, stack_usage)
     
 
