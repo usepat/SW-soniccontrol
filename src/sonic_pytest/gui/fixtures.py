@@ -5,12 +5,14 @@ from async_tkinter_loop import main_loop
 import pytest_asyncio
 from ttkbootstrap.utility import enable_high_dpi_awareness
 
+from soniccontrol import commands as cmds
 from sonic_pytest.plugin_data import SonicControlPlugin
 from soniccontrol import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.app_config import PLATFORM, System
 from soniccontrol.data_capturing.device_performance.performance_monitor import PerformanceMonitor
 from soniccontrol.fw_device import create_device_discovery
+from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.plugins.device_plugin import register_device_plugins
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -132,14 +134,15 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
 async def performance_monitor(device_window):
-    device = device_window.device
+    device: SonicDevice = device_window.device
     assert device is not None
 
     monitor = PerformanceMonitor(device)
     yield monitor
 
-    snap_shot = await monitor.sample_memory_snapshot()
-    snap_shot.check_performance()
+    if device.has_command(cmds.GetNumAllocators()):
+        snap_shot = await monitor.sample_memory_snapshot()
+        snap_shot.check_performance()
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)

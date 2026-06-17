@@ -5,6 +5,7 @@ import pytest_asyncio
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
 from sonic_protocol.schema import ControlMode, DeviceParamConstants, Loglevel
 from soniccontrol import DeviceParamConstantType
+from soniccontrol import commands as cmds
 from sonic_protocol.python_parser import commands
 from soniccontrol.data_capturing.device_performance.performance_monitor import PerformanceMonitor
 from soniccontrol.fw_device.connection import CLIConnection, ModbusConnection
@@ -111,12 +112,14 @@ async def remote_controller(request, tmp_path_factory, create_worker_process):
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
 async def performance_monitor(remote_controller):
-    monitor = PerformanceMonitor(remote_controller.device)
+    device = remote_controller.device
+    monitor = PerformanceMonitor(device)
 
     yield monitor
 
-    snap_shot = await monitor.sample_memory_snapshot()
-    snap_shot.check_performance()
+    if device.has_command(cmds.GetNumAllocators()):
+        snap_shot = await monitor.sample_memory_snapshot()
+        snap_shot.check_performance()
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
