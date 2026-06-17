@@ -179,6 +179,9 @@ class DiagnosticsWindow(DeviceWindow):
             MessageBox.show_error(root, str(e))
             raise
 
+    @property
+    def device(self) -> SonicDevice | None:
+        return self._device
 
 
 class HwTestingTabView(TabView):

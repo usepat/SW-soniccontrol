@@ -68,6 +68,10 @@ class RemoteController:
         self._proc_controller: ProcedureController = ProcedureController(self._device, updater=self._updater)
         self._scripting: NewScriptingFacade = NewScriptingFacade()
 
+    @property
+    def device(self) -> SonicDevice:
+        return self._device
+
     @staticmethod
     def _should_auto_start_updater(device: SonicDevice) -> bool:
         return not isinstance(device.communicator, ModbusCommunicator)

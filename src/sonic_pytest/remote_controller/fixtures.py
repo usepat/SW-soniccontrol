@@ -6,6 +6,7 @@ from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
 from sonic_protocol.schema import ControlMode, DeviceParamConstants, Loglevel
 from soniccontrol import DeviceParamConstantType
 from sonic_protocol.python_parser import commands
+from soniccontrol.data_capturing.device_performance.performance_monitor import PerformanceMonitor
 from soniccontrol.fw_device.connection import CLIConnection, ModbusConnection
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery
 from soniccontrol import RemoteController, DeviceType
@@ -106,6 +107,16 @@ async def remote_controller(request, tmp_path_factory, create_worker_process):
 
     # teardown
     await controller.disconnect()
+
+
+@pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
+async def performance_monitor(remote_controller):
+    monitor = PerformanceMonitor(remote_controller.device)
+
+    yield monitor
+
+    snap_shot = await monitor.sample_memory_snapshot()
+    snap_shot.check_performance()
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)

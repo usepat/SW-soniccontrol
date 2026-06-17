@@ -20,8 +20,7 @@ class PerformanceMonitor(EventManager, CyclicTask):
 
     async def _sample_and_emit(self):
         if not self._device.communicator.connection_opened.is_set():
-            # if no connection abort this task
-            self.running.clear()
+            # if no connection then make no snap shot. but keep running.
             return
 
         snap_shot = await self.sample_memory_snapshot()

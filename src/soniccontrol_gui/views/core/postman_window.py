@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any, Callable, Dict
 import ttkbootstrap as ttk
@@ -48,6 +49,7 @@ class PostmanHomeTab(UIComponent):
         self._device = device
         self._connection_name = connection_name
         self._worker_device_window: DeviceWindow | None = None
+        self._is_connected = asyncio.Event()
 
         self._view = PostmanHomeTabView(parent.view, parent_widget_name=parent.component_name)
         super().__init__(parent, self._view, self._logger)
@@ -81,11 +83,22 @@ class PostmanHomeTab(UIComponent):
             worker_device.communicator.subscribe(Communicator.DISCONNECTED_EVENT, self._on_close_communication_worker)
             self._worker_device_window.subscribe(DeviceWindow.CLOSE_EVENT, self._on_close_communication_worker)  
             self._worker_device_window.subscribe(DeviceWindow.RECONNECT_EVENT, lambda _: self._on_connect_to_worker())
+            await self._worker_device_window.wait_finished_loading()
+            self._is_connected.set()
+
+    async def wait_until_worker_window_loaded(self) -> DeviceWindow:
+        """
+            This function is only used for testing
+        """
+        await self._is_connected.wait()
+        assert self._worker_device_window is not None
+        return self._worker_device_window
 
     @async_handler
     async def _on_close_communication_worker(self, e: Event):
         self._worker_device_window = None
         self._view.enable_connection_button(True)
+        self._is_connected.clear()
 
     def on_execution_state_changed(self, e: PropertyChangeEvent):
         self._info_frame.on_execution_state_changed(e)
@@ -137,6 +150,14 @@ class PostmanDeviceWindow(DeviceWindow):
             self._logger.error(e)
             MessageBox.show_error(root, str(e))
             raise
+
+    @property
+    def device(self) -> SonicDevice | None:
+        return self._device
+    
+    async def wait_until_worker_window_loaded(self) -> DeviceWindow:
+        return await self._worker_connection_tab.wait_until_worker_window_loaded()
+
 
 
 class PostmanStatusBarView(View):

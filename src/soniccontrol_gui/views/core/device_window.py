@@ -7,7 +7,7 @@ import tkinter as tk
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
-from soniccontrol_gui.ui_component import TopLevelWindow, UIComponent
+from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.communication.communicator import Communicator
@@ -59,6 +59,15 @@ class DeviceWindow(TopLevelWindow):
         # This needs to be here, for the edge case, that the communicator got disconnected, before it could be subscribed
         if not self._communicator.connection_opened.is_set():
             self.on_disconnect()
+
+    @property
+    def device(self) -> SonicDevice | None:
+        """
+            This property is mainly used for testing purposes, because for a device managed by a window, 
+            we may want to access directly or attach a performance monitor.
+            Doing everything over the gui may be cumbersome in some cases.
+        """
+        return None
 
     @property
     def component_name(self) -> str | None:
@@ -240,6 +249,10 @@ class KnownDeviceWindow(DeviceWindow):
             self._logger.error(e)
             MessageBox.show_error(root, str(e))
             raise
+
+    @property
+    def device(self) -> SonicDevice | None:
+        return self._device
 
     @async_handler
     async def reconnect_after_flashing(self, success: bool):
