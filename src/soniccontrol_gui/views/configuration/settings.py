@@ -24,14 +24,14 @@ class Settings(UIComponent):
         self._updater = updater
 
         super().__init__(parent, self._view, self._logger)
-        self._view.set_updater_interval(updater.get_update_interval())
+        self._view.set_updater_interval(updater.iteration_interval)
         self._view.set_apply_settings_command(async_handler(self._apply_settings))
 
     async def _apply_settings(self) -> None:
         self._logger.debug("Apply settings")
         await self._updater.stop()
         self._logger.debug("Stopped updater")
-        self._updater.set_update_interval(self._view.get_updater_interval())
+        self._updater.iteration_interval = self._view.get_updater_interval()
         self._logger.debug("Set updater interval to %i", self._view.get_updater_interval())
         self._updater.start()
         self._logger.debug("Started updater")
