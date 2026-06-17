@@ -339,6 +339,6 @@ class SonicDevice:
 
         try:
             await self.disconnect()
-        except (ConnectionError, asyncio.IncompleteReadError):
+        except (TimeoutError, ConnectionError, asyncio.IncompleteReadError):
             pass # could throw a connection error, device may not respond anymore, because it is restarting
         

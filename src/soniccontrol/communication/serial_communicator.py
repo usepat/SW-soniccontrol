@@ -160,10 +160,12 @@ class SerialCommunicator(Communicator):
 
         self._restart = restart
         self._connection_opened.clear()
-        try:
+        # We need to stop the message fetcher before closing the connection because close_connection tries to empty the reader
+        await self._message_fetcher.stop()
+        try:  
             await asyncio.wait_for(self._connection.close_connection(), 1)
         finally:
-            await self._message_fetcher.stop()
+            
             self._reader = None
             self._writer = None
         self._logger.info("Disconnected from device")
