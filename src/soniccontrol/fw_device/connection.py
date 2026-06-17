@@ -119,7 +119,11 @@ class CLIConnection(Connection):
 
         if self.process.stdout:
             # avoid blocking of the process, by reading its output in the background
-            asyncio.create_task(self.process.stdout.read())
+            try:
+                await asyncio.wait_for(self.process.stdout.read(), timeout=2)
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                pass
+
 
         try:
             self.process.terminate()
