@@ -77,49 +77,6 @@ ts_flag_field = AnswerFieldDef(
     field_type=ts_flag_field_type
 )
 
-
-field_type_frequency = FieldType(
-    field_type=np.uint16,
-    si_unit=SIUnit.HERTZ,
-    si_prefix=SIPrefix.HECTO,
-	max_value=DeviceParamConstantType.MAX_FREQUENCY,
-	min_value=DeviceParamConstantType.MIN_FREQUENCY,
-)
-
-frequency_field = AnswerFieldDef(
-    field_name=EFieldName.FREQUENCY,
-    field_type=field_type_frequency,
-)
-
-# TODO ask Stefan Radel if we need 1Hz resolution for atfs, this would be fine I guess
-
-field_type_atf = FieldType(
-    field_type=np.uint16,
-    si_unit=SIUnit.HERTZ,
-    si_prefix=SIPrefix.HECTO,
-	max_value=DeviceParamConstantType.MAX_FREQUENCY,
-	min_value=DeviceParamConstantType.MIN_FREQUENCY,
-    allowed_values=(np.uint16(0),)
-)
-
-atf_field = AnswerFieldDef(
-    field_name=EFieldName.ATF,
-    field_type=field_type_atf
-)
-
-
-field_ramp_f_start = AnswerFieldDef(
-    field_name=EFieldName.RAMP_F_START,
-    field_type=field_type_frequency,
-    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Start: ")
-)
-
-field_ramp_f_stop = AnswerFieldDef(
-    field_name=EFieldName.RAMP_F_STOP,
-    field_type=field_type_frequency,
-    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Stop: ")
-)
-
 field_ramp_gain = AnswerFieldDef(
     field_name=EFieldName.RAMP_GAIN,
     field_type=field_type_gain,
