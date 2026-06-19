@@ -460,15 +460,15 @@ get_allocator_stats = CommandContract(
         index_param=p.param_index_uint8
     ),
     answer_def=AnswerDef([
-        AnswerFieldDef(EFieldName.ALLOCATOR_NAME, FieldType(str)),
-        AnswerFieldDef(EFieldName.INDEX, FieldType(field_type=np.uint8), UserManualAttrs("parent index. Allocators are hierarchical")),
-        AnswerFieldDef(EFieldName.SIZE, FieldType(field_type=np.uint32)),
-        AnswerFieldDef(EFieldName.CURRENT_ALLOCATIONS, FieldType(field_type=np.uint32)),
-        AnswerFieldDef(EFieldName.CURRENT_USAGE, FieldType(field_type=np.uint32)),
-        AnswerFieldDef(EFieldName.CURRENT_WASTED, FieldType(field_type=np.uint32)),
-        AnswerFieldDef(EFieldName.WATERMARK_ALLOCATIONS, FieldType(field_type=np.uint32)),
-        AnswerFieldDef(EFieldName.WATERMARK_USAGE, FieldType(field_type=np.uint32)),
-        AnswerFieldDef(EFieldName.WATERMARK_WASTED, FieldType(field_type=np.uint32))
+        AnswerFieldDef(EFieldName.ALLOCATOR_NAME, FieldType(str), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Name ")),
+        AnswerFieldDef(EFieldName.INDEX, FieldType(field_type=np.uint8), UserManualAttrs("parent index. Allocators are hierarchical"), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Parent Index ")),
+        AnswerFieldDef(EFieldName.SIZE, FieldType(field_type=np.uint32), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Size ")),
+        AnswerFieldDef(EFieldName.CURRENT_ALLOCATIONS, FieldType(field_type=np.uint32), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Allocations ")),
+        AnswerFieldDef(EFieldName.CURRENT_USAGE, FieldType(field_type=np.uint32), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Usage ")),
+        AnswerFieldDef(EFieldName.CURRENT_WASTED, FieldType(field_type=np.uint32), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Wasted ")),
+        AnswerFieldDef(EFieldName.WATERMARK_ALLOCATIONS, FieldType(field_type=np.uint32), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Watermark allocations ")),
+        AnswerFieldDef(EFieldName.WATERMARK_USAGE, FieldType(field_type=np.uint32), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Watermark usage ")),
+        AnswerFieldDef(EFieldName.WATERMARK_WASTED, FieldType(field_type=np.uint32), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Watermark wasted "))
     ]),
     user_manual_attrs=UserManualAttrs(
         description="Retrieves the allocator stats (size, num_allocations, usage, wasted) for a given allocator."

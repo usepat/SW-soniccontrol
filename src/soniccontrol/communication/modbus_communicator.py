@@ -513,6 +513,14 @@ async def main():
     assert command_contract
     answer = await communicator.send_command_and_validate(command_contract, GetUpdateDescale())
     print(answer)
+    command_contract = protocol.command_contracts.get(CommandCode.GET_UPDATE_DESCALE_V3_0_0)
+    assert command_contract
+    answer = await communicator.send_command_and_validate(command_contract, GetUpdateDescale())
+    print(answer)
+    command_contract = protocol.command_contracts.get(CommandCode.GET_UPDATE_DESCALE_V3_0_0)
+    assert command_contract
+    answer = await communicator.send_command_and_validate(command_contract, GetUpdateDescale())
+    print(answer)
     command_contract = protocol.command_contracts.get(CommandCode.SET_OFF)
     assert command_contract
     answer = await communicator.send_command_and_validate(command_contract, SetOff())

@@ -275,7 +275,20 @@ class SonicDevice:
                 return Answer(err_msg, False, True)
 
         if not self._uses_modbus():
-            return await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
+            # FIXME do we need some kind of backwards compatability manager?
+            # Move into Experiment store?
+            answer = await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
+            if self.protocol.info.version < Version(3, 0, 0) and self.protocol.info.device_type in [DeviceType.DESCALE, DeviceType.MVP_WORKER]:
+
+                # TODO ask David if there is a safer way to do this 
+                answer[EFieldName.URMS] = answer[EFieldName.URMS] / 1000
+                answer[EFieldName.IRMS] = answer[EFieldName.IRMS] / 1000
+                answer[EFieldName.TS_FLAG] = answer[EFieldName.TS_FLAG] / 1000
+                phase_uV = answer[EFieldName.PHASE]
+                phase_mdeg = (1800000 - phase_uV) / 10
+                phase_cdeg = max(0, min(180000, phase_mdeg)) / 100
+                answer[EFieldName.PHASE] = phase_cdeg
+            return answer
 
         if self._has_pending_modbus_commands() or self._modbus_operation_lock.locked():
             return Answer("Skipped update polling while command is running", False, False)

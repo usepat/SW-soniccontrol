@@ -53,6 +53,10 @@ class Answer:
 
     def __getitem__(self, key: IEFieldName):
         return self.field_value_dict[key]
+    
+    def __setitem__(self, key: IEFieldName, value):
+        # TODO ask David if there is a safer way to do this 
+        self.field_value_dict[key] = value
 
 
 @attrs.define()
