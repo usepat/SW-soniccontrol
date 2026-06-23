@@ -23,7 +23,8 @@ def create_connection_to_device(dev_info: FwDeviceInfo, baudrate: int = 115200, 
     if dev_info.is_remote:
         assert dev_info.remote_server_url is not None
         return RemoteServerConnection(dev_info.sys_name, dev_info, dev_info.remote_server_url, dev_info.sys_name, baudrate=baudrate, **kwargs)
-    
+    if kwargs.get("is_modbus", False):
+        return ModbusConnection(dev_info.sys_name, dev_info, dev_info.device_path, baudrate)
     assert dev_info.device_path, "The device has no device path set"
     return SerialConnection(dev_info.sys_name, dev_info, dev_info.device_path, baudrate)
 

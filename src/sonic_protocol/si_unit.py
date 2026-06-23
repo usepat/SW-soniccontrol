@@ -277,6 +277,21 @@ class GainSIVar(SIVar[int], si_meta=GAIN_META):
     def __init__(self, value: int = 1, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
+DESCALE_GAIN_META = SIVarMeta(
+    si_unit=SIUnit.PERCENT, 
+    si_prefix_min=SIPrefix.NONE, 
+    si_prefix_max=SIPrefix.NONE,
+    min_value=(1, SIPrefix.NONE),        # 0%
+    max_value=(100, SIPrefix.NONE)       # 150%
+)
+
+class DescaleGainSIVar(SIVar[int], si_meta=DESCALE_GAIN_META):
+    """Gain variable for home UI (single prefix - no combobox)."""
+    
+    def __init__(self, value: int = 1, si_prefix: SIPrefix = SIPrefix.NONE):
+        super().__init__(value=value, si_prefix=si_prefix)
+
+
 
 class AtfSiVar(SIVar[float], si_meta=ABSOLUTE_FREQUENCY_META):
     """ATF frequency variable with fixed metadata."""

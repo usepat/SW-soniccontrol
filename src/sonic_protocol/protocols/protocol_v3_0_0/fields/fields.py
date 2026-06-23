@@ -150,7 +150,8 @@ field_type_parity = FieldType(
 
 parity_field = AnswerFieldDef(
     field_name=EFieldName.PARITY,
-    field_type=field_type_parity
+    field_type=field_type_parity,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Parity: ")
 )
 
 field_type_baudrate = FieldType(
@@ -160,7 +161,8 @@ field_type_baudrate = FieldType(
 
 baudrate_field = AnswerFieldDef(
     field_name=EFieldName.BAUDRATE,
-    field_type=field_type_baudrate
+    field_type=field_type_baudrate,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Baud: ")
 )
 
 field_type_uart_interface = FieldType(
@@ -170,7 +172,8 @@ field_type_uart_interface = FieldType(
 
 uart_interface_field = AnswerFieldDef(
     field_name=EFieldName.UART_INTERFACE,
-    field_type=field_type_uart_interface
+    field_type=field_type_uart_interface,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Uart: ")
 )
 
 field_type_modbus_server_id = FieldType(
@@ -181,7 +184,8 @@ field_type_modbus_server_id = FieldType(
 
 modbus_server_id_field = AnswerFieldDef(
     field_name=EFieldName.MODBUS_SERVER_ID,
-    field_type=field_type_modbus_server_id
+    field_type=field_type_modbus_server_id,
+    sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="ID: ")
 )
 
 

@@ -19,7 +19,7 @@ from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
 from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
-from sonic_pytest.gui.workflows import postman_wait_for_worker_to_be_connected, send_over_serial_monitor
+from sonic_pytest.gui.workflows import postman_wait_for_worker_to_be_connected
 from sonic_pytest.fixtures import create_worker_process_impl
 from soniccontrol_gui.views.core.postman_window import PostmanDeviceWindow
 
@@ -81,7 +81,8 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
         assert port is not None, "You have to provide a port"
         dev_info = await create_device_discovery(plugin.remote_server_url).get_fw_device_info_of(port)
         assert dev_info is not None, "Could find no device on the given port"
-        
+        if plugin.modbus_serial_port is not None:
+            controller.press_button(widget_names.CONNECTION_IS_MODBUS_DEVICE_CHECKBOX)
         controller.set_widget_text(widget_names.CONNECTION_PORTS_COMBOBOX, dev_info.display_name)
         controller.press_button(widget_names.CONNECTION_CONNECT_VIA_URL_BUTTON)
     else:
@@ -131,6 +132,10 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
         
     yield device_window
 
+    with contextlib.suppress(Exception):
+        device_window.close()
+        await controller.execute_events_until_idle()
+
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
 async def performance_monitor(device_window):
@@ -140,14 +145,24 @@ async def performance_monitor(device_window):
     monitor = PerformanceMonitor(device)
     yield monitor
 
-    if device.has_command(cmds.GetNumAllocators()):
+    updater = getattr(device_window, "_updater", None)
+    was_updater_running = bool(updater is not None and updater.running.is_set())
+
+    if updater is not None and was_updater_running:
+        await updater.stop()
+
+    if device.communicator.connection_opened.is_set() and device.has_command(cmds.GetNumAllocators()):
         snap_shot = await monitor.sample_memory_snapshot()
         snap_shot.check_performance()
+
+    if updater is not None and was_updater_running and device.communicator.connection_opened.is_set():
+        updater.start()
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
 async def default_state(device_window):
     await send_over_serial_monitor("!freq=100000")
-    await send_over_serial_monitor("!gain=100")
+    await send_over_serial_monitor("!swf=5")
+    await send_over_serial_monitor("!gain=50")
     await send_over_serial_monitor("!OFF")
     GuiController().clear_text_changed_flags()

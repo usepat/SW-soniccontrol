@@ -56,12 +56,21 @@ class PlotBuilder:
         plot._plot.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M:%S"))
         
         plot.add_axis("irms_axis", "I$_{RMS}$ / mA")
+        plot.add_axis("ipp_axis", "I$_{PP}$ / mA")
 
         plot.add_line(
             EFieldName.IRMS.name, 
             "irms_axis",
             label="Irms",
             color="red",
+        )
+
+
+        plot.add_line(
+            EFieldName.IPP.name, 
+            "ipp_axis",
+            label="Ipp",
+            color="blue",
         )
 
         plot.update_plot()

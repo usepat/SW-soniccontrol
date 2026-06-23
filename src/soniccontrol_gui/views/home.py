@@ -4,7 +4,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from sonic_protocol.schema import DeviceType, SIPrefix
 from sonic_protocol.python_parser import commands
 from soniccontrol_gui.ui_component import UIComponent
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar, cls_converter
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, DescaleGainSIVar, GainSIVar, SwfSIVar, cls_converter
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.sonic_device import SonicDevice
@@ -34,17 +34,32 @@ class TransducerState:
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )
 
+@attrs.define
+class DescaleTransducerState:
+    """Configuration data for the home view controls."""
+    swf: SwfSIVar = attrs.field(
+        converter=cls_converter(SwfSIVar),
+        default=SwfSIVar(5),
+        metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
+    )
+    signal: bool = attrs.field(default=False, metadata={"field_view_kwargs":{"bootstyle": "round-toggle" }})
+    gain: DescaleGainSIVar = attrs.field(
+        converter=cls_converter(DescaleGainSIVar),
+        default=DescaleGainSIVar(value=1),
+        metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
+    )
 
 
 class Home(UIComponent):
     def __init__(self, parent: UIComponent, device: SonicDevice):
         self._device = device
         # Initialize home configuration
-        self._config = TransducerState()
-        # Adjust frequency range based on device type
         if device.info.device_type == DeviceType.DESCALE:
-            self._config.frequency.value = 0
-            # You can adjust min/max ranges here later
+            self._config = DescaleTransducerState()
+        else:
+            self._config = TransducerState()
+        # Adjust frequency range based on device type
+                    # You can adjust min/max ranges here later
         
         self._view = HomeView(parent.view)
         super().__init__(parent, self._view)
@@ -56,7 +71,7 @@ class Home(UIComponent):
             self, 
             self._view.form_slot, 
             "Home Controls", 
-            TransducerState, 
+            self._config.__class__, 
             "home",
             model_dict=attrs.asdict(self._config),
             use_scroll=False
@@ -66,13 +81,14 @@ class Home(UIComponent):
 
     @async_handler
     async def _on_send_pressed(self) -> None:
-        freq = self.freq
         gain = self.gain
         signal = self.signal
 
-        if self._device.info.device_type == 'descale':
-            await self._device.execute_command(commands.SetSwf(freq))
+        if self._device.info.device_type == DeviceType.DESCALE:
+            swf = self.swf
+            await self._device.execute_command(commands.SetSwf(swf))
         else:
+            freq = self.freq
             await self._device.execute_command(commands.SetFrequency(freq))
         await self._device.execute_command(commands.SetGain(gain))
         if signal:
@@ -88,6 +104,10 @@ class Home(UIComponent):
     @property 
     def freq(self) -> int:
         return int(self._form_widget.attrs_object.frequency.to_prefix(SIPrefix.NONE))
+    
+    @property 
+    def swf(self) -> int:
+        return int(self._form_widget.attrs_object.swf.to_prefix(SIPrefix.NONE))
     
     @property
     def gain(self) -> int:

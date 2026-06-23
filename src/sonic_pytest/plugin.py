@@ -50,6 +50,10 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
+        "skip_if_modbus_enabled: mark test to run only if device is not a modbus device",
+    )
+    config.addinivalue_line(
+        "markers",
         "skip_remote_test_setup: skip the default remote test state reset fixture",
     )
 
@@ -85,6 +89,8 @@ def pytest_configure(config):
 
 
 def pytest_runtest_setup(item):
+    if item.get_closest_marker("skip_if_modbus_enabled") and item.config._sonic_control_plugin.modbus_serial_port is not None:
+        pytest.skip("The test is not supported for modbus devices") 
     # Here we check for each test, if it can be executed by checking the allowed_devices marker
     allowed_devices: List[DeviceType] = [ 
         arg 
@@ -97,6 +103,7 @@ def pytest_runtest_setup(item):
     device_type = item.config._sonic_control_plugin.device_type
     if device_type not in allowed_devices:
         pytest.skip(f"The device type {device_type.name} is not supported for this test")  
+    
 
 
 

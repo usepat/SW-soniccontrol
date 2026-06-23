@@ -161,7 +161,13 @@ class Protocol_v3_0_0(ProtocolList):
         command_contract_dict.pop(CommandCode.BROADCAST_MODBUS_SERVER_ID, None)
         command_contract_dict.pop(CommandCode.SET_WAVEFORM, None)
         command_contract_dict.pop(CommandCode.GET_WAVEFORM, None)
-
+        mappings = {"!tdr_id": "!trd_id", "!tdr": "!trd", "?tdr": "?trd", "?tdr_id": "?trd_id"}
+        set_transducer = command_contract_dict.get(CommandCode.SET_TRANSDUCER_ID)
+        if set_transducer is not None:
+            set_transducer.replace_string_identifier(mappings)
+        get_transducer = command_contract_dict.get(CommandCode.GET_TRANSDUCER_ID)
+        if get_transducer is not None:
+            get_transducer.replace_string_identifier(mappings)
         return command_contract_dict
 
     def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:

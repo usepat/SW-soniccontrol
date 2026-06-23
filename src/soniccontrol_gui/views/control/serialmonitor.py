@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Callable, List
 import ttkbootstrap as ttk
@@ -72,6 +73,9 @@ class SerialMonitor(UIComponent):
     async def _send_and_receive(self, command_str: str) -> str:
         try:
             answer_str = await self._communicator.send_and_wait_for_response(command_str)
+            if answer_str == "":
+                await asyncio.sleep(0.2)
+                return "No answer returned"
             return answer_str
         except Exception as e:
             self._logger.error(str(e))

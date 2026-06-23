@@ -117,9 +117,16 @@ async def performance_monitor(remote_controller):
 
     yield monitor
 
-    if device.has_command(cmds.GetNumAllocators()):
+    was_updater_running = remote_controller._updater.running.is_set()
+    if was_updater_running:
+        await remote_controller.stop_updater()
+
+    if device.communicator.connection_opened.is_set() and device.has_command(cmds.GetNumAllocators()):
         snap_shot = await monitor.sample_memory_snapshot()
         snap_shot.check_performance()
+
+    if was_updater_running and remote_controller.is_connected():
+        remote_controller.start_updater()
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)

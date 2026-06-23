@@ -2,6 +2,7 @@ import copy
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Tuple
+import tkinter as tk
 import ttkbootstrap as ttk
 from sonic_protocol.schema import Anomaly, AnswerFieldDef, IEFieldName, Signal
 from sonic_protocol.python_parser.answer_field_converter import AnswerFieldToStringConverter
@@ -223,19 +224,28 @@ class StatusBarView(View):
             label.bind(events.CLICKED_EVENT, lambda _e: command())
 
     def update_labels(self, field_texts: Dict[IEFieldName, str]) -> None:
-        for status_field, text in field_texts.items():
-            label = self._status_field_labels[status_field]
-            label.configure(text=text)
+        try:
+            for status_field, text in field_texts.items():
+                label = self._status_field_labels[status_field]
+                label.configure(text=text)
 
-        self.update()
+            self.update()
+        except tk.TclError:
+            return
 
     def set_label_background(self, field_name: IEFieldName, color: str) -> None:
         if field_name in self._status_field_labels:
             label =  self._status_field_labels[field_name]
-            label.configure(background=color)
+            try:
+                label.configure(background=color)
+            except tk.TclError:
+                return
 
     def set_ping_label_text(self, ping: str) -> None:
-        self._ping_label.configure(text=ping)
+        try:
+            self._ping_label.configure(text=ping)
+        except tk.TclError:
+            return
 
 
 

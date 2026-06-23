@@ -1,9 +1,13 @@
+import asyncio
 from typing import Callable, List, Optional
 import logging
 from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
 import tkinter as tk
 
+from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
+from soniccontrol.communication.modbus_communicator import ModbusCommunicator
+from soniccontrol.communication.serial_modbus_converter_communicator import SerialModbusConverterCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
@@ -50,6 +54,7 @@ class DeviceWindow(TopLevelWindow):
         self._window_name = window_name
         super().__init__(None, self._view, self._logger)
         self._app_state = AppState(self._logger)
+        self._is_closing = False
 
         self._view.add_close_callback(self.close)
     
@@ -77,8 +82,19 @@ class DeviceWindow(TopLevelWindow):
     def app_state(self) -> AppState:
         return self._app_state
 
+    async def _shutdown_before_close(self) -> None:
+        return None
+
+    async def _close_communication_safely(self, restart: bool = False) -> None:
+        try:
+            await self._communicator.close_communication(restart)
+        except Exception as e:
+            self._logger.warning("Ignoring error while closing communication: %s", e)
+
     @async_handler
     async def on_disconnect(self) -> None:
+        if self._is_closing:
+            return
         if not self._view.is_open:
             return # Window was closed already
         
@@ -94,16 +110,30 @@ class DeviceWindow(TopLevelWindow):
 
     @async_handler
     async def close(self) -> None:
+        if self._is_closing:
+            return
+        self._is_closing = True
         self._logger.info("Close window")
         self.emit(Event(DeviceWindow.CLOSE_EVENT))
+        try:
+            await self._shutdown_before_close()
+        except Exception as e:
+            self._logger.warning("Ignoring error while shutting down window: %s", e)
+        await self._close_communication_safely()
         self._view.close()
-        await self._communicator.close_communication()
 
     @async_handler
     async def reconnect(self) -> None:
+        if self._is_closing:
+            return
+        self._is_closing = True
         self._logger.info("Close window")
-        await self._communicator.close_communication(True)
         self.emit(Event(DeviceWindow.RECONNECT_EVENT))
+        try:
+            await self._shutdown_before_close()
+        except Exception as e:
+            self._logger.warning("Ignoring error while shutting down window for reconnect: %s", e)
+        await self._close_communication_safely(True)
         self._view.close()
 
 
@@ -165,7 +195,7 @@ class KnownDeviceWindow(DeviceWindow):
             super().__init__(self._logger, self._view, self._device.communicator)
 
             # Models
-            self._updater = Updater(self._device, time_waiting_between_updates_ms=1000 if is_legacy_device else update_interval_ms)
+            self._updater = Updater(self._device, time_waiting_between_updates_ms=1000 if is_legacy_device or isinstance(device.communicator, ModbusCommunicator) else update_interval_ms)
             self._proc_controller = ProcedureController(self._device, self._updater)
             self._proc_controlling_model = ProcControllingModel()
             self._scripting = NewScriptingFacade()
@@ -187,9 +217,15 @@ class KnownDeviceWindow(DeviceWindow):
 
             # Components
             self._logger.debug("Create views")
-            self._serialmonitor = SerialMonitor(self, self._device.communicator)
+ 
+            serialmonitor_communicator = self._device.communicator
+            if isinstance(device.communicator, ModbusCommunicator):
+                serialmonitor_communicator = SerialModbusConverterCommunicator(device.communicator, CommandDeserializer(device.protocol))
+            self._serialmonitor = SerialMonitor(self, serialmonitor_communicator)
             self._spectrum_measure = SpectrumMeasureTab(self, self._spectrum_measure_model)
-            self._logging = Logging(self, connection_name, self._device)
+            if not isinstance(device.communicator, ModbusCommunicator):
+                self._logging = Logging(self, connection_name, self._device)
+
             self._editor = Editor(self, self._scripting, self._script_file, self._interpreter, self.app_state)
             self._status_bar = StatusBar(self, self._view.status_bar_slot, update_answer_fields)
             self._info = Info(self)
@@ -211,7 +247,6 @@ class KnownDeviceWindow(DeviceWindow):
                 flashing_view = self._flashing.view
 
             self._device_settings_tab = DeviceSettingsTab(self, self._device)
-
             # Views
             self._logger.debug("Created all views, add them as tabs")
             self._view.add_tab_views([
@@ -225,11 +260,14 @@ class KnownDeviceWindow(DeviceWindow):
                 flashing_view,
                 self._device_settings_tab.view
             ], right_one=False)
-            self._view.add_tab_views([
+            views = [
                 self._info.view,
                 self._sonicmeasure.view, 
-                self._logging.view, 
-            ], right_one=True)
+            ]
+            if not isinstance(device.communicator, ModbusCommunicator):
+                views.append(self._logging.view) 
+
+            self._view.add_tab_views(views, right_one=True)
 
             self._logger.debug("add callbacks and listeners to event emitters")
             
@@ -241,7 +279,7 @@ class KnownDeviceWindow(DeviceWindow):
 
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
-            self._updater.start()
+            self._schedule_updater_start()
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
@@ -249,6 +287,30 @@ class KnownDeviceWindow(DeviceWindow):
             self._logger.error(e)
             MessageBox.show_error(root, str(e))
             raise
+
+    def _schedule_updater_start(self) -> None:
+        if not isinstance(self._device.communicator, ModbusCommunicator):
+            self._updater.start()
+            return
+
+        self._view.root.after_idle(self._schedule_modbus_updater_start)
+
+    def _schedule_modbus_updater_start(self) -> None:
+        delay_ms = max(1, self._updater.iteration_interval)
+        self._view.root.after(delay_ms, self._start_updater_if_connected)
+
+    def _start_updater_if_connected(self) -> None:
+        if self._updater.running.is_set():
+            return
+        if not self._view.is_open:
+            return
+        if not self._device.communicator.connection_opened.is_set():
+            return
+        self._updater.start()
+
+    async def _shutdown_before_close(self) -> None:
+        if self._updater.running.is_set():
+            await self._updater.stop()
 
     @property
     def device(self) -> SonicDevice | None:

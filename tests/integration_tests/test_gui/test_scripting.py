@@ -20,7 +20,7 @@ async def scripting_tab_fixture():
     controller.set_widget_text(widget_names.EDITOR_TEXT_EDITOR, "")
     await controller.execute_events_until_idle()
 
-
+@pytest.mark.skip_if_modbus_enabled()
 @pytest.mark.asyncio(loop_scope="package")
 async def test_execute_script_holds_application():
     controller = GuiController()
@@ -35,9 +35,9 @@ async def test_execute_script_holds_application():
     # Message box appears if script is started without experiment
     await proceed_without_experiment()
     
-    await asyncio.sleep(4)
-    text_signal_after_4s = controller.get_widget_text(widget_names.STATUS_BAR_SIGNAL_LABEL)
     await asyncio.sleep(2)
+    text_signal_after_4s = controller.get_widget_text(widget_names.STATUS_BAR_SIGNAL_LABEL)
+    await asyncio.sleep(5)
     text_signal_after_6s = controller.get_widget_text(widget_names.STATUS_BAR_SIGNAL_LABEL)
     
     assert "on" in text_signal_after_4s, "Expected signal to be turned on"

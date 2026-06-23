@@ -171,19 +171,17 @@ class SerialConnection(Connection):
             self._closed = True
 
             transport = getattr(self.writer, "transport", None)
-            serial_port = getattr(transport, "serial", None) if transport is not None else None
+            if not self.writer.is_closing():
+                self.writer.close()
 
             try:
-                if not self.writer.is_closing():
-                    self.writer.close()
-            finally:
-                if serial_port is not None and getattr(serial_port, "is_open", False):
-                    serial_port.close()
-
-            for _ in range(10):
-                if serial_port is None or not getattr(serial_port, "is_open", False):
-                    break
-                await asyncio.sleep(0.05)
+                await asyncio.wait_for(self.writer.wait_closed(), timeout=0.5)
+            except (asyncio.TimeoutError, AttributeError):
+                if transport is not None:
+                    transport.abort()
+            except Exception:
+                if transport is not None:
+                    transport.abort()
 
 @attrs.define()
 class ModbusConnection(Connection):

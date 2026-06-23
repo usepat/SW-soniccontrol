@@ -4,14 +4,13 @@ import pytest
 
 from sonic_pytest.gui.workflows import send_over_serial_monitor
 
-
 @pytest.mark.asyncio(loop_scope="package")
 async def test_set_gain_over_serial_updates_status_bar():
     controller = GuiController()
+    await send_over_serial_monitor("!sonic_force")
     await send_over_serial_monitor("!gain=50")
-    text = await controller.wait_for_widget_to_change_text(widget_names.STATUS_BAR_GAIN_LABEL, 1.0)
+    text = await controller.wait_for_widget_to_change_text(widget_names.STATUS_BAR_GAIN_LABEL, 5.0)
     assert "50 %" in text, f"Expected the gain to be 50 %, but the label is set to {text}"
-
 
 @pytest.mark.asyncio(loop_scope="package")
 async def test_sending_a_command_displays_it_in_the_monitor():

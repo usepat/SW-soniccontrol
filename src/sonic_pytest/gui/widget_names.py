@@ -39,6 +39,7 @@ CONNECTION_PORTS_COMBOBOX = 'connection.ports_combobox'
 CONNECTION_CONNECT_VIA_URL_BUTTON = 'connection.connect_via_url_button'
 CONNECTION_CONNECT_TO_SIMULATION_BUTTON = 'connection.connect_to_simulation_button'
 CONNECTION_SIMULATION_CMD_ARGS = 'connection.simulation_cmd_args'
+CONNECTION_IS_MODBUS_DEVICE_CHECKBOX = 'connection.is_modbus_device_box'
 
 # Home constants
 HOME_DEVICE_TYPE_LABEL = 'home.device_type_label'

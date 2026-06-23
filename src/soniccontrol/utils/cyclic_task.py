@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import suppress
 from typing import Any, Callable, Coroutine, Optional
 import abc
 
@@ -18,6 +19,7 @@ class CyclicTask(abc.ABC):
         self._coro = coro
         self._daemon: Optional[asyncio.Task] = None
         self._logger = logger
+        self._is_stopping = False
 
     @property
     def running(self) -> asyncio.Event:
@@ -26,8 +28,11 @@ class CyclicTask(abc.ABC):
     def start(self) -> None:
         assert not self._running.is_set(), "The updater is already running"
         self._running.set()
+        self._is_stopping = False
         
         def propagate_task_exception(task):
+            if self._is_stopping or not self._running.is_set():
+                return
             try:
                 # this will raise the exception inside asyncio event loop,
                 #  the global exception handler will handle it
@@ -40,8 +45,13 @@ class CyclicTask(abc.ABC):
 
     async def stop(self) -> None:
         self._running.clear()
+        self._is_stopping = True
         if self._daemon is not None:
-            await self._daemon
+            daemon = self._daemon
+            self._daemon = None
+            daemon.cancel()
+            with suppress(asyncio.CancelledError):
+                await daemon
 
     @property
     def iteration_interval(self) -> int:
@@ -59,8 +69,8 @@ class CyclicTask(abc.ABC):
                 if self._time_waiting_between_iterations_ms > 0:
                     await asyncio.sleep(self._time_waiting_between_iterations_ms / 1000)
         except asyncio.CancelledError:
-            pass
-        except Exception as e:
+            raise
+        except Exception:
             self._logger.exception("Updater background task crashed")
             raise
         

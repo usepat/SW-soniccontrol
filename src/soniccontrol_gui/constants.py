@@ -112,6 +112,7 @@ class _UIStringsEN:
     CONFIGURATION_TAB: Final[str] = "Configuration"
     UPDATER_INTERVAL_LABEL: Final[str] = "Updater Interval (ms):"
     IS_LEGACY_DEVICE_LABEL: Final[str] = "SonicCrystal"
+    IS_MODBUS_DEVICE_LABEL: Final[str] = "SonicModbus"
     HOME_CONTROL_LABEL: Final[str] = "Manual Control"
     FREQ_PLACEHOLDER: Final[str] = "Set Frequency..."
     GAIN_PLACEHOLDER: Final[str] = "Set Gain..."

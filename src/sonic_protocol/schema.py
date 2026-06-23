@@ -496,6 +496,17 @@ class CommandContract:
     group_id: GroupId = attrs.field(default=GROUPS.misc)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
 
+    def replace_string_identifier(self, mappings: dict[str, str]):
+        if self.command_def is None:
+            return
+        if self.command_def.sonic_text_attrs is None:
+            return
+        string_identifier = self.command_def.sonic_text_attrs.string_identifier
+        for i, s in enumerate(string_identifier):
+            if s in mappings:
+                string_identifier[i] = mappings[s]
+        self.command_def.sonic_text_attrs.string_identifier = string_identifier
+
 
 @attrs.define(auto_attribs=True)
 class ProtocolType:

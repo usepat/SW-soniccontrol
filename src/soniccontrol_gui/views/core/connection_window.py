@@ -16,7 +16,7 @@ from soniccontrol_gui.ui_component import TopLevelWindow, UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
-from soniccontrol.fw_device.connection import CLIConnection, Connection
+from soniccontrol.fw_device.connection import CLIConnection, Connection, ModbusConnection
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logger.utils import create_logger_for_connection
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
@@ -26,6 +26,7 @@ from soniccontrol_gui.views.core.device_window import DeviceWindow, RescueWindow
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol.communication.serial_communicator import SerialCommunicator
+from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 
 class DeviceConnectionClass:
     def __init__(self, device_window : DeviceWindow, connection : Connection, build_configurator: bool = False):
@@ -84,8 +85,12 @@ class DeviceWindowManager:
             logger.debug("Build SonicDevice for device")
             if is_legacy_device:
                 sonicamp = await device_builder.build_legacy_crystal(connection)
-            elif build_configurator and not isinstance(connection, CLIConnection):
+            elif build_configurator and not isinstance(connection, (CLIConnection, ModbusConnection)):
                 sonicamp = await device_builder.build_configurator(connection, try_deduce_protocol_used=True)
+            elif isinstance(connection, ModbusConnection):
+                communicator = ModbusCommunicator(logger=logger) # type: ignore
+                await communicator.open_communication(connection)
+                sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=True)
             else:
                 communicator = SerialCommunicator(logger=logger) # type: ignore
                 await communicator.open_communication(connection)
@@ -208,9 +213,12 @@ class ConnectionWindow(TopLevelWindow):
     @async_handler
     async def _on_connect_via_url(self):
         assert (not self._is_connecting), "already connecting"
+        
+        dev_display_name = self._view.get_dev_name()
+        if dev_display_name == '':
+            raise ValueError("No port selected")
         self._is_connecting = True
 
-        dev_display_name = self._view.get_dev_name()
         baudrate = 9600
 
         
@@ -219,7 +227,7 @@ class ConnectionWindow(TopLevelWindow):
 
         dev_info = self._dev_infos[dev_display_name]
         # force_remove_connection is only used for remote devices at the moment. But may change in the future
-        connection = create_connection_to_device(dev_info, baudrate, force_remove_connection=self._on_connection_already_open)
+        connection = create_connection_to_device(dev_info, baudrate, force_remove_connection=self._on_connection_already_open, is_modbus=self._view.is_modbus_device)
         
         await self._attempt_connection(connection, self._view.is_legacy_device, self._view.should_start_configurator)
 
@@ -294,8 +302,18 @@ class ConnectionWindowView(ttk.Window, View):
             onvalue=1, 
             offvalue=0
         )
-
         WidgetRegistry.register_widget(self._is_legacy_device_box, "is_legacy_device_box", window_name)
+
+        self._is_modbus_device = tk.BooleanVar()
+        self._is_modbus_device_box = tk.Checkbutton(
+            self._url_connection_frame, 
+            text=ui_labels.IS_MODBUS_DEVICE_LABEL,
+            variable=self._is_modbus_device, 
+            onvalue=1, 
+            offvalue=0
+        )
+        WidgetRegistry.register_widget(self._is_modbus_device_box, "is_modbus_device_box", window_name)
+
         self._connect_via_url_button: ttk.Button = ttk.Button(
             self._url_connection_frame,
             style=ttk.SUCCESS,
@@ -362,6 +380,7 @@ class ConnectionWindowView(ttk.Window, View):
         self._refresh_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._connect_via_url_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._is_legacy_device_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
+        self._is_modbus_device_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._start_configurator_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         if show_simulation_button:
             self._simulation_frame.pack(side=ttk.BOTTOM, fill=ttk.X, padx=sizes.SMALL_PADDING, pady=sizes.MEDIUM_PADDING)
@@ -395,6 +414,10 @@ class ConnectionWindowView(ttk.Window, View):
     @property
     def is_legacy_device(self) -> bool:
         return self._is_legacy_device.get()
+    
+    @property
+    def is_modbus_device(self) -> bool:
+        return self._is_modbus_device.get()
     
     @property
     def should_start_configurator(self) -> bool:

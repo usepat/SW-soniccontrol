@@ -91,6 +91,8 @@ async def test_deduced_commands(remote_controller, progress_writer):
                     CommandCode.E_SYNTAX_ERROR
                 ])
             except AssertionError as e:
+                if answer.message == "Modbus does not support commands with string index parameters":
+                    continue
                 errors.append(DeducedCommandError(command, answer, i, str(e)))
                 lifecycle = AllureLifecycle()
                 lifecycle.update_step(

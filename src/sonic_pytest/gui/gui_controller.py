@@ -35,10 +35,19 @@ class GuiController:
 
     def press_button(self, widget_name: str):
         widget = WidgetRegistry.get_widget(widget_name)
-        if isinstance(widget, (tk.Button, ttk.Button, ttk.Checkbutton)):
+        if isinstance(widget, (tk.Button, ttk.Button, ttk.Checkbutton, tk.Checkbutton)):
             widget.invoke()
         else:
             raise TypeError(f"The registered object '{widget_name}' is not a button")
+
+    def set_check_button_state(self, widget_name: str, state: bool):
+        widget = WidgetRegistry.get_widget(widget_name)
+        if isinstance(widget, (ttk.Checkbutton, tk.Checkbutton)):
+            var_name = widget.cget("variable")
+            widget.setvar(var_name, state)
+        else:
+            raise TypeError(f"The registered object '{widget_name}' is not a button")
+
 
     def switch_to_tab(self, widget_name: str) -> None:
         tab_view = WidgetRegistry.get_widget(widget_name)

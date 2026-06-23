@@ -221,6 +221,14 @@ class SonicDevice:
             )
 
         self._modbus_pending_command_count += 1
+        max_wait_time = 30.0  # seconds
+        elapsed_time = 0.0
+        while self._modbus_pending_command_count > 1:
+            if elapsed_time >= max_wait_time:
+                self._modbus_pending_command_count -= 1
+                raise TimeoutError(f"Modbus command queue timeout after {max_wait_time} seconds")
+            await asyncio.sleep(0.5)
+            elapsed_time += 0.5
         try:
             async with self._modbus_operation_lock:
                 return await self._execute_command_impl(

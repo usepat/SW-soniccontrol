@@ -5,6 +5,7 @@ from typing import Callable
 import ttkbootstrap as ttk
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.protocol_v3_0_0 import Parity, UartInterface
+from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -46,8 +47,8 @@ class DeviceSettingsTab(UIComponent):
         super().__init__(parent, self._view, self._logger)
         self._view.set_apply_settings_command(self._apply_settings)
         self._view.set_load_settings_command(self._load_settings)
-
-        self._load_settings()
+        if not isinstance(device.communicator, ModbusCommunicator):
+            self._load_settings()
 
 
     @async_handler

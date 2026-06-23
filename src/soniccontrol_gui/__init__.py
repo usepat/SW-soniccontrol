@@ -103,7 +103,11 @@ def start_gui(remote_server_url: str | None):
         exception = context.get("exception")
         if exception:
             soniccontrol_logger.error(str(exception))
-            MessageBox.show_error(root, str(exception))
+            try:
+                if root.winfo_exists():
+                    MessageBox.show_error(root, str(exception))
+            except Exception:
+                soniccontrol_logger.warning("Could not show error dialog during shutdown")
     
     loop.set_exception_handler(global_exception_handler)
     asyncio.set_event_loop(loop)

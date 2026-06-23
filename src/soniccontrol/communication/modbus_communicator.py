@@ -67,6 +67,7 @@ class ModbusCommunicator(Communicator):
         )
         super().__init__()
 
+
     @property
     def connection_opened(self) -> asyncio.Event:
         return self._connection_opened
@@ -85,11 +86,17 @@ class ModbusCommunicator(Communicator):
         self._connection_opened.set()
 
     async def close_communication(self, restart: bool = False) -> None:
-        assert self._connection, "Connection is not set"
-        assert self._modbus_client, "Modbus client not set"
-        self._modbus_client.close()
-        await self._connection.close_connection()
+        if not self._connection_opened.is_set() and self._modbus_client is None:
+            return
+
         self._connection_opened.clear()
+
+        try:
+            if self._modbus_client is not None:
+                self._modbus_client.close()
+        finally:
+            if self._connection is not None:
+                await self._connection.close_connection()
 
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str:
         raise NotImplementedError(
@@ -312,7 +319,8 @@ class ModbusCommunicator(Communicator):
                 False,
                 command.code,
             )
-
+        while self._lock.locked():
+            await asyncio.sleep(0.5)
         async with self._lock:
             last_error: Answer | None = None
             for attempt in range(1, self.MAX_RETRIES + 1):

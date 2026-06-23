@@ -7,7 +7,7 @@ from sonic_pytest.gui.workflows import send_over_serial_monitor
 import pytest_asyncio
 from soniccontrol import DeviceType
 
-
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER)
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
 async def configuration_tab_fixture():
     controller = GuiController()
