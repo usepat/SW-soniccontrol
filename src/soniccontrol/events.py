@@ -59,7 +59,7 @@ class EventManager:
         self._listeners[event_type].add(listener)
     
     def unsubscribe(self, event_type: str, listener: Callable[[Event], None]) -> None:
-        if self._listeners.get(event_type) is None:
+        if self._listeners.get(event_type) is not None:
             if listener in self._listeners[event_type]:
                 self._listeners[event_type].remove(listener)
 

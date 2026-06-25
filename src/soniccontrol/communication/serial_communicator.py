@@ -132,6 +132,8 @@ class SerialCommunicator(Communicator):
 
         timeout = 5 # in seconds
         MAX_RETRIES = 3 
+        warn_on_transport_error = kwargs.pop("warn_on_transport_error", False)
+        self._message_fetcher.set_warn_on_transport_error(warn_on_transport_error)
         for i in range(MAX_RETRIES):
             try:
                 return await asyncio.wait_for(self._send_and_get(request, **kwargs), timeout)
@@ -141,8 +143,10 @@ class SerialCommunicator(Communicator):
             # The message fetcher runs as a task and its exceptions are not propagated
             # so we have to check here (or somewhere else) if it raised an error
             if self._message_fetcher.exception:
+                self._message_fetcher.set_warn_on_transport_error(False)
                 raise self._message_fetcher.exception
 
+        self._message_fetcher.set_warn_on_transport_error(False)
         if self._connection_opened.is_set():
             await self.close_communication()
             raise ConnectionError("Device is not responding")

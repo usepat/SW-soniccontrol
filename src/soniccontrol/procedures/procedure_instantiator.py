@@ -1,16 +1,15 @@
-from typing import Dict, Optional
+from typing import Dict
 from sonic_protocol.python_parser import commands
 from sonic_protocol.python_parser.commands import Command
 from soniccontrol.procedures.procedure import Procedure, ProcedureType
 from soniccontrol.procedures.procs.auto import AutoProc
-from soniccontrol.procedures.procs.ramper import Ramper, RamperLocal, RamperRemote
+from soniccontrol.procedures.procs.ramper import RamperLocal, RamperRemote
 from soniccontrol.procedures.procs.scan import ScanProc
 from soniccontrol.procedures.procs.tune import TuneProc
 from soniccontrol.procedures.procs.wipe import WipeProc
 from soniccontrol.procedures.legacy_procs.auto import AutoLegacyProc
 from soniccontrol.procedures.legacy_procs.wipe import WipeLegacyProc
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 from typing import Tuple, List
 
 

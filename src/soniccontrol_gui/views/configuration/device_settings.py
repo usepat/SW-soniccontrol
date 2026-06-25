@@ -6,6 +6,7 @@ import ttkbootstrap as ttk
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.protocol_v3_0_0 import Parity, UartInterface
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
+from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE, DEFAULT_MODBUS_PARITY, DEFAULT_MODBUS_SLAVE_ID
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
@@ -22,10 +23,10 @@ from soniccontrol_gui.widgets.message_box import MessageBox
 
 @attrs.define()
 class ModbusSettings:
-    parity: Parity = attrs.field(default=Parity.EVEN)
-    baudrate: int = attrs.field(default=19200)
-    interface: UartInterface = attrs.field(default=UartInterface.RS485)
-    server_address: int = attrs.field(default=1)
+    parity: Parity = attrs.field(default=DEFAULT_MODBUS_PARITY)
+    baudrate: int = attrs.field(default=DEFAULT_MODBUS_BAUDRATE)
+    # interface: UartInterface = attrs.field(default=UartInterface.RS485)
+    server_address: int = attrs.field(default=DEFAULT_MODBUS_SLAVE_ID)
 
 @attrs.define()
 class DeviceSettings:
@@ -63,7 +64,7 @@ class DeviceSettingsTab(UIComponent):
         self._view.set_apply_settings_button_enabled(False)
         try:
             await self._device.execute_command(commands.SetModbusBaudrate(modbus_settings.baudrate))
-            await self._device.execute_command(commands.SetModbusInterface(modbus_settings.interface))
+            # await self._device.execute_command(commands.SetModbusInterface(modbus_settings.interface))
             await self._device.execute_command(commands.SetModbusParity(modbus_settings.parity))
             await self._device.execute_command(commands.SetModbusServerAddress(modbus_settings.server_address))
         except asyncio.CancelledError:
@@ -85,7 +86,7 @@ class DeviceSettingsTab(UIComponent):
             modbus_settings=ModbusSettings(
                 parity=answer[EFieldName.PARITY],
                 baudrate=answer[EFieldName.BAUDRATE],
-                interface=answer[EFieldName.UART_INTERFACE],
+                # interface=answer[EFieldName.UART_INTERFACE],
                 server_address=answer[EFieldName.MODBUS_SERVER_ID],
             )
         )

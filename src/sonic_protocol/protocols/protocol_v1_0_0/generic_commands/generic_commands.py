@@ -65,7 +65,7 @@ sonic_force = CommandContract(  # Used overruling the service mode
             AnswerFieldDef(field_name=EFieldName.SUCCESS, field_type=FieldType(str))
         ]
     ),
-    is_release=False,
+    is_release=True,
     group_id=GROUPS.generic,
     user_manual_attrs=UserManualAttrs(description="Forces exit from service mode and resumes normal operation."),
     tags=["debugging"],

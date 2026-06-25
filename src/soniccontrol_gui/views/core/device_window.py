@@ -1,4 +1,3 @@
-import asyncio
 from typing import Callable, List, Optional
 import logging
 from async_tkinter_loop import async_handler
@@ -83,6 +82,9 @@ class DeviceWindow(TopLevelWindow):
         return self._app_state
 
     async def _shutdown_before_close(self) -> None:
+        return None
+
+    def start_background_tasks(self) -> None:
         return None
 
     async def _close_communication_safely(self, restart: bool = False) -> None:
@@ -279,7 +281,6 @@ class KnownDeviceWindow(DeviceWindow):
 
             self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
             self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
-            self._schedule_updater_start()
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
@@ -311,6 +312,15 @@ class KnownDeviceWindow(DeviceWindow):
     async def _shutdown_before_close(self) -> None:
         if self._updater.running.is_set():
             await self._updater.stop()
+        await self._editor.shutdown_background_tasks()
+        if isinstance(self._configuration, Configuration):
+            await self._configuration.shutdown_background_tasks()
+
+    def start_background_tasks(self) -> None:
+        self._editor.start_background_tasks()
+        if isinstance(self._configuration, Configuration):
+            self._configuration.start_background_tasks()
+        self._schedule_updater_start()
 
     @property
     def device(self) -> SonicDevice | None:

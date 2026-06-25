@@ -34,15 +34,18 @@ async def test_run_ramp_procedure():
     await start_ramp_procedure()
 
     timeout = 1.5
-    for _ in range(11):
-        # wait_for_widget_to_change_text automatically clears the text changed flag
-        signal_label = await controller.wait_for_widget_to_change_text(widget_names.STATUS_BAR_SIGNAL_LABEL, timeout)
+    for _ in range(4):
+        signal_label = await controller.wait_for_widget_text_to_contain(widget_names.STATUS_BAR_SIGNAL_LABEL, "on", timeout)
         assert "on" in signal_label
 
-        signal_label = await controller.wait_for_widget_to_change_text(widget_names.STATUS_BAR_SIGNAL_LABEL, timeout)
+        signal_label = await controller.wait_for_widget_text_to_contain(widget_names.STATUS_BAR_SIGNAL_LABEL, "off", timeout)
         assert "off" in signal_label
 
-    proc_running_label = await controller.wait_for_widget_to_change_text(widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL, 2.5)
+    proc_running_label = await controller.wait_for_widget_text_to_equal(
+        widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL,
+        ui_labels.PROC_NOT_RUNNING,
+        2.5,
+    )
     assert proc_running_label == ui_labels.PROC_NOT_RUNNING, f"procedure still running: '{proc_running_label}'"
 
 
@@ -55,6 +58,10 @@ async def test_stop_ramp_procedure():
 
     controller.press_button(widget_names.PROC_CONTROLLING_STOP_BUTTON)
 
-    proc_running_label = await controller.wait_for_widget_to_change_text(widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL, 2.0)
+    proc_running_label = await controller.wait_for_widget_text_to_equal(
+        widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL,
+        ui_labels.PROC_NOT_RUNNING,
+        2.0,
+    )
     assert proc_running_label == ui_labels.PROC_NOT_RUNNING, f"procedure still running: '{proc_running_label}'"
 

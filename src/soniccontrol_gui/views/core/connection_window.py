@@ -5,6 +5,7 @@ from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
 import tkinter as tk
 
+from sonic_protocol.python_parser import commands
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
@@ -12,13 +13,14 @@ from soniccontrol.fw_device import create_connection_to_device, create_device_di
 from soniccontrol.network.connection import RemoteServerConnection
 from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
 from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
-from soniccontrol_gui.ui_component import TopLevelWindow, UIComponent
+from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.fw_device.connection import CLIConnection, Connection, ModbusConnection
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logger.utils import create_logger_for_connection
+from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
 from soniccontrol_gui.constants import sizes, style, ui_labels, files
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -36,6 +38,10 @@ class DeviceConnectionClass:
 
 
 class DeviceWindowManager:
+    MODBUS_READY_PROBE_ATTEMPTS = 10
+    MODBUS_READY_PROBE_DELAY_S = 0.25
+    MODBUS_CONNECT_RETRY_ATTEMPTS = 5
+
     def __init__(self, root):
         self._root = root
         self._id_device_window_counter = 0
@@ -59,7 +65,9 @@ class DeviceWindowManager:
         device_window.subscribe(
             DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_reconnect_callback(connection, is_legacy_device, build_configurator)) #type: ignore
         ) 
+        device_window.view.root.update_idletasks()
         await device_window.wait_finished_loading()  
+        device_window.start_background_tasks()
         device_window.view.root.update_idletasks()
 
         return device_window
@@ -80,33 +88,53 @@ class DeviceWindowManager:
 
         protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in DevicePluginRegistry.get_device_plugins() }
         device_builder = DeviceBuilder(protocol_factories=protocol_factories, logger=logger)
+        modbus_retry_count = 0
 
-        try:
-            logger.debug("Build SonicDevice for device")
-            if is_legacy_device:
-                sonicamp = await device_builder.build_legacy_crystal(connection)
-            elif build_configurator and not isinstance(connection, (CLIConnection, ModbusConnection)):
-                sonicamp = await device_builder.build_configurator(connection, try_deduce_protocol_used=True)
-            elif isinstance(connection, ModbusConnection):
-                communicator = ModbusCommunicator(logger=logger) # type: ignore
-                await communicator.open_communication(connection)
-                sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=True)
-            else:
+        while True:
+            try:
+                logger.debug("Build SonicDevice for device")
+                if is_legacy_device:
+                    sonicamp = await device_builder.build_legacy_crystal(connection)
+                elif build_configurator and not isinstance(connection, (CLIConnection, ModbusConnection)):
+                    sonicamp = await device_builder.build_configurator(connection, try_deduce_protocol_used=True)
+                elif isinstance(connection, ModbusConnection):
+                    communicator = ModbusCommunicator(logger=logger) # type: ignore
+                    await communicator.open_communication(connection)
+                    sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=True)
+                else:
+                    communicator = SerialCommunicator(logger=logger) # type: ignore
+                    await communicator.open_communication(connection)
+                    sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=True)
+                break
+            except Exception as e:
+                logger.error(e)
+
+                if isinstance(connection, ModbusConnection):
+                    modbus_retry_count += 1
+                    if modbus_retry_count < self.MODBUS_CONNECT_RETRY_ATTEMPTS:
+                        logger.warning(
+                            "Modbus connection attempt %s/%s failed, retrying automatically: %s",
+                            modbus_retry_count,
+                            self.MODBUS_CONNECT_RETRY_ATTEMPTS,
+                            e,
+                        )
+                        await asyncio.sleep(self.MODBUS_READY_PROBE_DELAY_S)
+                        continue
+
+                message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
+                message_box = MessageBox.show_yes_no(self._root, message)
+                user_answer: Optional[DialogOptions] = await message_box.wait_for_answer()
+                if user_answer is None or user_answer == DialogOptions.NO:
+                    raise asyncio.CancelledError()
+
+                if isinstance(connection, ModbusConnection):
+                    modbus_retry_count = 0
+                    continue
+
                 communicator = SerialCommunicator(logger=logger) # type: ignore
                 await communicator.open_communication(connection)
-                sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=True)
-        
-        except Exception as e:
-            logger.error(e)
-            message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
-            message_box = MessageBox.show_yes_no(self._root, message)
-            user_answer: Optional[DialogOptions] = await message_box.wait_for_answer()
-            if user_answer is None or user_answer == DialogOptions.NO: 
-                raise asyncio.CancelledError()
-            
-            communicator = SerialCommunicator(logger=logger) # type: ignore
-            await communicator.open_communication(connection)
-            sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=False)
+                sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=False)
+                break
 
         # TODO: Maybe we should move this into a plugin
         device_type = sonicamp.info.device_type
@@ -114,6 +142,7 @@ class DeviceWindowManager:
             # some devices are automatically in default routine.
             # To force them out of that, send the !sonic_force command
             await sonicamp.stop_running_processes()
+            await self._wait_for_modbus_ready(sonicamp)
         
         if device_type != DeviceType.UNKNOWN:
             logger.info("Created device successfully, open device window")
@@ -127,6 +156,28 @@ class DeviceWindowManager:
             window = await self._open_rescue_window(sonicamp, connection)
         
         return window
+
+    async def _wait_for_modbus_ready(self, device: SonicDevice) -> None:
+        if not isinstance(device.communicator, ModbusCommunicator):
+            return
+
+        last_error: Exception | None = None
+        for attempt in range(1, self.MODBUS_READY_PROBE_ATTEMPTS + 1):
+            answer = await device.execute_command(
+                commands.GetProtocol(),
+                raise_exception=False,
+                disconnect_on_exception=False,
+                should_log=False,
+            )
+            if answer.valid:
+                return
+
+            last_error = RuntimeError(answer.message)
+            if attempt < self.MODBUS_READY_PROBE_ATTEMPTS:
+                await asyncio.sleep(self.MODBUS_READY_PROBE_DELAY_S)
+
+        if last_error is not None:
+            raise last_error
 
 
     def set_attempt_reconnect_callback(self, callback: Callable[..., Awaitable[None]]):
@@ -167,6 +218,7 @@ class ConnectionWindow(TopLevelWindow):
                     window = await connection_func(_connection, is_legacy_device, build_configurator)
                 except asyncio.CancelledError as e:
                     self._window_opened_future.set_exception(e)
+                    raise
                 except Exception as e:
                     MessageBox.show_error(self.view.root, str(e))
                     self._window_opened_future.set_exception(e)
@@ -189,7 +241,8 @@ class ConnectionWindow(TopLevelWindow):
         self._view.set_refresh_button_command(self._on_refresh_ports)
         self._dev_infos: Dict[str, FwDeviceInfo] = {}
         self._loaded_ports = asyncio.Event()
-        self.pass_loading_task(self._refresh_ports())
+        initial_refresh_task = asyncio.get_event_loop().create_task(self._refresh_ports())
+        self.pass_loading_task(initial_refresh_task)
 
 
     async def _refresh_ports(self):
@@ -219,7 +272,7 @@ class ConnectionWindow(TopLevelWindow):
             raise ValueError("No port selected")
         self._is_connecting = True
 
-        baudrate = 9600
+        baudrate = DEFAULT_MODBUS_BAUDRATE
 
         
         # assures ports were already loaded, needed for tests

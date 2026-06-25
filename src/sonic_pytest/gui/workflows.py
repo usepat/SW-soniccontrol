@@ -3,18 +3,58 @@ from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
 from soniccontrol_gui.constants import ui_labels
 
+
+SERIAL_MONITOR_FAILURE_MARKERS = (
+    "no answer returned",
+    "timeout while waiting for response",
+    "device is not responding",
+    "the connection was closed",
+    "device error:",
+    "error reading",
+    "error sending",
+    "unknown command",
+    "invalid",
+    "exception",
+    "traceback",
+)
+
+
+def assert_serial_monitor_command_succeeded(command: str, answer: str) -> None:
+    if not command.startswith("!"):
+        return
+
+    lowered_answer = answer.strip().lower()
+    if any(marker in lowered_answer for marker in SERIAL_MONITOR_FAILURE_MARKERS):
+        raise AssertionError(f"Setup command '{command}' failed with answer: {answer}")
+
 async def send_over_serial_monitor(command: str) -> str:
     controller = GuiController()
     controller.switch_to_tab(widget_names.SERIAL_MONITOR_TAB)
+    existing_entries = controller.get_texts_of_widget_children(widget_names.SERIAL_MONITOR_SCROLL_FRAME)
+    expected_command_entry = f">>> {command}"
     controller.set_widget_text(widget_names.SERIAL_MONITOR_COMMAND_LINE_INPUT_ENTRY, command)
     controller.press_button(widget_names.SERIAL_MONITOR_SEND_BUTTON)
     await controller.execute_events_until_idle()
 
     max_iter = 10
     for _ in range(max_iter):
-        answer = controller.get_text_of_widget_child(widget_names.SERIAL_MONITOR_SCROLL_FRAME, -1)
+        entries = controller.get_texts_of_widget_children(widget_names.SERIAL_MONITOR_SCROLL_FRAME)
+        new_entries = entries[len(existing_entries):]
+        if expected_command_entry not in new_entries:
+            await controller.execute_events_until_idle()
+            await asyncio.sleep(0.5)
+            continue
+
+        command_index = entries.index(expected_command_entry, len(existing_entries))
+        if len(entries) <= command_index + 1:
+            await controller.execute_events_until_idle()
+            await asyncio.sleep(0.5)
+            continue
+
+        answer = entries[command_index + 1]
         if not answer.startswith(">>>"):
-            # commands are always proceeded with '>>>', answers never
+            # commands are always preceded with '>>>', answers never
+            assert_serial_monitor_command_succeeded(command, answer)
             return answer
         
         await controller.execute_events_until_idle()
@@ -82,13 +122,20 @@ async def start_ramp_procedure():
     await controller.execute_events_until_idle()
     await proceed_without_experiment()
 
-    # We have to wait here for both labels to change text, because the proc running label is immediately set, 
-    # then it configures the args and then it starts the procedure, only then the status bar label is updated
-    await controller.wait_for_multiple_widgets_to_change_text(
-        widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL, 
-        widget_names.STATUS_BAR_PROCEDURE_LABEL,
-        timeout_s=10.0
+    proc_running_label, status_label = await asyncio.gather(
+        controller.wait_for_widget_text(
+            widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL,
+            lambda current_text: "ramp" in current_text.lower(),
+            10.0,
+        ),
+        controller.wait_for_widget_text(
+            widget_names.STATUS_BAR_PROCEDURE_LABEL,
+            lambda current_text: "ramp" in current_text.lower(),
+            10.0,
+        ),
     )
+    assert "ramp" in proc_running_label.lower()
+    assert "ramp" in status_label.lower()
     
     controller.clear_text_changed_flag_of_widget(widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL)
     controller.clear_text_changed_flag_of_widget(widget_names.STATUS_BAR_PROCEDURE_LABEL)
@@ -112,11 +159,19 @@ async def start_ramp_capture():
     
     controller.press_button(widget_names.MEASURING_CONTROL_BUTTON)
 
-    proc_label, label_control_button = await controller.wait_for_multiple_widgets_to_change_text(
-        widget_names.STATUS_BAR_PROCEDURE_LABEL, widget_names.MEASURING_CONTROL_BUTTON, 
-        timeout_s=10.0
+    proc_label, label_control_button = await asyncio.gather(
+        controller.wait_for_widget_text(
+            widget_names.STATUS_BAR_PROCEDURE_LABEL,
+            lambda current_text: "ramp" in current_text.lower(),
+            10.0,
+        ),
+        controller.wait_for_widget_text_to_equal(
+            widget_names.MEASURING_CONTROL_BUTTON,
+            ui_labels.END_CAPTURE,
+            10.0,
+        ),
     )
-    assert "ramp" in proc_label
+    assert "ramp" in proc_label.lower()
     assert label_control_button == ui_labels.END_CAPTURE
 
 
@@ -135,10 +190,10 @@ async def start_spectrum_measure_capture():
     await controller.execute_events_until_idle()
     controller.clear_text_changed_flag_of_widget(widget_names.MEASURING_CONTROL_BUTTON)
     controller.press_button(widget_names.MEASURING_CONTROL_BUTTON)
-    await asyncio.sleep(0.5)
-    label_control_button = await controller.wait_for_widget_to_change_text(
-        widget_names.MEASURING_CONTROL_BUTTON, 
-        timeout_s=2.0
+    label_control_button = await controller.wait_for_widget_text_to_equal(
+        widget_names.MEASURING_CONTROL_BUTTON,
+        ui_labels.END_CAPTURE,
+        timeout_s=2.0,
     )
 
     assert label_control_button == ui_labels.END_CAPTURE
@@ -153,5 +208,5 @@ async def postman_wait_for_worker_to_be_connected(timeout_s=5.0):
     if status == ui_labels.CONNECTED_TO_WORKER:
         return
         
-    status = await controller.wait_for_widget_to_change_text(status_widget_name, timeout_s)
+    status = await controller.wait_for_widget_text_to_equal(status_widget_name, ui_labels.CONNECTED_TO_WORKER, timeout_s)
     assert status == ui_labels.CONNECTED_TO_WORKER, "Postman not connected to worker"

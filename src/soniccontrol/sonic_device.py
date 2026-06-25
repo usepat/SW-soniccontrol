@@ -76,7 +76,7 @@ class SonicDevice:
     def _has_pending_modbus_commands(self) -> bool:
         return self._modbus_pending_command_count > 0
 
-    async def _send_command(self, command: Command, should_log: bool = True) -> Answer:
+    async def _send_command(self, command: Command, should_log: bool = True, **kwargs) -> Answer:
         command_contract = self._protocol.command_contracts.get(command.code)
         assert command_contract is not None, f"The command {command} is not known for the protocol" # throw error?
         assert command_contract.command_def is not None, f"For the command_code of {command} exists a message (notify or error), but there exists no command" 
@@ -92,6 +92,7 @@ class SonicDevice:
             self._answer_validators[command.code], 
             **command_contract.command_def.sonic_text_attrs.kwargs,
             should_log=should_log,
+            **kwargs,
             code=command.code  # We need this because of the legacyCommunicator since the answers of the crystal+ device don't include the commandcode. 
             #We need to remember them and prepend them to the answers
         )
@@ -148,6 +149,9 @@ class SonicDevice:
         should_log: bool = True,
         try_deduce_command_if_str: bool = True,
         raise_exception: bool = True,
+        disconnect_on_exception: bool = True,
+        warn_on_transport_error: bool = False,
+        suppress_exception_log: bool = False,
         **kwargs
     ) -> Answer:
         """
@@ -183,13 +187,27 @@ class SonicDevice:
                 answer = await self._send_message(
                     command, 
                     try_deduce_answer_validator=try_deduce_command_if_str,
-                    should_log=should_log
+                    should_log=should_log,
+                    warn_on_transport_error=warn_on_transport_error,
                 )
             else:
-                answer = await self._send_command(command, should_log=should_log)
+                answer = await self._send_command(
+                    command,
+                    should_log=should_log,
+                    warn_on_transport_error=warn_on_transport_error,
+                )
         except Exception as e:
-            self._logger.error(e)
-            await self.disconnect()
+            connection_opened = self._communicator.connection_opened.is_set()
+            command_name = command if isinstance(command, str) else command.__class__.__name__
+            log_fn = self._logger.warning if suppress_exception_log else self._logger.exception
+            log_fn(
+                "Command failed: %s (connection_opened=%s, disconnect_on_exception=%s)",
+                command_name,
+                connection_opened,
+                disconnect_on_exception,
+            )
+            if disconnect_on_exception:
+                await self.disconnect()
 
             if raise_exception:
                 raise e
@@ -209,6 +227,9 @@ class SonicDevice:
         should_log: bool = True,
         try_deduce_command_if_str: bool = True,
         raise_exception: bool = True,
+        disconnect_on_exception: bool = True,
+        warn_on_transport_error: bool = False,
+        suppress_exception_log: bool = False,
         **kwargs
     ) -> Answer:
         if not self._uses_modbus():
@@ -217,6 +238,9 @@ class SonicDevice:
                 should_log=should_log,
                 try_deduce_command_if_str=try_deduce_command_if_str,
                 raise_exception=raise_exception,
+                disconnect_on_exception=disconnect_on_exception,
+                warn_on_transport_error=warn_on_transport_error,
+                suppress_exception_log=suppress_exception_log,
                 **kwargs,
             )
 
@@ -236,6 +260,9 @@ class SonicDevice:
                     should_log=should_log,
                     try_deduce_command_if_str=try_deduce_command_if_str,
                     raise_exception=raise_exception,
+                    disconnect_on_exception=disconnect_on_exception,
+                    warn_on_transport_error=warn_on_transport_error,
+                    suppress_exception_log=suppress_exception_log,
                     **kwargs,
                 )
         finally:
@@ -349,7 +376,7 @@ class SonicDevice:
         restart_command:
             Some commands force not only a restart, but also force the device to open another application afterwards, like start_configurator
         """
-        allowed_restart_commands = (commands.RestartDevice, commands.StartConfigurator, commands.StartOperator)
+        allowed_restart_commands = (commands.RestartDevice, commands.StartConfigurator, commands.StartOperator, commands.StartCustomizer, commands.StartDiagnosticsTool)
         assert isinstance(restart_command, allowed_restart_commands), "The command is not a valid restart command" 
         
         try:
@@ -357,9 +384,12 @@ class SonicDevice:
         except (ConnectionError, asyncio.IncompleteReadError, CommandValidationError):
             pass # could throw a connection error, device may not respond anymore, because it is restarting
             # When using modbus the command can not be validated because the device restarts during the validation stage
-
+        except Exception as e:
+            pass
         try:
             await self.disconnect()
         except (TimeoutError, ConnectionError, asyncio.IncompleteReadError):
             pass # could throw a connection error, device may not respond anymore, because it is restarting
+        except Exception as e:
+            pass
         

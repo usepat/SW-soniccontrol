@@ -74,6 +74,11 @@ class SerialMonitor(UIComponent):
         try:
             answer_str = await self._communicator.send_and_wait_for_response(command_str)
             if answer_str == "":
+                self._logger.warning(
+                    "Serial monitor command returned an empty response string: %s (communicator=%s)",
+                    command_str,
+                    self._communicator.__class__.__name__,
+                )
                 await asyncio.sleep(0.2)
                 return "No answer returned"
             return answer_str

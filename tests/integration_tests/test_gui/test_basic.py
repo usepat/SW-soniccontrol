@@ -8,9 +8,8 @@ from soniccontrol import DeviceType
 async def test_set_frequency_over_home_tab():
     controller = GuiController()
     controller.switch_to_tab(widget_names.HOME_TAB)
-
     freq = "201000"
     controller.set_widget_text(widget_names.HOME_FREQUENCY_ENTRY, freq)
     controller.press_button(widget_names.HOME_SEND_BUTTON)
-    text = await controller.wait_for_widget_to_change_text(widget_names.STATUS_BAR_FREQ_LABEL, 1.0)
+    text = await controller.wait_for_widget_text_to_contain(widget_names.STATUS_BAR_FREQ_LABEL, freq, 5.0)
     assert freq in text, f"Expected the frequency to be {freq}, but the label is set to {text}"

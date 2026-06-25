@@ -23,3 +23,18 @@ class SonicControlPlugin:
     simulation_exe_path: Path
     log_path: Path
     remote_server_url: str | None
+    _shared_modbus_device_prepared: bool = attrs.field(default=False, init=False)
+
+
+def modbus_device_preparation_is_required(plugin: SonicControlPlugin, node) -> bool:
+    if plugin.is_simulation or plugin.modbus_serial_port is None:
+        return False
+
+    if node.get_closest_marker("reprepare_modbus_device") is not None:
+        return True
+
+    return not plugin._shared_modbus_device_prepared
+
+
+def mark_modbus_device_prepared(plugin: SonicControlPlugin) -> None:
+    plugin._shared_modbus_device_prepared = True

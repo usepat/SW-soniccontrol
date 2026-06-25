@@ -3,6 +3,7 @@ import asyncio
 from contextlib import suppress
 from typing import Optional
 from sonic_protocol.schema import DeviceType
+from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.events import Event, EventManager
 from soniccontrol.utils.cyclic_task import CyclicTask
@@ -22,6 +23,12 @@ class Updater(EventManager, CyclicTask):
 
         daemon = self._daemon
         self._daemon = None
+
+        if isinstance(self._device.communicator, ModbusCommunicator):
+            with suppress(asyncio.CancelledError):
+                await daemon
+            return
+
         daemon.cancel()
         with suppress(asyncio.CancelledError):
             await daemon
@@ -31,7 +38,7 @@ class Updater(EventManager, CyclicTask):
         if self._device.info.device_type == DeviceType.CONFIGURATOR or is_not_connected:
             # Configurator does not have update but uses Device so for now I fix it like this
             self.running.clear()
-            return 
+            return
 
         try:
             answer = await self._device.get_update()

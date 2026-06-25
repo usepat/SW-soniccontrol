@@ -10,6 +10,7 @@ import logging
 
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
+from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE, DEFAULT_MODBUS_PARITY
 from pymodbus.client import AsyncModbusSerialClient
 
 
@@ -186,8 +187,8 @@ class SerialConnection(Connection):
 @attrs.define()
 class ModbusConnection(Connection):
     url: Path | str = attrs.field(init=True)
-    baudrate: int = attrs.field(default=9600)
-    parity: Parity = attrs.field(default=Parity.NO)
+    baudrate: int = attrs.field(default=DEFAULT_MODBUS_BAUDRATE)
+    parity: Parity = attrs.field(default=DEFAULT_MODBUS_PARITY)
 
     _client: AsyncModbusSerialClient = attrs.field(init=False)
 

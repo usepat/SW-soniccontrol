@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from typing import Dict, Optional
 import tkinter as tk
 import ttkbootstrap as ttk
@@ -78,6 +79,7 @@ class WidgetRegistry:
     _widget_registration_events: Dict[str, asyncio.Event] = {} # for waiting until a widget got registered
     _enabled = False
     _polling_task: Optional[asyncio.Task] = None
+    _poll_interval_s = 0.05
 
     @staticmethod
     def register_widget(widget: tk.Widget | tk.Variable, widget_name: str, parent_widget_name: Optional[str] = None):
@@ -134,6 +136,10 @@ class WidgetRegistry:
         return ref.text
 
     @staticmethod
+    def refresh_widget_texts() -> None:
+        WidgetRegistry._poll_updates()
+
+    @staticmethod
     def set_up(loop: asyncio.AbstractEventLoop):
         WidgetRegistry._enabled = True
         WidgetRegistry._polling_task = loop.create_task(WidgetRegistry._polling_worker())
@@ -141,7 +147,8 @@ class WidgetRegistry:
     @staticmethod
     async def clean_up():
         if WidgetRegistry._polling_task and WidgetRegistry._polling_task.cancel():
-            await WidgetRegistry._polling_task
+            with contextlib.suppress(asyncio.CancelledError):
+                await WidgetRegistry._polling_task
         WidgetRegistry._widget_registry.clear()
         WidgetRegistry._widget_registration_events.clear()
 
@@ -155,9 +162,6 @@ class WidgetRegistry:
 
     @staticmethod
     async def _polling_worker():
-        try:
-            while True:
-                await asyncio.sleep(0.1)
-                WidgetRegistry._poll_updates()
-        except asyncio.CancelledError:
-            pass
+        while True:
+            await asyncio.sleep(WidgetRegistry._poll_interval_s)
+            WidgetRegistry._poll_updates()

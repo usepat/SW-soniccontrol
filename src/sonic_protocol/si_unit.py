@@ -2,6 +2,7 @@
 from abc import ABCMeta
 from typing import Any, Generic, TypeVar, cast, Optional, get_args
 import attrs
+import numpy as np
 from sonic_protocol.schema import SIUnit, SIPrefix
 
 
@@ -80,7 +81,7 @@ class SIVar(Generic[T], metaclass=SIVarMetaClass):
             if not allow_none:
                 raise ValueError("meta must be provided for direct SIVar instantiation")
 
-        if not isinstance(self.value, (int, float)) or isinstance(self.value, bool):
+        if (not isinstance(self.value, (int, float)) and not isinstance(self.value, (np.integer, np.floating))) or isinstance(self.value, bool):
             raise TypeError("SIVar.value must be int|float (no bool)")
         # validate that current prefix is within min/max range
         if not self.allowed_prefix(self.si_prefix):

@@ -229,5 +229,8 @@ class Procedure(abc.ABC):
     @abc.abstractmethod
     async def execute(self, device: SonicDevice, args: Any) -> None: ...
 
+    def request_stop(self) -> bool:
+        return False
+
     @abc.abstractmethod
     async def fetch_args(self, device: SonicDevice) -> Dict[str, Any]: ...

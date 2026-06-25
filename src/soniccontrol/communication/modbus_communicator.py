@@ -15,7 +15,7 @@ from sonic_protocol.command_codes import BaseCommandCode, CommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
 from sonic_protocol.python_parser.answer import Answer
-from sonic_protocol.python_parser.commands import Command, GetSwf, GetUpdateDescale, SetOff, SetOn, SetSwf
+from sonic_protocol.python_parser.commands import Command, FlashUSB, GetSwf, GetUpdateDescale, RestartDevice, SetOff, SetOn, SetSwf
 from sonic_protocol.schema import BuildType, CommandContract, CommandParamDef, DeviceType, FieldType, ProtocolType, Timestamp, Version
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.fw_device.connection import Connection, ModbusConnection
@@ -31,7 +31,7 @@ class ModbusCommunicator(Communicator):
     RESPONSE_HEADER_REGISTERS = 2
     RESPONSE_POLL_INTERVAL_S = 0.05
     RESPONSE_TIMEOUT_S = 2.0
-    TRANSACTION_TIMEOUT_S = 3.0
+    SLOW_TRANSACTION_LOG_THRESHOLD_S = 0.5
     MAX_RETRIES = 3
     GENERIC_DEVICE_ERROR = "Device returned an error"
     FIRMWARE_ENUM_MEMBER_ORDER = {
@@ -74,16 +74,27 @@ class ModbusCommunicator(Communicator):
 
     async def open_communication(self, connection: Connection) -> None:
         self._connection = connection
-        self._modbus_client = await connection.open_modbus_connection()
-        await self._modbus_client.connect()
-        response = await self._read_input_registers(
-            self.MAILBOX_RESPONSE_ADDRESS,
-            count=1,
-            device_id=self.DEFAULT_DEVICE_ID,
-        )
-        if response.isError():
-            raise ConnectionError()
-        self._connection_opened.set()
+        try:
+            self._modbus_client = await connection.open_modbus_connection()
+            await self._modbus_client.connect()
+            response = await self._read_input_registers(
+                self.MAILBOX_RESPONSE_ADDRESS,
+                count=1,
+                device_id=self.DEFAULT_DEVICE_ID,
+            )
+            if response.isError():
+                raise ConnectionError()
+            self._connection_opened.set()
+        except Exception:
+            self._connection_opened.clear()
+            try:
+                if self._modbus_client is not None:
+                    self._modbus_client.close()
+            finally:
+                self._modbus_client = None
+                if self._connection is not None:
+                    await self._connection.close_connection()
+            raise
 
     async def close_communication(self, restart: bool = False) -> None:
         if not self._connection_opened.is_set() and self._modbus_client is None:
@@ -113,25 +124,36 @@ class ModbusCommunicator(Communicator):
 
     async def _read_input_registers(self, address: int, count: int, device_id: int):
         assert self._modbus_client is not None
-        return await asyncio.wait_for(
-            self._modbus_client.read_input_registers(
-                address,
-                count=count,
-                device_id=device_id,
-            ),
-            timeout=self.TRANSACTION_TIMEOUT_S,
+        return await self._modbus_client.read_input_registers(
+            address,
+            count=count,
+            device_id=device_id,
         )
 
     async def _write_registers(self, address: int, values: list[int], device_id: int):
         assert self._modbus_client is not None
-        return await asyncio.wait_for(
-            self._modbus_client.write_registers(
-                address,
-                values,
-                device_id=device_id,
-            ),
-            timeout=self.TRANSACTION_TIMEOUT_S,
+        return await self._modbus_client.write_registers(
+            address,
+            values,
+            device_id=device_id,
         )
+
+    def _reset_async_serial_client_state(self) -> None:
+        assert self._modbus_client is not None
+        transport = getattr(self._modbus_client.ctx, "transport", None)
+        sync_serial = getattr(transport, "sync_serial", None)
+
+        if sync_serial is not None:
+            waiting_bytes = getattr(sync_serial, "in_waiting", 0)
+            if waiting_bytes:
+                stale_data = sync_serial.read(waiting_bytes)
+                self._logger.warning(
+                    "Discarded %d stale modbus serial bytes before request: %s",
+                    waiting_bytes,
+                    stale_data.hex(" "),
+                )
+
+        self._modbus_client.ctx.recv_buffer = b""
 
     def _pack_command_registers(
         self, command_contract: CommandContract, command: Command
@@ -309,8 +331,13 @@ class ModbusCommunicator(Communicator):
         """
         Implements the mailbox system described in the firmware Modbus API.
         """
-        assert self._modbus_client is not None
-        assert self._modbus_client.connected
+        if self._modbus_client is None or not self._modbus_client.connected:
+            return Answer(
+                "Modbus communicator is not connected",
+                False,
+                True,
+                command.code,
+            )
 
         if self._has_unsupported_string_index(command_contract, command):
             return Answer(
@@ -349,6 +376,8 @@ class ModbusCommunicator(Communicator):
         self, command_contract: CommandContract, command: Command
     ) -> tuple[Answer, bool]:
         payload = self._pack_command_registers(command_contract, command)
+        self._reset_async_serial_client_state()
+        write_started_at = time.perf_counter()
         try:
             write_result = await self._write_registers(
                 self.MAILBOX_COMMAND_ADDRESS,
@@ -357,6 +386,15 @@ class ModbusCommunicator(Communicator):
             )
         except asyncio.TimeoutError:
             return Answer("Timeout writing modbus command", False, True, command.code), True
+        write_time = time.perf_counter() - write_started_at
+        write_retries = getattr(write_result, "retries", 0)
+        if write_time >= self.SLOW_TRANSACTION_LOG_THRESHOLD_S or write_retries:
+            self._logger.warning(
+                "Modbus write ack for %s took %.3fs (client retries=%s)",
+                command,
+                write_time,
+                write_retries,
+            )
         if write_result.isError():
             return Answer("Error sending modbus command", False, True, command.code), True
 
@@ -513,6 +551,10 @@ async def main():
         Version(3, 0, 0),
         DeviceType.DESCALE
     ))
+    command_contract = protocol.command_contracts.get(CommandCode.SET_FLASH_USB)
+    assert command_contract
+    answer = await communicator.send_command_and_validate(command_contract, FlashUSB())
+    print(answer)
     command_contract = protocol.command_contracts.get(CommandCode.SET_ON)
     assert command_contract
     answer = await communicator.send_command_and_validate(command_contract, SetOn())

@@ -17,6 +17,7 @@ class MessageFetcher:
         self._protocol = SonicMessageProtocol()
         self._logger: logging.Logger = logging.getLogger(logger.name + "." + MessageFetcher.__name__)
         self._device_logger: logging.Logger = logging.getLogger(logger.name + ".device")
+        self._warn_on_transport_error = False
 
 
     @property
@@ -44,6 +45,23 @@ class MessageFetcher:
     def run(self) -> None:
         self._logger.debug("Start message fetcher")
         self._task = asyncio.create_task(self._worker())
+
+    def set_warn_on_transport_error(self, enabled: bool) -> None:
+        self._warn_on_transport_error = enabled
+
+    def _should_warn_on_exception(self, error: Exception) -> bool:
+        if not self._warn_on_transport_error:
+            return False
+
+        error_message = str(error).lower()
+        expected_fragments = (
+            "no such device",
+            "write failed",
+            "device is not responding",
+            "connection was closed",
+            "returned no data",
+        )
+        return any(fragment in error_message for fragment in expected_fragments)
 
     async def stop(self) -> None:
         self._logger.debug("Stop message fetcher")
@@ -94,7 +112,8 @@ class MessageFetcher:
                 self._logger.error(e)
                 continue
             except Exception as e:
-                self._logger.error("Exception occured while reading the package:\n%s", e)
+                log_fn = self._logger.warning if self._should_warn_on_exception(e) else self._logger.error
+                log_fn("Exception occured while reading the package:\n%s", e)
                 raise e 
 
             if isinstance(message, AnswerMessage):

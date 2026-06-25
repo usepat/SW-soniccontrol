@@ -77,20 +77,22 @@ class Capture(EventManager):
         await self.end_capture()
 
     async def end_capture(self):
-        assert not self._completed_capturing.is_set()
+        if self._completed_capturing.is_set():
+            return
         assert self._target
 
+        target = self._target
+
         self._completed_capturing.set()        
+        target.unsubscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
 
         if self._experiment_writer:
             self._experiment_writer.close()
             self._experiment_writer = None
 
+        await target.after_end_capture()
         self.emit(Event(Capture.END_CAPTURE_EVENT))
         self._logger.info("End Capture")
-
-        await self._target.after_end_capture()
-        self._target.unsubscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
 
 
     def on_update(self, status: Dict[EFieldName, Any]):

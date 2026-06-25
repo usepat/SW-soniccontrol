@@ -1,5 +1,6 @@
 
 import asyncio
+import contextlib
 import datetime
 import logging
 from pathlib import Path
@@ -81,6 +82,7 @@ class Configuration(UIComponent):
         self._count_atk_atf = 4
         self._configs: List[TransducerConfig] = []
         self._current_transducer_config: Optional[int] = None
+        self._config_load_task: asyncio.Task[None] | None = None
         self._device = device
         self._interpreter = interpreter
 
@@ -100,7 +102,21 @@ class Configuration(UIComponent):
         self._view.set_import_transducer_config_command(self._import_transducer_config)
         self._view.set_submit_transducer_config_command(self._submit_transducer_config)
         self._view.set_delete_transducer_config_command(self._delete_transducer_config)
-        self._load_config()
+
+    def start_background_tasks(self) -> None:
+        if self._config_load_task is not None:
+            return
+        self._config_load_task = asyncio.get_running_loop().create_task(self._load_config_async())
+
+    async def shutdown_background_tasks(self) -> None:
+        task = self._config_load_task
+        self._config_load_task = None
+        if task is None or task.done():
+            return
+
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
     @property
     def current_transducer_config(self) -> Optional[int]:
@@ -149,7 +165,7 @@ class Configuration(UIComponent):
         self._logger.info("Created backup file: %s", backup_file)
         return backup_file
 
-    def _load_config(self):
+    def _load_config(self) -> List[TransducerConfig]:
         if files.TRANSDUCER_CONFIG_FOLDER.exists() is False:
             self._logger.info("Create transducer config folder %s", files.TRANSDUCER_CONFIG_FOLDER)
             files.TRANSDUCER_CONFIG_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -162,6 +178,7 @@ class Configuration(UIComponent):
             self._create_default_config_file()   
 
         self._logger.info("Load configuration from %s", files.TRANSDUCER_CONFIG_FOLDER)
+        configs: List[TransducerConfig] = []
         for json_file in files.TRANSDUCER_CONFIG_FOLDER.glob("*.json"):
             # Skip backup files
             if ".backup_" in json_file.name:
@@ -184,12 +201,22 @@ class Configuration(UIComponent):
                     
                     config = self._converter.structure(data_dict, TransducerConfig)
                     config.name = json_file.stem
-                    self._configs.append(config)
+                    configs.append(config)
                 except Exception as e:
                     self._logger.error("Failed to load config from %s: %s", json_file, e)
 
-        self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
-        self.current_transducer_config = 0 if len(self._configs) > 0 else None
+        return configs
+
+    async def _load_config_async(self) -> None:
+        try:
+            configs = await asyncio.to_thread(self._load_config)
+            if not self._view.root.winfo_exists():
+                return
+            self._configs = configs
+            self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
+            self.current_transducer_config = 0 if len(self._configs) > 0 else None
+        finally:
+            self._config_load_task = None
 
     def _import_transducer_config(self):
         filename: str = filedialog.askopenfilename(**file_dialog_opts.JSON)

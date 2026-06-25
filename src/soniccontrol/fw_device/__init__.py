@@ -6,6 +6,9 @@ from soniccontrol.fw_device.remote.remote_device_discovery import RemoteDeviceDi
 from soniccontrol.network.connection import RemoteServerConnection
 
 
+_RESOLVED_DEVICE_INFOS_BY_PATH: dict[tuple[str | None, str], FwDeviceInfo] = {}
+
+
 def create_device_discovery(server_url: str | None = None) -> DeviceDiscovery:
     if server_url is not None:
         return RemoteDeviceDiscovery(server_url)
@@ -19,7 +22,7 @@ def create_device_discovery(server_url: str | None = None) -> DeviceDiscovery:
         assert False, f"Device discovery is not supported for this platform {PLATFORM}"
 
 
-def create_connection_to_device(dev_info: FwDeviceInfo, baudrate: int = 115200, **kwargs) -> Connection:
+def create_connection_to_device(dev_info: FwDeviceInfo, baudrate: int = 9600, **kwargs) -> Connection:
     if dev_info.is_remote:
         assert dev_info.remote_server_url is not None
         return RemoteServerConnection(dev_info.sys_name, dev_info, dev_info.remote_server_url, dev_info.sys_name, baudrate=baudrate, **kwargs)
@@ -27,6 +30,31 @@ def create_connection_to_device(dev_info: FwDeviceInfo, baudrate: int = 115200, 
         return ModbusConnection(dev_info.sys_name, dev_info, dev_info.device_path, baudrate)
     assert dev_info.device_path, "The device has no device path set"
     return SerialConnection(dev_info.sys_name, dev_info, dev_info.device_path, baudrate)
+
+
+async def resolve_current_device_info(
+    device_path: str,
+    server_url: str | None = None,
+) -> FwDeviceInfo:
+    discovery = create_device_discovery(server_url)
+    dev_infos = await discovery.list_fw_device_infos(include_unverified_ttys=True)
+
+    dev_info = next((dev for dev in dev_infos if dev.device_path == device_path), None)
+    if dev_info is None:
+        cached_dev_info = _RESOLVED_DEVICE_INFOS_BY_PATH.get((server_url, device_path))
+        if cached_dev_info is not None:
+            dev_info = next(
+                (
+                    dev
+                    for dev in dev_infos
+                    if dev.usb_sys_name == cached_dev_info.usb_sys_name
+                ),
+                None,
+            )
+
+    assert dev_info is not None, f"No device detected for path {device_path}"
+    _RESOLVED_DEVICE_INFOS_BY_PATH[(server_url, device_path)] = dev_info
+    return dev_info
 
 
 async def redetect_connection(connection: Connection) -> Connection:
@@ -56,7 +84,7 @@ async def redetect_connection(connection: Connection) -> Connection:
             parity=connection.parity,
         )
 
-    baudrate = 115200
+    baudrate = 9600
     if isinstance(connection, SerialConnection):
         baudrate = connection.baudrate
 

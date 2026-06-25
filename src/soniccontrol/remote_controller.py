@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from os import environ
 from pathlib import Path
 from typing import List, Optional
@@ -8,7 +9,7 @@ import attrs
 from sonic_protocol.python_parser import commands
 from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.python_parser.commands import Command
-from sonic_protocol.schema import DeviceType
+from sonic_protocol.schema import DeviceType, Version
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.builder import DeviceBuilder
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
@@ -19,8 +20,9 @@ from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
-from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, redetect_connection
+from soniccontrol.fw_device import create_connection_to_device, redetect_connection, resolve_current_device_info
 from soniccontrol.logger.utils import create_logger_for_connection
+from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE, DEFAULT_MODBUS_PARITY
 from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs
@@ -36,6 +38,8 @@ class SpectrumArgsAdapter(CaptureSpectrumArgs):
 
 class RemoteController:
     MODBUS_UPDATE_INTERVAL_MS = 100
+    CONNECT_MAX_ATTEMPTS = 5
+    CONNECT_RETRY_DELAY_S = 0.2
 
     """
     The RemoteController follows a Facade pattern. It is a simple abstraction that hides the complex logic behind.
@@ -49,13 +53,19 @@ class RemoteController:
         contains the limits for protocol specific constants. Used for deducing example commands in the tests.
     """
 
-    def __init__(self, device: SonicDevice, logger: logging.Logger):
+    def __init__(
+        self,
+        device: SonicDevice,
+        logger: logging.Logger,
+        restart_executor: Callable[[Command, "RemoteController"], Awaitable["RemoteController"]] | None = None,
+    ):
         """
         Do not use the constructor explicitly for creating a RemoteController, 
         instead use one of the provided static connect methods
         """
         self._device: SonicDevice = device
         self._logger = logger    
+        self._restart_executor = restart_executor
         update_interval_ms = (
             self.MODBUS_UPDATE_INTERVAL_MS
             if isinstance(device.communicator, ModbusCommunicator)
@@ -76,9 +86,17 @@ class RemoteController:
     def _should_auto_start_updater(device: SonicDevice) -> bool:
         return not isinstance(device.communicator, ModbusCommunicator)
 
+    @staticmethod
+    def _has_valid_deduced_protocol(device: SonicDevice) -> bool:
+        device_info = device.info
+        return (
+            device_info.device_type != DeviceType.UNKNOWN
+            and device_info.protocol_version != Version(0, 0, 0)
+        )
+
 
     @staticmethod
-    async def connect_via_serial(url: Path | str, baudrate: int = 115200, log_path: Optional[Path]=None) -> "RemoteController":
+    async def connect_via_serial(url: Path | str, baudrate: int = 9600, log_path: Optional[Path]=None) -> "RemoteController":
         """
         Creates a RemoteController by establishing a connection to a device over serial.
 
@@ -105,25 +123,27 @@ class RemoteController:
         if isinstance(url, Path):
             url = str(url)
 
-        discovery = create_device_discovery()
-        dev_info = await discovery.get_fw_device_info_of(url)
-        assert dev_info is not None, "No device detected on the given port"
+        dev_info = await resolve_current_device_info(url)
         connection = create_connection_to_device(dev_info, baudrate)
         return await RemoteController.connect(connection, log_path)
 
     @staticmethod
     async def connect_via_modbus(
         url: Path | str,
-        baudrate: int = 9600,
-        parity: Parity = Parity.EVEN,
+        baudrate: int = DEFAULT_MODBUS_BAUDRATE,
+        parity: Parity = DEFAULT_MODBUS_PARITY,
         log_path: Optional[Path] = None,
     ) -> "RemoteController":
         if isinstance(url, Path):
             url = str(url)
-        discovery = create_device_discovery()
-        dev_info = await discovery.get_fw_device_info_of(url)
-        assert dev_info is not None, "No device detected on the given port"
-        connection = ModbusConnection(dev_info.sys_name, None, str(url), baudrate=baudrate, parity=parity)
+        dev_info = await resolve_current_device_info(url)
+        connection = ModbusConnection(
+            f"modbus:{dev_info.device_path}",
+            dev_info,
+            dev_info.device_path,
+            baudrate=baudrate,
+            parity=parity,
+        )
         return await RemoteController.connect(connection, log_path)
 
     @staticmethod
@@ -139,18 +159,63 @@ class RemoteController:
         else:
             communicator = SerialCommunicator(logger=logger) # type: ignore
 
-        await communicator.open_communication(connection)
-        device = await device_builder.build_amp(communicator)
-
-        return device
+        try:
+            await communicator.open_communication(connection)
+            return await device_builder.build_amp(communicator)
+        except Exception:
+            if communicator.connection_opened.is_set():
+                await communicator.close_communication()
+            raise
 
     @staticmethod
-    async def connect(connection: Connection, log_path: Optional[Path]=None) -> "RemoteController":
+    async def _build_device_with_retry(connection: Connection, logger: logging.Logger) -> SonicDevice:
+        last_error: Exception | None = None
+
+        for attempt in range(1, RemoteController.CONNECT_MAX_ATTEMPTS + 1):
+            try:
+                device = await RemoteController._build_device(connection, logger)
+            except Exception as exc:
+                last_error = exc
+                logger.debug(
+                    "Connect attempt %d/%d failed while building device: %s",
+                    attempt,
+                    RemoteController.CONNECT_MAX_ATTEMPTS,
+                    exc,
+                )
+            else:
+                if RemoteController._has_valid_deduced_protocol(device):
+                    return device
+
+                last_error = RuntimeError(
+                    "Protocol deduction returned "
+                    f"{device.info.device_type.value}/{device.info.protocol_version}"
+                )
+                logger.debug(
+                    "Connect attempt %d/%d returned invalid protocol deduction: %s/%s",
+                    attempt,
+                    RemoteController.CONNECT_MAX_ATTEMPTS,
+                    device.info.device_type.value,
+                    device.info.protocol_version,
+                )
+                await device.disconnect()
+
+            if attempt < RemoteController.CONNECT_MAX_ATTEMPTS:
+                await asyncio.sleep(RemoteController.CONNECT_RETRY_DELAY_S)
+
+        assert last_error is not None
+        raise last_error
+
+    @staticmethod
+    async def connect(
+        connection: Connection,
+        log_path: Optional[Path]=None,
+        restart_executor: Callable[[Command, "RemoteController"], Awaitable["RemoteController"]] | None = None,
+    ) -> "RemoteController":
         logger = create_logger_for_connection(connection.connection_name, log_path if log_path is not None else Path("."))   
 
-        device = await RemoteController._build_device(connection, logger)
+        device = await RemoteController._build_device_with_retry(connection, logger)
         
-        controller = RemoteController(device, logger)
+        controller = RemoteController(device, logger, restart_executor=restart_executor)
         
         # ensure procedures are being loaded
         await controller.load_init()
@@ -188,7 +253,7 @@ class RemoteController:
             lambda _: loop.run_until_complete(self._device.disconnect())
         )
 
-        controller = RemoteController(worker_device, self._logger)
+        controller = RemoteController(worker_device, self._logger, restart_executor=self._restart_executor)
 
         # ensure procedures are being loaded
         await controller.load_init()
@@ -404,7 +469,20 @@ class RemoteController:
         await self._updater.stop()
         await self._device.disconnect()
 
-    async def restart(self) -> None:
+    async def _restart_with_redetection(self, restart_command: Command) -> "RemoteController":
+        await self._device.restart(restart_command)
+
+        connection = self._device.communicator.connection
+        assert connection is not None
+
+        new_connection = await redetect_connection(connection)
+
+        device = await self._build_device(new_connection, self._logger)
+        controller = RemoteController(device, self._logger, restart_executor=self._restart_executor)
+        await controller.load_init()
+        return controller
+
+    async def restart(self, restart_command: Command = commands.RestartDevice()) -> None:
         """
         Restarting can do that a other application is started on the device. 
         Meaning that also another protocol may be used. So references to protocol_consts and other attributes of this class
@@ -415,20 +493,17 @@ class RemoteController:
         was_updater_running = self._updater.running.is_set()
 
         await self._updater.stop()
-        await self._device.restart()
-
-        connection = self._device.communicator.connection
-        assert connection is not None
-
-        new_connection = await redetect_connection(connection)
-
-        device = await self._build_device(new_connection, self._logger)
-        self.__init__(device, self._logger)
+        if self._restart_executor is None:
+            replacement = await self._restart_with_redetection(restart_command)
+        else:
+            replacement = await self._restart_executor(restart_command, self)
 
         if was_updater_running:
-            self.start_updater()
+            replacement.start_updater()
         else:
-            await self.stop_updater()
+            await replacement.stop_updater()
+
+        self.__dict__ = replacement.__dict__
     
     @property 
     def protocol_consts(self):

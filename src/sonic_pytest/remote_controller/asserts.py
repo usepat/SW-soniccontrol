@@ -28,12 +28,15 @@ def assert_answer_is_not_error(answer: Answer, errors_to_check: List[CommandCode
         assert answer.valid, "answer is not valid and not an error"
 
 
-async def send_command_and_check_response(controller: RemoteController, command: str | Command) -> Answer:
-    answer = await controller.send_command(command)
-    assert_answer_is_not_error(answer, errors_to_check=[
+async def send_command_and_check_response(controller: RemoteController, command: str | Command, raise_exception: bool = True) -> Answer:
+    answer = await controller.send_command(command, raise_exception=raise_exception)
+    errors = [
         CommandCode.E_INTERNAL_DEVICE_ERROR, 
         CommandCode.E_COMMAND_NOT_KNOWN, 
         CommandCode.E_PARSING_ERROR, 
         CommandCode.E_SYNTAX_ERROR
-    ])
+    ]
+    if (isinstance(command, str) and command == "!stop") or (isinstance(command, Command) and command.code == CommandCode.SET_STOP):
+        errors.append(CommandCode.E_COMMAND_NOT_PERMITTED)
+    assert_answer_is_not_error(answer, errors_to_check=errors)
     return answer

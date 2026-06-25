@@ -34,7 +34,7 @@ set_swf = CommandContract(
     user_manual_attrs=UserManualAttrs(
         description="Sets the transducer switching frequency on the device."
     ),
-    is_release=False,
+    is_release=True,
     group_id=GROUPS.transducer,
     tags=["switching frequency", "transducer"]
 )
@@ -52,7 +52,7 @@ get_swf = CommandContract(
     user_manual_attrs=UserManualAttrs(
         description="Retrieves the transducer switching frequency from the device."
     ),
-    is_release=False,
+    is_release=True,
     group_id=GROUPS.transducer,
     tags=["switching frequency", "transducer"]
 )

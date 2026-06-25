@@ -33,7 +33,13 @@ class DeviceBuilder:
         info = device.info
         result_dict: Dict[IEFieldName, Any] = {}
         if device.has_command(cmds.GetInfo()):
-            answer = await device.execute_command(cmds.GetInfo(), raise_exception=False, should_log=False)
+            answer = await device.execute_command(
+                cmds.GetInfo(),
+                raise_exception=False,
+                should_log=False,
+                warn_on_transport_error=True,
+                suppress_exception_log=True,
+            )
             result_dict.update(answer.field_value_dict)
         
         info.firmware_version = result_dict.get(EFieldName.FIRMWARE_VERSION, Version(0, 0, 0))
@@ -64,6 +70,39 @@ class DeviceBuilder:
 
         return device
 
+    async def _deduce_protocol(
+        self,
+        comm: Communicator,
+        info: FirmwareInfo,
+        is_release: bool,
+    ) -> tuple[DeviceType, Version, bool]:
+        protocol_version = Version(1, 0, 0)
+        device_type = DeviceType.UNKNOWN
+        protocol = operator_protocol_factory.build_protocol_for(
+            ProtocolType(protocol_version, device_type, is_release)
+        )
+        device = SonicDevice(comm, protocol, info, logger=self._logger)
+
+        answer = await device.execute_command(
+            cmds.GetProtocol(),
+            raise_exception=False,
+            disconnect_on_exception=False,
+            warn_on_transport_error=True,
+            suppress_exception_log=True,
+        )
+        if answer.valid:
+            assert EFieldName.DEVICE_TYPE in answer.field_value_dict
+            assert EFieldName.PROTOCOL_VERSION in answer.field_value_dict
+            assert EFieldName.IS_RELEASE in answer.field_value_dict
+            return (
+                answer[EFieldName.DEVICE_TYPE],
+                answer[EFieldName.PROTOCOL_VERSION],
+                answer[EFieldName.IS_RELEASE] == BuildType.RELEASE.name,
+            )
+
+        self._builder_logger.debug("Device does not understand ?protocol command")
+        return device_type, protocol_version, is_release
+
 
     async def build_amp(self, comm: Communicator, try_deduce_protocol_used: bool = True) -> SonicDevice:
         """!
@@ -80,21 +119,7 @@ class DeviceBuilder:
         # deduce the right protocol version, device_type and build_type
         if try_deduce_protocol_used:
             self._builder_logger.debug("Try to figure out which protocol to use with ?protocol")
-
-            protocol_version: Version = Version(1, 0, 0)
-            protocol = operator_protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
-
-            device = SonicDevice(comm, protocol, info, logger=self._logger)
-            answer = await device.execute_command(cmds.GetProtocol(), raise_exception=False)
-            if answer.valid:
-                assert(EFieldName.DEVICE_TYPE in answer.field_value_dict)
-                assert(EFieldName.PROTOCOL_VERSION in answer.field_value_dict)
-                assert(EFieldName.IS_RELEASE in answer.field_value_dict)
-                device_type = answer[EFieldName.DEVICE_TYPE]
-                protocol_version = answer[EFieldName.PROTOCOL_VERSION]
-                is_release = answer[EFieldName.IS_RELEASE] == BuildType.RELEASE.name
-            else:
-                self._builder_logger.debug("Device does not understand ?protocol command")
+            device_type, protocol_version, is_release = await self._deduce_protocol(comm, info, is_release)
         else:
             self._builder_logger.warning("Device uses unknown protocol")
 

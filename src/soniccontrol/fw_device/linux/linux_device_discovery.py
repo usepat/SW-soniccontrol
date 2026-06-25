@@ -1,6 +1,8 @@
 import asyncio
+import contextlib
 import functools
 from pathlib import Path
+import threading
 import time
 from typing import Any, Generator, Iterable, List, Optional, Set
 
@@ -158,14 +160,32 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         return list(devices_by_key.values())
 
 
-    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 10) -> FwDeviceInfo:
+    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 2) -> FwDeviceInfo:
+        stop_event = threading.Event()
+        future = asyncio.create_task(
+            asyncio.to_thread(self._wait_for_usb_device_redetection, device_info, stop_event)
+        )
+
         try:
-            future = asyncio.to_thread(self._wait_for_usb_device_redetection, device_info)
-            dev_info = await asyncio.wait_for(future, timeout_s)
-        except asyncio.TimeoutError:
-            pass
-        else:
-            return dev_info
+            done, _pending = await asyncio.wait({future}, timeout=timeout_s)
+            if done:
+                dev_info = future.result()
+                if dev_info is not None:
+                    return dev_info
+        finally:
+            stop_event.set()
+
+        with contextlib.suppress(asyncio.TimeoutError, asyncio.CancelledError):
+            await asyncio.wait_for(asyncio.shield(future), 1.0)
+
+        if future.done():
+            with contextlib.suppress(asyncio.CancelledError):
+                dev_info = future.result()
+                if dev_info is not None:
+                    return dev_info
+
+        if not future.done():
+            future.cancel()
         
         dev_infos = await self.list_fw_device_infos(include_unverified_ttys=True)
         dev_info = next(
@@ -183,7 +203,7 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         return dev_info
 
 
-    def _wait_for_usb_device_redetection(self, device_info: FwDeviceInfo):
+    def _wait_for_usb_device_redetection(self, device_info: FwDeviceInfo, stop_event: threading.Event):
         assert device_info.usb_sys_name is not None, "The usb_sys_name must be set on the device"
         context = pyudev.Context()
         monitor = pyudev.Monitor.from_netlink(context)
@@ -192,7 +212,10 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         seen_remove = False
 
         usb_device = None
-        for device in iter(monitor.poll, None):
+        while not stop_event.is_set():
+            device = monitor.poll(timeout=0.25)
+            if device is None:
+                continue
             if device.sys_name != device_info.usb_sys_name:
                 continue
 
@@ -204,7 +227,10 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
                 usb_device = device
                 break
 
-        while True:
+        if usb_device is None:
+            return None
+
+        while not stop_event.is_set():
             device = _get_descendant_device(usb_device, [
                 PyudevDeviceQuery("tty", None), 
                 PyudevDeviceQuery("block", "partition")
@@ -214,6 +240,8 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
                 return _get_device_info(device)
 
             time.sleep(0.5)
+
+        return None
 
         
 

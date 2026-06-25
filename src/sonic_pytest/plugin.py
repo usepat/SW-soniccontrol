@@ -56,6 +56,10 @@ def pytest_configure(config):
         "markers",
         "skip_remote_test_setup: skip the default remote test state reset fixture",
     )
+    config.addinivalue_line(
+        "markers",
+        "reprepare_modbus_device: rerun shared modbus device preparation before this test",
+    )
 
     profile = Profile[config.getoption("--profile")]
     serial_port = config.getoption("--serial-port")

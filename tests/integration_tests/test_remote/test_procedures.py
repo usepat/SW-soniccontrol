@@ -107,16 +107,18 @@ async def setup_procedures(request, remote_controller):
 
     yield
 
-    await remote_controller.send_command(commands.SetStop())
+    await send_command_and_check_response(remote_controller, commands.SetStop(), raise_exception = False)
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package")
 async def disable_procedure_logger(remote_controller):
-    await remote_controller.send_command(commands.SetLogLevel("procedureLogger", Loglevel.DISABLED))
+    if not remote_controller._device._uses_modbus():
+        
+        await send_command_and_check_response(remote_controller, commands.SetLogLevel("procedureLogger", Loglevel.DISABLED))
 
     yield
-
-    await remote_controller.send_command(commands.SetLogLevel("procedureLogger", Loglevel.ERROR))
+    if not remote_controller._device._uses_modbus():
+        await send_command_and_check_response(remote_controller, commands.SetLogLevel("procedureLogger", Loglevel.ERROR))
 
 
 @pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)

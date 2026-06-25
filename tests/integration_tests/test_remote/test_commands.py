@@ -13,6 +13,7 @@ from allure_commons.lifecycle import AllureLifecycle
 from allure_commons.model2 import Status, StatusDetails
 
 @pytest.mark.asyncio(loop_scope="package")
+@pytest.mark.skip_if_modbus_enabled
 @pytest.mark.parametrize("formatted_command_str", [
     ("!g={}", DeviceParamConstantType.MIN_GAIN),
     ("!gain={}", DeviceParamConstantType.MIN_GAIN),
@@ -123,6 +124,7 @@ async def test_deduced_commands(remote_controller, progress_writer):
 
 
 @pytest.mark.asyncio(loop_scope="package")
+@pytest.mark.skip_if_modbus_enabled
 @pytest.mark.parametrize("formatted_command_str", [
     ("!gain=-1000", []),
     ("!gain=", []),

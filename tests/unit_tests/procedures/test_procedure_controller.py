@@ -4,6 +4,8 @@ from unittest.mock import Mock, AsyncMock
 import logging
 
 import pytest_asyncio
+from sonic_protocol.python_parser.answer import Answer
+from sonic_protocol.python_parser import commands
 from soniccontrol.events import Event
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
@@ -71,3 +73,51 @@ async def test_execute_proc_executes_procedure(monkeypatch, proc_controller):
     assert proc_controller.is_proc_running
     await asyncio.sleep(0.1)
     proc_execute.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("proc_controller", ["ramper_local"], indirect=True)
+async def test_stop_proc_runs_cleanup_and_marks_proc_stopped(monkeypatch, proc_controller):
+    proc_started = asyncio.Event()
+
+    async def proc_execute(*_args, **_kwargs):
+        proc_started.set()
+        await asyncio.Future()
+
+    monkeypatch.setattr(RamperLocal, "execute", proc_execute)
+    proc_controller._device.set_signal_off = AsyncMock()
+    listener = Mock()
+    proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, listener)
+
+    proc_controller.execute_proc(ProcedureType.RAMP, Mock(spec=RamperArgs))
+    await proc_started.wait()
+
+    await proc_controller.stop_proc()
+
+    proc_controller._device.set_signal_off.assert_awaited_once()
+    listener.assert_called_once_with(Event(ProcedureController.PROCEDURE_STOPPED))
+    assert not proc_controller.is_proc_running
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("proc_controller", ["ramper_local"], indirect=True)
+async def test_stop_proc_prefers_cooperative_stop(monkeypatch, proc_controller):
+    proc_started = asyncio.Event()
+    allow_finish = asyncio.Event()
+
+    async def proc_execute(*_args, **_kwargs):
+        proc_started.set()
+        await allow_finish.wait()
+
+    request_stop = Mock(side_effect=lambda: allow_finish.set() or True)
+
+    monkeypatch.setattr(RamperLocal, "execute", proc_execute)
+    monkeypatch.setattr(RamperLocal, "request_stop", request_stop)
+
+    proc_controller.execute_proc(ProcedureType.RAMP, Mock(spec=RamperArgs))
+    await proc_started.wait()
+
+    await proc_controller.stop_proc()
+
+    request_stop.assert_called_once()
+    assert not proc_controller.is_proc_running

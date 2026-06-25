@@ -94,7 +94,7 @@ get_irms = CommandContract(
     user_manual_attrs=UserManualAttrs(
         description="Retrieves the device IRMS value."
     ),
-    is_release=False,
+    is_release=True,
     group_id=GROUPS.measurements,
     tags=["transducer", "descale"]
 )

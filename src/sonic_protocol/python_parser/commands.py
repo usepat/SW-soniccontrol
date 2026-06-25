@@ -105,6 +105,11 @@ class GetAtt(Command):
     index: int = attrs.field()
 
 @attrs.define()
+class FlashUSB(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_FLASH_USB)
+
+@attrs.define()
 class SetFrequency(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_FREQ)
@@ -491,6 +496,16 @@ class StartConfigurator(Command):
 class StartOperator(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.START_OPERATOR)
+
+@attrs.define()
+class StartCustomizer(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.START_CUSTOMIZER)
+
+@attrs.define()
+class StartDiagnosticsTool(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.START_DIAGNOSTIC_TOOL)
 
 @attrs.define()
 class GetNumAllocators(Command):

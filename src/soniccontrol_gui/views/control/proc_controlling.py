@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Callable, Dict, Iterable
 
@@ -49,6 +48,7 @@ class ProcControlling(UIComponent):
         self._view = ProcControllingView(parent.view)
         self._proc_widgets: Dict[ProcedureType, FormWidget] = {}
         super().__init__(parent, self._view, self._logger)
+        self._on_proc_selected = async_handler(self._select_current_proc)
         
         self._view.set_procedure_selected_command(self._on_proc_selected)
         self._view.set_start_button_command(self._on_run_pressed)
@@ -92,16 +92,15 @@ class ProcControlling(UIComponent):
             proc_widget.view.hide()
             self._model.procedure_arg_dict[proc_type] = proc_dict
             self._proc_widgets[proc_type] = proc_widget
-        proc_names = map(lambda proc_type: proc_type.value, self._proc_controller.proc_args_list.keys())
+        proc_names = [proc_type.value for proc_type in self._proc_controller.proc_args_list.keys()]
         self._view.set_procedure_combobox_items(proc_names)
 
         # setup view to have ramp as default 
         if ProcedureType.RAMP in self._proc_controller.proc_args_list:
             self._view.selected_procedure = ProcedureType.RAMP.value 
-            self._on_proc_selected()
+            await self._select_current_proc()
 
-    @async_handler
-    async def _on_proc_selected(self):
+    async def _select_current_proc(self):
 
         for proc_widget in self._proc_widgets.values():
             proc_widget.view.hide()
@@ -117,9 +116,7 @@ class ProcControlling(UIComponent):
         answer = await warning_message.wait_for_answer()
         if answer == DialogOptions.CANCEL:
             return
-        elif answer == DialogOptions.PROCEED:
-            pass
-        else:
+        if answer != DialogOptions.PROCEED:
             assert False
         try:
             proc_args_dict = self._model.procedure_args
