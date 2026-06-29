@@ -5,7 +5,7 @@ import pytest_asyncio
 from ttkbootstrap.utility import enable_high_dpi_awareness
 
 from soniccontrol import commands as cmds
-from sonic_pytest.plugin_data import SonicControlPlugin
+from sonic_pytest.plugin_data import SonicControlPlugin, get_sonic_control_plugin
 from soniccontrol import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.app_config import PLATFORM, System
@@ -35,8 +35,9 @@ from soniccontrol_gui.views.core.postman_window import PostmanDeviceWindow
 async def connection_window(request):
     loop = asyncio.get_running_loop()
 
-    simulation_exe_path: Path = request.config._sonic_control_plugin.simulation_exe_path
-    remote_server_url: str | None = request.config._sonic_control_plugin.remote_server_url
+    plugin_config = get_sonic_control_plugin(request.config)
+    simulation_exe_path: Path = plugin_config.simulation_exe_path
+    remote_server_url: str | None = plugin_config.remote_server_url
 
     APP_CONFIG.remote_server_url = remote_server_url
     
@@ -89,7 +90,7 @@ def configure_simulation_connection(controller: GuiController, device_type: Devi
 async def device_window(request, connection_window, tmp_path_factory, create_worker_process):
     controller = GuiController()    
 
-    plugin: SonicControlPlugin = request.config._sonic_control_plugin
+    plugin: SonicControlPlugin = get_sonic_control_plugin(request.config)
     device_type = plugin.device_type
     data_dir = tmp_path_factory.mktemp("data")
 

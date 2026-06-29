@@ -4,8 +4,6 @@ import asyncio
 import logging
 from typing import Optional
 
-import attrs
-
 from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.commands import Command
@@ -17,21 +15,17 @@ from soniccontrol.fw_device.connection import Connection
 class SerialModbusConverterCommunicator(Communicator):
 
     EMPTY_SUCCESS_MESSAGE = "Modbus command succeeded without textual response"
-
-    _connection_opened: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
-    _logger: logging.Logger = attrs.field(factory=logging.getLogger)
     _modbus_communicator: ModbusCommunicator
     _deserializer: CommandDeserializer
-
-    def __attrs_post_init__(self) -> None:
-        self._logger = logging.getLogger(
-            self._logger.name + "." + SerialModbusConverterCommunicator.__name__
-        )
-        super().__init__()
 
     def __init__(self, modbus_communicator: ModbusCommunicator, deserializer: CommandDeserializer):
         self._modbus_communicator = modbus_communicator
         self._deserializer = deserializer
+        parent_logger = getattr(modbus_communicator, "_logger", logging.getLogger(__name__))
+        self._logger = logging.getLogger(
+            parent_logger.name + "." + SerialModbusConverterCommunicator.__name__
+        )
+        super().__init__()
 
     @property
     def connection_opened(self) -> asyncio.Event: 

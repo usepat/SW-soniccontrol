@@ -17,7 +17,7 @@ from soniccontrol.fw_device import create_connection_to_device, create_device_di
 from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE, DEFAULT_MODBUS_PARITY, DEFAULT_MODBUS_SLAVE_ID
 from soniccontrol import RemoteController, DeviceType
 from sonic_pytest.remote_controller.asserts import send_command_and_check_response
-from sonic_pytest.plugin_data import SonicControlPlugin, mark_modbus_device_prepared, modbus_device_preparation_is_required
+from sonic_pytest.plugin_data import SonicControlPlugin, get_sonic_control_plugin, mark_modbus_device_prepared, modbus_device_preparation_is_required
 from sonic_pytest.fixtures import create_worker_process_impl
 
 
@@ -284,7 +284,7 @@ async def build_remote_controller_with_restart(
 @pytest_asyncio.fixture(scope="package", loop_scope="package")
 async def package_remote_controller(request, tmp_path_factory, create_worker_process):
     # setup
-    plugin_config = request.config._sonic_control_plugin
+    plugin_config = get_sonic_control_plugin(request.config)
     log_path: Path = plugin_config.log_path
 
     if not plugin_config.is_simulation and plugin_config.modbus_serial_port is not None:
@@ -302,7 +302,7 @@ async def package_remote_controller(request, tmp_path_factory, create_worker_pro
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
 async def remote_controller(request, tmp_path_factory, create_worker_process, package_remote_controller):
-    plugin_config = request.config._sonic_control_plugin
+    plugin_config = get_sonic_control_plugin(request.config)
     log_path: Path = plugin_config.log_path
 
     if plugin_config.is_simulation or plugin_config.modbus_serial_port is None:

@@ -1,7 +1,11 @@
 from enum import Enum, auto
 import attrs
 from pathlib import Path
+from typing import TYPE_CHECKING, Protocol, cast
 from soniccontrol import DeviceType
+
+if TYPE_CHECKING:
+    from _pytest.config import Config
 
 
 class Profile(Enum):
@@ -24,6 +28,14 @@ class SonicControlPlugin:
     log_path: Path
     remote_server_url: str | None
     _shared_modbus_device_prepared: bool = attrs.field(default=False, init=False)
+
+
+class _ConfigWithSonicControlPlugin(Protocol):
+    _sonic_control_plugin: SonicControlPlugin
+
+
+def get_sonic_control_plugin(config: "Config") -> SonicControlPlugin:
+    return cast(_ConfigWithSonicControlPlugin, config)._sonic_control_plugin
 
 
 def modbus_device_preparation_is_required(plugin: SonicControlPlugin, node) -> bool:

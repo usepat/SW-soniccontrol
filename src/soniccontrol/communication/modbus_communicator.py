@@ -551,10 +551,6 @@ async def main():
         Version(3, 0, 0),
         DeviceType.DESCALE
     ))
-    command_contract = protocol.command_contracts.get(CommandCode.SET_FLASH_USB)
-    assert command_contract
-    answer = await communicator.send_command_and_validate(command_contract, FlashUSB())
-    print(answer)
     command_contract = protocol.command_contracts.get(CommandCode.SET_ON)
     assert command_contract
     answer = await communicator.send_command_and_validate(command_contract, SetOn())

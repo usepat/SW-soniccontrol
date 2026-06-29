@@ -5,7 +5,7 @@ from sonic_protocol.schema import DeviceType
 import pytest
 
 from soniccontrol.app_config import get_simulation_exe
-from sonic_pytest.plugin_data import SonicControlPlugin, Profile
+from sonic_pytest.plugin_data import SonicControlPlugin, Profile, get_sonic_control_plugin
 
 
 def pytest_addoption(parser):
@@ -92,24 +92,42 @@ def pytest_configure(config):
     )
 
 
-def pytest_runtest_setup(item):
-    if item.get_closest_marker("skip_if_modbus_enabled") and item.config._sonic_control_plugin.modbus_serial_port is not None:
-        pytest.skip("The test is not supported for modbus devices") 
-    # Here we check for each test, if it can be executed by checking the allowed_devices marker
+def _get_skip_reason(item: pytest.Item) -> str | None:
+    plugin = get_sonic_control_plugin(item.config)
+
+    if item.get_closest_marker("skip_if_modbus_enabled") and plugin.modbus_serial_port is not None:
+        return "The test is not supported for modbus devices"
+
     allowed_devices: List[DeviceType] = [ 
         arg 
         for mark in item.iter_markers(name="allowed_devices") 
         for arg in mark.args
     ]
     if len(allowed_devices) == 0:
-        return 
+        return None
     
-    device_type = item.config._sonic_control_plugin.device_type
+    device_type = plugin.device_type
     if device_type not in allowed_devices:
-        pytest.skip(f"The device type {device_type.name} is not supported for this test")  
-    
+        return f"The device type {device_type.name} is not supported for this test"
+
+    return None
+
+
+def pytest_collection_modifyitems(config, items):
+    del config
+    for item in items:
+        skip_reason = _get_skip_reason(item)
+        if skip_reason is not None:
+            item.add_marker(pytest.mark.skip(reason=skip_reason))
+
+
+def pytest_runtest_setup(item):
+    skip_reason = _get_skip_reason(item)
+    if skip_reason is not None:
+        pytest.skip(skip_reason)
 
 
 
 
     
+

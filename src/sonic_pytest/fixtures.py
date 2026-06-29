@@ -4,6 +4,7 @@ import sys
 from sonic_protocol.schema import DeviceType
 import pytest
 import psutil
+from sonic_pytest.plugin_data import get_sonic_control_plugin
 
 
 def kill_all(process_name: str):
@@ -37,7 +38,7 @@ def progress_writer():
 async def create_worker_process_impl(request, tmp_path_factory):
     # creates a worker process needed for the postman simulation
     
-    plugin_config = request.config._sonic_control_plugin
+    plugin_config = get_sonic_control_plugin(request.config)
     is_simulation: bool = plugin_config.is_simulation
     device_type: DeviceType = plugin_config.device_type
 
