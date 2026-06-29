@@ -1,9 +1,23 @@
 
 from abc import ABCMeta
-from typing import Generic, TypeVar, cast, Optional, get_args
+from typing import Any, Generic, TypeVar, cast, Optional, get_args
 import attrs
+import numpy as np
 from sonic_protocol.schema import SIUnit, SIPrefix
 
+
+def cls_converter(cls):
+    """
+    Helper method used for attrs classes.
+
+    example:
+        freq = attrs.field(converter=cls_converter(SIVarFrequency), default=SIVarFrequency(0))
+    """
+    def convert(x: Any):
+        if isinstance(x, (cls, SIVar)):
+            return x
+        return cls(x)
+    return convert
 
 
 @attrs.define(auto_attribs=True, frozen=True)
@@ -67,7 +81,7 @@ class SIVar(Generic[T], metaclass=SIVarMetaClass):
             if not allow_none:
                 raise ValueError("meta must be provided for direct SIVar instantiation")
 
-        if not isinstance(self.value, (int, float)) or isinstance(self.value, bool):
+        if (not isinstance(self.value, (int, float)) and not isinstance(self.value, (np.integer, np.floating))) or isinstance(self.value, bool):
             raise TypeError("SIVar.value must be int|float (no bool)")
         # validate that current prefix is within min/max range
         if not self.allowed_prefix(self.si_prefix):
@@ -214,10 +228,10 @@ ABSOLUTE_FREQUENCY_META = SIVarMeta(
     max_value=(10, SIPrefix.MEGA)       # 10MHz
 )
 
-class AbsoluteFrequencySIVar(SIVar[int], si_meta=ABSOLUTE_FREQUENCY_META):
+class AbsoluteFrequencySIVar(SIVar[float], si_meta=ABSOLUTE_FREQUENCY_META):
     """Frequency variable for home UI with flexible range."""
     
-    def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
+    def __init__(self, value: int | float = 100000, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
 RELATIVE_FREQUENCY_META = SIVarMeta(
@@ -228,7 +242,7 @@ RELATIVE_FREQUENCY_META = SIVarMeta(
     max_value=(5, SIPrefix.MEGA)       # 5MHz
 )
 
-class RelativeFrequencySIVar(SIVar[int], si_meta=RELATIVE_FREQUENCY_META):
+class RelativeFrequencySIVar(SIVar[float], si_meta=RELATIVE_FREQUENCY_META):
     """Frequency variable for home UI with flexible range."""
     
     def __init__(self, value: int = 0, si_prefix: SIPrefix = SIPrefix.NONE):
@@ -254,18 +268,33 @@ GAIN_META = SIVarMeta(
     si_unit=SIUnit.PERCENT, 
     si_prefix_min=SIPrefix.NONE, 
     si_prefix_max=SIPrefix.NONE,
-    min_value=(0, SIPrefix.NONE),        # 0%
+    min_value=(1, SIPrefix.NONE),        # 0%
     max_value=(150, SIPrefix.NONE)       # 150%
 )
 
 class GainSIVar(SIVar[int], si_meta=GAIN_META):
     """Gain variable for home UI (single prefix - no combobox)."""
     
-    def __init__(self, value: int = 0, si_prefix: SIPrefix = SIPrefix.NONE):
+    def __init__(self, value: int = 1, si_prefix: SIPrefix = SIPrefix.NONE):
+        super().__init__(value=value, si_prefix=si_prefix)
+
+DESCALE_GAIN_META = SIVarMeta(
+    si_unit=SIUnit.PERCENT, 
+    si_prefix_min=SIPrefix.NONE, 
+    si_prefix_max=SIPrefix.NONE,
+    min_value=(1, SIPrefix.NONE),        # 0%
+    max_value=(100, SIPrefix.NONE)       # 150%
+)
+
+class DescaleGainSIVar(SIVar[int], si_meta=DESCALE_GAIN_META):
+    """Gain variable for home UI (single prefix - no combobox)."""
+    
+    def __init__(self, value: int = 1, si_prefix: SIPrefix = SIPrefix.NONE):
         super().__init__(value=value, si_prefix=si_prefix)
 
 
-class AtfSiVar(SIVar[int], si_meta=ABSOLUTE_FREQUENCY_META):
+
+class AtfSiVar(SIVar[float], si_meta=ABSOLUTE_FREQUENCY_META):
     """ATF frequency variable with fixed metadata."""
     
     def __init__(self, value: int = 100000, si_prefix: SIPrefix = SIPrefix.NONE):

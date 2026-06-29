@@ -77,29 +77,45 @@ class HDF5SerializationHelper:
         table.flush()
 
 
-  # Timestamp gets stored as string, because for a user it is more readable
-_cols = {
+# Timestamp gets stored as string, because for a user it is more readable
+_cols_worker = {
     EFieldName.TIMESTAMP.name.lower(): tb.StringCol(32), #type: ignore
     EFieldName.FREQUENCY.name.lower(): tb.UInt32Col(), #type: ignore
     EFieldName.GAIN.name.lower(): tb.UInt8Col(), #type: ignore
+    # signal field added in version 2.1.0
+    EFieldName.SIGNAL.name.lower(): tb.BoolCol(), #type: ignore 
     EFieldName.URMS.name.lower(): tb.UInt32Col(), #type: ignore
     EFieldName.IRMS.name.lower(): tb.UInt32Col(), #type: ignore
     EFieldName.PHASE.name.lower(): tb.UInt32Col(), #type: ignore
     EFieldName.TEMPERATURE.name.lower(): tb.UInt32Col() #type: ignore
 }
-DataTable = type("DataTable", (tb.IsDescription, ), _cols)
+# table added in version 2.0.0
+DataTableWorker = type("DataTableWorker", (tb.IsDescription, ), _cols_worker)
 
+# Timestamp gets stored as string, because for a user it is more readable
+_cols_descale = {  
+    EFieldName.TIMESTAMP.name.lower(): tb.StringCol(32), #type: ignore
+    EFieldName.GAIN.name.lower(): tb.UInt8Col(), #type: ignore
+    EFieldName.SIGNAL.name.lower(): tb.BoolCol(), #type: ignore
+    EFieldName.IRMS.name.lower(): tb.UInt32Col(), #type: ignore
+    EFieldName.TEMPERATURE.name.lower(): tb.UInt32Col() #type: ignore
+}
+# table added in version 2.1.0
+DataTableDescale = type("DataTableDescale", (tb.IsDescription, ), _cols_descale)
 
 
 class HDF5ExperimentWriter(ExperimentWriter):
-    def __init__(self, file_path: Path):
+    def __init__(self, file_path: Path, data_table_type: type):
+        assert data_table_type in (DataTableDescale, DataTableWorker), "You have to provide a valid data table as type"
+
         file_extension = ".h5"
-        self._file_path_posix = str(file_path) 
-        if not self._file_path_posix.endswith(file_extension):
-            self._file_path_posix += ".h5" # add extension
-        self._file = tb.open_file(self._file_path_posix, "w")
-        self._write_version(Version(1, 0, 0))
-        self._data_table = self._file.create_table("/", "data", cast(tb.Description, DataTable))
+        self._file_path = str(file_path) 
+        if not self._file_path.endswith(file_extension):
+            self._file_path += ".h5" # add extension
+        self._file = tb.open_file(self._file_path, "w")
+        # TODO docuemnt somewhere what changed and maybe why
+        self._write_version(Version(3, 0, 0))
+        self._data_table = self._file.create_table("/", "data", cast(tb.Description, data_table_type))
 
     def _write_version(self, version: Version):
         group = cast(tb.Group, self._file.get_node("/", classname='Group'))
@@ -122,9 +138,17 @@ class HDF5ExperimentWriter(ExperimentWriter):
         
         
     def add_row(self, data: Dict[str, Any]) -> None:
+        # We only provide there a method to write a single row instead of the whole table, because
+        # We write the experiment data points directly after we record them. 
+        # This is also done, because storing the whole data in RAM and then writing is not feasible, as it can be very large up to GigaBytes.
+
         data = data.copy() # make a copy, so that we do not transform the original data
+
+        # convert the time to a string for direct readability in storage
         timestamp_col = EFieldName.TIMESTAMP.name.lower()
-        data[timestamp_col] = data[timestamp_col].isoformat()  # convert the time to a string for direct readability in storage
+        if timestamp_col in data:
+            data[timestamp_col] = data[EFieldName.TIMESTAMP.name].isoformat()  
+
         # filter data, so that it only contains the columns of the table
         filtered_data = { k.lower(): v for k, v in data.items() if k.lower() in self._data_table.colnames }
         HDF5SerializationHelper.add_rows_to_table(self._file, self._data_table, [filtered_data])
@@ -144,7 +168,7 @@ class HDF5ExperimentReader(ExperimentReader):
             logging.getLogger("hdf5_serialization").warning("The schema of the hdf5 file is not versionized")
 
     def _read_version(self) -> Version | None:
-        with tb.open_file(self._file_path.as_posix(), "r") as file_:
+        with tb.open_file(str(self._file_path), "r") as file_:
             try:
                 root_node = cast(tb.Group, file_.get_node('/', classname='Group')) 
                 version_str = root_node._v_attrs["version"]
@@ -158,7 +182,7 @@ class HDF5ExperimentReader(ExperimentReader):
     
     def read_metadata(self) -> Experiment:
         data = None
-        with tb.open_file(self._file_path.as_posix(), "r") as file_:
+        with tb.open_file(str(self._file_path), "r") as file_:
             metadata_node = cast(tb.Group, file_.get_node('/metadata', classname='Group'))
             data = HDF5SerializationHelper.deserialize_attribute_tree(metadata_node)
         assert data
@@ -177,7 +201,7 @@ class HDF5ExperimentReader(ExperimentReader):
     
     def read_data(self) -> pd.DataFrame:
         records = None
-        with tb.open_file(self._file_path.as_posix(), "r") as file_:
+        with tb.open_file(str(self._file_path), "r") as file_:
             table_node = cast(tb.Table, file_.get_node('/data', classname='Table'))
             records = table_node.read()
         assert records is not None
@@ -213,7 +237,7 @@ if __name__ == "__main__":
         EFieldName.TEMPERATURE.name.lower(): 270000
     }
 
-    writer = HDF5ExperimentWriter(filepath)
+    writer = HDF5ExperimentWriter(filepath, DataTableWorker)
     writer.write_metadata(experiment)
     writer.add_row(example_row)
     writer.close()

@@ -4,12 +4,12 @@ import attrs
 from attrs import validators
 
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.schema import SIPrefix
+from sonic_protocol.schema import SIPrefix, Version
 from soniccontrol.procedures.holder import Holder, HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, custom_validator_factory
 from sonic_protocol.python_parser import commands
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, RelativeFrequencySIVar
+from sonic_protocol.si_unit import cls_converter, AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
 
 
 @attrs.define(auto_attribs=True)
@@ -24,14 +24,17 @@ and the duration it remains off is determined by t_off.
 You can set t_off to 0 if you want the signal to never be turned off."""
 
     f_start: AbsoluteFrequencySIVar = attrs.field(
+        converter=cls_converter(AbsoluteFrequencySIVar),
         default=AbsoluteFrequencySIVar(1, SIPrefix.MEGA),
         metadata={"enum": EFieldName.RAMP_F_START},
     )
     f_stop: AbsoluteFrequencySIVar = attrs.field(
+        converter=cls_converter(AbsoluteFrequencySIVar),
         default=AbsoluteFrequencySIVar(2, SIPrefix.MEGA),
         metadata={"enum": EFieldName.RAMP_F_STOP},
     )
     f_step: RelativeFrequencySIVar = attrs.field(
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(100, SIPrefix.KILO),
         metadata={"enum": EFieldName.RAMP_F_STEP},
         validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
@@ -46,6 +49,11 @@ You can set t_off to 0 if you want the signal to never be turned off."""
         default=HolderArgs(0, "ms"),
         converter=convert_to_holder_args,
         metadata={"enum": EFieldName.RAMP_T_OFF}
+    )
+    gain: GainSIVar = attrs.field(
+        converter=cls_converter(GainSIVar),
+        default=GainSIVar(50),
+        metadata={"enum": EFieldName.RAMP_GAIN},
     )
 
 
@@ -67,13 +75,14 @@ class RamperLocal(Ramper):
         device: SonicDevice,
         args: RamperArgs
     ) -> None:
-        values = [args.f_start.to_prefix(SIPrefix.NONE) + i * args.f_step.to_prefix(SIPrefix.NONE) for i in range(int((args.f_stop.to_prefix(SIPrefix.NONE) - args.f_start.to_prefix(SIPrefix.NONE)) / args.f_step.to_prefix(SIPrefix.NONE)) + 1) ]
+        values = [int(args.f_start.to_prefix(SIPrefix.NONE)) + i * int(args.f_step.to_prefix(SIPrefix.NONE)) for i in range(int((int(args.f_stop.to_prefix(SIPrefix.NONE)) - int(args.f_start.to_prefix(SIPrefix.NONE))) / int(args.f_step.to_prefix(SIPrefix.NONE))) + 1) ]
 
         # await device.get_overview() # FIXME I dont think we need this
         # I am removing it for now because we can't send commands to the crystal device that have no command code
         # TODO: Do we need those two lines?
         # await device.execute_command(f"!freq={start}")
         # await device.set_signal_on()
+        await device.execute_command(commands.SetGain(args.gain.value))
         await self._ramp(device, list(values), args.t_on, args.t_off)
     
         await device.set_signal_off()
@@ -123,15 +132,24 @@ class RamperRemote(Ramper):
         args: RamperArgs,
         configure_only: bool = False,
     ) -> None:
-        await device.execute_command(commands.SetRampFStart(args.f_start.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetRampFStop(args.f_stop.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetRampFStep(args.f_step.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetRampFStart(int(args.f_start.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetRampFStop(int(args.f_stop.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetRampFStep(int(args.f_step.to_prefix(SIPrefix.NONE))))
         # When the args are retrieved from the Form Widget, the HolderArgs are tuples instead
         t_on_duration = int(args.t_on.duration_in_ms)
         t_off_duration = int(args.t_off.duration_in_ms)
 
         await device.execute_command(commands.SetRampTOn(t_on_duration))
         await device.execute_command(commands.SetRampTOff(t_off_duration))
+
+        gain = int(args.gain.to_prefix(SIPrefix.NONE))
+        if device.info.protocol_version >= Version(3, 0, 0):
+            try:
+                await device.execute_command(commands.SetRampGain(gain))
+            except Exception as _:
+                pass
+        elif not configure_only:
+            await device.execute_command(commands.SetGain(gain))
 
         if not configure_only:
             await device.execute_command(commands.SetRamp())

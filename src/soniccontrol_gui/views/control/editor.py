@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import logging
 import pathlib
 from tkinter import filedialog
@@ -68,6 +70,7 @@ class Editor(UIComponent):
         self._scripting: ScriptingFacade = scripting
         self._script: ScriptFile = script_file
         self._interpreter = interpreter
+        self._example_scripts_init_task: asyncio.Task[None] | None = None
         self._view = EditorView(parent.view)
         super().__init__(parent, self._view, self._logger)
 
@@ -87,8 +90,26 @@ class Editor(UIComponent):
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda e: self._set_current_target(e.new_value))
         self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self.on_execution_state_changed)
 
+    def start_background_tasks(self) -> None:
+        if self._example_scripts_init_task is not None:
+            return
+        self._example_scripts_init_task = asyncio.get_running_loop().create_task(self._initialize_example_scripts())
 
-        self.init_example_scripts()
+    async def shutdown_background_tasks(self) -> None:
+        task = self._example_scripts_init_task
+        self._example_scripts_init_task = None
+        if task is None or task.done():
+            return
+
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+
+    async def _initialize_example_scripts(self) -> None:
+        try:
+            await asyncio.to_thread(self.init_example_scripts)
+        finally:
+            self._example_scripts_init_task = None
         
 
     def init_example_scripts(self) -> None:
@@ -277,7 +298,6 @@ class Editor(UIComponent):
 
     def _handle_script_error(self, e: ScriptException):
         self._view.highlight_line(e.line_begin, color_background="#ff2c2c")
-        MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
         
 
 
@@ -294,7 +314,8 @@ class EditorView(TabView):
         return ui_labels.SCRIPTING_LABEL
 
     def _initialize_children(self) -> None:
-        tab_name = "editor"
+        tab_name = self.scoped_widget_name("editor")
+            
         self._main_frame: ttk.Frame = ttk.Frame(self)
 
         SCRIPTING_PADDING: Final[tuple[int, int, int, int]] = (6, 1, 6, 7)

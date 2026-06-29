@@ -2,6 +2,8 @@ import abc
 import argparse
 from enum import Enum
 from pathlib import Path
+
+import numpy as np
 from sonic_protocol.schema import AnswerFieldDef, ICommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
 from sonic_protocol.protocol import protocol_list
 
@@ -37,7 +39,7 @@ class MarkdownManualCompiler(ManualCompiler):
 
         section_title = f"## **{command_code.value}**: {command_code.name}  \n"
         command_entry = section_title
-        tags = " | ".join(map(lambda tag: f"<u>{tag}</u>", command_contract.tags)) + "  \n\n"
+        tags = " | ".join(map(lambda tag: f"*{tag}*", command_contract.tags)) + "  \n\n"
         command_entry += tags
         command_entry += ("..." if description is None else description) + "  \n\n"
 
@@ -76,7 +78,7 @@ class MarkdownManualCompiler(ManualCompiler):
         if isinstance(description_attrs, UserManualAttrs):
             description = description_attrs.description
 
-        param_entry = self.create_field_type_entry(str(param_def.name.value), param_def.param_type, description)
+        param_entry = self.create_field_type_entry(str(param_def.name.name), param_def.param_type, description)
         return param_entry
 
 
@@ -86,7 +88,7 @@ class MarkdownManualCompiler(ManualCompiler):
         if isinstance(description_attrs, UserManualAttrs):
             description = description_attrs.description
 
-        field_entry = self.create_field_type_entry(str(field_def.field_name.value), field_def.field_type, description)
+        field_entry = self.create_field_type_entry(str(field_def.field_name.name), field_def.field_type, description)
 
         return field_entry
 
@@ -111,15 +113,18 @@ class MarkdownManualCompiler(ManualCompiler):
             for value in possible_values:
                 type_header += f"\t- {value}  \n"
 
-        if field_type.min_value is not None:
-            assert isinstance(field_type.min_value, DeviceParamConstantType)
+        if field_type.min_value is not None and isinstance(field_type.min_value, DeviceParamConstantType):
             val = getattr(self.consts, field_type.min_value.value)
             type_header += f"\tMinimum value: {val}  \n"
-        if field_type.max_value is not None:
-            assert isinstance(field_type.max_value, DeviceParamConstantType)
+        elif field_type.min_value is not None:
+            assert isinstance(field_type.min_value, (int, float, np.number))
+            type_header += f"\tMinimum value: {field_type.min_value}  \n"
+        if field_type.max_value is not None and isinstance(field_type.max_value, DeviceParamConstantType):
             val = getattr(self.consts, field_type.max_value.value)
             type_header += f"\tMaximum value: {val}  \n"
-
+        elif field_type.max_value is not None:
+            assert isinstance(field_type.max_value, (int, float, np.number))
+            type_header += f"\Maximum value: {field_type.max_value}  \n"
         if description is not None:
             type_header += f"\t{description}  \n"
 

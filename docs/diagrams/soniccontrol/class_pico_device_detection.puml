@@ -1,0 +1,71 @@
+@startuml
+
+class DeviceInfo {
+    + usb_sys_name: str
+    + url_server: str
+    + get_display_name(): str
+    + is_remote_device(): bool
+}
+
+interface Connection {
+    - reader
+    - writer
+    + open() -> reader, writer
+    + close()
+    + reconnect()
+}
+
+class SerialConnection {}
+class CliConnection {}
+class RemoteConnection {}
+
+SerialConnection --|> Connection
+CliConnection --|> Connection
+RemoteConnection --|> Connection
+
+interface PicoDeviceController {
+    + force_into_boot_mode(info: DeviceInfo)
+    + create_connection(info: DeviceInfo) -> Connection
+}
+
+PicoDeviceController .u.> DeviceInfo : info
+PicoDeviceController .u.> Connection
+
+class LinuxPicoDevice {}
+class WindowsPicoDevice {}
+class RemotePicoDevice {}
+
+LinuxPicoDevice --|> PicoDeviceController
+WindowsPicoDevice --|> PicoDeviceController
+RemotePicoDevice --|> PicoDeviceController
+
+interface DeviceDiscovery {
+    + detect_pico_devices(): List[DeviceInfo]
+    + wait_for_device_redetection(device: DeviceInfo) -> DeviceInfo
+}
+
+DeviceDiscovery .u.> DeviceInfo 
+
+class LinuxDeviceDiscovery {}
+class WindowsDeviceDiscovery {} 
+class RemoteDeviceDiscovery {} 
+
+LinuxDeviceDiscovery --|> DeviceDiscovery
+WindowsDeviceDiscovery --|> DeviceDiscovery
+RemoteDeviceDiscovery --|> DeviceDiscovery
+
+
+interface Flasher {
+    + can_flash_device(device: DeviceInfo): bool
+    + flash_device(device: DeviceInfo)
+}
+
+Flasher .u.> DeviceInfo 
+
+class UsbFlasher {}
+class RemoteFlasher {} 
+
+UsbFlasher --|> Flasher
+RemoteFlasher --|> Flasher
+
+@enduml

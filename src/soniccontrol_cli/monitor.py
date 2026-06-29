@@ -4,7 +4,6 @@ import asyncio
 
 from soniccontrol import RemoteController
 from sonic_protocol.user_manual_compiler.manual_compiler import MarkdownManualCompiler
-from sonic_protocol.protocol import protocol
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
 
 class Monitor(Cmd): 
@@ -12,7 +11,10 @@ class Monitor(Cmd):
     Input 'help' to get the manual for the device and 
     input 'exit' to leave the monitor."""
 
-    def __init__(self, remote_controller: RemoteController, event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()):
+    def __init__(self, remote_controller: RemoteController, event_loop: asyncio.AbstractEventLoop | None = None):
+        if event_loop is None:
+            event_loop = asyncio.get_running_loop()
+        
         super().__init__()
         self._remote_controller = remote_controller
         self._event_loop = event_loop

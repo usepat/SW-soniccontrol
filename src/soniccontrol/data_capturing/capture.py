@@ -7,10 +7,11 @@ from typing import Any, Dict
 from async_tkinter_loop import async_handler
 
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.schema import DeviceType
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureTarget
 from soniccontrol.data_capturing.data_provider import DataProvider
 from soniccontrol.data_capturing.experiment import Experiment
-from soniccontrol.data_capturing.experiment_store import ExperimentWriter, HDF5ExperimentWriter
+from soniccontrol.data_capturing.experiment_store import DataTableDescale, DataTableWorker, ExperimentWriter, HDF5ExperimentWriter
 from soniccontrol.events import Event, EventManager
 
 
@@ -50,7 +51,9 @@ class Capture(EventManager):
 
         timestamp_str = experiment.date_time.strftime("%Y%m%d_%H%M%S")
         file_name = self._output_dir / f"sonic_measure_{timestamp_str}"
-        self._experiment_writer = HDF5ExperimentWriter(file_name)
+        is_descale = self._experiment.firmware_info.device_type == DeviceType.DESCALE
+        data_table_type = DataTableDescale if is_descale else DataTableWorker
+        self._experiment_writer = HDF5ExperimentWriter(file_name, data_table_type)
         self._experiment_writer.write_metadata(self._experiment)
 
         self._target = capture_target
@@ -74,20 +77,22 @@ class Capture(EventManager):
         await self.end_capture()
 
     async def end_capture(self):
-        assert not self._completed_capturing.is_set()
+        if self._completed_capturing.is_set():
+            return
         assert self._target
 
+        target = self._target
+
         self._completed_capturing.set()        
+        target.unsubscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
 
         if self._experiment_writer:
             self._experiment_writer.close()
             self._experiment_writer = None
 
+        await target.after_end_capture()
         self.emit(Event(Capture.END_CAPTURE_EVENT))
         self._logger.info("End Capture")
-
-        await self._target.after_end_capture()
-        self._target.unsubscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
 
 
     def on_update(self, status: Dict[EFieldName, Any]):

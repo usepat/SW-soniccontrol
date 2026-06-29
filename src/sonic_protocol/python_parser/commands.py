@@ -2,6 +2,8 @@ from typing import Any, Dict
 import attrs
 from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity, UartInterface
+from sonic_protocol.schema import ControlMode, Loglevel
 
 
 class Command:
@@ -35,7 +37,28 @@ class GetUpdate(Command):
         super().__init__(code=CommandCode.GET_UPDATE)
 
 @attrs.define()
+class GetUpdateWorker(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_UPDATE_WORKER_V3_0_0)
+
+@attrs.define()
+class GetUpdateDescale(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_UPDATE_DESCALE_V3_0_0)
+
+@attrs.define()
+class GetUiptRaw(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_UIPT_RAW)
+        
+
+@attrs.define()
 class RestartDevice(Command):
+    """
+    This command should only be used by sonic_device internally.
+
+    If you want to restart the device, use the restart function of SonicDevice or RemoteController instead.
+    """
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.RESTART_DEVICE)
 
@@ -82,6 +105,11 @@ class GetAtt(Command):
     index: int = attrs.field()
 
 @attrs.define()
+class FlashUSB(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_FLASH_USB)
+
+@attrs.define()
 class SetFrequency(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_FREQ)
@@ -101,6 +129,13 @@ class SetGain(Command):
         super().__init__(code=CommandCode.SET_GAIN)
 
     value: int = attrs.field(alias=EFieldName.GAIN.name)
+
+@attrs.define()
+class SetDac(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_DAC)
+
+    value: int = attrs.field(alias=EFieldName.VOLTAGE.name)
 
 @attrs.define()
 class SetOn(Command):
@@ -295,6 +330,12 @@ class SetRampTOn(Command):
     value: int = attrs.field(alias=EFieldName.RAMP_T_ON.name)
 
 @attrs.define()
+class SetRampGain(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_RAMP_GAIN)
+    value: int = attrs.field(alias=EFieldName.RAMP_GAIN.name)
+
+@attrs.define()
 class SetDutyCycleTOn(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_DUTY_CYCLE_T_ON)
@@ -342,6 +383,160 @@ class GetAuto(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.GET_AUTO)
 
+
+@attrs.define()
+class GetConnectionStatus(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_CONNECTION_STATUS)
+
+@attrs.define()
+class GetNumTests(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_NUM_TESTS)
+
+@attrs.define()
+class SetControlMode(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_CONTROL_MODE)
+
+    value: ControlMode = attrs.field(alias=EFieldName.CONTROL_MODE.name)
+
+@attrs.define()
+class ClearErrors(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.CLEAR_ERRORS)
+
+@attrs.define()
+class GetTestInfo(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_TEST_INFO)
+
+    index: int = attrs.field()
+
+@attrs.define()
+class RunTest(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.RUN_TEST)
+
+    index: int = attrs.field()
+
+@attrs.define()
+class AbortTest(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.ABORT_TEST)
+
+@attrs.define()
+class GetTestValidationArg(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_TEST_VALIDATION_ARG)
+
+    index: int = attrs.field()
+
+@attrs.define()
+class SetLogLevel(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_LOG_LEVEL)
+
+    index: str = attrs.field(alias=EFieldName.LOGGER_NAME.name)
+    value: Loglevel = attrs.field(alias=EFieldName.LOG_LEVEL.name)
+
+@attrs.define()
+class GetNumLoggers(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_LOGGER_LIST_SIZE)
+
+@attrs.define()
+class GetLogger(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_LOGGER_LIST_ITEM)
+
+    index: int = attrs.field(alias=EFieldName.INDEX.name)
+
+@attrs.define()
+class GetModbusSettings(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_MODBUS_SETTINGS)
+
+@attrs.define()
+class SetModbusServerAddress(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_MODBUS_SLAVE_ADDRESS)
+
+    value: int = attrs.field(alias=EFieldName.MODBUS_SERVER_ID.name)
+
+@attrs.define()
+class SetModbusParity(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_MODBUS_PARITY)
+
+    value: Parity = attrs.field(alias=EFieldName.PARITY.name)
+
+@attrs.define()
+class SetModbusBaudrate(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_MODBUS_BAUDRATE)
+
+    value: int = attrs.field(alias=EFieldName.BAUDRATE.name)
+
+@attrs.define()
+class SetModbusInterface(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_MODBUS_INTERFACE)
+
+    value: UartInterface = attrs.field(alias=EFieldName.UART_INTERFACE.name)
+
+@attrs.define()
+class StartConfigurator(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.START_CONFIGURATOR)
+
+    value: str = attrs.field(alias=EFieldName.PASSWORD_HASHED.name)
+
+@attrs.define()
+class StartOperator(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.START_OPERATOR)
+
+@attrs.define()
+class StartCustomizer(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.START_CUSTOMIZER)
+
+@attrs.define()
+class StartDiagnosticsTool(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.START_DIAGNOSTIC_TOOL)
+
+@attrs.define()
+class GetNumAllocators(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_NUM_ALLOCATORS)
+
+@attrs.define()
+class GetAllocatorStats(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_ALLOCATOR_STATS)
+
+    index: int = attrs.field(alias=EFieldName.INDEX.name)
+
+@attrs.define()
+class GetStackUsage(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_STACK_USAGE)
+
+    index: int = attrs.field(alias=EFieldName.INDEX.name)
+
+@attrs.define()
+class GetAllocHistogramNumBins(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_ALLOC_HISTOGRAM_NUM_BINS)
+
+@attrs.define()
+class GetAllocHistogramBin(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_ALLOC_HISTOGRAM_BIN)
+
+    index: int = attrs.field(alias=EFieldName.INDEX.name)
 
 # Legacy specific commands
 

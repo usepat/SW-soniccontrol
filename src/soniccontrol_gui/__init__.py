@@ -3,6 +3,7 @@ import asyncio
 
 from PIL import Image
 
+from soniccontrol_gui.plugins.ui_plugin import register_ui_plugins
 from soniccontrol_gui.widgets.message_box import MessageBox
 Image.CUBIC = Image.BICUBIC # FIX: because ttk.bootstrap sets an deprecated, removed value
 
@@ -11,17 +12,21 @@ import json
 import logging
 import logging.config
 import pathlib
+from pathlib import Path
 import subprocess
 import sys
 import os
+import click
 from typing import Optional
 from ttkbootstrap.utility import enable_high_dpi_awareness
 from async_tkinter_loop import async_mainloop
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
-from soniccontrol.app_config import System, PLATFORM
+from soniccontrol.app_config import APP_CONFIG, AppConfig, System, PLATFORM, get_simulation_exe
 from soniccontrol_gui.constants import files
 from soniccontrol_gui.resources import resources
 from importlib import resources as rs
+from soniccontrol_gui.plugins.device_plugin import register_device_plugins
+from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 
 # create directories if missing
 os.makedirs(files.DATA_DIR, exist_ok=True)
@@ -65,9 +70,28 @@ check_high_dpi_windows()
 setup_fonts()
 
 
+@click.command()
+@click.option("--remote-server-url", default=None)
+def start_gui(remote_server_url: str | None):
+    # change global variable.
+    # We use a global variable here, because it is 
+    # very tedious to propagate a single variable through 10 functions
+    APP_CONFIG.remote_server_url = remote_server_url
 
-def start_gui(simulation_exe_path: Optional[pathlib.Path] = None):
-    main_window = ConnectionWindow(simulation_exe_path=simulation_exe_path)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    register_device_plugins()
+    register_ui_plugins()
+
+    in_dev_env = "FIRMWARE_BUILD_DIR_PATH" in os.environ
+    if in_dev_env:
+        # We could do this somehow else. But this is easy and simple
+        WidgetRegistry.set_up(loop)
+
+    main_window = ConnectionWindow(
+        simulation_exe_path=get_simulation_exe()
+    )
     root = main_window.view
 
     if PLATFORM != System.WINDOWS:
@@ -79,9 +103,12 @@ def start_gui(simulation_exe_path: Optional[pathlib.Path] = None):
         exception = context.get("exception")
         if exception:
             soniccontrol_logger.error(str(exception))
-            MessageBox.show_error(root, str(exception))
+            try:
+                if root.winfo_exists():
+                    MessageBox.show_error(root, str(exception))
+            except Exception:
+                soniccontrol_logger.warning("Could not show error dialog during shutdown")
     
-    loop = asyncio.get_event_loop()
     loop.set_exception_handler(global_exception_handler)
     asyncio.set_event_loop(loop)
 

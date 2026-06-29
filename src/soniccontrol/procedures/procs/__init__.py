@@ -4,3 +4,4 @@ from soniccontrol.procedures.procs.scan import ScanArgs, ScanProc
 from soniccontrol.procedures.procs.tune import TuneArgs, TuneProc
 from soniccontrol.procedures.procs.wipe import WipeArgs, WipeProc
 from soniccontrol.procedures.holder import HolderArgs
+from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasureArgs, SpectrumMeasure

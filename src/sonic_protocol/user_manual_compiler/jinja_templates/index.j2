@@ -1,4 +1,4 @@
-{% import "schema_templates.j2" as schema_templates %}
+{% import "schema_templates.j2" as schema_templates with context %}
 {% import "modbus_api.j2" as modbus %}
 
 {# 
@@ -21,108 +21,357 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased">
-    <header class="bg-white border-b border-slate-200">
-        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-indigo-600 text-white font-bold rounded flex items-center justify-center">UP</div>
-                <div>
-                    <h1 class="text-lg font-semibold">UsePAT API Reference</h1>
-                    <p class="text-sm text-slate-500">Remote Procedure Protocol</p>
-                </div>
-            </div>
-            <nav class="text-sm text-slate-600 space-x-4">
-                <a class="hover:text-indigo-600" href="#introduction">Introduction</a>
-                <a class="hover:text-indigo-600" href="#modbus">MODBUS API</a>
-                <a class="hover:text-indigo-600" href="#text-api">Text-based API</a>
-                <a class="hover:text-indigo-600" href="#types">Types</a>
-                <a class="hover:text-indigo-600" href="#commands">Commands</a>
-                <a class="hover:text-indigo-600" href="#errors">Errors</a>
-                <a class="hover:text-indigo-600" href="#notifications">Notifications</a>
-            </nav>
+    <section id="title-page" class="bg-white text-slate-800 antialiased" style="min-height:100vh; display:flex; align-items:center; justify-content:center;">
+        <div style="text-align:center; max-width:800px; margin:0 auto;">
+            <h1 style="font-size:3.2rem; margin-bottom:0.5rem;">UsePAT API Reference</h1>
+            <p style="font-size:1.1rem; color:#475569; margin-bottom:1.5rem;">Remote Procedure Call Protocol</p>
+            <p style="font-size:1rem; color:#64748b; margin-bottom:0.25rem;">Device: <strong>{{ device_name_to_label(device_type_name) }}</strong></p>
+            <p style="font-size:1rem; color:#64748b; margin-bottom:0.25rem;">Protocol: <strong>{{ protocol_version_str }}</strong> — <em>{{ release_type }}</em></p>
+            <p style="font-size:0.95rem; color:#94a3b8; margin-top:1rem;">Built: {{ build_date_str }}</p>
         </div>
-    </header>
+    </section>
 
     <main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        <section id="introduction" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+        {% set sections = namespace(i=1) %}
+        {% set intro_no = sections.i %}{% set sections.i = sections.i + 1 %}
+        {% if include_modbus %}
+            {% set modbus_no = sections.i %}{% set sections.i = sections.i + 1 %}
+        {% endif %}
+        {% if include_text %}
+            {% set text_no = sections.i %}{% set sections.i = sections.i + 1 %}
+        {% endif %}
+        {% set types_no = sections.i %}{% set sections.i = sections.i + 1 %}
+        {% set commands_no = sections.i %}{% set sections.i = sections.i + 1 %}
+        {% set errors_no = sections.i %}{% set sections.i = sections.i + 1 %}
+        {% set notifications_no = sections.i %}
+
+        <section id="document-index" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
             <h2 class="flex items-center text-2xl font-semibold gap-3">
                 <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
-                <span>Introduction</span>
+                <span>Document Index</span>
             </h2>
+            <div class="major-heading-separator mt-3 mb-4"></div>
+
+            <div class="not-prose bg-slate-50 border border-slate-200 rounded p-4 mt-4">
+                {% macro toc_page(target_id) %}
+                    <span class="toc-page ml-3 text-slate-500" data-target="{{ target_id }}" data-page="?">—</span>
+                {% endmacro %}
+
+                {% macro render_command_index(nodes, prefix) %}
+                    <ul class="text-sm space-y-2">
+                        {% for g in nodes %}
+                            {% set item_number = prefix ~ "." ~ loop.index %}
+                            <li>
+                                <div class="flex items-baseline justify-between gap-3">
+                                    <a class="text-indigo-700 hover:underline" href="#{{ anchor_group(g.id) }}">
+                                        <span class="font-mono text-slate-500 mr-2">{{ item_number }}.</span> {{ g.title }}
+                                    </a>
+                                    {{ toc_page(anchor_group(g.id)) }}
+                                </div>
+
+                                {% if g.commands %}
+                                    <ul class="ml-6 mt-1 space-y-2">
+                                    {% for command_contract in g.commands %}
+                                        <li>
+                                            <div class="flex items-baseline justify-between gap-3">
+                                                <a class="text-slate-700 hover:underline" href="#{{ anchor_cmd(command_contract.code) }}">
+                                                    {{ command_contract.code.value }} - {{ command_contract.code.name }}
+                                                </a>
+                                                {{ toc_page(anchor_cmd(command_contract.code)) }}
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                    </ul>
+                                {% endif %}
+
+                                {% if g.children %}
+                                    <div class="ml-4 mt-2">
+                                        {{ render_command_index(g.children, item_number) }}
+                                    </div>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endmacro %}
+
+                <ul class="text-sm space-y-2">
+                    <li>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <a class="text-indigo-700 hover:underline" href="#introduction"><span class="font-mono text-slate-500 mr-2">{{ intro_no }}.</span> Introduction</a>
+                            {{ toc_page("introduction") }}
+                        </div>
+                    </li>
+                    {% if include_modbus %}
+                    <li>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <a class="text-indigo-700 hover:underline" href="#modbus"><span class="font-mono text-slate-500 mr-2">{{ modbus_no }}.</span> MODBUS API</a>
+                            {{ toc_page("modbus") }}
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% if include_text %}
+                    <li>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <a class="text-indigo-700 hover:underline" href="#text-api"><span class="font-mono text-slate-500 mr-2">{{ text_no }}.</span> Text-based API</a>
+                            {{ toc_page("text-api") }}
+                        </div>
+                    </li>
+                    {% endif %}
+                    <li>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <a class="text-indigo-700 hover:underline" href="#types"><span class="font-mono text-slate-500 mr-2">{{ types_no }}.</span> Types</a>
+                            {{ toc_page("types") }}
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <a class="text-indigo-700 hover:underline" href="#commands"><span class="font-mono text-slate-500 mr-2">{{ commands_no }}.</span> Commands</a>
+                            {{ toc_page("commands") }}
+                        </div>
+                        <div class="ml-4 mt-2">
+                            {{ render_command_index(command_groups, commands_no|string) }}
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <a class="text-indigo-700 hover:underline" href="#errors"><span class="font-mono text-slate-500 mr-2">{{ errors_no }}.</span> Errors</a>
+                            {{ toc_page("errors") }}
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <a class="text-indigo-700 hover:underline" href="#notifications"><span class="font-mono text-slate-500 mr-2">{{ notifications_no }}.</span> Notifications</a>
+                            {{ toc_page("notifications") }}
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+        </section>
+        <section id="introduction" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate page-break-before">
+            <h2 class="flex items-center text-2xl font-semibold gap-3">
+                <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
+                <span><span class="font-mono text-slate-500 mr-2">{{ intro_no }}.</span> Introduction</span>
+            </h2>
+            <div class="major-heading-separator mt-3 mb-4"></div>
 
             <h3 class="flex items-center text-lg font-semibold gap-3 mt-4">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>How this API is structured</span>
             </h3>
-            <p><strong>Our Application Programming Interface (API) is designed to be a Remote Procedure Protocol (RPC).</strong></p>
-            <p>That means that we define a set of functions (called commands in this documentation) that our devices can execute. Those commands, can be invoked by sending a command call over a request. As response the device will then return an appropriate answer object. Such an answer object consists of single fields, that have a type, a name and a value. If the device fails executing the command, it will return an error as answer.</p>
+            <p>
+                <strong>This Application Programming Interface (API) is designed as a
+                Remote Procedure Call (RPC) protocol.</strong>
+            </p>
 
-            <p>The device is also able to produce logs and notification messages and send them directly to the remote controller. However Logs and notification messages are not sent, when a master-slave-based protocol like MODBUS is used.</p>
+            <p>
+                In practice, the API defines a set of functions (called
+                commands in this document) that can be executed by the
+                device. A client invokes a command by sending a request,
+                and the device returns a corresponding response object.
+                A response consists of fields with a name, type, and
+                value. If command execution fails, the device returns an
+                error response.
+            </p>
 
-            <p>The API can be used with various underlying protocols. There exists a text-based human-readable protocol that is used together with our in-house Software Sonic Control. The only other protocol supported (so far) is MODBUS-RTU.</p>
+            <p>
+                The device can also produce log and notification
+                messages and send them directly to the remote controller.
+                These asynchronous messages are not available when using
+                master-slave protocols such as MODBUS.
+            </p>
+
+            <p>
+                This API can be used over multiple transport formats.
+                The in-house Sonic Control software uses a human-readable
+                text protocol. In addition, MODBUS-RTU is supported.
+            </p>
         </section>
 
-        <section id="modbus" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
-            <h3 class="flex items-center text-lg font-semibold gap-3">
+        {% if include_modbus %}
+        <section id="modbus" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate page-break-before">
+            <h2 class="flex items-center text-2xl font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
-                <span>MODBUS API</span>
-            </h3>
-            <p><strong>MODBUS is a protocol that defines how a master client reads and writes memory buffers on a slave server.</strong></p>
+                <span><span class="font-mono text-slate-500 mr-2">{{ modbus_no }}.</span> MODBUS API</span>
+            </h2>
+            <div class="major-heading-separator mt-3 mb-4"></div>
+            <p>
+                <strong>MODBUS is an industry-standard communication protocol in which
+                one master communicates with one or more slave devices.
+                Data exchange is performed through registers that support
+                16-bit values.</strong>
+            </p>
 
-            <p>We use a "mailbox" system to implement our RPC protocol. A mailbox is a memory section to that can be written or read. We define a command call mailbox, to that the command call has to be written and an answer mailbox, in that the device will put the answer. A command call consists of the code for the specific command, followed by the arguments passed. Similarly the answer consists of the same code followed by data fields. In case of an error, the code is not the same command code, but an error code. Error codes are in the range from 20000 to 32767 (int16 maximum value). Additionally an error message is supplied afterwards.</p>
+            <p>
+                The RPC model is implemented using a mailbox concept.
+                A mailbox is a dedicated register area for read/write
+                access. One mailbox is used for command requests and
+                another for responses. The response mailbox starts at
+                register `0`. The command mailbox starts at register
+                `1024` (directly after the response mailbox). A command request starts with an
+                execute flag, then a transceiver id (only used for
+                postman), followed by the command code and command
+                arguments. A response starts with a pending-execution
+                flag, followed by a response-length field, then the
+                corresponding code and response fields.
+                On failure, the response code is an error code rather
+                than the command code. Error codes are in the range
+                20000 to 32767 (the positive `int16` range upper segment),
+                followed by an error message.
+            </p>
 
-            <p>Therefore we support only the MODBUS functions write multiple holding registers (0x10) and read input registers (0x04). And we only allow to read and write from the mailboxes. Where the answer mailbox is read only.</p>
+            <p>
+                Therefore, the implementation supports only MODBUS
+                function `0x10` (Write Multiple Holding Registers) and
+                `0x04` (Read Input Registers). Access is restricted to
+                mailbox regions, and the response mailbox is read-only.
+            </p>
 
-            <p>The start of the command mailbox contains an "execute command" flag, that has to be set to 1, after the command call has been written. This is needed to signal to the device, that it can read and execute the command now. The flag and command call can be written in a single MODBUS write multiple registers function call.</p>
+            <p>
+                The command mailbox starts with an "execute command"
+                flag, followed by a transceiver id and the command
+                payload. After writing the request payload, the execute
+                flag must be set to `1` to signal the device to process
+                the command. The header and payload can be written in a single
+                `0x10` request.
+            </p>
 
-            <p>The start of the answer mailbox contains a "status" flag. This can either be "busy" or "idle/done". Also this flag is followed by a answer length field. This is handy, because answers vary in size.</p>
+            
+            <p class="mb-8">
+                The response mailbox starts with a status flag (`busy`
+                or `idle/done`) followed by a response-length field,
+                allowing variable-sized responses. While a command is
+                still executing (no response payload written yet) and
+                the pending flag is `1`, the MODBUS device responds with
+                "server device busy".
+            </p>
+
+            <p>
+                The Postman acts as both a MODBUS slave and a MODBUS
+                master. It is addressed as a slave on the first network,
+                and it forwards requests as a master on its second
+                MODBUS network where other devices reside. The
+                transceiver id in this API is used as the target device
+                id on that second network. For MODBUS function code
+                `0x10` (Write Multiple Holding Registers), the slave id
+                in the MODBUS frame header must be the Postman id. The
+                transceiver id in the mailbox then selects the routing
+                target: set transceiver id to `255` to target the
+                Postman itself for execution; use values `1` to `254`
+                to target that device id on the second network; value
+                `256` is reserved for forwarding to the specific device
+                connected to the Postman when only one device is
+                present and value `0`
+                creates a broadcast on the second network (currently not implemented).
+            </p>
+
         </section>
+        {% endif %}
 
-        <section id="text-api" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
-            <h3 class="flex items-center text-lg font-semibold gap-3">
+        {% if include_text %}
+        <section id="text-api" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate page-break-before">
+            <h2 class="flex items-center text-2xl font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
-                <span>Text-based API</span>
-            </h3>
-            <p><strong>The text-based API is used by our in house Software Sonic Control.</strong></p>
+                <span><span class="font-mono text-slate-500 mr-2">{{ text_no }}.</span> Text-based API</span>
+            </h2>
+            <div class="major-heading-separator mt-3 mb-4"></div>
+            <p>
+                <strong>The text-based API is used by the in-house Sonic Control
+                software.</strong>
+            </p>
 
-            <p>It is good for debugging, because of the human readable messages. Also with it the device can be directly controlled over a serial monitor like minicom.</p>
+            <p>
+                It is well suited for debugging because messages are
+                human-readable. It also enables direct control of the
+                device through serial terminals (for example, minicom).
+            </p>
 
-            <p>In general for each command exists a command name (often also multiple aliases, like a short form and a long form). The signs "?", "!", "-", "=" can be the first character of a command name. For example "?frequency" for getting the current frequency of the transducer. Some commands require an index argument that has to be written inside brackets "command_name[arg]". Some commands require a setter argument, that has to be written after an equal sign "command_name=arg". Some commands require both args "command_name[arg_index]=arg_setter". Some commands require none "command_name".</p>
+            <p>
+                Each command has at least one textual identifier, and
+                many commands provide aliases (for example short and long
+                forms). Most commands start with either `!` or `?`,
+                indicating setter or getter semantics.
+                A notable exception is the dash command (`-`), which
+                requests detailed device status.
+                Setter commands may require a value appended with `=`.
+                For example, `?frequency` reads the current frequency,
+                while `!frequency=xxx` sets a new value.
+                Some commands also require an index argument. Numeric
+                indices are appended directly (for example `!atf1=xxx`),
+                while string-based indices are written in brackets
+                (for example `!log[appLogger]=INFO`).
+            </p>
 
-            <p>To signal the end of a command call "\n\r" is used. The same goes for answers.</p>
+            <p>
+                Message termination uses `\n\r` for both requests and
+                responses.
+            </p>
 
-            <p>Answers consists of their fields separated by a single sharp sign "#". The first field always contains the corresponding command code or error code. For example the answer for the "?frequency" command would be "&lt;COMMAND CODE&gt;#Freq: &lt;FREQUENCY VALUE&gt;Hz".</p>
+            <p>
+                Response fields are separated by `#`.
+                The first field always contains the command code or
+                error code. For example, the response to `?frequency`
+                is formatted as:
+                `&lt;COMMAND CODE&gt;#Freq: &lt;FREQUENCY VALUE&gt;Hz`.
+            </p>
 
-            <p>Notifications have the completely same format as answers. The format of logs is subject to change in the future.</p>
+            <p>
+                Notifications follow the same format as responses.
+                Log formatting may evolve in future versions.
+            </p>
 
-            <p>Each message is preceded by a message type prefix.</p>
+            <p>
+                Each message starts with a message-type prefix:
+            </p>
             <ul class="list-disc pl-6">
-                <li><code>LOG=</code> for logs</li>
-                <li><code>NOTIFY=</code> for notification messages</li>
-                <li><code>COM#&lt;ID&gt;=</code> for command calls. (It is allowed to omit this, in that case ID is set to 0).</li>
-                <li><code>ANS#&lt;ID&gt;=</code> for answers. The ID matches that of the command call. Useful for async code.</li>
+                <li><code>LOG=</code> for log messages</li>
+                <li><code>NOTIFY=</code> for notifications</li>
+                <li><code>COM#&lt;ID&gt;=</code> for command calls (optional; mainly used by Sonic Control)</li>
+                <li><code>ANS#&lt;ID&gt;=</code> for responses; the ID matches the originating command call and is useful for asynchronous processing</li>
             </ul>
 
-            <p>The ID is used by the Software "Sonic Control" to find out which answer belongs to which command call (useful for async code).</p>
+            <p>The message ID allows Sonic Control to correlate each response with its originating command call.</p>
         </section>
+        {% endif %}
 
-        <section id="types" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+        <section id="types" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate page-break-before">
             <h2 class="flex items-center text-2xl font-semibold gap-3">
                 <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
-                <span>Types</span>
+                <span><span class="font-mono text-slate-500 mr-2">{{ types_no }}.</span> Types</span>
             </h2>
-            <p>The primitive types used by the API are bool, uint8, uint16, uint32, int16, float. Complex types used are strings, enums and structs for Version and Timestamp, which are explained here in more detail.</p>
+            <div class="major-heading-separator mt-3 mb-4"></div>
+            <p>
+                Primitive types used by the API include `bool`, `uint8`,
+                `uint16`, `uint32`, `int16`, and `float`.
+                Complex types include strings, enums, and structured
+                values such as `Version` and `Timestamp`, which are
+                described below.
+            </p>
 
             <h3 class="flex items-center text-lg font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>Version</span>
             </h3>
-            <p>Version consists of the member variables major_version, minor_version and patch_version. It follows the conventional versioning schema.</p>
+            <p>
+                `Version` contains `major_version`, `minor_version`,
+                and `patch_version`, following standard semantic
+                versioning conventions.
+            </p>
 
             <h3 class="flex items-center text-lg font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
                 <span>Timestamp</span>
             </h3>
-            <p>The timestamp consists of the members variables: hour, minute, seconds, day, month and year.</p>
+                {% if include_modbus %}
+                <p>
+                    On MODBUS the timestamp is represented as a single POSIX `uint64_t` (POSIX time, seconds since the epoch) occupying four 16-bit registers.
+                </p>
+                {% endif %}
+                {% if include_text %}
+                <p>
+                    In the text-based API, `Timestamp` is represented by separate fields: `hour`, `minute`, `seconds`, `day`, `month`, and `year`.
+                </p>
+                {% endif %}
 
             <h3 class="flex items-center text-lg font-semibold gap-3">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
@@ -135,24 +384,67 @@
             </div>
         </section>
 
-        <section id="commands" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+        <section id="commands" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate page-break-before">
             <h2 class="flex items-center text-2xl font-semibold gap-3">
                 <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
-                <span>Commands</span>
+                <span><span class="font-mono text-slate-500 mr-2">{{ commands_no }}.</span> Commands</span>
             </h2>
-            <div>
-                {% for command_contract in pure_command_contracts | sort(attribute="code") %} 
-                    {# pure_command_contracts should only contain command contracts that are not notifications or errors #}
-                    {{ schema_templates.command_contract_entry(command_contract )}}
+            <div class="major-heading-separator mt-3 mb-4"></div>
+
+            {# ---------------- Grouped Content ---------------- #}
+            <div class="mt-8">
+                {% macro render_groups(nodes, prefix) %}
+                {% for g in nodes %}
+                    {% set group_number = prefix ~ "." ~ loop.index %}
+                    {% set level = 3 + g.depth %}
+                    {% if level > 6 %}{% set level = 6 %}{% endif %}
+
+                    <div id="{{ anchor_group(g.id) }}" class="mt-10 command-group-block{% if g.depth == 0 %} command-group-top{% else %} command-group-sub{% endif %}">
+                    {% if level == 3 %}<h3><span class="group-number font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h3>{% endif %}
+                    {% if level == 4 %}<h4><span class="group-number font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h4>{% endif %}
+                    {% if level == 5 %}<h5><span class="group-number font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h5>{% endif %}
+                    {% if level == 6 %}<h6><span class="group-number font-mono text-slate-500 mr-2">{{ group_number }}.</span> {{ g.title }}</h6>{% endif %}
+
+                    {% if g.description %}
+                        <p class="text-slate-600">{{ g.description }}</p>
+                    {% endif %}
+
+                    {% for command_contract in g.commands %}
+                        {% set cmd_level = level + 1 %}
+                        {% if cmd_level > 6 %}{% set cmd_level = 6 %}{% endif %}
+                        {% if cmd_level == 3 %}
+                            <h3 id="{{ anchor_cmd(command_contract.code) }}">{{ command_contract.code.value }} - {{ command_contract.code.name }}</h3>
+                        {% endif %}
+                        {% if cmd_level == 4 %}
+                            <h4 id="{{ anchor_cmd(command_contract.code) }}">{{ command_contract.code.value }} - {{ command_contract.code.name }}</h4>
+                        {% endif %}
+                        {% if cmd_level == 5 %}
+                            <h5 id="{{ anchor_cmd(command_contract.code) }}">{{ command_contract.code.value }} - {{ command_contract.code.name }}</h5>
+                        {% endif %}
+                        {% if cmd_level == 6 %}
+                            <h6 id="{{ anchor_cmd(command_contract.code) }}">{{ command_contract.code.value }} - {{ command_contract.code.name }}</h6>
+                        {% endif %}
+
+                        {{ schema_templates.command_contract_entry(command_contract, False) }}
+                    {% endfor %}
+
+                    {% if g.children %}
+                        {{ render_groups(g.children, group_number) }}
+                    {% endif %}
+                    </div>
                 {% endfor %}
+                {% endmacro %}
+
+                {{ render_groups(command_groups, commands_no|string) }}
             </div>
         </section>
 
-        <section id="errors" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+        <section id="errors" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate page-break-before">
             <h2 class="flex items-center text-2xl font-semibold gap-3">
                 <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
-                <span>Errors</span>
+                <span><span class="font-mono text-slate-500 mr-2">{{ errors_no }}.</span> Errors</span>
             </h2>
+            <div class="major-heading-separator mt-3 mb-4"></div>
             <div>
                 {% for error_code in error_codes | sort(attribute="value") %}
                     {{ schema_templates.command_code_headline(error_code) }}
@@ -161,7 +453,7 @@
 
             <h3 class="flex items-center text-lg font-semibold gap-3 mt-4">
                 <span class="inline-block w-1 h-6 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
-                <span>Modbus API</span>
+                <span>MODBUS API</span>
             </h3>
             <p>Memory Layout:</p>
             <div>
@@ -169,11 +461,12 @@
             </div>
         </section>
 
-        <section id="notifications" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate">
+        <section id="notifications" class="bg-white rounded-lg shadow-sm p-6 prose prose-slate page-break-before">
             <h2 class="flex items-center text-2xl font-semibold gap-3">
                 <span class="inline-block w-1.5 h-9 rounded bg-gradient-to-b from-indigo-600 to-indigo-400"></span>
-                <span>Notifications</span>
+                <span><span class="font-mono text-slate-500 mr-2">{{ notifications_no }}.</span> Notifications</span>
             </h2>
+            <div class="major-heading-separator mt-3 mb-4"></div>
             <div>
                 {% for notification in notification_messages | sort(attribute="code") %}
                     {{ schema_templates.command_contract_entry(notification )}}
@@ -190,8 +483,199 @@
     </footer>
 
     <style>
+        :root {
+            --manual-font-sans: "Calibri", "Segoe UI", Arial, Helvetica, sans-serif;
+            --manual-font-mono: Consolas, "Courier New", monospace;
+            --manual-font-serif: Cambria, Georgia, "Times New Roman", serif;
+        }
+
+        body { font-family: var(--manual-font-sans); }
         pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Source Code Pro", monospace; }
+        pre, code { font-family: var(--manual-font-mono); }
         .prose code { background: rgba(15,23,42,0.05); padding: .1rem .3rem; border-radius: .25rem; }
+        .prose { line-height: 1.65; }
+        h1, h2, h3, h4, h5, h6 {
+            letter-spacing: -0.01em;
+            color: rgb(15 23 42);
+        }
+        h1, h2, h3 { font-family: var(--manual-font-serif); }
+        h2 {
+            font-weight: 700;
+            font-size: 1.45rem;
+            border-bottom: 1px solid rgb(226 232 240);
+            padding-bottom: 0.45rem;
+            margin-bottom: 0.9rem;
+        }
+        h3 {
+            font-weight: 700;
+            font-size: 1.12rem;
+            margin-top: 1.25rem;
+            margin-bottom: 0.55rem;
+        }
+        h4 {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-top: 0.9rem;
+            margin-bottom: 0.45rem;
+        }
+
+        .prose h2 > span:first-child,
+        .prose h3 > span:first-child,
+        .prose h4 > span:first-child {
+            display: none;
+        }
+        /* show numeric labels for command groups while keeping general prose headings clean */
+        .prose h2 > .group-number,
+        .prose h3 > .group-number,
+        .prose h4 > .group-number,
+        .prose h5 > .group-number,
+        .prose h6 > .group-number {
+            display: inline-block !important;
+            color: #64748b;
+            margin-right: .5rem;
+            font-family: var(--manual-font-mono);
+        }
+
+        .manual-table {
+            border-radius: 0;
+            overflow: hidden;
+            border: 1px solid rgb(203 213 225);
+            background: white;
+        }
+        .manual-table thead th {
+            background: rgb(245 245 245);
+            color: rgb(31 41 55);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0;
+            text-transform: none;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgb(203 213 225);
+        }
+        .manual-table tbody td {
+            padding-top: 0.55rem;
+            padding-bottom: 0.55rem;
+            border-top: 1px solid rgb(226 232 240);
+            vertical-align: top;
+            color: rgb(30 41 59);
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        section.bg-white,
+        article.bg-white,
+        .bg-white.border,
+        .not-prose.bg-slate-50 {
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+
+        .major-heading-separator { border-top: 1px solid rgb(226 232 240); }
+        .toc-page::before { content: "p. " attr(data-page); }
+        @media print {
+            @page {
+                size: A4;
+                margin: 14mm 12mm;
+            }
+
+            body { background: white !important; }
+            h2 { border-bottom: 1px solid rgb(203 213 225); }
+            .page-break-before { break-before: page; page-break-before: always; }
+            .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+            .overflow-x-auto { overflow: visible !important; }
+            .manual-table { min-width: 0 !important; width: 100% !important; }
+            #document-index { break-inside: auto; page-break-inside: auto; }
+            table { break-inside: auto; page-break-inside: auto; }
+            tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+            h2, h3, h4, h5, h6 { break-after: avoid; page-break-after: avoid; }
+            h2 + *, h3 + *, h4 + *, h5 + *, h6 + * { break-before: avoid; page-break-before: avoid; }
+            #commands h3 + *, #commands h4 + *, #commands h5 + *, #commands h6 + * { break-before: avoid; page-break-before: avoid; }
+            #commands .command-group-top { break-before: page; page-break-before: always; }
+            #commands .command-group-top:first-child { break-before: auto; page-break-before: auto; }
+            #commands .command-group-sub + .command-group-sub { break-before: page; page-break-before: always; }
+            #commands .param-list, #commands .answer-field-list { break-inside: auto; page-break-inside: auto; }
+            #commands .param-item, #commands .answer-field-item, #commands .field-entry-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            #commands .modbus-section-title,
+            #commands .modbus-layout-title {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+            #commands .modbus-section-title + .modbus-layout-block,
+            #commands .modbus-layout-title + .modbus-layout-table {
+                break-before: avoid;
+                page-break-before: avoid;
+            }
+            #types .enum-entry {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            #types .enum-entry-content,
+            #types .enum-table-wrap {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            #types .enum-entry table,
+            #types .enum-entry thead,
+            #types .enum-entry tbody {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            #types .enum-table-wrap { overflow: visible !important; }
+            a { color: inherit; text-decoration: none; }
+            .shadow-sm { box-shadow: none !important; }
+            section.bg-white,
+            article.bg-white,
+            .bg-white.border,
+            .not-prose.bg-slate-50 {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+            .toc-page { min-width: 4rem; text-align: right; }
+        }
     </style>
+
+    <script>
+        (function () {
+            function mmToPx(mm) {
+                const probe = document.createElement("div");
+                probe.style.position = "absolute";
+                probe.style.visibility = "hidden";
+                probe.style.height = "100mm";
+                document.body.appendChild(probe);
+                const px = probe.getBoundingClientRect().height / 100;
+                document.body.removeChild(probe);
+                return mm * px;
+            }
+
+            window.updateTocPageNumbers = function updateTocPageNumbers() {
+                const pageHeightPx = mmToPx(297);
+                const marginTopPx = mmToPx(14);
+                const marginBottomPx = mmToPx(14);
+                const printableHeight = pageHeightPx - marginTopPx - marginBottomPx;
+
+                document.querySelectorAll(".toc-page[data-target]").forEach(function (pageEl) {
+                    const targetId = pageEl.getAttribute("data-target");
+                    const target = document.getElementById(targetId);
+                    if (!target || printableHeight <= 0) {
+                        pageEl.setAttribute("data-page", "?");
+                        return;
+                    }
+
+                    const top = target.getBoundingClientRect().top + window.scrollY;
+                    const page = Math.max(1, Math.floor(top / printableHeight) + 1);
+                    pageEl.setAttribute("data-page", String(page));
+                });
+            };
+
+            window.addEventListener("load", window.updateTocPageNumbers);
+            window.addEventListener("resize", window.updateTocPageNumbers);
+            window.addEventListener("beforeprint", window.updateTocPageNumbers);
+        })();
+    </script>
 </body>
 </html>

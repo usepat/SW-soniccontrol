@@ -1,0 +1,53 @@
+@startuml
+
+class TestResult {
+    + success: bool
+    + assert_message: str
+}
+
+class SemiAutomatedStep {
+    + interaction: InteractionType
+    + message: str
+}  
+
+class TestInfo {
+    + name: str
+    + suite: str
+    + test_result: TestResult
+    + is_running: bool
+}
+
+
+class EventEmitter {
+    + emit(event: Event)
+}
+
+class TestExecutor {
+    - execute_test_task: Task
+    + execute_test(index: int)
+    + on_user_interaction(interaction: UserInteraction)
+}
+
+TestExecutor -u-|> EventEmitter
+TestExecutor ..> TestResult : <<emit>>
+TestExecutor ..> SemiAutomatedStep : <<emit>>
+TestExecutor o-- TestInfo : tests
+TestExecutor -r-> Device
+
+class TestFetcher {
+    + fetch_tests()
+}
+
+TestFetcher o-- TestInfo : tests
+TestFetcher -l-> Device
+ 
+class TestWindow {
+    + on_test_executed_callback()
+    + on_demand_to_user_callback()
+}
+
+TestWindow --> TestFetcher
+TestWindow --> TestExecutor
+TestWindow o-- TestInfo: tests
+
+@enduml

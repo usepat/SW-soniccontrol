@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 from typing import Any, Dict, Literal, Optional, Type
 import asyncio
 
@@ -9,7 +10,7 @@ from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, Procedur
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
 from soniccontrol.procedures.remote_procedure_state import RemoteProcedureState
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol.logging_utils import get_base_logger
+from soniccontrol.logger.utils import get_base_logger
 from soniccontrol.events import Event, EventManager
 
 class ProcedureController(EventManager):
@@ -24,13 +25,26 @@ class ProcedureController(EventManager):
         self._device = device
 
         self._logger.debug("Instantiate procedures")
-        proc_instantiator = ProcedureInstantiator()
-        self._procedures: Dict[ProcedureType, Procedure] = proc_instantiator.instantiate_procedures(self._device)
-        self._ramp: Optional[Procedure] = self._procedures.get(ProcedureType.RAMP, None)
+        self._procedures: Dict[ProcedureType, Procedure] = {}
         self._running_proc_task: Optional[asyncio.Task] = None
+        self._running_procedure: Procedure | None = None
         self._remote_procedure_state = RemoteProcedureState()
+        self._are_procedures_loaded = False
 
         updater.subscribe("update", self._on_update)
+
+    async def load_procs(self):
+        """
+        This function needs to be called once to populate the internal procedure list.
+
+        Call this once before using the procedure controller.
+        """
+        self._procedures = await ProcedureInstantiator().instantiate_procedures(self._device)
+        self._are_procedures_loaded = True
+
+    @property
+    def are_procedures_loaded(self):
+        return self._are_procedures_loaded
 
     @property
     def proc_args_list(self) -> Dict[ProcedureType, Type[ProcedureArgs]]:
@@ -55,6 +69,7 @@ class ProcedureController(EventManager):
        
         self.execute_procedure(procedure, proc_type, args, event_loop)
 
+
     def execute_procedure(self, procedure: Procedure, proc_type: ProcedureType, args: Any, event_loop: asyncio.AbstractEventLoop | None = None):
         if event_loop is None:
             event_loop = asyncio.get_running_loop()
@@ -64,34 +79,31 @@ class ProcedureController(EventManager):
         
         self._logger.info("Run procedure %s with args %s", proc_type.name, str(args))
     
-
         async def proc_task():
-            async def stop_procedure():
-                if self._device.has_command(cmds.SetStop()):
-                    await self._device.execute_command(cmds.SetStop(), raise_exception=False)
-                else:
-                    await self._device.execute_command(cmds.SetOff(), raise_exception=False)
-
             try:
                 await procedure.execute(self._device, args)
                 if procedure.is_remote:
                     await self._remote_procedure_state.wait_till_procedure_halted()          
-            except Exception as e:
-                if not isinstance(e, asyncio.CancelledError):
-                    raise e # if task was not cancelled, then some internal unexpected exception occurred
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                raise
             finally:
-                if procedure.is_remote:
-                    await stop_procedure()
-                await self._device.set_signal_off()
-                self._on_proc_finished()
+                try:
+                    if procedure.is_remote:
+                        await self._device.stop_procedures()
+
+                    await self._device.set_signal_off()
+                finally:
+                    self._on_proc_finished()
                 
 
         self._remote_procedure_state.reset_completion_flag()
+        self._running_procedure = procedure
         self._running_proc_task = event_loop.create_task(proc_task())
         self.emit(Event(ProcedureController.PROCEDURE_RUNNING, proc_type=proc_type))
 
     async def fetch_args(self, proc_type: ProcedureType) -> Dict[str, Any]:
-        assert(proc_type in self._procedures)
         procedure = self._procedures.get(proc_type, None)
         if procedure is None:
             raise Exception(f"The procedure {repr(proc_type)} is not available for the current device")
@@ -102,13 +114,18 @@ class ProcedureController(EventManager):
         self._logger.info("Stop procedure")
         if self._running_proc_task: 
             # Create a local reference as self._running_proc_task is being set to None in _on_proc_finished
-            task_to_cancel = self._running_proc_task
-            task_to_cancel.cancel()
-            try:
-                await task_to_cancel
-            except asyncio.CancelledError:
-                # This is expected when we cancel the task
-                pass
+            task_to_stop = self._running_proc_task
+            running_procedure = self._running_procedure
+            if running_procedure is not None and running_procedure.request_stop():
+                try:
+                    await asyncio.wait_for(task_to_stop, timeout=5.0)
+                    return
+                except asyncio.TimeoutError:
+                    self._logger.warning("Procedure did not stop cooperatively, falling back to cancellation")
+
+            task_to_stop.cancel()
+            with suppress(asyncio.CancelledError):
+                await task_to_stop
 
     async def wait_for_proc_to_finish(self) -> None:
         await self._remote_procedure_state.wait_till_procedure_halted()
@@ -116,6 +133,7 @@ class ProcedureController(EventManager):
     def _on_proc_finished(self) -> None:
         self._logger.info("Procedure stopped")
         self._running_proc_task = None
+        self._running_procedure = None
         # NOTE we could also do this only when procedure is a local one
         self._remote_procedure_state.halt_manually()
         self.emit(Event(ProcedureController.PROCEDURE_STOPPED))

@@ -11,7 +11,7 @@ from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, custom_validator_factory
 from sonic_protocol.command_codes import CommandCode
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar, RelativeFrequencySIVar, cls_converter
 
 
 @attrs.define(auto_attribs=True)
@@ -23,23 +23,28 @@ a wide frequency range at low gain and determines the optimal driving frequency.
 """
 
     f_center: AbsoluteFrequencySIVar = attrs.field(
+        converter=cls_converter(AbsoluteFrequencySIVar),
         default=AbsoluteFrequencySIVar(1, SIPrefix.MEGA),
         metadata={"enum": EFieldName.SCAN_F_CENTER},
         # Is validated via SIMeta
     )
     gain: GainSIVar = attrs.field(
+        converter=cls_converter(GainSIVar),
         default=GainSIVar(20),
         metadata={"enum": EFieldName.SCAN_GAIN},
     )
     f_range: RelativeFrequencySIVar = attrs.field(
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(8, SIPrefix.KILO),
         metadata={"enum": EFieldName.SCAN_F_RANGE},
     )
     f_step: RelativeFrequencySIVar = attrs.field(
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(1, SIPrefix.KILO),
         metadata={"enum": EFieldName.SCAN_F_STEP},
     )
     f_shift: RelativeFrequencySIVar = attrs.field(
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(0),
         metadata={"enum": EFieldName.SCAN_F_SHIFT},
     )
@@ -59,11 +64,11 @@ class ScanProc(Procedure):
         return True
 
     async def execute(self, device: SonicDevice, args: ScanArgs, configure_only: bool = False) -> None:
-        await device.execute_command(commands.SetFrequency(args.f_center.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetScanFShift(args.f_shift.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetFrequency(int(args.f_center.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetScanFShift(int(args.f_shift.to_prefix(SIPrefix.NONE))))
         await device.execute_command(commands.SetScanGain(args.gain.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetScanFRange(args.f_range.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetScanFStep(args.f_step.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetScanFRange(int(args.f_range.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetScanFStep(int(args.f_step.to_prefix(SIPrefix.NONE))))
         t_step = int(args.t_step.duration_in_ms) if isinstance(args.t_step, HolderArgs) else int(args.t_step[0])
         await device.execute_command(commands.SetScanTStep(t_step))
         if not configure_only:

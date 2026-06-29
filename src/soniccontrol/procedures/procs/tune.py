@@ -11,7 +11,7 @@ from sonic_protocol.schema import SIPrefix
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
-from sonic_protocol.si_unit import GainSIVar, RelativeFrequencySIVar
+from sonic_protocol.si_unit import GainSIVar, RelativeFrequencySIVar, cls_converter
 
 
 @attrs.define(auto_attribs=True)
@@ -23,6 +23,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
 """
 
     f_step: RelativeFrequencySIVar = attrs.field(
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(1, SIPrefix.KILO),
         metadata={"enum": EFieldName.TUNE_F_STEP},
     )
@@ -41,6 +42,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
         metadata={"enum": EFieldName.TUNE_N_STEPS}
     )
     f_shift: RelativeFrequencySIVar = attrs.field(
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(0),
         metadata={"enum": EFieldName.TUNE_F_SHIFT},
     )
@@ -51,6 +53,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
         metadata={"enum": EFieldName.TUNE_T_STEP}
     )
     gain: GainSIVar = attrs.field(
+        converter=cls_converter(GainSIVar),
         default=GainSIVar(80),
         metadata={"enum": EFieldName.TUNE_GAIN},
     )
@@ -65,9 +68,9 @@ class TuneProc(Procedure):
         return True
 
     async def execute(self, device: SonicDevice, args: TuneArgs, configure_only: bool = False) -> None:
-        await device.execute_command(commands.SetTuneFShift(args.f_shift.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetTuneFShift(int(args.f_shift.to_prefix(SIPrefix.NONE))))
         await device.execute_command(commands.SetTuneNSteps(args.n_steps))
-        await device.execute_command(commands.SetTuneFStep(args.f_step.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetTuneFStep(int(args.f_step.to_prefix(SIPrefix.NONE))))
         t_time_duration = int(args.t_time.duration_in_ms) if isinstance(args.t_time, HolderArgs) else int(args.t_time[0])
         t_step_duration = int(args.t_step.duration_in_ms) if isinstance(args.t_step, HolderArgs) else int(args.t_step[0])
 

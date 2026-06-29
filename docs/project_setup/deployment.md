@@ -57,6 +57,10 @@ Note that Inno Installer does not work on linux, so this step has to be done on 
 
 For on how to use continuous deployment, check out this [page](@ref CIandCD)
 
+## Installation on Linux via AppImage
+
+AppImage is a format, where a single file contains the whole application with all dependencies. For that the bundled dir output from PyInstaller muss be placed inside an AppDir structure following the AppImage format. With the AppImageTool the final AppImage can then be created. This is all done in *scripts/linux_deployment/create_app_image.sh*. For the script to work, you do not have to install app image tool, as it resides inside the tool folder.
+
 ## Uploading to PyPI
 
 Work in progress...  

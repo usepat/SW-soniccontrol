@@ -8,15 +8,16 @@ from soniccontrol.app_config import ENCODING
 
 
 class MessageFetcher:
-    def __init__(self, reader: StreamReader, protocol: SonicMessageProtocol, logger: logging.Logger = logging.getLogger()) -> None:
+    def __init__(self, reader: StreamReader, logger: logging.Logger = logging.getLogger()) -> None:
         self._reader = reader
         self._answers: Dict[int, str] = {}
         self._answer_received: Dict[int, asyncio.Event] = {}
         self._messages = asyncio.Queue(maxsize=100)
         self._task = None
-        self._protocol: SonicMessageProtocol = protocol
+        self._protocol = SonicMessageProtocol()
         self._logger: logging.Logger = logging.getLogger(logger.name + "." + MessageFetcher.__name__)
         self._device_logger: logging.Logger = logging.getLogger(logger.name + ".device")
+        self._warn_on_transport_error = False
 
 
     @property
@@ -45,6 +46,23 @@ class MessageFetcher:
         self._logger.debug("Start message fetcher")
         self._task = asyncio.create_task(self._worker())
 
+    def set_warn_on_transport_error(self, enabled: bool) -> None:
+        self._warn_on_transport_error = enabled
+
+    def _should_warn_on_exception(self, error: Exception) -> bool:
+        if not self._warn_on_transport_error:
+            return False
+
+        error_message = str(error).lower()
+        expected_fragments = (
+            "no such device",
+            "write failed",
+            "device is not responding",
+            "connection was closed",
+            "returned no data",
+        )
+        return any(fragment in error_message for fragment in expected_fragments)
+
     async def stop(self) -> None:
         self._logger.debug("Stop message fetcher")
 
@@ -66,7 +84,7 @@ class MessageFetcher:
                 return logging.WARN
             case DeviceLogLevel.ERROR:
                 return logging.ERROR
-            case DeviceLogLevel.DEBUG:
+            case DeviceLogLevel.DEBUG | DeviceLogLevel.DEBUG_EXTENSIVE:
                 return logging.DEBUG
 
     async def _worker(self) -> None:
@@ -94,7 +112,8 @@ class MessageFetcher:
                 self._logger.error(e)
                 continue
             except Exception as e:
-                self._logger.error("Exception occured while reading the package:\n%s", e)
+                log_fn = self._logger.warning if self._should_warn_on_exception(e) else self._logger.error
+                log_fn("Exception occured while reading the package:\n%s", e)
                 raise e 
 
             if isinstance(message, AnswerMessage):
@@ -112,7 +131,7 @@ class MessageFetcher:
                 log_level = self._convert_log_levels(message.log_level)
                 self._device_logger.log(log_level, message.content)
             else:
-                raise Exception(f"Received unexpected message type: {type(message)}, content is: {message.content}")
+                raise TypeError(f"Received unexpected message type: {type(message)}, content is: {message.content}")
                 
 
     async def _read_response(self) -> str:

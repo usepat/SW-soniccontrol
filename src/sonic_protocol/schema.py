@@ -1,11 +1,13 @@
 from enum import Enum, IntEnum, auto
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Generic, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Generic, Union
 import attrs
 import numpy as np
 
 import re
 from functools import total_ordering
 from datetime import datetime
+
+from sonic_protocol.groups import GROUPS, GroupId
 
 
 VersionTuple = Tuple[int, int, int]
@@ -58,6 +60,7 @@ class DeviceType(Enum):
     UNKNOWN = "unknown"
     CONFIGURATOR = "configurator"
     SIMULATION = "simulation"
+    DIAGNOSTICS_TOOL = "diagnostics_tool"
 
 class TransducerState(Enum):
     IDLE = "idle"
@@ -86,6 +89,9 @@ class SIUnit(Enum):
     DEGREE = "°"
     PERCENT = "%"
 
+    # This is so ugly. We need a better way to transport times
+    MINUTE = "minutes"
+
 @total_ordering
 class SIPrefix(Enum):
     NANO  = 'n'
@@ -94,6 +100,8 @@ class SIPrefix(Enum):
     DECI  = 'd'
     CENTI = 'c'
     NONE  = ''
+    DEKA  = 'da'
+    HECTO = 'h'
     KILO  = 'k'
     MEGA  = 'M'
     GIGA  = 'G'
@@ -116,6 +124,10 @@ class SIPrefix(Enum):
                 return -1
             case '':   # NONE
                 return 0
+            case 'da': # DEKA
+                return 1
+            case 'h':  # HECTO
+                return 2
             case 'k':  # KILO
                 return 3
             case 'M':  # MEGA
@@ -210,6 +222,8 @@ class Loglevel(Enum):
     DISABLED = "DISABLED"
     DEBUG_EXTENSIVE = "DEBUG_EXTENSIVE"
 
+# TODO: upgrade to python 3.13 so we can use the deprecated decorator
+# @deprecated("Got replaced in protocol v3.0.0 by a simple string")
 class LoggerName(Enum):
     APP_LOGGER = "appLogger"
     TRANSDUCER_LOGGER = "transducerLogger"
@@ -270,6 +284,9 @@ class Timestamp():
 
 @attrs.define(auto_attribs=True)
 class DeviceParamConstants:
+
+    # TODO maybe fix these defaults somewhere more explicitly because if they get changed randomly it might cause
+    ## backwards compatibility issues
     max_transducer_index: int = attrs.field(default=4)
     min_transducer_index: int = attrs.field(default=1)
 
@@ -296,6 +313,11 @@ class DeviceParamConstants:
     min_duty_cycle_t_off: int = attrs.field(default=0)
 
     min_n_steps: int = attrs.field(default=1)
+
+    def get_constant_value_from_type(self, type: "DeviceParamConstantType"):
+        return getattr(self, type.value)
+
+
 
 
 class DeviceParamConstantType(Enum):
@@ -449,6 +471,16 @@ class AnswerDef():
     def field_defs(self) -> List[FieldDef]:
         return [ answer_field.to_field_def() for answer_field in self.fields ]
 
+    def replace_field_def(self, field: AnswerFieldDef):
+        for i in range(len(self.fields)):
+            if self.fields[i].field_name == field.field_name:
+                self.fields[i] = field
+                
+    
+    def add_field(self, field: AnswerFieldDef):
+        self.fields.append(field)
+            
+
 
 @attrs.define(auto_attribs=True)
 class CommandContract:
@@ -461,7 +493,19 @@ class CommandContract:
     answer_def: AnswerDef = attrs.field()
     is_release: bool = attrs.field(default=False) #! some commands are only for debugging. They should not be included in release
     tags: List[str] = attrs.field(default=[]) #! tags are used to group commands and to filter them
+    group_id: GroupId = attrs.field(default=GROUPS.misc)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
+
+    def replace_string_identifier(self, mappings: dict[str, str]):
+        if self.command_def is None:
+            return
+        if self.command_def.sonic_text_attrs is None:
+            return
+        string_identifier = self.command_def.sonic_text_attrs.string_identifier
+        for i, s in enumerate(string_identifier):
+            if s in mappings:
+                string_identifier[i] = mappings[s]
+        self.command_def.sonic_text_attrs.string_identifier = string_identifier
 
 
 @attrs.define(auto_attribs=True)
@@ -485,5 +529,9 @@ class Protocol:
     command_code_cls: type[ICommandCode] = attrs.field()
     field_name_cls: type[IEFieldName] = attrs.field()
     command_contracts: Dict[ICommandCode, CommandContract] = attrs.field()
-    consts: DeviceParamConstants= attrs.field(default=DeviceParamConstants())
+    command_code_for_validation_converter: Callable[[int], int] = attrs.field()
+    consts: DeviceParamConstants = attrs.field(factory=DeviceParamConstants)
+
+    def convert_command_code_for_validation(self, code: int) -> int:
+        return self.command_code_for_validation_converter(code)
 

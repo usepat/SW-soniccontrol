@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Callable, List
 import ttkbootstrap as ttk
@@ -21,7 +22,7 @@ from soniccontrol_gui.widgets.message_box import MessageBox
 class SerialMonitor(UIComponent):
     def __init__(self, parent: UIComponent, communicator: Communicator):
         self._logger = logging.getLogger(parent.logger.name + "." + SerialMonitor.__name__)
-        self._view = SerialMonitorView(parent.view)
+        self._view = SerialMonitorView(parent.view, parent_widget_name=parent.component_name)
         super().__init__(parent, self._view, self._logger)
 
         # decorate send and receive with loading animation
@@ -72,6 +73,14 @@ class SerialMonitor(UIComponent):
     async def _send_and_receive(self, command_str: str) -> str:
         try:
             answer_str = await self._communicator.send_and_wait_for_response(command_str)
+            if answer_str == "":
+                self._logger.warning(
+                    "Serial monitor command returned an empty response string: %s (communicator=%s)",
+                    command_str,
+                    self._communicator.__class__.__name__,
+                )
+                await asyncio.sleep(0.2)
+                return "No answer returned"
             return answer_str
         except Exception as e:
             self._logger.error(str(e))
@@ -143,7 +152,8 @@ class SerialMonitorView(TabView):
         return ui_labels.SERIAL_MONITOR_LABEL
 
     def _initialize_children(self) -> None:
-        tab_name = "serial_monitor"
+        tab_name = self.scoped_widget_name("serial_monitor")
+            
         self._main_frame: ttk.Frame = ttk.Frame(self)
         self._output_frame: ttk.Labelframe = ttk.Labelframe(
             self._main_frame, text=ui_labels.OUTPUT_LABEL
@@ -191,7 +201,7 @@ class SerialMonitorView(TabView):
         WidgetRegistry.register_widget(self._read_button, "read_button", tab_name)
         WidgetRegistry.register_widget(self.command_line_input_entry, "command_line_input_entry", tab_name)
         WidgetRegistry.register_widget(self._send_button, "send_button", tab_name)
-        WidgetRegistry.register_widget(self._scrolled_frame, "scroll_frame", tab_name)
+        WidgetRegistry.register_widget(self._monitor_frame, "scroll_frame", tab_name)
         WidgetRegistry.register_widget(self._loading_label, "loading_label", tab_name)
 
     def _initialize_publish(self) -> None:
@@ -298,10 +308,10 @@ class SerialMonitorView(TabView):
         self.command_line_input_entry.bind("<Return>", lambda _: command())
 
     def add_text_line(self, text: str):
-        ttk.Label(self._scrolled_frame, text=text, font=("Consolas", 10)).pack(
+        ttk.Label(self._monitor_frame, text=text, font=("Consolas", 10)).pack(
             fill=ttk.X, side=ttk.TOP, anchor=ttk.W
         )
-        self._scrolled_frame.update()
+        self._scrolled_frame.update_idletasks()
         self._scrolled_frame.yview_moveto(1)
 
     def clear(self):

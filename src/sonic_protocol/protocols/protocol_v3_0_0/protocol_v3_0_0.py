@@ -1,0 +1,190 @@
+from typing import Any, Dict, List
+from sonic_protocol.command_codes import CommandCode, ICommandCode
+from sonic_protocol.schema import  CommandContract, DeviceParamConstantType, DeviceType, IEFieldName, ProtocolType, Version
+from sonic_protocol.field_names import EFieldName
+from sonic_protocol.protocol_list import ProtocolList
+
+from ..protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
+
+from .commands.commands import (
+    get_update_descale_v3_0_0, get_update_worker_v3_0_0,
+    set_ramp_gain, get_ramp_v3_0_0, get_uipt_raw, set_log_level_v3_0_0,
+    get_logger_list_item, get_logger_list_size, get_connection_status, 
+    get_num_tests, get_test_info, run_test, abort_test, get_test_validation_arg,
+    start_diagnostic_tool, start_operator, set_dac_mV, 
+    get_modbus_settings, set_modbus_baudrate, set_modbus_parity, set_modbus_server_id, set_modbus_uart_interface,
+    start_customizer, get_duty_cycle_v3_0_0, set_duty_cycle_t_off_v3_0_0, set_duty_cycle_t_on_v3_0_0,
+    get_allocator_stats, get_num_allocators, get_stack_usage, get_alloc_histogram_num_bins, get_alloc_histogram_bin
+)
+from .types.types import TestInteraction, TestResult, Parity, UartInterface
+
+
+class Protocol_v3_0_0(ProtocolList):
+    """
+    This protocol changed the units of measurement values and the frequency parameter.
+    The reason was, that the unit before were not "correct" since we didn't even have that good of a resolution.
+    Additionally the fields are now 16 bits which are way nicer for modbus.
+    """
+    def __init__(self):
+        self._previous_protocol = Protocol_v2_0_0()
+
+    @property
+    def version(self) -> Version:
+        return Version(3, 0, 0)
+    
+    @property
+    def previous_protocol(self) -> ProtocolList | None:
+        return self._previous_protocol
+    
+    @property
+    def field_name_cls(self) -> type[IEFieldName]:
+        return EFieldName
+
+    @property
+    def command_code_cls(self) -> type[ICommandCode]:
+        return CommandCode
+    
+    def convert_command_code_for_validation(self, code: int) -> int:
+        return code
+
+    @property
+    def custom_data_types(self) -> Dict[str, type]:
+        data_types = {
+            "E_TEST_RESULT": TestResult,
+            "E_TEST_INTERACTION": TestInteraction,
+            "E_PARITY": Parity,
+            "E_UART_INTERFACE": UartInterface,
+        }
+        data_types.update(self._previous_protocol.custom_data_types)
+    
+        # delete deprecated data_types
+        data_types.pop("E_LOGGER_NAME") # enum got replaced by a string for more flexibility
+
+        return data_types
+
+    def supports_device_type(self, device_type: DeviceType) -> bool:
+        if device_type == DeviceType.POSTMAN:
+            return True
+        if device_type == DeviceType.DIAGNOSTICS_TOOL:
+            return True
+        return self._previous_protocol.supports_device_type(device_type)
+
+    def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:        
+        if protocol_type.device_type == DeviceType.POSTMAN:
+            command_contracts = self._get_command_contracts_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
+            
+            command_contracts[CommandCode.GET_CONNECTION_STATUS] = get_connection_status
+            return command_contracts 
+        
+        if protocol_type.device_type == DeviceType.DIAGNOSTICS_TOOL:
+            command_contracts = self._get_command_contracts_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
+
+            diagnostics_tool_command_codes = [
+                CommandCode.GET_PROTOCOL,
+                CommandCode.GET_INFO,
+                CommandCode.GET_HELP,
+                CommandCode.SET_FLASH_115200,
+                CommandCode.SET_FLASH_9600,
+                CommandCode.SET_FLASH_USB,
+                CommandCode.SET_LOG_LEVEL,
+                CommandCode.GET_LOGGER_LIST_SIZE,
+                CommandCode.GET_LOGGER_LIST_ITEM,
+                CommandCode.SET_DATETIME,
+                CommandCode.GET_DATETIME,
+                CommandCode.RESTART_DEVICE,
+                CommandCode.START_CONFIGURATOR,
+                CommandCode.START_DIAGNOSTIC_TOOL,
+                CommandCode.START_OPERATOR,
+                CommandCode.GET_ERROR_HISTO_SIZE,
+                CommandCode.POP_ERROR_HISTO_MESSAGE,
+                CommandCode.GET_NUM_TESTS,
+                CommandCode.GET_TEST_INFO,
+                CommandCode.RUN_TEST,
+                CommandCode.ABORT_TEST,
+                CommandCode.GET_TEST_VALIDATION_ARG,
+                CommandCode.GET_NUM_ALLOCATORS,
+                CommandCode.GET_ALLOCATOR_STATS
+            ]
+            return { key: value for key, value in command_contracts.items() if key in diagnostics_tool_command_codes }
+
+        command_contract_list: List[CommandContract] = [
+            get_logger_list_size,
+            get_logger_list_item,
+            get_num_tests, # FIXME: test commands should only be in Diagnostics Tool protocol
+            get_test_info,
+            run_test,
+            abort_test,
+            get_test_validation_arg,
+            start_diagnostic_tool,
+            start_operator,
+            get_modbus_settings, 
+            set_modbus_baudrate, 
+            set_modbus_parity, 
+            set_modbus_server_id, 
+            set_modbus_uart_interface,
+            start_customizer,
+            get_num_allocators,
+            get_allocator_stats,
+            get_stack_usage,
+            get_alloc_histogram_num_bins,
+            get_alloc_histogram_bin
+        ]
+        if protocol_type.device_type == DeviceType.DESCALE:
+            command_contract_list.extend([get_update_descale_v3_0_0])
+        if protocol_type.device_type == DeviceType.MVP_WORKER:
+            command_contract_list.extend([
+                get_update_worker_v3_0_0,
+                set_ramp_gain,
+                get_uipt_raw,
+                set_dac_mV
+            ])
+
+        command_contract_dict = self._previous_protocol._get_command_contracts_for(protocol_type)
+        command_contract_dict.update({
+            command_contract.code: command_contract for command_contract in command_contract_list 
+        })
+
+        # overwrite existing contracts
+        if CommandCode.GET_RAMP in command_contract_dict:
+            command_contract_dict[CommandCode.GET_RAMP] = get_ramp_v3_0_0
+            
+        command_contract_dict[CommandCode.SET_LOG_LEVEL] = set_log_level_v3_0_0
+        command_contract_dict[CommandCode.GET_DUTY_CYCLE] = get_duty_cycle_v3_0_0
+        command_contract_dict[CommandCode.SET_DUTY_CYCLE_T_OFF] = set_duty_cycle_t_off_v3_0_0
+        command_contract_dict[CommandCode.SET_DUTY_CYCLE_T_ON] = set_duty_cycle_t_on_v3_0_0
+
+        # delete unused commands
+        command_contract_dict.pop(CommandCode.GET_UPDATE, None) # we use now explicit update commands
+        command_contract_dict.pop(CommandCode.GET_DATETIME_PICO, None)
+        command_contract_dict.pop(CommandCode.SET_COM_PROT, None)
+        command_contract_dict.pop(CommandCode.SET_TERMINATION, None)
+        command_contract_dict.pop(CommandCode.BROADCAST_MODBUS_SERVER_ID, None)
+        command_contract_dict.pop(CommandCode.SET_WAVEFORM, None)
+        command_contract_dict.pop(CommandCode.GET_WAVEFORM, None)
+        mappings = {"!tdr_id": "!trd_id", "!tdr": "!trd", "?tdr": "?trd", "?tdr_id": "?trd_id"}
+        set_transducer = command_contract_dict.get(CommandCode.SET_TRANSDUCER_ID)
+        if set_transducer is not None:
+            set_transducer.replace_string_identifier(mappings)
+        get_transducer = command_contract_dict.get(CommandCode.GET_TRANSDUCER_ID)
+        if get_transducer is not None:
+            get_transducer.replace_string_identifier(mappings)
+        return command_contract_dict
+
+    def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
+        assert self.previous_protocol
+        constants = None
+        match protocol_type.device_type:
+            case DeviceType.POSTMAN:
+                constants = self._get_device_constants_for(ProtocolType(protocol_type.version, DeviceType.MVP_WORKER))
+            # case DeviceType.MVP_WORKER:
+            #     # Changed from Hz to hHz
+            #     return { DeviceParamConstantType.MAX_FREQUENCY: 200000, DeviceParamConstantType.MIN_FREQUENCY: 1000 }
+            case _:
+                constants =  self.previous_protocol._get_device_constants_for(protocol_type)
+        constants[DeviceParamConstantType.MIN_GAIN] = 1
+        if protocol_type.device_type == DeviceType.DESCALE:
+            constants[DeviceParamConstantType.MAX_GAIN] = 100
+        constants[DeviceParamConstantType.MIN_SWF] = 2
+        constants[DeviceParamConstantType.MIN_DUTY_CYCLE_T_OFF] = 1
+        constants[DeviceParamConstantType.MIN_DUTY_CYCLE_T_ON] = 1
+        return constants

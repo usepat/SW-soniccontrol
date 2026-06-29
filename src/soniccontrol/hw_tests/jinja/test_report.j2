@@ -1,0 +1,47 @@
+{#
+    Expected Variables:
+        - tests: List[TestInfo]
+#}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hardware Components Test Report</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Hardware Components Test Report</h1>
+        <table class="table-auto border-collapse border border-gray-300 w-full">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="border border-gray-300 px-4 py-2">Index</th>
+                    <th class="border border-gray-300 px-4 py-2">Suite</th>
+                    <th class="border border-gray-300 px-4 py-2">Name</th>
+                    <th class="border border-gray-300 px-4 py-2">Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for test in tests %}
+                    <tr class="{% if test.test_result is none %}bg-gray-100{% elif test.test_result.success %}bg-green-100{% else %}bg-red-100{% endif %}">
+                        <td class="border border-gray-300 px-4 py-2">{{ test.index }}</td>
+                        <td class="border border-gray-300 px-4 py-2">{{ test.suite_name }}</td>
+                        <td class="border border-gray-300 px-4 py-2">{{ test.test_name }}</td>
+                        <td class="border border-gray-300 px-4 py-2">
+                            {% if test.test_result is none %}
+                                Not executed
+                            {% elif test.test_result.success %}
+                                {{ test.test_result.assertion_msg }}
+                            {% else %}
+                                {{ test.test_result.assertion_msg }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

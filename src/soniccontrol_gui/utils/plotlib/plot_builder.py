@@ -15,12 +15,10 @@ class PlotBuilder:
         plot._plot.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M:%S"))
         
         plot.add_axis("frequency_axis", "Frequency / Hz")
-        plot.add_axis("phase_axis", "Phase / °")
+        plot.add_axis("phase_axis", "Phase / c°")
         plot.add_axis("urms_axis", "U$_{RMS}$ / mV")
         plot.add_axis("irms_axis", "I$_{RMS}$ / mA")
-        # for k, ax in plot._axes.items():
-        #     print(f"{k:15s} → id = {id(ax)}")
-        
+
         plot.add_line(
             EFieldName.FREQUENCY.name, 
             "frequency_axis",
@@ -48,8 +46,36 @@ class PlotBuilder:
 
         plot.update_plot()
         plot.tight_layout()
-        # for name, line in plot._lines.items():
-        #     print(name, "→ axis:", line.axes is plot._axes[name + "_axis"], line.axes)
+        
+        return plot
+    
+    @staticmethod
+    def create_timeplot_irms(subplot: matplotlib.axes.Axes) -> Plot:
+        plot = Plot(subplot, EFieldName.TIMESTAMP.name, "Time")
+        plot._plot.xaxis.set_major_locator(matplotlib.dates.AutoDateLocator())
+        plot._plot.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M:%S"))
+        
+        plot.add_axis("irms_axis", "I$_{RMS}$ / mA")
+        plot.add_axis("ipp_axis", "I$_{PP}$ / mA")
+
+        plot.add_line(
+            EFieldName.IRMS.name, 
+            "irms_axis",
+            label="Irms",
+            color="red",
+        )
+
+
+        plot.add_line(
+            EFieldName.IPP.name, 
+            "ipp_axis",
+            label="Ipp",
+            color="blue",
+        )
+
+        plot.update_plot()
+        plot.tight_layout()
+
         return plot
 
     # creates a spectralplot for urms, irms and phase
@@ -57,7 +83,7 @@ class PlotBuilder:
     def create_spectralplot_uip(subplot: matplotlib.axes.Axes) -> Plot:
         plot = Plot(subplot, EFieldName.FREQUENCY.name, "Frequency / Hz")
         
-        plot.add_axis("phase_axis", "Phase / °")
+        plot.add_axis("phase_axis", "Phase / c°")
         plot.add_axis("urms_axis", "U$_{RMS}$ / mV")
         plot.add_axis("irms_axis", "I$_{RMS}$ / mA")
         

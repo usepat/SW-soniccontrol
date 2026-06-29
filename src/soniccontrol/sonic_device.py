@@ -1,16 +1,20 @@
+import asyncio
+import time
+from typing import List
 import logging
 
-import attrs
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.field_names import BaseFieldName
+from sonic_protocol.field_names import BaseFieldName, EFieldName
 from sonic_protocol.python_parser.answer import Answer, AnswerValidator
 from sonic_protocol.python_parser.answer_validator_builder import AnswerValidatorBuilder
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
-from sonic_protocol.schema import ICommandCode, Protocol
+from sonic_protocol.schema import DeviceType, ICommandCode, Protocol, Version
+from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.communication.serial_communicator import Communicator
+from sonic_protocol.python_parser import commands
 
 class CommandValidationError(Exception):
     """Raised when a command's response fails validation."""
@@ -37,6 +41,11 @@ class SonicDevice:
         self._command_deserializer = CommandDeserializer(self._protocol)
         self._command_serializer = CommandSerializer(self._protocol)
         self._should_validate_answers = should_validate_answers
+        self._modbus_operation_lock = asyncio.Lock()
+        self._modbus_pending_command_count = 0
+
+        self._update_command = self._resolve_update_command()
+
 
     @property
     def info(self) -> FirmwareInfo:
@@ -49,16 +58,32 @@ class SonicDevice:
     @property
     def protocol(self) -> Protocol:
         return self._protocol
+    
+    @property
+    def update_command(self) -> Command | None:
+        return self._update_command
+
+    def has_commands(self, commands: List[CommandCode | Command]) -> bool:
+        return all(map(self.has_command, commands))
 
     def has_command(self, command: CommandCode | Command) -> bool:
         command_code = command.code if isinstance(command, Command) else command
         return command_code in self._protocol.command_contracts and self._protocol.command_contracts[command_code].command_def is not None
 
-    async def _send_command(self, command: Command) -> Answer:
+    def _uses_modbus(self) -> bool:
+        return isinstance(self._communicator, ModbusCommunicator)
+
+    def _has_pending_modbus_commands(self) -> bool:
+        return self._modbus_pending_command_count > 0
+
+    async def _send_command(self, command: Command, should_log: bool = True, **kwargs) -> Answer:
         command_contract = self._protocol.command_contracts.get(command.code)
         assert command_contract is not None, f"The command {command} is not known for the protocol" # throw error?
         assert command_contract.command_def is not None, f"For the command_code of {command} exists a message (notify or error), but there exists no command" 
         assert not isinstance(command_contract.command_def.sonic_text_attrs, list)
+
+        if isinstance(self._communicator, ModbusCommunicator):
+            return await self._communicator.send_command_and_validate(command_contract, command)
 
         request_str = self._command_serializer.serialize_command(command)
         
@@ -66,37 +91,50 @@ class SonicDevice:
             request_str, 
             self._answer_validators[command.code], 
             **command_contract.command_def.sonic_text_attrs.kwargs,
+            should_log=should_log,
+            **kwargs,
             code=command.code  # We need this because of the legacyCommunicator since the answers of the crystal+ device don't include the commandcode. 
             #We need to remember them and prepend them to the answers
         )
 
         return answer
 
-    async def _send_message(self, message: str, answer_validator: AnswerValidator| None = None, try_deduce_answer_validator: bool = False, **kwargs) -> Answer:
-        response_str = await self._communicator.send_and_wait_for_response(message, **kwargs)
+    async def _send_message(self, message: str, answer_validator: AnswerValidator| None = None, 
+                            try_deduce_answer_validator: bool = False, should_log: bool = True, **kwargs) -> Answer:
+        start = time.perf_counter()
         
+        response_str = await self._communicator.send_and_wait_for_response(message, should_log=should_log, **kwargs)
+        
+        end = time.perf_counter()
+        time_needed = end - start
+
         code: ICommandCode | None = None
         if "#" in response_str:
             code_str, response_str  = response_str.split(sep="#", maxsplit=1)
-            code = self._protocol.command_code_cls(int(code_str))
-
+            code_int = self._protocol.convert_command_code_for_validation(int(code_str))
+            code = self._protocol.command_code_cls(code_int)
+            
         ERROR_CODES_START = 20000
         if code is not None and code.value >= ERROR_CODES_START:
-            return Answer(response_str, False, True, code)
+            answer = Answer(response_str, False, True, code)
+            answer.field_value_dict[EFieldName.TIMING] = time_needed
+            return answer
         
         if try_deduce_answer_validator and answer_validator is None:
             command_code = self._command_deserializer.get_deserialized_command_code(message.strip())
-            if command_code:
+            if command_code is not None:
                 answer_validator = self._answer_validators[command_code]
         
         if answer_validator is None or not self._should_validate_answers:
             # In open rescue mode, if we cannot understand the answers of the device.
             # So in rescue mode, we skip the validation of the answers
+            # Also for the serial monitor we do not want to validate answers.
             answer = Answer(response_str, False, was_validated=False)
         else:
             answer = answer_validator.validate(response_str)
         
         answer.command_code = code
+        answer.field_value_dict[EFieldName.TIMING] = time_needed
         return answer
 
 
@@ -105,12 +143,15 @@ class SonicDevice:
             self._logger.info("Disconnect")
             await self._communicator.close_communication()
 
-    async def execute_command(
+    async def _execute_command_impl(
         self,
         command: Command | str,
         should_log: bool = True,
         try_deduce_command_if_str: bool = True,
         raise_exception: bool = True,
+        disconnect_on_exception: bool = True,
+        warn_on_transport_error: bool = False,
+        suppress_exception_log: bool = False,
         **kwargs
     ) -> Answer:
         """
@@ -145,13 +186,28 @@ class SonicDevice:
             if isinstance(command, str):
                 answer = await self._send_message(
                     command, 
-                    try_deduce_answer_validator=try_deduce_command_if_str
+                    try_deduce_answer_validator=try_deduce_command_if_str,
+                    should_log=should_log,
+                    warn_on_transport_error=warn_on_transport_error,
                 )
             else:
-                answer = await self._send_command(command)
+                answer = await self._send_command(
+                    command,
+                    should_log=should_log,
+                    warn_on_transport_error=warn_on_transport_error,
+                )
         except Exception as e:
-            self._logger.error(e)
-            await self.disconnect()
+            connection_opened = self._communicator.connection_opened.is_set()
+            command_name = command if isinstance(command, str) else command.__class__.__name__
+            log_fn = self._logger.warning if suppress_exception_log else self._logger.exception
+            log_fn(
+                "Command failed: %s (connection_opened=%s, disconnect_on_exception=%s)",
+                command_name,
+                connection_opened,
+                disconnect_on_exception,
+            )
+            if disconnect_on_exception:
+                await self.disconnect()
 
             if raise_exception:
                 raise e
@@ -161,9 +217,56 @@ class SonicDevice:
             raise CommandValidationError(answer.message)
         
         if raise_exception and answer.is_error_msg:
-            raise CommandExecutionError(answer.field_value_dict[BaseFieldName.ERROR_MESSAGE])
+            raise CommandExecutionError(answer[BaseFieldName.ERROR_MESSAGE])
         
         return answer
+
+    async def execute_command(
+        self,
+        command: Command | str,
+        should_log: bool = True,
+        try_deduce_command_if_str: bool = True,
+        raise_exception: bool = True,
+        disconnect_on_exception: bool = True,
+        warn_on_transport_error: bool = False,
+        suppress_exception_log: bool = False,
+        **kwargs
+    ) -> Answer:
+        if not self._uses_modbus():
+            return await self._execute_command_impl(
+                command,
+                should_log=should_log,
+                try_deduce_command_if_str=try_deduce_command_if_str,
+                raise_exception=raise_exception,
+                disconnect_on_exception=disconnect_on_exception,
+                warn_on_transport_error=warn_on_transport_error,
+                suppress_exception_log=suppress_exception_log,
+                **kwargs,
+            )
+
+        self._modbus_pending_command_count += 1
+        max_wait_time = 30.0  # seconds
+        elapsed_time = 0.0
+        while self._modbus_pending_command_count > 1:
+            if elapsed_time >= max_wait_time:
+                self._modbus_pending_command_count -= 1
+                raise TimeoutError(f"Modbus command queue timeout after {max_wait_time} seconds")
+            await asyncio.sleep(0.5)
+            elapsed_time += 0.5
+        try:
+            async with self._modbus_operation_lock:
+                return await self._execute_command_impl(
+                    command,
+                    should_log=should_log,
+                    try_deduce_command_if_str=try_deduce_command_if_str,
+                    raise_exception=raise_exception,
+                    disconnect_on_exception=disconnect_on_exception,
+                    warn_on_transport_error=warn_on_transport_error,
+                    suppress_exception_log=suppress_exception_log,
+                    **kwargs,
+                )
+        finally:
+            self._modbus_pending_command_count -= 1
 
 
     async def set_signal_off(self) -> Answer:
@@ -180,4 +283,113 @@ class SonicDevice:
 
     async def get_overview(self) -> Answer:
         return await self.execute_command("?", raise_exception=False)
+    
+    def _resolve_update_command(self) -> Command | None:
+        # Let the device logic decide which command to execute for an update
+        # Keep in the protocol multiple update versions for different devices,
+        # instead of overriding them (to avoid breaking changes).
+        if self.info.protocol_version < Version(3, 0, 0):
+            return commands.GetUpdate()
 
+        match self.info.device_type:
+            case DeviceType.POSTMAN:
+                return commands.GetConnectionStatus()
+            case DeviceType.MVP_WORKER:
+                return commands.GetUpdateWorker()
+            case DeviceType.DESCALE:
+                return commands.GetUpdateDescale()
+            case _:
+                return None
+    
+    async def get_update(self, raise_exception:bool=False, should_log:bool=False) -> Answer:
+        if self._update_command is None:
+            err_msg = "There is no update command available for this device type"
+            if raise_exception:
+                raise NotImplementedError(err_msg)
+            else:
+                return Answer(err_msg, False, True)
+
+        if not self._uses_modbus():
+            # FIXME do we need some kind of backwards compatability manager?
+            # Move into Experiment store?
+            answer = await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
+            if self.protocol.info.version < Version(3, 0, 0) and self.protocol.info.device_type in [DeviceType.DESCALE, DeviceType.MVP_WORKER]:
+
+                # TODO ask David if there is a safer way to do this 
+                answer[EFieldName.URMS] = answer[EFieldName.URMS] / 1000
+                answer[EFieldName.IRMS] = answer[EFieldName.IRMS] / 1000
+                answer[EFieldName.TS_FLAG] = answer[EFieldName.TS_FLAG] / 1000
+                phase_uV = answer[EFieldName.PHASE]
+                phase_mdeg = (1800000 - phase_uV) / 10
+                phase_cdeg = max(0, min(180000, phase_mdeg)) / 100
+                answer[EFieldName.PHASE] = phase_cdeg
+            return answer
+
+        if self._has_pending_modbus_commands() or self._modbus_operation_lock.locked():
+            return Answer("Skipped update polling while command is running", False, False)
+
+        async with self._modbus_operation_lock:
+            return await self._execute_command_impl(
+                self._update_command,
+                raise_exception=raise_exception,
+                should_log=should_log,
+            )
+
+    async def stop_procedures(self):
+        if self.has_command(commands.SetStop()):
+            await self.execute_command(commands.SetStop(), raise_exception=False)
+        elif self.has_command(commands.SetOff()):
+            await self.execute_command(commands.SetOff(), raise_exception=False)
+
+    async def stop_running_processes(self):
+        """
+            Goes out of service mode, stops running procedures. 
+            The device will be afterwards idle and ready to accept any command.
+        """
+        if self.has_command(commands.SetStop()):
+            await self.execute_command(commands.SetStop(), raise_exception=False)
+        # We cant use SetOff for the crystal+ device because it is not ready yet
+        if self.has_command(commands.SetOff()) and self.info.device_type == DeviceType.CRYSTAL:
+            await self.execute_command(commands.SetOff(), raise_exception=False)
+        if self.has_command(commands.SonicForce()):
+            await self.execute_command(commands.SonicForce(), raise_exception=False)
+
+
+    async def wait_until_worker_connected(self):
+        assert self.info.device_type == DeviceType.POSTMAN, "This method only works for Postman Devices"
+
+        while True:
+            answer = await self.execute_command(commands.GetConnectionStatus())   
+            if answer[EFieldName.IS_CONNECTED]:
+                break         
+
+            await asyncio.sleep(0.2)
+
+    async def restart(self, restart_command: commands.Command = commands.RestartDevice()):
+        """
+        Restarts the device. 
+        This class is not usable afterwards anymore, you have to create a new connection and then build a new device.
+        Because the old connection may not be valid anymore (device can re enumerate on another port).
+
+        Params
+        ======
+        restart_command:
+            Some commands force not only a restart, but also force the device to open another application afterwards, like start_configurator
+        """
+        allowed_restart_commands = (commands.RestartDevice, commands.StartConfigurator, commands.StartOperator, commands.StartCustomizer, commands.StartDiagnosticsTool)
+        assert isinstance(restart_command, allowed_restart_commands), "The command is not a valid restart command" 
+        
+        try:
+            await self.execute_command(restart_command) 
+        except (ConnectionError, asyncio.IncompleteReadError, CommandValidationError):
+            pass # could throw a connection error, device may not respond anymore, because it is restarting
+            # When using modbus the command can not be validated because the device restarts during the validation stage
+        except Exception as e:
+            pass
+        try:
+            await self.disconnect()
+        except (TimeoutError, ConnectionError, asyncio.IncompleteReadError):
+            pass # could throw a connection error, device may not respond anymore, because it is restarting
+        except Exception as e:
+            pass
+        

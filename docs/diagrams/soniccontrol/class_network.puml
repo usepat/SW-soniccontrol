@@ -1,0 +1,57 @@
+@startuml
+
+class SonicControl {}
+
+SonicControl --> Connection
+
+class SerialDevice {}
+
+SerialConnection .. SerialDevice : serial communication
+
+class Server {}
+
+Server --> Connection
+
+class Client {
+
+}
+
+Client .. Server : network communication
+
+
+class Transport {}
+
+class ClientTransport {
+
+}
+ClientTransport --> Client 
+ClientTransport -u-|> Transport
+
+class StreamWriter {
+
+}
+StreamWriter --> Transport
+
+class StreamReader {
+
+}
+StreamReader --> Transport
+
+class Connection {}
+
+class SerialConnection {
+
+}
+SerialConnection -u-|> Connection
+SerialConnection o-- StreamReader
+SerialConnection o-- StreamWriter
+
+class ClientConnection {
+
+}
+ClientConnection -u-|> Connection
+ClientConnection --> ClientTransport
+ClientConnection o-- StreamReader
+ClientConnection o-- StreamWriter
+
+@enduml

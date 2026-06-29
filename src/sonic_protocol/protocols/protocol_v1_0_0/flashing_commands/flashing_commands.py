@@ -22,7 +22,7 @@ flash_usb = CommandContract(
         fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Used for flashing the device with a new firmware."
+        description="Starts firmware flashing over USB."
     ),
     is_release=True,
     tags=["flashing"]
@@ -39,7 +39,7 @@ flash_uart9600 = CommandContract(
         fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Used for flashing the device with a new firmware."
+        description="Starts firmware flashing over UART at 9600 baud."
     ),
     is_release=True,
     tags=["flashing"]
@@ -56,7 +56,7 @@ flash_uart115200 = CommandContract(
         fields=[field_success]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Used for flashing the device with a new firmware."
+        description="Starts firmware flashing over UART at 115200 baud."
     ),
     is_release=True,
     tags=["flashing"]

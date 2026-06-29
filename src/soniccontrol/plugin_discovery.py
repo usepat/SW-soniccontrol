@@ -1,0 +1,44 @@
+from importlib import metadata
+import sys
+from typing import Any, List
+import logging
+
+from soniccontrol.app_config import PLUGIN_DIR
+
+
+logger = logging.getLogger(__name__)
+
+def discover_plugins(group: str) -> List[Any]:
+    plugins = []
+
+    # 1) normally installed entry points 
+    # Do get added by installing a library over pip into the venv
+    for ep in metadata.entry_points().select(group=group):
+        try:
+            plugins.append(ep.load())
+        except Exception as e:
+            logger.warning("Could not load plugin: %s", str(e))
+            # Don't let a broken plugin kill startup
+
+    # 2) Plugins dropped into ./plugins (wheels unzipped here)
+    plugin_dirs=[str(PLUGIN_DIR)]
+    PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
+    sys.path.insert(0, str(PLUGIN_DIR))  # allow importing plugin packages from the directory
+
+    # 3) In a bundled application all dependencies and packages are inside _internal folder
+    # When using pyinstaller with --one-directory option
+    is_bundled_application = getattr(sys, "frozen", False)
+    if is_bundled_application:
+        # PyInstaller sets _MEIPASS to the _internal folder, where all collected packagers lay.
+        bundled_dependencies_dir: Path = sys._MEIPASS # type: ignore
+        plugin_dirs.append(bundled_dependencies_dir)
+
+    for dist in metadata.distributions(path=plugin_dirs):
+        for ep in dist.entry_points:
+            if ep.group == group:
+                try:
+                    plugins.append(ep.load())
+                except Exception as e:
+                    logger.warning("Could not load plugin: %s", str(e))
+
+    return plugins

@@ -48,7 +48,7 @@ class ProcControlling(UIComponent):
         self._view = ProcControllingView(parent.view)
         self._proc_widgets: Dict[ProcedureType, FormWidget] = {}
         super().__init__(parent, self._view, self._logger)
-        self._add_proc_widgets()
+        self._on_proc_selected = async_handler(self._select_current_proc)
         
         self._view.set_procedure_selected_command(self._on_proc_selected)
         self._view.set_start_button_command(self._on_run_pressed)
@@ -58,11 +58,10 @@ class ProcControlling(UIComponent):
         self._proc_controller.subscribe(ProcedureController.PROCEDURE_STOPPED, self.on_procedure_stopped)
         self._app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._on_execution_state_changed)
         
-        # setup view to have ramp as default 
-        if ProcedureType.RAMP in proc_controller.proc_args_list:
-            self._view.selected_procedure = ProcedureType.RAMP.value 
-            self._on_proc_selected()
         self.on_procedure_stopped(None) # type: ignore
+
+        self.top_level_window.pass_loading_task(self._add_proc_widgets())
+
 
     def _on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state
@@ -78,21 +77,30 @@ class ProcControlling(UIComponent):
             # while flashing, a script running or a disconnect
             self._view.set_start_button_enabled(False)
 
-    def _add_proc_widgets(self):
+    async def _add_proc_widgets(self):
+        await self._proc_controller.load_procs()
         for proc_type, args_class in self._proc_controller.proc_args_list.items():
             proc_dict = {}
             proc_widget = FormWidget(
-                self, self._view.procedure_frame, 
-                proc_type.value, args_class, proc_dict,
+                self, 
+                self._view.procedure_frame, 
+                proc_type.value, 
+                args_class, 
+                "proc_controlling",
+                model_dict=proc_dict
             )
             proc_widget.view.hide()
             self._model.procedure_arg_dict[proc_type] = proc_dict
             self._proc_widgets[proc_type] = proc_widget
-        proc_names = map(lambda proc_type: proc_type.value, self._proc_controller.proc_args_list.keys())
+        proc_names = [proc_type.value for proc_type in self._proc_controller.proc_args_list.keys()]
         self._view.set_procedure_combobox_items(proc_names)
 
-    @async_handler
-    async def _on_proc_selected(self):
+        # setup view to have ramp as default 
+        if ProcedureType.RAMP in self._proc_controller.proc_args_list:
+            self._view.selected_procedure = ProcedureType.RAMP.value 
+            await self._select_current_proc()
+
+    async def _select_current_proc(self):
 
         for proc_widget in self._proc_widgets.values():
             proc_widget.view.hide()
@@ -108,9 +116,7 @@ class ProcControlling(UIComponent):
         answer = await warning_message.wait_for_answer()
         if answer == DialogOptions.CANCEL:
             return
-        elif answer == DialogOptions.PROCEED:
-            pass
-        else:
+        if answer != DialogOptions.PROCEED:
             assert False
         try:
             proc_args_dict = self._model.procedure_args
@@ -159,7 +165,8 @@ class ProcControllingView(TabView):
         return ui_labels.PROCEDURES_LABEL
     
     def _initialize_children(self) -> None:
-        tab_name = "proc_controlling"
+        tab_name = self.scoped_widget_name("proc_controlling")
+            
         self._selected_procedure_var = ttk.StringVar()
         self._procedure_combobox = ttk.Combobox(self, textvariable=self._selected_procedure_var)
         self._procedure_combobox["state"] = "readonly" # prevent typing a value

@@ -64,7 +64,7 @@ class TransducerConfigSchema(AttrsSchema):
     )
 
     def serialize_path(self, obj) -> str | None:
-        return obj.init_script_path.as_posix() if obj.init_script_path else None
+        return str(obj.init_script_path) if obj.init_script_path else None
 
     def deserialize_path(self, value):
         return Path(value) if value else None
@@ -92,10 +92,10 @@ class ATConfigFrame(UIComponent):
 
 class ATConfigFrameView(View):
     def __init__(self, master: ttk.Frame, index: int, *args, **kwargs):
-        parent_widget_name = kwargs.pop("parent_widget_name", "")
-        self._widget_name = parent_widget_name + ".at_config." + str(index)
         self._index = index
         super().__init__(master, *args, **kwargs)
+        self._widget_name = self.scoped_widget_name(f"at_config.{index}")
+
 
     def _initialize_children(self) -> None:
         self._atf_var = ttk.IntVar()
@@ -434,7 +434,7 @@ class ConfigurationView(TabView):
 
         self._browse_script_init_button: FileBrowseButtonView = FileBrowseButtonView(
             self._transducer_config_frame, 
-            tab_name,
+            parent_widget_name=tab_name,
             text=ui_labels.SPECIFY_PATH_LABEL, 
             style=ttk.DARK,
         )

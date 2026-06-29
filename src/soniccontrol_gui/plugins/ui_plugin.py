@@ -1,3 +1,5 @@
+from importlib import metadata
+import sys
 from typing import List, Set, Optional, Callable
 from pathlib import Path
 
@@ -10,7 +12,10 @@ import ttkbootstrap as ttk
 from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
+from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol_gui.constants import _Files
+from soniccontrol.plugin_discovery import discover_plugins
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView, TkinterView, View
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow
@@ -210,20 +215,8 @@ class TestPluginComponent3Factory(UIComponentFactory):
         return TestPluginComponent3(master, parent)
 
 
-# # Register test plugins in the "ConnectionWindow" slot
-# UIPluginRegistry.register_ui_plugin(
-#     UIPlugin("ConnectionWindow", TestPluginComponent1Factory())
-# )
-# UIPluginRegistry.register_ui_plugin(
-#     UIPlugin("ConnectionWindow", TestPluginComponent2Factory())
-# )
-# UIPluginRegistry.register_ui_plugin(
-#     UIPlugin("ConnectionWindow", TestPluginComponent3Factory())
-# )
-
-
 def register_ui_plugins():
-    eps = entry_points()
-    for ep in eps.select(group="soniccontrol_gui.ui_plugins"):
-        ui_plugin = ep.load()
-        UIPluginRegistry.register_ui_plugin(ui_plugin)
+    group = "soniccontrol_gui.ui_plugins"
+
+    for plugin in discover_plugins(group):
+        UIPluginRegistry.register_ui_plugin(plugin)

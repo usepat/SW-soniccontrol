@@ -2,6 +2,7 @@ import copy
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Tuple
+import tkinter as tk
 import ttkbootstrap as ttk
 from sonic_protocol.schema import Anomaly, AnswerFieldDef, IEFieldName, Signal
 from sonic_protocol.python_parser.answer_field_converter import AnswerFieldToStringConverter
@@ -28,7 +29,7 @@ class StatusBar(UIComponent):
         if EFieldName.TEMPERATURE in self._field_converters:
             # Convert mK to °C
             self._field_converters[EFieldName.TEMPERATURE] = AnswerFieldToStringConverter(field_temperature_celsius)
-
+        
         self._logger.debug("Create Statusbar")
         self._view = StatusBarView(parent_slot, self._field_converters.keys())
         self._status_panel = StatusPanel(self, self._view.panel_frame, answer_field_defs)
@@ -55,6 +56,7 @@ class StatusBar(UIComponent):
             EFieldName.SWF: "Switching Freq",
             EFieldName.GAIN: "Gain",
             EFieldName.IRMS: "Irms",
+            EFieldName.IPP: "Ipp",
             EFieldName.URMS: "Urms",
             EFieldName.PHASE: "Phase",
             EFieldName.TEMPERATURE: "Temperature",
@@ -73,6 +75,9 @@ class StatusBar(UIComponent):
         }
 
         self._view.update_labels(status_field_text_representations)
+
+        ping = int(status[EFieldName.TIMING] * 1000) # get the timing in ms 
+        self._view.set_ping_label_text(f"Ping: {ping}")
 
         # update background of anomaly detection label
         if EFieldName.ANOMALY_DETECTION in status.keys():
@@ -150,7 +155,7 @@ class StatusBarView(View):
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
-        tab_name = "status_bar"
+        tab_name = self.scoped_widget_name("status_bar")
 
         self._panel_frame: ttk.Frame = ttk.Frame(self)
         self._status_bar_frame: ttk.Frame = ttk.Frame(self)
@@ -187,6 +192,13 @@ class StatusBarView(View):
         self._status_field_labels[EFieldName.SIGNAL] = signal_label
         WidgetRegistry.register_widget(signal_label, "signal_label", tab_name)
 
+        self._ping_label = ttk.Label(
+            self._signal_frame,
+            bootstyle=style.INVERSE_SECONDARY,
+            padding=ICON_LABEL_PADDING,
+        )
+        self._ping_label.pack(side=ttk.RIGHT, ipadx=3)
+
         self.configure(bootstyle=ttk.SECONDARY)
 
 
@@ -212,16 +224,28 @@ class StatusBarView(View):
             label.bind(events.CLICKED_EVENT, lambda _e: command())
 
     def update_labels(self, field_texts: Dict[IEFieldName, str]) -> None:
-        for status_field, text in field_texts.items():
-            label = self._status_field_labels[status_field]
-            label.configure(text=text)
+        try:
+            for status_field, text in field_texts.items():
+                label = self._status_field_labels[status_field]
+                label.configure(text=text)
 
-        self.update()
+            self.update()
+        except tk.TclError:
+            return
 
     def set_label_background(self, field_name: IEFieldName, color: str) -> None:
         if field_name in self._status_field_labels:
             label =  self._status_field_labels[field_name]
-            label.configure(background=color)
+            try:
+                label.configure(background=color)
+            except tk.TclError:
+                return
+
+    def set_ping_label_text(self, ping: str) -> None:
+        try:
+            self._ping_label.configure(text=ping)
+        except tk.TclError:
+            return
 
 
 
@@ -230,7 +254,7 @@ class StatusPanelView(View):
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
-        tab_name = "status_panel"
+        tab_name = self.scoped_widget_name("status_panel")
 
         self._main_frame: ttk.Frame = ttk.Frame(self)
         self._meter_frame: ttk.Frame = ttk.Frame(self._main_frame)

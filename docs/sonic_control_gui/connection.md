@@ -62,4 +62,8 @@ It contains basically all the interesting tabs.
 
 The RescueWindow has only the tabs [SerialMonitor](@ref sonic_control_gui.views.control.serialmonitor.SerialMonitor) and [Logging](@ref sonic_control_gui.views.control.logging.Logging). The ConnectionWindow initializes it with a [LegacyCommunicator](@ref soniccontrol.connection.serial_communicator.LegacySerialCommunicator). It is used for very old devices, with that we cannot connect in other ways, but also for debugging, if a connection is not possible.
 
+### Postman Window
+
+For the postman exists an own Device Window, because it is a shallow router and only needs a tab for establishing a connection with the worker and configuring modbus settings. All the other tabs for the other devices make no sense for the postman.
+
 @}

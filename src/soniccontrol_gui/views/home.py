@@ -4,7 +4,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from sonic_protocol.schema import DeviceType, SIPrefix
 from sonic_protocol.python_parser import commands
 from soniccontrol_gui.ui_component import UIComponent
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, GainSIVar
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, DescaleGainSIVar, GainSIVar, SwfSIVar, cls_converter
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.sonic_device import SonicDevice
@@ -22,64 +22,73 @@ from soniccontrol_gui.constants import ui_labels, sizes
 @attrs.define
 class TransducerState:
     """Configuration data for the home view controls."""
-    frequency: AbsoluteFrequencySIVar = attrs.field(default=AbsoluteFrequencySIVar(100000),
+    frequency: AbsoluteFrequencySIVar = attrs.field(
+        converter=cls_converter(AbsoluteFrequencySIVar),
+        default=AbsoluteFrequencySIVar(100000),
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )
     signal: bool = attrs.field(default=False, metadata={"field_view_kwargs":{"bootstyle": "round-toggle" }})
-    gain: GainSIVar = attrs.field(default=GainSIVar(value=0),
+    gain: GainSIVar = attrs.field(
+        converter=cls_converter(GainSIVar),
+        default=GainSIVar(value=1),
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )
 
+@attrs.define
+class DescaleTransducerState:
+    """Configuration data for the home view controls."""
+    swf: SwfSIVar = attrs.field(
+        converter=cls_converter(SwfSIVar),
+        default=SwfSIVar(5),
+        metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
+    )
+    signal: bool = attrs.field(default=False, metadata={"field_view_kwargs":{"bootstyle": "round-toggle" }})
+    gain: DescaleGainSIVar = attrs.field(
+        converter=cls_converter(DescaleGainSIVar),
+        default=DescaleGainSIVar(value=1),
+        metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
+    )
 
 
 class Home(UIComponent):
     def __init__(self, parent: UIComponent, device: SonicDevice):
         self._device = device
         # Initialize home configuration
-        self._config = TransducerState()
-        # Adjust frequency range based on device type
         if device.info.device_type == DeviceType.DESCALE:
-            self._config.frequency.value = 0
-            # You can adjust min/max ranges here later
+            self._config = DescaleTransducerState()
+        else:
+            self._config = TransducerState()
+        # Adjust frequency range based on device type
+                    # You can adjust min/max ranges here later
         
-        self._view = HomeView(parent.view, device_type=device.info.device_type)
+        self._view = HomeView(parent.view)
         super().__init__(parent, self._view)
+
+        self._info_frame = DeviceInfoFrame(self, self._view.info_frame_slot, "home", self._device) 
         
         # Create the form widget for the configuration
         self._form_widget = FormWidget(
             self, 
             self._view.form_slot, 
             "Home Controls", 
-            TransducerState, 
+            self._config.__class__, 
+            "home",
             model_dict=attrs.asdict(self._config),
             use_scroll=False
         )
         
-        self._view.set_disconnect_button_command(self._on_disconnect_pressed)
         self._view.set_send_button_command(self._on_send_pressed)
-        self._initialize_info()
-
-    def _initialize_info(self) -> None:
-        device_type = self._device.info.device_type
-        firmware_version = str(self._device.info.firmware_version)
-        protocol_version = str(self._device.info.protocol_version)
-        self._view.set_device_type(device_type.value)
-        self._view.set_firmware_version(firmware_version)
-        self._view.set_protocol_version(protocol_version)
-
-    @async_handler
-    async def _on_disconnect_pressed(self) -> None:
-        await self._device.disconnect()
 
     @async_handler
     async def _on_send_pressed(self) -> None:
-        freq = self.freq
         gain = self.gain
         signal = self.signal
 
-        if self._device.info.device_type == 'descale':
-            await self._device.execute_command(commands.SetSwf(freq))
+        if self._device.info.device_type == DeviceType.DESCALE:
+            swf = self.swf
+            await self._device.execute_command(commands.SetSwf(swf))
         else:
+            freq = self.freq
             await self._device.execute_command(commands.SetFrequency(freq))
         await self._device.execute_command(commands.SetGain(gain))
         if signal:
@@ -89,12 +98,16 @@ class Home(UIComponent):
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state
-        self._view.set_disconnect_button_enabled(execution_state != ExecutionState.NOT_RESPONSIVE)
+        self._info_frame.on_execution_state_changed(e)
         self._view.set_send_button_enabled(execution_state == ExecutionState.IDLE)
 
     @property 
     def freq(self) -> int:
-        return self._form_widget.attrs_object.frequency.to_prefix(SIPrefix.NONE)
+        return int(self._form_widget.attrs_object.frequency.to_prefix(SIPrefix.NONE))
+    
+    @property 
+    def swf(self) -> int:
+        return int(self._form_widget.attrs_object.swf.to_prefix(SIPrefix.NONE))
     
     @property
     def gain(self) -> int:
@@ -107,8 +120,6 @@ class Home(UIComponent):
 
 class HomeView(TabView):
     def __init__(self, master: View, *args, **kwargs) -> None:
-        if 'device_type' in kwargs:
-            self.device_type = kwargs.pop('device_type')
         super().__init__(master, *args, **kwargs)
 
     @property
@@ -123,26 +134,7 @@ class HomeView(TabView):
         tab_name = "home"
         self._main_frame: ScrolledFrame = ScrolledFrame(self, autohide=True)
 
-        # info frame - displays device type, protocol type, firmware type
-        self._info_frame: ttk.LabelFrame = ttk.LabelFrame(
-            self._main_frame, text=ui_labels.INFO_LABEL
-        )
-        self._device_type_label = ttk.Label(
-            self._info_frame, text=ui_labels.DEVICE_TYPE_LABEL.format("N/A")
-        )
-        self._firmware_version_label = ttk.Label(
-            self._info_frame, text=ui_labels.FIRMWARE_VERSION_LABEL.format("N/A")
-        )
-        self._protocol_version_label = ttk.Label(
-            self._info_frame, text=ui_labels.PROTOCOL_VERSION_LABEL.format("N/A")
-        )
-        self._disconnect_button = ttk.Button(
-            self._info_frame, text=ui_labels.DISCONNECT_LABEL
-        )
-        WidgetRegistry.register_widget(self._device_type_label, "device_type_label", tab_name)
-        WidgetRegistry.register_widget(self._firmware_version_label, "firmware_version_label", tab_name)
-        WidgetRegistry.register_widget(self._protocol_version_label, "protocol_version_label", tab_name)
-        WidgetRegistry.register_widget(self._disconnect_button, "disconnect_button", tab_name)
+        self._info_frame_slot = ttk.Frame(self._main_frame)
 
         # Control frame - contains the form and send button
         self._control_frame: ttk.LabelFrame = ttk.LabelFrame(
@@ -160,11 +152,85 @@ class HomeView(TabView):
     @property
     def form_slot(self) -> ttk.Frame:
         return self._form_slot
-
+    
+    @property
+    def info_frame_slot(self) -> View:
+        return self._info_frame_slot #type: ignore
 
     def _initialize_publish(self) -> None:
         self._main_frame.pack(fill=ttk.BOTH, expand=True)
         
+        self._info_frame_slot.pack(fill=ttk.X)
+        self._control_frame.pack(fill=ttk.BOTH, expand=True, pady=(0, sizes.LARGE_PADDING), ipady=sizes.LARGE_PADDING)
+        # Layout the form slot first - ensure it expands to use all available space
+        self._form_slot.pack(side=ttk.LEFT, fill=ttk.BOTH, expand=True, padx=(sizes.LARGE_PADDING, sizes.MEDIUM_PADDING), pady=sizes.LARGE_PADDING)
+        # Layout the send button on the right side (fixed size, not expanding)
+        self._send_button.pack(side=ttk.RIGHT, padx=(0, sizes.LARGE_PADDING), pady=sizes.LARGE_PADDING)
+
+    def set_send_button_command(self, command: Callable[[], None]) -> None:
+        self._send_button.configure(command=command)
+
+
+    def set_send_button_enabled(self, enabled: bool) -> None:
+        self._send_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)
+
+
+class DeviceInfoFrame(UIComponent):
+    def __init__(self, parent: UIComponent, parent_slot: View, parent_widget_name: str, device: SonicDevice):
+        self._device = device
+        
+        self._view = DeviceInfoFrameView(parent_slot, parent_widget_name=parent_widget_name)
+        super().__init__(parent, self._view)
+        self._view.set_disconnect_button_command(self._on_disconnect_pressed)
+        self._initialize_info()
+
+    def _initialize_info(self) -> None:
+        device_type = self._device.info.device_type
+        firmware_version = str(self._device.info.firmware_version)
+        protocol_version = str(self._device.info.protocol_version)
+        self._view.set_device_type(device_type.value)
+        self._view.set_firmware_version(firmware_version)
+        self._view.set_protocol_version(protocol_version)
+
+    @async_handler
+    async def _on_disconnect_pressed(self) -> None:
+        await self._device.disconnect()
+
+    def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
+        execution_state: ExecutionState = e.new_value.execution_state
+        self._view.set_disconnect_button_enabled(execution_state != ExecutionState.NOT_RESPONSIVE)
+
+
+class DeviceInfoFrameView(View):
+    def __init__(self, master: View, *args, **kwargs) -> None:
+        super().__init__(master, *args, **kwargs)
+
+    def _initialize_children(self) -> None:
+        widget_name = self.scoped_widget_name()
+
+        # info frame - displays device type, protocol type, firmware type
+        self._info_frame: ttk.LabelFrame = ttk.LabelFrame(
+            self, text=ui_labels.INFO_LABEL
+        )
+        self._device_type_label = ttk.Label(
+            self._info_frame, text=ui_labels.DEVICE_TYPE_LABEL.format("N/A")
+        )
+        self._firmware_version_label = ttk.Label(
+            self._info_frame, text=ui_labels.FIRMWARE_VERSION_LABEL.format("N/A")
+        )
+        self._protocol_version_label = ttk.Label(
+            self._info_frame, text=ui_labels.PROTOCOL_VERSION_LABEL.format("N/A")
+        )
+        self._disconnect_button = ttk.Button(
+            self._info_frame, text=ui_labels.DISCONNECT_LABEL
+        )
+        WidgetRegistry.register_widget(self._device_type_label, "device_type_label", widget_name)
+        WidgetRegistry.register_widget(self._firmware_version_label, "firmware_version_label", widget_name)
+        WidgetRegistry.register_widget(self._protocol_version_label, "protocol_version_label", widget_name)
+        WidgetRegistry.register_widget(self._disconnect_button, "disconnect_button", widget_name)
+
+    def _initialize_publish(self) -> None:
+        self.pack(fill=ttk.BOTH)
         self._info_frame.pack(fill=ttk.X, pady=(0, sizes.MEDIUM_PADDING))
         self._device_type_label.grid(
             row=0, 
@@ -195,14 +261,6 @@ class HomeView(TabView):
             sticky=ttk.W
         )
 
-        self._control_frame.pack(fill=ttk.BOTH, expand=True, pady=(0, sizes.LARGE_PADDING), ipady=sizes.LARGE_PADDING)
-        
-        # Layout the form slot first - ensure it expands to use all available space
-        self._form_slot.pack(side=ttk.LEFT, fill=ttk.BOTH, expand=True, padx=(sizes.LARGE_PADDING, sizes.MEDIUM_PADDING), pady=sizes.LARGE_PADDING)
-        
-        # Layout the send button on the right side (fixed size, not expanding)
-        self._send_button.pack(side=ttk.RIGHT, padx=(0, sizes.LARGE_PADDING), pady=sizes.LARGE_PADDING)
-
     def set_device_type(self, text: str) -> None:
         self._device_type_label.configure(text=ui_labels.DEVICE_TYPE_LABEL.format(text)) 
 
@@ -215,11 +273,5 @@ class HomeView(TabView):
     def set_disconnect_button_command(self, command: Callable[[], None]) -> None:
         self._disconnect_button.configure(command=command)
 
-    def set_send_button_command(self, command: Callable[[], None]) -> None:
-        self._send_button.configure(command=command)
-
     def set_disconnect_button_enabled(self, enabled: bool) -> None:
         self._disconnect_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)
-
-    def set_send_button_enabled(self, enabled: bool) -> None:
-        self._send_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)

@@ -6,23 +6,57 @@ from typing import Any, Callable, Dict, List,  Optional, Type
 import attrs
 
 from sonic_protocol.python_parser.converters import Converter
-from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import IEFieldName
+from sonic_protocol.schema import ICommandCode
 
 
 @attrs.define()    
 class Answer:
+    """
+    This class represents the parsed answer that was received from a device.
+
+    Attributes
+    ----------
+    message: str
+        Contains the plain text answer that was received
+    valid: bool
+        Is True, if the answer could be validated successfully and is not an error
+    was_validated: bool
+        Is True, if the answer was parsed and validated. 
+        It is only False, if the sent command was a plain string 
+        and no validator for it could be deduced. 
+        Therefore it is recommended to always use Command Objects instead of strings 
+        for sending commands to the device.
+    command_code: ICommandCode | None
+        The command code returned from the device. Is the same as for the command sent, 
+        if the device could execute the command successfully
+    field_value_dict: Dict[EFieldName, Any]
+        The parsed answer fields are stored here. For Errors an ERROR_MESSAGE field is stored
+    is_error_msg: bool
+        True, if the returned Answer is an error message.
+    """
+
     message: str = attrs.field(on_setattr=attrs.setters.NO_OP) 
     # TODO: probably better to make an enum ValidationStatus and merge valid and was_validated
     valid: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
     was_validated: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
-    command_code: CommandCode | None = attrs.field(default=None)
+    command_code: ICommandCode | None = attrs.field(default=None)
     field_value_dict: Dict[IEFieldName, Any] = attrs.field(default={})
+    # TODO: timing should be provided here as an attribute instead inside field_value_dict
+    # however hard to propagate with the current architecture
+
     # received_timestamp: float = attrs.field(factory=time.time, init=False, on_setattr=attrs.setters.NO_OP)
 
     @property
     def is_error_msg(self) -> bool:
         return self.command_code is not None and self.command_code.value >= 20000
+
+    def __getitem__(self, key: IEFieldName):
+        return self.field_value_dict[key]
+    
+    def __setitem__(self, key: IEFieldName, value):
+        # TODO ask David if there is a safer way to do this 
+        self.field_value_dict[key] = value
 
 
 @attrs.define()

@@ -32,11 +32,11 @@ class InterpreterEngine(EventManager):
     PROPERTY_INTERPRETER_STATE = "interpreter_state"
     PROPERTY_CURRENT_TARGET = "current_target"
 
-    def __init__(self, device: SonicDevice, updater: Updater, logger: logging.Logger = logging.getLogger()):
+    def __init__(self, device: SonicDevice, updater: Updater, proc_controller: ProcedureController, logger: logging.Logger = logging.getLogger()):
         super().__init__()
         self._interpreter_worker = None
         self._device = device
-        self._proc_controller = ProcedureController(device, updater, logger)
+        self._proc_controller = proc_controller
         self._script: Optional[RunnableScript] = None
         self._execution_steps: Iterable[ExecutionStep] | None = None
         self._interpreter_state = InterpreterState.READY
@@ -81,6 +81,8 @@ class InterpreterEngine(EventManager):
         self._logger.info("Start script")
         assert self._interpreter_state != InterpreterState.RUNNING
         assert self._script is not None
+        assert self._proc_controller.are_procedures_loaded, "Proc controller needs to load the procedures first"
+        
         if self._execution_steps is None:
             self._execution_steps = iter(self._script)
         
@@ -91,6 +93,8 @@ class InterpreterEngine(EventManager):
         self._logger.info("Start script")
         assert self._interpreter_state != InterpreterState.RUNNING
         assert self._script is not None
+        assert self._proc_controller.are_procedures_loaded, "Proc controller needs to load the procedures first"
+
         if self._execution_steps is None:
             self._execution_steps = iter(self._script)
 

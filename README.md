@@ -19,8 +19,7 @@ The project contains multiple folders and files with each having a specific resp
 - *src*: In this folder is all the application code
 - *docs*: In this folder lays the documentation pages
 - *scripts*: Helper scripts for building, packaging, etc.
-- *tests*: unit tests with pytest
-- *robot_tests*: system tests with robot framework
+- *tests*: unit and integration tests with pytest
 - *.vscode*: settings, tasks, etc. for vscode
 - *.github*: Workflows for github actions, settings and other stuff related to github
 - *pyproject.toml*: Contains meta data and settings for the python project
@@ -31,7 +30,6 @@ The project is divided into single python packages in the *src* folder:
 - *soniccontrol_gui*: This package contains the main application. It is a user friendly GUI.
 - *soniccontrol_cli* **Work in progress**: This is a cli version of soniccontrol.
 - *sonicprotocol* **Work in progress**: This package contains preprocessor scripts to generate html, c++ and python code for the custom protocol used by the software and the devices to communicate with each other.
-- *sonic_robot*: This package is a library for the robot framework. It is used for system testing.
 
 Please read the rest of the documentation for a better understanding on how everything works and fits together.
 

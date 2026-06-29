@@ -3,13 +3,16 @@
         "GTK_PATH": ""
     },
     "python.testing.pytestArgs": [
-        "tests"
+        "-s",
+        "tests",
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.autoComplete.extraPaths": [
         "${workspaceFolder}/tests"
     ],
+    "python.terminal.useEnvFile": true,
+    "debugpy.debugJustMyCode": true,
     "editor.detectIndentation": true,
     "files.associations": {
         "optional": "cpp",

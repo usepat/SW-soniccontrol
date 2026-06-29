@@ -1,4 +1,5 @@
 from typing import List
+from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
 	SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef, CommandContract
 )
@@ -29,9 +30,10 @@ set_frequency = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_frequency]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the frequency of the transducer on the device."
+        description="Sets the transducer frequency on the device."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["frequency", "transducer"]
 )
 
@@ -44,9 +46,10 @@ get_frequency = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_frequency]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the frequency of the transducer on the device."
+        description="Retrieves the transducer frequency from the device."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["frequency", "transducer"]
 )
 
@@ -69,9 +72,10 @@ get_uipt = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get voltage, current and phase of the transducer on the device."
+        description="Retrieves transducer voltage, current, and phase from the device."
     ),
-    is_release=False,
+    is_release=True,
+    group_id=GROUPS.measurements,
     tags=["transducer"]
 )
 
@@ -88,9 +92,10 @@ get_irms = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get irms of the device"
+        description="Retrieves the device IRMS value."
     ),
-    is_release=False,
+    is_release=True,
+    group_id=GROUPS.measurements,
     tags=["transducer", "descale"]
 )
 
@@ -107,9 +112,10 @@ get_atf = CommandContract(
         fields=[field_atf]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the atf"
+        description="Retrieves the ATF value."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "config"]
 )
 
@@ -124,9 +130,10 @@ get_atf_list = CommandContract(
         fields=[field_unknown_answer]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get a list of atfs"
+        description="Retrieves the list of ATF values."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "config"]
 )
 
@@ -143,9 +150,10 @@ set_atf = CommandContract(
         fields=[field_atf]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the atf"
+        description="Sets the ATF value."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "config"]
 )
 
@@ -163,9 +171,10 @@ get_att = CommandContract(
         fields=[field_att]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the att"
+        description="Retrieves the ATT value."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "config"]
 )
 
@@ -180,9 +189,10 @@ get_att_list = CommandContract(
         fields=[field_unknown_answer]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get a list of atts"
+        description="Retrieves the list of ATT values."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "config"]
 )
 
@@ -199,9 +209,10 @@ set_att = CommandContract(
         fields=[field_att]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the att"
+        description="Sets the ATT value."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "config"]
 )
 
@@ -218,9 +229,10 @@ get_atk = CommandContract(
         fields=[field_atk]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the atk"
+        description="Retrieves the ATK value."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "config"]
 )
 
@@ -235,9 +247,10 @@ get_atk_list = CommandContract(
         fields=[field_unknown_answer]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get a list of atks"
+        description="Retrieves the list of ATK values."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "config"]
 )
 
@@ -254,9 +267,10 @@ set_atk = CommandContract(
         fields=[field_atk]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the atk"
+        description="Sets the ATK value.",
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "config"]
 )
 
@@ -272,9 +286,10 @@ set_waveform = CommandContract(
         fields=[field_waveform]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Command to set the waveform of the transducer."
+        description="Sets the transducer waveform."
     ),
     is_release=True,
+    group_id=GROUPS.transducer,
     tags=["transducer", "waveform"]
 )
 
@@ -300,9 +315,10 @@ get_update_worker = CommandContract(
         ]
     ),
     user_manual_attrs=UserManualAttrs(
-        description="Mainly used by sonic control to get a short and computer friendly parsable status update."
+        description="Primarily used by Sonic Control to retrieve a compact, machine-readable status update."
     ),
     is_release=True,
+    group_id=GROUPS.measurements,
     tags=["update", "status"]
 )
 

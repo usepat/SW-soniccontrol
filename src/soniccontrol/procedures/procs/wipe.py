@@ -10,7 +10,7 @@ from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs, custom_validator_factory
 from sonic_protocol.command_codes import CommandCode
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError, SonicDevice
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, RelativeFrequencySIVar, GainSIVar
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, RelativeFrequencySIVar, GainSIVar, cls_converter
 
 
 @attrs.define(auto_attribs=True)
@@ -23,10 +23,12 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
 """     
 
     f_range: RelativeFrequencySIVar = attrs.field(
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(value=8000),
         metadata={"enum": EFieldName.WIPE_F_RANGE},
     )
     f_step: RelativeFrequencySIVar = attrs.field(
+        converter=cls_converter(RelativeFrequencySIVar),
         default=RelativeFrequencySIVar(10),
         metadata={"enum": EFieldName.WIPE_F_STEP},
         validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
@@ -47,6 +49,7 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
         converter=convert_to_holder_args
     )
     gain: GainSIVar = attrs.field(
+        converter=cls_converter(GainSIVar),
         default=GainSIVar(150),
         metadata={"enum": EFieldName.WIPE_GAIN},
     )
@@ -62,8 +65,8 @@ class WipeProc(Procedure):
 
     async def execute(self, device: SonicDevice, args: WipeArgs, configure_only: bool = False) -> None:
         self.f_step = RelativeFrequencySIVar(0) 
-        await device.execute_command(commands.SetWipeFRange(args.f_range.to_prefix(SIPrefix.NONE)))
-        await device.execute_command(commands.SetWipeFStep(args.f_step.to_prefix(SIPrefix.NONE)))
+        await device.execute_command(commands.SetWipeFRange(int(args.f_range.to_prefix(SIPrefix.NONE))))
+        await device.execute_command(commands.SetWipeFStep(int(args.f_step.to_prefix(SIPrefix.NONE))))
         t_on_duration = int(args.t_on.duration_in_ms) if isinstance(args.t_on, HolderArgs) else int(args.t_on[0])
         t_off_duration = int(args.t_off.duration_in_ms) if isinstance(args.t_off, HolderArgs) else int(args.t_off[0])
         t_pause_duration = int(args.t_pause.duration_in_ms) if isinstance(args.t_pause, HolderArgs) else int(args.t_pause[0])

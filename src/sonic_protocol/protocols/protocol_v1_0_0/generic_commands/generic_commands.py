@@ -1,4 +1,5 @@
 from typing import List
+from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
     CommandParamDef,
     FieldType,
@@ -35,7 +36,9 @@ get_info = CommandContract(
             build_date_field,
         ]
     ),
+    group_id=GROUPS.generic,
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Retrieves device information including type, hardware and firmware versions, build hash and date."),
 )
 
 get_help = CommandContract(
@@ -44,8 +47,9 @@ get_help = CommandContract(
         sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?help")
     ),
     answer_def=AnswerDef(fields=[field_message]),
-    user_manual_attrs=UserManualAttrs(description="Command to get help information."),
+    user_manual_attrs=UserManualAttrs(description="Retrieves help information."),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["help"],
 )
 
@@ -61,7 +65,9 @@ sonic_force = CommandContract(  # Used overruling the service mode
             AnswerFieldDef(field_name=EFieldName.SUCCESS, field_type=FieldType(str))
         ]
     ),
-    is_release=False,
+    is_release=True,
+    group_id=GROUPS.generic,
+    user_manual_attrs=UserManualAttrs(description="Forces exit from service mode and resumes normal operation."),
     tags=["debugging"],
 )
 
@@ -70,6 +76,8 @@ notify = CommandContract(
     command_def=None,
     answer_def=AnswerDef(fields=[field_message]),
     is_release=True,
+    user_manual_attrs=UserManualAttrs(description="Notification message sent by device to report events."),
+    group_id=GROUPS.generic,
     tags=["Notification"],
 )
 
@@ -84,8 +92,9 @@ set_datetime = CommandContract(
         ),
     ),
     answer_def=AnswerDef(fields=[field_timestamp]),
-    user_manual_attrs=UserManualAttrs(description="Command to set the datetime"),
+    user_manual_attrs=UserManualAttrs(description="Sets the device date and time."),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["datetime"],
 )
 
@@ -97,8 +106,9 @@ get_datetime = CommandContract(
         )
     ),
     answer_def=AnswerDef(fields=[field_timestamp]),
-    user_manual_attrs=UserManualAttrs(description="Command to get the datetime"),
+    user_manual_attrs=UserManualAttrs(description="Retrieves the current device date and time."),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["datetime"],
 )
 
@@ -111,9 +121,10 @@ get_datetime_pico = CommandContract(
     ),
     answer_def=AnswerDef(fields=[field_timestamp]),
     user_manual_attrs=UserManualAttrs(
-        description="Command to get the datetime from the rp2040"
+        description="Retrieves the date and time from the RP2040."
     ),
     is_release=True,
+    group_id=GROUPS.generic,
     tags=["datetime"],
 )
 

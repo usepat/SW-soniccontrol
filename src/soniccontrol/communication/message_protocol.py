@@ -19,7 +19,7 @@ class CommunicationProtocol:
     def parse_response(self, response: str) -> Any: ...
 
     @abc.abstractmethod
-    def parse_request(self, request: str, request_id: int) -> Any: ...
+    def parse_request(self, request: str, request_id: int, **kwargs) -> Any: ...
 
     @abc.abstractmethod
     def prot_type(self) -> ProtocolType: ...
@@ -34,6 +34,7 @@ class DeviceLogLevel(Enum):
     WARN = "WARN"
     INFO = "INFO"
     DEBUG = "DEBUG"
+    DEBUG_EXTENSIVE = "DEBUG_EXTENSIVE"
 
 @attrs.define()
 class Message:
@@ -60,6 +61,7 @@ class SonicMessageProtocol(CommunicationProtocol):
     ANSWER_PREFIX = "ANS"
     COMMAND_PREFIX = "COM"
     NOTIFY_PREFIX = "NOTIFY"
+    ADDR_PREFIX_WORKER = "W"
 
     @property
     def separator(self) -> str:
@@ -95,9 +97,11 @@ class SonicMessageProtocol(CommunicationProtocol):
         else:
             raise SyntaxError("Could not parse response: " + response)
 
-    def parse_request(self, request: str, request_id: int) -> str:
-        # The \n at the end ensures that terminals in canonical mode read in the whole message
-        return f"{SonicMessageProtocol.COMMAND_PREFIX}#{request_id}={request}{self.separator}"
+    def parse_request(self, request: str, request_id: int, **kwargs) -> str:
+        parsed_request = f"{SonicMessageProtocol.COMMAND_PREFIX}#{request_id}={request}{self.separator}"
+        if "addr_prefix" in kwargs:
+            parsed_request = f"{kwargs['addr_prefix']}#{parsed_request}" # add W prefix for worker
+        return parsed_request
     
     @abc.abstractmethod
     def prot_type(self) -> ProtocolType:

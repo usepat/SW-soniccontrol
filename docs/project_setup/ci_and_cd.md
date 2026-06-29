@@ -5,6 +5,8 @@
 
 # Continuous Integration and Continuous Deployment {#CIandCD}
 
+> Attention: CI and CD is not actively developed anymore, because we ran into issues with github storage limits and run time limits. Anyways we still have tests, we run them manually.
+
 Continuous integration and continuous deployment means that you automate the testing and building of your software. Automation is important because it enforces those processes and ensures that they always run in the same manner.
 
 ## Github Actions

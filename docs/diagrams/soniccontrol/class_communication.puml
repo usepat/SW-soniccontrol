@@ -23,7 +23,6 @@ class "Communicator" as soniccontrol.communication.communicator.Communicator {
   protocol
   reader
   writer
-  {abstract}change_baudrate(baudrate: int) -> None
   {abstract}close_communication(restart: bool) -> None
   {abstract}open_communication(connection_factory: ConnectionFactory, baudrate: int)
   {abstract}read_message() -> str
@@ -50,7 +49,6 @@ class "LegacySerialCommunicator" as soniccontrol.communication.serial_communicat
   protocol
   reader
   writer
-  change_baudrate(baudrate: int) -> None
   close_communication(restart: bool) -> None
   open_communication(connection_factory: ConnectionFactory, baudrate: int) -> None
   read_long_message(response_time: float, reading_time: float) -> str
@@ -72,7 +70,6 @@ class "SerialCommunicator" as soniccontrol.communication.serial_communicator.Ser
   protocol
   reader
   writer
-  change_baudrate(baudrate: int) -> None
   close_communication(restart: bool) -> None
   open_communication(connection_factory: ConnectionFactory, baudrate) -> None
   read_message() -> str

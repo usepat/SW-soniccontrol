@@ -2,7 +2,7 @@ from typing import Final, List, Literal
 
 import attrs
 
-from soniccontrol.app_config import APP_DATA_DIR, SONIC_CONTROL_BASE_DIR
+from soniccontrol.app_config import APP_DATA_DIR, SONIC_CONTROL_BASE_DIR, PLUGIN_DIR
 from soniccontrol_gui.utils.types import ScriptingGuideCardDataDict
 from soniccontrol.events import PropertyChangeEvent
 from soniccontrol.procedures.procedure_controller import ProcedureController
@@ -34,6 +34,7 @@ class _Files:
     SCRIPT_DIR = DATA_DIR / "scripts"
     EXAMPLE_SCRIPT = SCRIPT_DIR / "example_script"
     EXAMPLE_SCRIPT_DIR = SONIC_CONTROL_BASE_DIR / "sonic_script_examples"
+    PLUGINS = PLUGIN_DIR
 
 files: _Files = _Files()
 
@@ -111,10 +112,12 @@ class _UIStringsEN:
     CONFIGURATION_TAB: Final[str] = "Configuration"
     UPDATER_INTERVAL_LABEL: Final[str] = "Updater Interval (ms):"
     IS_LEGACY_DEVICE_LABEL: Final[str] = "SonicCrystal"
+    IS_MODBUS_DEVICE_LABEL: Final[str] = "SonicModbus"
     HOME_CONTROL_LABEL: Final[str] = "Manual Control"
     FREQ_PLACEHOLDER: Final[str] = "Set Frequency..."
     GAIN_PLACEHOLDER: Final[str] = "Set Gain..."
     APPLY_SETTINGS: Final[str] = "Apply Settings"
+    LOAD_SETTINGS: Final[str] = "Load Settings"
     SAVE_LABEL: Final[str] = "Save"
     SAVE_AS_LABEL: Final[str] = "Save As"
     SAVE_PLOT_LABEL: Final[str] = "Save Plot"
@@ -127,6 +130,7 @@ class _UIStringsEN:
     SINGLE_STEP_LABEL: Final[str] = "Single Step"
     CONNECT_LABEL: Final[str] = "Connect"
     CONNECT_TO_SIMULATION_LABEL: Final[str] = "Connect To Simulation"
+    OPEN_WORKER_WINDOW: Final[str] = "Open Worker Window"
     DISCONNECT_LABEL: Final[str] = "Disconnect"
     HOME_LABEL: Final[str] = "Home"
     SCRIPTING_LABEL: Final[str] = "Scripting"
@@ -140,7 +144,9 @@ class _UIStringsEN:
     SERIAL_MONITOR_LABEL: Final[str] = "Serial Monitor"
     LOGS_LABEL: Final[str] = "Logs"
     APP_LOGS_LABEL: Final[str] = "Application Logs"
+    APP_LOG_SETTINGS_LABEL: Final[str] = "Application Log Settings"
     DEVICE_LOGS_LABEL: Final[str] = "Device Logs"
+    DEVICE_LOG_SETTINGS_LABEL: Final[str] = "Device Log Settings"
     FLASHER_LABEL: Final[str] = "Flasher"
     PROCEDURES_LABEL: Final[str] = "Procedures"
     SONIC_LABEL: Final[str] = "sonic"
@@ -178,6 +184,7 @@ class _UIStringsEN:
     SUBMIT_LABEL: Final[str] = "Submit"
     SELECTED: Final[str] = "Selected"
     CONTROL_LABEL: Final[str] = "control"
+    WORKER_LABEL: Final[str] = "worker"
     COMPANY_NAME: Final[str] = "usePAT G.m.b.H"
     VERSION_LABEL: Final[str] = "Version"
     ATK: Final[str] = "ATK"
@@ -202,6 +209,8 @@ class _UIStringsEN:
     SIGNAL_OFF: Final[str] = f"{SIGNAL_LABEL} {OFF_LABEL}"
     SIGNAL_ON: Final[str] = f"{SIGNAL_LABEL} {ON_LABEL}"
     NOT_CONNECTED: Final[str] = f"{NOT_LABEL} {CONNECTED_LABEL}"
+    CONNECTED_TO_WORKER: Final[str] = "connected to worker"
+    NOT_CONNECTED_TO_WORKER: Final[str] = "not connected to worker"
     RESTART: Final[str] = "Restart"
     END: Final[str] = "End"
     LIVE_PLOT: Final[str] = "Live Plot"
@@ -275,6 +284,15 @@ class _UIStringsEN:
     TODO: Final[str] = "In the future the INFO tab will provide all necessary information about the Sonic Control and the SonicAmp and furthermore will link a more detailed documentation about both the software and the device. For now if you have any questions feel free to contact us"
     CONTACT: Final[str] = "Contact"
     NEW_LINE: Final[str] = ""
+    RUN_LABEL: Final[str] = "Run"
+    RUN_ALL_TESTS: Final[str] = "Run all tests"
+    CREATE_TEST_REPORT: Final[str] = "Create Test Report"
+    USER_INTERACTION_NEEDED: Final[str] = "User interaction needed"
+    SUCCESS: Final[str] = "Success"
+    FAILURE: Final[str] = "Failure"
+    RELOAD_LOGGERS: Final[str] = "Reload loggers"
+    ERROR_MSG_CONNECTION_ALREADY_OPEN: Final[str] = "There is already a connection open for this serial port, do you want to close it?"
+    
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()
 
@@ -370,9 +388,9 @@ end""",
     },
     {
         "keyword": "ramp",
-        "arguments": "f_start: uint\nf_stop: uint\nf_step: uint\nt_on: time\nt_off: time",
+        "arguments": "f_start: uint\nf_stop: uint\nf_step: uint\nt_on: time\nt_off: time\ngain: uint",
         "description": "Executes the ramp procedure",
-        "example": "ramp 1000000 2000000 100000 1s 500ms",
+        "example": "ramp 1000000 2000000 100000 1s 500ms 100",
     },
     {
         "keyword": "wipe",

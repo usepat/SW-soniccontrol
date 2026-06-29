@@ -1,5 +1,6 @@
 
 import asyncio
+import contextlib
 import datetime
 import logging
 from pathlib import Path
@@ -31,7 +32,8 @@ from async_tkinter_loop import async_handler
 
 from soniccontrol_gui.widgets.form_widget import FormWidget
 from soniccontrol_gui.widgets.message_box import MessageBox
-    
+from sonic_protocol.si_unit import cls_converter 
+
 import attrs
 import cattrs
 
@@ -41,10 +43,12 @@ import cattrs
 class ATConfig:
     atf: Optional[AtfSiVar] = attrs.field(
         default=None,
+        converter=lambda x: None if x is None else cls_converter(AtfSiVar)(x),
         metadata={"field_view_kwargs": {"treat_zero_as_none": True}}
     )
     atk: float = attrs.field(default=0)
     att: AttSiVar = attrs.field(
+        converter=cls_converter(AttSiVar),
         default=AttSiVar(), 
         #metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}
     )
@@ -52,7 +56,7 @@ class ATConfig:
 @attrs.define(auto_attribs=True)
 class TransducerConfig():
     # the name should not be stored inside the json file, but should be retrieved from the file name
-    version: Version = attrs.field(default=Version(1, 0, 0))
+    version: Version = attrs.field(default=Version(1, 0, 0), metadata={"field_view_kwargs": {"editable": False, "order": -100}})
     name: str = attrs.field(default="no name")
     init_script_path: Optional[Path] = attrs.field(default=None, metadata={"field_view_kwargs": file_dialog_opts.SONIC_SCRIPT})
     atconfigs: Tuple[ATConfig, ATConfig, ATConfig, ATConfig] = attrs.field(factory=lambda: tuple(ATConfig() for _ in range(4))) #type: ignore
@@ -60,7 +64,7 @@ class TransducerConfig():
 class Configuration(UIComponent):
     CONFIGURATION_TASK_NAME = "configuring"
 
-    def __init__(self, parent: UIComponent, device: SonicDevice, updater: Updater):
+    def __init__(self, parent: UIComponent, device: SonicDevice, updater: Updater, interpreter: InterpreterEngine):
         self._logger = logging.getLogger(parent.logger.name + "." + Configuration.__name__)
 
 
@@ -78,18 +82,19 @@ class Configuration(UIComponent):
         self._count_atk_atf = 4
         self._configs: List[TransducerConfig] = []
         self._current_transducer_config: Optional[int] = None
+        self._config_load_task: asyncio.Task[None] | None = None
         self._device = device
-        self._interpreter = InterpreterEngine(device, updater)
+        self._interpreter = interpreter
 
         self._view = ConfigurationView(parent.view, self, self._count_atk_atf)
-        self._form = FormWidget(self, self._view.form_slot, "Transducer Config", TransducerConfig)
+        self._form = FormWidget(
+            self, 
+            self._view.form_slot, 
+            "Transducer Config", 
+            TransducerConfig,
+            "configuration"
+        )
         super().__init__(parent, self._view, self._logger)
-
-        def show_script_error(e):
-            error = e.data["exception"]
-            MessageBox.show_error(self._view.root, f"{error.__class__.__name__}: {str(error)}")
-
-        self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, show_script_error)
 
         self._view.set_save_config_command(self._save_config)
         self._view.set_transducer_config_selected_command(self._on_transducer_config_selected)
@@ -97,7 +102,21 @@ class Configuration(UIComponent):
         self._view.set_import_transducer_config_command(self._import_transducer_config)
         self._view.set_submit_transducer_config_command(self._submit_transducer_config)
         self._view.set_delete_transducer_config_command(self._delete_transducer_config)
-        self._load_config()
+
+    def start_background_tasks(self) -> None:
+        if self._config_load_task is not None:
+            return
+        self._config_load_task = asyncio.get_running_loop().create_task(self._load_config_async())
+
+    async def shutdown_background_tasks(self) -> None:
+        task = self._config_load_task
+        self._config_load_task = None
+        if task is None or task.done():
+            return
+
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
     @property
     def current_transducer_config(self) -> Optional[int]:
@@ -146,7 +165,7 @@ class Configuration(UIComponent):
         self._logger.info("Created backup file: %s", backup_file)
         return backup_file
 
-    def _load_config(self):
+    def _load_config(self) -> List[TransducerConfig]:
         if files.TRANSDUCER_CONFIG_FOLDER.exists() is False:
             self._logger.info("Create transducer config folder %s", files.TRANSDUCER_CONFIG_FOLDER)
             files.TRANSDUCER_CONFIG_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -159,6 +178,7 @@ class Configuration(UIComponent):
             self._create_default_config_file()   
 
         self._logger.info("Load configuration from %s", files.TRANSDUCER_CONFIG_FOLDER)
+        configs: List[TransducerConfig] = []
         for json_file in files.TRANSDUCER_CONFIG_FOLDER.glob("*.json"):
             # Skip backup files
             if ".backup_" in json_file.name:
@@ -181,12 +201,22 @@ class Configuration(UIComponent):
                     
                     config = self._converter.structure(data_dict, TransducerConfig)
                     config.name = json_file.stem
-                    self._configs.append(config)
+                    configs.append(config)
                 except Exception as e:
                     self._logger.error("Failed to load config from %s: %s", json_file, e)
 
-        self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
-        self.current_transducer_config = 0 if len(self._configs) > 0 else None
+        return configs
+
+    async def _load_config_async(self) -> None:
+        try:
+            configs = await asyncio.to_thread(self._load_config)
+            if not self._view.root.winfo_exists():
+                return
+            self._configs = configs
+            self._view.set_transducer_config_menu_items(map(lambda config: config.name, self._configs))
+            self.current_transducer_config = 0 if len(self._configs) > 0 else None
+        finally:
+            self._config_load_task = None
 
     def _import_transducer_config(self):
         filename: str = filedialog.askopenfilename(**file_dialog_opts.JSON)
@@ -296,7 +326,7 @@ class Configuration(UIComponent):
         for i, atconfig in enumerate(config.atconfigs):
             # i+1 because atfs start at 1 and not 0.
             # SIVar holds the primitive in .value; device commands expect primitives.
-            await self._device.execute_command(commands.SetAtf(i+1, atconfig.atf.to_prefix(SIPrefix.NONE) if atconfig.atf else 0))
+            await self._device.execute_command(commands.SetAtf(i+1, int(atconfig.atf.to_prefix(SIPrefix.NONE)) if atconfig.atf else 0))
             await self._device.execute_command(commands.SetAtk(i+1, atconfig.atk))
             await self._device.execute_command(commands.SetAtt(i+1, atconfig.att.to_prefix(SIPrefix.NONE)))
 
@@ -355,7 +385,7 @@ class ConfigurationView(TabView):
         return ui_labels.CONFIGURATION_TAB
 
     def _initialize_children(self) -> None:
-        tab_name = "configuration"
+        tab_name = self.scoped_widget_name("configuration")
 
         self._config_frame: ttk.Frame = ttk.Frame(self)
         self._add_config_button: ttk.Button = ttk.Button(

@@ -69,10 +69,10 @@ class EnumConverter(Converter):
 
     def convert_val_to_str(self, value: Any) -> str: 
         assert (self.validate_val(value))
-        return str(value.name)
+        return str(value.value).lower()
 
     def validate_str(self, text: str) -> bool: 
-        return text.lower() in [ enum_member.value.lower() for enum_member in self._target_enum_class]
+        return text.lower() in [ str(enum_member.value).lower() for enum_member in self._target_enum_class]
 
     def convert_str_to_val(self, text: str) -> Any: 
         assert(self.validate_str(text))

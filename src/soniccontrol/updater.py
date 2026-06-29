@@ -1,58 +1,62 @@
 
 import asyncio
+from contextlib import suppress
 from typing import Optional
-from sonic_protocol.python_parser import commands
+from sonic_protocol.schema import DeviceType
+from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.cyclic_task import CyclicTask
 
+class Updater(EventManager, CyclicTask):
+    UPDATE_EVENT = "update"
 
-class Updater(EventManager):
     def __init__(self, device: SonicDevice, time_waiting_between_updates_ms: int = 0) -> None:
-        super().__init__()
+        EventManager.__init__(self)
+        CyclicTask.__init__(self, self.update, time_waiting_between_updates_ms, device._logger)
         self._device = device
-        self._time_waiting_between_updates_ms = time_waiting_between_updates_ms
-        self._running: asyncio.Event = asyncio.Event()
-        self._task: Optional[asyncio.Task] = None
-
-    @property
-    def running(self) -> asyncio.Event:
-        return self._running
-
-    def start(self) -> None:
-        self._running.set()
-        self._task = asyncio.create_task(self._loop())
 
     async def stop(self) -> None:
-        self._running.clear()
-        if self._task is not None:
-            await self._task
+        self.running.clear()
+        if self._daemon is None:
+            return
 
-    def get_update_interval(self) -> int:
-        return self._time_waiting_between_updates_ms
+        daemon = self._daemon
+        self._daemon = None
 
-    def set_update_interval(self, time_waiting_between_updates_ms: int) -> None:
-        self._time_waiting_between_updates_ms = time_waiting_between_updates_ms
+        if isinstance(self._device.communicator, ModbusCommunicator):
+            with suppress(asyncio.CancelledError):
+                await daemon
+            return
+
+        daemon.cancel()
+        with suppress(asyncio.CancelledError):
+            await daemon
 
     async def update(self) -> None:
-        # HINT: If ever needed to update different device attributes, we can do that, by checking what components the device has
-        # and then additionally call other commands to get this information
-        if self._device.has_command(commands.GetUpdate()):
+        is_not_connected = not self._device.communicator.connection_opened.is_set()
+        if self._device.info.device_type == DeviceType.CONFIGURATOR or is_not_connected:
             # Configurator does not have update but uses Device so for now I fix it like this
-            answer = await self._device.execute_command(commands.GetUpdate(), should_log=False, raise_exception=False)
-            if answer.valid:
-                self.emit(Event("update", status=answer.field_value_dict))
-        else:
-            self._running.clear()
+            self.running.clear()
+            return
 
-    async def _loop(self) -> None:
         try:
-            open_connection_flag = self._device.communicator.connection_opened
-            while self._running.is_set() and open_connection_flag.is_set():
-                await self.update()
-                if self._time_waiting_between_updates_ms > 0:
-                    await asyncio.sleep(self._time_waiting_between_updates_ms / 1000)
+            answer = await self._device.get_update()
+        except (ConnectionError, TimeoutError):
+            self.running.clear()
+            return
         except asyncio.CancelledError:
-            pass
-        except Exception as e:
+            self.running.clear()
             raise
-        
+        except Exception as e:
+            if not self._device.communicator.connection_opened.is_set():
+                self.running.clear()
+                return
+            if "closed transport" in str(e).lower():
+                self.running.clear()
+                return
+            raise
+
+        if answer.valid:
+            self.emit(Event(Updater.UPDATE_EVENT, status=answer.field_value_dict))
+

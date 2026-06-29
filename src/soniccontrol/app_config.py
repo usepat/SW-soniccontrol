@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 import sys
 from typing import Final
+
+import attrs
 from sonic_protocol.schema import Version
 from importlib.metadata import version
 import re
@@ -10,7 +12,7 @@ import re
 
 def get_version_tag() -> str:
     version_desc = version("soniccontrol")
-    regex = r"v?(?P<tag>\d+\.\d+\.\d+).*"
+    regex = r"^v?(?P<tag>\d+\.\d+\.\d+(?:-[a-zA-Z]+)?).*"
     match_result = re.match(regex, version_desc)
     if match_result is None:
         raise Exception("Version tag not parsable")
@@ -47,6 +49,7 @@ def create_appdata_directory(system: System, dir_name: str) -> Path:
 PLATFORM: Final[System] = decode_platform()
 SOFTWARE_VERSION: Final[Version] = Version.to_version(get_version_tag())
 APP_DATA_DIR: Final[Path] = create_appdata_directory(PLATFORM, "SonicControl")
+PLUGIN_DIR: Final[Path] = APP_DATA_DIR / "plugins"
 
 def get_base_dir() -> Path:
     if getattr(sys, "frozen", False):
@@ -63,3 +66,14 @@ SONIC_CONTROL_BASE_DIR = get_base_dir()
 
 ENCODING: Final[str] = "utf-8"
 
+def get_simulation_exe() -> Path | None:
+    if "FIRMWARE_BUILD_DIR_PATH" not in os.environ:
+        return None
+    firmware_build_dir = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"]).expanduser().resolve()
+    return firmware_build_dir / "linux/platform_linux/src/device/device_main"
+
+@attrs.define()
+class AppConfig:
+    remote_server_url: str | None = attrs.field(default=None)
+
+APP_CONFIG = AppConfig() # This variable can be changed depending on the cmd args. Is done in sonic control gui

@@ -12,12 +12,58 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python Debugger: Soniccontrol via remote server",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "soniccontrol_gui",
+            "args": [
+                "--remote-server-url=http://${input:host}:8080"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Current File",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false
+        },
+        {
+            "name": "Python: Remote Server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/soniccontrol/network/server.py",
+            "args": [
+                "--host=127.0.0.1",
+                "--port=8080"
+            ],
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Pytest: Debug integration tests with profile",
+            "type": "debugpy",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "module": "pytest",
+            "args": [
+                "${workspaceFolder}/tests/integration_tests",
+                "--profile",
+                "simulation_worker",
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "host",
+            "description": "Host running the sonic control server",
+            "type": "pickString",
+            "default": "127.0.0.1",
+            "options": [
+                "127.0.0.1",
+                "192.168.1.175"
+            ]
         }
     ]
 }

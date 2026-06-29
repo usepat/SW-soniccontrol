@@ -3,8 +3,15 @@
     "tasks": [
         {   
             "label": "Install editable build",
-            "type": "shell",
-            "command": "pip install -e '${workspaceFolder}'",
+            "type": "process",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "pip",
+                "install",
+                "-e",
+                "${workspaceFolder}"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -20,14 +27,14 @@
             "label": "Build SonicControl with PyInstaller",
             "type": "shell",
             "linux": { 
-                "command": "${workspaceFolder}/scripts/create_exe.sh" 
+                "command": "bash '${workspaceFolder}/scripts/create_exe.sh'" 
             },
             "windows": {
-                "command": "${workspaceFolder}/scripts/create_exe.bat"
+                "command": "${workspaceFolder}/scripts/create_exe.bat",
+                "args": [
+                    "${workspaceFolder}"
+                ]
             },
-            "args": [
-                "${workspaceFolder}"
-            ],
             "dependsOn":[
                 "Install editable build"
             ],
@@ -44,10 +51,12 @@
         }, 
         {
             "label": "Run unit tests of current file",
-            "type": "shell",
-            "command": "pytest",
+            "type": "process",
+            "command": "${command:python.interpreterPath}",
             "args": [
-                "'${relativeFile}'"
+                "-m",
+                "pytest",
+                "${relativeFile}"
             ],
             "group": {
                 "kind": "test",
@@ -58,6 +67,46 @@
                 "reveal": "always",
                 "focus": true,
                 "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Build AppImage for linux",
+            "type": "shell",
+            "linux": { 
+                "command": "bash '${workspaceFolder}/scripts/linux_deployment/create_app_image.sh'" 
+            },
+            "dependsOn":[
+                "Install editable build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Install plugins",
+            "type": "shell",
+            "linux": { 
+                "command": "bash '${workspaceFolder}/scripts/install_plugins.sh'" 
+            },
+            "dependsOn":[
+                "Install editable build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
             }
         },
         {
@@ -76,6 +125,39 @@
                 "focus": true,
                 "panel": "dedicated"
             }
+        },
+        {
+            "label": "Integration Tests: simulation_worker",
+            "type": "process",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "pytest",
+                "tests/integration_tests/test_remote",
+                "--profile=simulation_worker"
+            ],
+            "group": "test"
+        },
+        {
+            "label": "Integration Tests: device_worker",
+            "type": "process",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "pytest",
+                "tests/integration_tests/test_remote",
+                "--profile=device_worker",
+                "--serial-port=/dev/${input:serialPort}"
+            ],
+            "group": "test"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "serialPort",
+            "type": "promptString",
+            "description": "TTY device name to use for device_worker tests",
+            "default": "ttyUSB0"
         }
     ]
 }

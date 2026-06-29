@@ -6,7 +6,7 @@ from typing import Final, List, Optional
 import attrs
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.schema import CommandContract, Protocol
-from soniccontrol.communication.connection import Connection, SerialConnection
+from soniccontrol.fw_device.connection import Connection, SerialConnection
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol
 from soniccontrol.app_config import ENCODING
@@ -38,23 +38,18 @@ class LegacyCommunicator(Communicator):
         self._send_lock = asyncio.Lock()
         super().__init__()
 
-
-    @property
-    def protocol(self) -> CommunicationProtocol: 
-        return SonicMessageProtocol()
-
     @property
     def connection_opened(self) -> asyncio.Event:
         return self._connection_opened
     
     async def open_communication(
-        self, connection: Connection,
-        baudrate = 115200
+        self, connection: Connection
     ) -> None:
         self._connection = connection
         self._logger.info("try open communication")
+        
         if isinstance(connection, SerialConnection):
-            connection.baudrate = baudrate
+            connection.baudrate = 9600
 
         self._restart = False 
         self._reader, self._writer = await self._connection.open_connection()
@@ -199,6 +194,8 @@ class LegacyCommunicator(Communicator):
         return await self._messages.get()
 
     async def close_communication(self, restart : bool = False) -> None:
+        assert self._connection, "Connection was not set"
+       
         self._serial_master_task.cancel()
         try:
             await self._serial_master_task
@@ -212,10 +209,6 @@ class LegacyCommunicator(Communicator):
         self._logger.info("Disconnected from device")
         if not(self._restart):
             self.emit(Event(Communicator.DISCONNECTED_EVENT))
-
-    async def change_baudrate(self, baudrate: int) -> None:
-        await self.close_communication(restart=True)
-        await self.open_communication(self._connection, baudrate)
 
 
 
