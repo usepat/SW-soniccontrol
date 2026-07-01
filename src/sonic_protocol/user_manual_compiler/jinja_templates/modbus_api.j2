@@ -142,28 +142,28 @@
 
 {% macro memory_layout_table(content) %}
     <div class="overflow-x-auto my-2">
-    <table class="manual-table w-full min-w-[1500px] text-sm border-collapse table-fixed [&_th]:px-3 [&_td]:px-3">
+    <table class="manual-table w-full min-w-[980px] text-sm border-collapse table-fixed [&_th]:px-3 [&_td]:px-3">
         <colgroup>
-            <col class="w-[24%]" />
-            <col class="w-[18%]" />
+            <col class="w-[22%]" />
+            <col class="w-[16%]" />
             <col class="w-[10%]" />
-            <col class="w-[24%]" />
-            <col class="w-[24%]" />
+            <col class="w-[26%]" />
+            <col class="w-[26%]" />
         </colgroup>
         <thead>
             {% set th_class = "text-left py-2" %}
             <tr>
                 <th class="{{th_class}}">Name</th>
                 <th class="{{th_class}}">Type</th>
-                <th class="{{th_class}}">Register Address</th>
-                <th class="{{th_class}}" colspan="2">Register Data</th>
+                <th class="{{th_class}}">Register</th>
+                <th class="{{th_class}}" colspan="2">Register contents</th>
             </tr>
             <tr>
                 <th class="{{th_class}}"></th>
                 <th class="{{th_class}}"></th>
                 <th class="{{th_class}}"></th>
-                <th class="{{th_class}}">High Byte</th>
-                <th class="{{th_class}}">Low Byte</th>
+                <th class="{{th_class}}">High byte</th>
+                <th class="{{th_class}}">Low byte</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -188,11 +188,19 @@
         <td>Execute flag (set to 1)</td>
     </tr>
     <tr class="border-t border-slate-100">
+        {% if is_postman_device %}
         <td>Transceiver Id</td>
+        {% else %}
+        <td>Reserved</td>
+        {% endif %}
         <td>uint8</td>
         <td>{{ start_address + 1 }}</td>
         <td>0x00</td>
-        <td>Only used for postman</td>
+        {% if is_postman_device %}
+        <td>Used to select the downstream target device</td>
+        {% else %}
+        <td>Reserved</td>
+        {% endif %}
     </tr>
     {% else %}
     {% set answer_length = namespace(words=1, has_variable_length=false) %}
@@ -202,8 +210,10 @@
             {% set answer_length.words = answer_length.words + 1 %}
         {% elif field_type == np.uint16 or field_type == np.int16 %}
             {% set answer_length.words = answer_length.words + 1 %}
-        {% elif field_type == np.uint32 or field_type == int or field_type == float or field_type == Timestamp %}
+        {% elif field_type == np.uint32 or field_type == int or field_type == float %}
             {% set answer_length.words = answer_length.words + 2 %}
+        {% elif field_type == Timestamp %}
+            {% set answer_length.words = answer_length.words + 4 %}
         {% elif field_type == Version %}
             {% set answer_length.words = answer_length.words + 3 %}
         {% elif field_type == str %}

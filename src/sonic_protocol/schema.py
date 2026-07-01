@@ -492,6 +492,7 @@ class CommandContract:
     command_def: Union[None, CommandDef] = attrs.field()
     answer_def: AnswerDef = attrs.field()
     is_release: bool = attrs.field(default=False) #! some commands are only for debugging. They should not be included in release
+    is_admin_command: bool = attrs.field(default=False)
     tags: List[str] = attrs.field(default=[]) #! tags are used to group commands and to filter them
     group_id: GroupId = attrs.field(default=GROUPS.misc)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())

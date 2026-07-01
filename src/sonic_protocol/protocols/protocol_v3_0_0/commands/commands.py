@@ -187,6 +187,7 @@ get_num_tests = CommandContract(
         [f.count_field]
     ),
     is_release=True,
+    is_admin_command=True,
     user_manual_attrs=UserManualAttrs(description="Retrieves the number of available tests."),
     group_id=GROUPS.testing,
     tags=["testing"]
@@ -203,6 +204,7 @@ get_test_info = CommandContract(
         f.test_suite_name_field
     ]),
     is_release=True,
+    is_admin_command=True,
     user_manual_attrs=UserManualAttrs(description="Retrieves test metadata (name and suite) for the specified test index."),
     group_id=GROUPS.testing,
     tags=["testing"]
@@ -222,6 +224,7 @@ run_test = CommandContract(
         AnswerFieldDef(EFieldName.MESSAGE, FieldType(str)),
     ]),
     is_release=True,
+    is_admin_command=True,
     user_manual_attrs=UserManualAttrs(description="Runs the specified test."),
     group_id=GROUPS.testing,
     tags=["testing"]
@@ -236,6 +239,7 @@ abort_test = CommandContract(
         AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
     ]),
     is_release=True,
+    is_admin_command=True,
     user_manual_attrs=UserManualAttrs(description="Aborts the currently running test."),
     group_id=GROUPS.testing,
     tags=["testing"]
@@ -252,6 +256,7 @@ get_test_validation_arg = CommandContract(
         AnswerFieldDef(EFieldName.VALUE, FieldType(float)),
     ]),
     is_release=True,
+    is_admin_command=True,
     user_manual_attrs=UserManualAttrs(description="Fetches an argument needed for user validation"),
     group_id=GROUPS.testing,
     tags=["testing"]
@@ -267,6 +272,7 @@ start_diagnostic_tool = CommandContract(
         AnswerFieldDef(EFieldName.SUCCESS, FieldType(str))
     ]),
     is_release=True,
+    is_admin_command=True,
     user_manual_attrs=UserManualAttrs(description="Starts the diagnostic tool on the device."),
     group_id=GROUPS.generic,
     tags=["testing", "diagnosis", "debugging"]
@@ -450,6 +456,7 @@ get_num_allocators = CommandContract(
     ),
     is_release=False,
     group_id=GROUPS.logging,
+    is_admin_command=True,
     tags=["log", "performance"]
 )
 
@@ -474,6 +481,7 @@ get_allocator_stats = CommandContract(
         description="Retrieves the allocator stats (size, num_allocations, usage, wasted) for a given allocator."
     ),
     is_release=False,
+    is_admin_command=True,
     group_id=GROUPS.logging,
     tags=["log", "performance"]
 )
@@ -497,6 +505,7 @@ get_stack_usage = CommandContract(
         description="Retrieves usage stats for the stack of core0"
     ),
     is_release=False,
+    is_admin_command=True,
     group_id=GROUPS.logging,
     tags=["log", "performance"]
 )
@@ -513,6 +522,7 @@ get_alloc_histogram_num_bins = CommandContract(
         description="Retrieves the number of bins in the allocation histogram"
     ),
     is_release=False,
+    is_admin_command=True,
     group_id=GROUPS.logging,
     tags=["log", "performance"]
 )
@@ -529,6 +539,7 @@ get_alloc_histogram_bin = CommandContract(
         AnswerFieldDef(EFieldName.SIZE, FieldType(field_type=np.uint32), UserManualAttrs("the length of the bin")),
     ]),
     is_release=False,
+    is_admin_command=True,
     group_id=GROUPS.logging,
     tags=["log", "performance"]
 )

@@ -63,7 +63,7 @@ class DeviceWindowManager:
             DeviceWindow.CLOSE_EVENT, lambda _: self._opened_device_windows.pop(device_window_id) #type: ignore
         )
         device_window.subscribe(
-            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_reconnect_callback(connection, is_legacy_device, build_configurator)) #type: ignore
+            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_reconnect_callback(connection, is_legacy_device)) #type: ignore
         ) 
         device_window.view.root.update_idletasks()
         await device_window.wait_finished_loading()  
