@@ -266,7 +266,7 @@ def main():
     targets = (("text", "manual_text"), ("modbus", "manual_modbus"), ("both", "manual"))
     for mode, basename in targets:
         manual = manual_compiler.compile_manual_for_specific_device(
-            DeviceType.MVP_WORKER,
+            DeviceType.DESCALE,
             Version(3, 0, 0),
             True,
             mode=mode,

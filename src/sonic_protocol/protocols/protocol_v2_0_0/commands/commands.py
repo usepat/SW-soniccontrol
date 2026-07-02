@@ -205,7 +205,7 @@ set_dac = CommandContract(
     user_manual_attrs=UserManualAttrs(
         description="Sets the DAC voltage."
     ),
-    is_release=True,
+    is_release=False,
     group_id=GROUPS.transducer,
     tags=["DAC"]
 )
@@ -223,7 +223,7 @@ get_dac = CommandContract(
     user_manual_attrs=UserManualAttrs(
         description="Retrieves the currently configured DAC voltage."
     ),
-    is_release=True,
+    is_release=False,
     group_id=GROUPS.transducer,
     tags=["DAC"]
 )

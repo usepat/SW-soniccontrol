@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional
 from async_tkinter_loop import async_handler
@@ -185,6 +186,19 @@ class DeviceWindowManager:
 
 
 class ConnectionWindow(TopLevelWindow):
+    @staticmethod
+    def _create_window_opened_future() -> asyncio.Future[DeviceWindow]:
+        future = asyncio.get_event_loop().create_future()
+
+        def _consume_exception(done_future: asyncio.Future[DeviceWindow]) -> None:
+            if done_future.cancelled():
+                return
+            with contextlib.suppress(Exception):
+                done_future.exception()
+
+        future.add_done_callback(_consume_exception)
+        return future
+
     def __init__(self, simulation_exe_path: Optional[Path] = None):        
         show_simulation_button = simulation_exe_path is not None or APP_CONFIG.remote_server_url is not None
         self._view: ConnectionWindowView = ConnectionWindowView(show_simulation_button)
@@ -214,23 +228,29 @@ class ConnectionWindow(TopLevelWindow):
         def decorate_connection_func(connection_func: Callable[[Connection, bool, bool], Coroutine[Any, Any, Any]]):
             # the wrapper is responsible for setting the future and is_connecting variable, as well as handling errors
             async def _wrapper(_connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
+                window_opened_future = self._create_window_opened_future()
+                self._window_opened_future = window_opened_future
+
                 try:
                     window = await connection_func(_connection, is_legacy_device, build_configurator)
                 except asyncio.CancelledError as e:
-                    self._window_opened_future.set_exception(e)
+                    if not window_opened_future.done():
+                        window_opened_future.set_exception(e)
                     raise
                 except Exception as e:
                     MessageBox.show_error(self.view.root, str(e))
-                    self._window_opened_future.set_exception(e)
+                    if not window_opened_future.done():
+                        window_opened_future.set_exception(e)
                 else:
-                    self._window_opened_future.set_result(window)
+                    if not window_opened_future.done():
+                        window_opened_future.set_result(window)
                 finally:
                     self._is_connecting = False
             # the decorator is responsible for the controlling the loading animation
             return animation_decorator(_wrapper)
 
         self._is_connecting = False
-        self._window_opened_future: asyncio.Future[DeviceWindow] = asyncio.Future() 
+        self._window_opened_future = self._create_window_opened_future()
         self._attempt_connection = decorate_connection_func(self._device_window_manager.attempt_connection)
         self._attempt_reconnection = decorate_connection_func(self._device_window_manager.attempt_reconnection)
         self._device_window_manager.set_attempt_reconnect_callback(self._attempt_reconnection)
@@ -257,10 +277,9 @@ class ConnectionWindow(TopLevelWindow):
         self._loaded_ports.set()
 
     async def wait_until_window_loaded(self):
-        await self._window_opened_future
-        result = self._window_opened_future.result()
-        self._window_opened_future = asyncio.Future()
-        return result
+        window_opened_future = self._window_opened_future
+        await window_opened_future
+        return window_opened_future.result()
 
 
     @async_handler
