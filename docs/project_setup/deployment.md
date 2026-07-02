@@ -54,6 +54,7 @@ After that we need to create an installer.
 For this we use [Inno Installer](https://jrsoftware.org/isinfo.php).
 Inno Installer takes a configuration \*.iss-file as input where various stuff is defined as what icon to use, in which directory to install stuff, etc.
 Note that Inno Installer does not work on linux, so this step has to be done on windows or on a virtual machine. 
+If the generated binaries should be trusted by Windows, add a signing step after packaging. The recommended flow is described on the [code signing page](@ref CodeSigning).
 
 For on how to use continuous deployment, check out this [page](@ref CIandCD)
 
