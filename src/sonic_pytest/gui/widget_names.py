@@ -36,6 +36,7 @@ WORKER_CONNECTION_STATUS = "status_bar.worker_connection_label"
 
 # Connection constants
 CONNECTION_PORTS_COMBOBOX = 'connection.ports_combobox'
+CONNECTION_MODE_COMBOBOX = 'connection.connection_mode_combobox'
 CONNECTION_CONNECT_VIA_URL_BUTTON = 'connection.connect_via_url_button'
 CONNECTION_CONNECT_TO_SIMULATION_BUTTON = 'connection.connect_to_simulation_button'
 CONNECTION_SIMULATION_CMD_ARGS = 'connection.simulation_cmd_args'

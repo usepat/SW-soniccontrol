@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+from enum import Enum
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional
 from async_tkinter_loop import async_handler
@@ -17,7 +18,6 @@ from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotCom
 from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import View
-from soniccontrol.builder import DeviceBuilder
 from soniccontrol.fw_device.connection import CLIConnection, Connection, ModbusConnection
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logger.utils import create_logger_for_connection
@@ -30,12 +30,32 @@ from soniccontrol_gui.resources import images
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
+from soniccontrol.builder import DeviceBuilder, StartupMode
+
+
+class ConnectionMode(Enum):
+    DEFAULT = "default"
+    LEGACY_CRYSTAL = "legacy_crystal"
+    CONFIGURATOR = "configurator"
+    DIAGNOSTICS_TOOL = "diagnostics_tool"
+
+
+CONNECTION_MODE_LABELS = {
+    ConnectionMode.DEFAULT: ui_labels.CONNECTION_MODE_DEFAULT_LABEL,
+    ConnectionMode.LEGACY_CRYSTAL: ui_labels.IS_LEGACY_DEVICE_LABEL,
+    ConnectionMode.CONFIGURATOR: ui_labels.CONNECTION_MODE_CONFIGURATOR_LABEL,
+    ConnectionMode.DIAGNOSTICS_TOOL: ui_labels.CONNECTION_MODE_DIAGNOSTICS_TOOL_LABEL,
+}
+
+CONNECTION_MODE_BY_LABEL = {
+    label: mode for mode, label in CONNECTION_MODE_LABELS.items()
+}
 
 class DeviceConnectionClass:
-    def __init__(self, device_window : DeviceWindow, connection : Connection, build_configurator: bool = False):
+    def __init__(self, device_window : DeviceWindow, connection : Connection, startup_mode: StartupMode = StartupMode.DEFAULT):
         self._device_window = device_window
         self._connection = connection
-        self._build_configurator = build_configurator
+        self._startup_mode = startup_mode
 
 
 class DeviceWindowManager:
@@ -55,16 +75,16 @@ class DeviceWindowManager:
         
         return device_window
     
-    async def _open_device_window(self, device_window: DeviceWindow, connection : Connection, is_legacy_device: bool = False, build_configurator: bool = False):
+    async def _open_device_window(self, device_window: DeviceWindow, connection : Connection, is_legacy_device: bool = False, startup_mode: StartupMode = StartupMode.DEFAULT):
         device_window._view.focus_set()  # grab focus and bring window to front
         self._id_device_window_counter += 1
         device_window_id = self._id_device_window_counter
-        self._opened_device_windows[device_window_id] = DeviceConnectionClass(device_window, connection, build_configurator)
+        self._opened_device_windows[device_window_id] = DeviceConnectionClass(device_window, connection, startup_mode)
         device_window.subscribe(
             DeviceWindow.CLOSE_EVENT, lambda _: self._opened_device_windows.pop(device_window_id) #type: ignore
         )
         device_window.subscribe(
-            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_reconnect_callback(connection, is_legacy_device)) #type: ignore
+            DeviceWindow.RECONNECT_EVENT, lambda _: asyncio.create_task(self._attempt_reconnect_callback(connection, is_legacy_device, startup_mode)) #type: ignore
         ) 
         device_window.view.root.update_idletasks()
         await device_window.wait_finished_loading()  
@@ -74,16 +94,16 @@ class DeviceWindowManager:
         return device_window
         
 
-    async def attempt_reconnection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False) -> DeviceWindow:
+    async def attempt_reconnection(self, connection: Connection, is_legacy_device: bool = False, startup_mode: StartupMode = StartupMode.DEFAULT) -> DeviceWindow:
         try:
             new_connection = await redetect_connection(connection)
         except asyncio.TimeoutError:
             raise ConnectionError("Could not reconnect to the device")
         else:
-            return await self.attempt_connection(new_connection, is_legacy_device, build_configurator)
+            return await self.attempt_connection(new_connection, is_legacy_device, startup_mode)
 
         
-    async def attempt_connection(self, connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False) -> DeviceWindow:
+    async def attempt_connection(self, connection: Connection, is_legacy_device: bool = False, startup_mode: StartupMode = StartupMode.DEFAULT) -> DeviceWindow:
         logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
         logger.debug("Established serial connection")
 
@@ -96,8 +116,10 @@ class DeviceWindowManager:
                 logger.debug("Build SonicDevice for device")
                 if is_legacy_device:
                     sonicamp = await device_builder.build_legacy_crystal(connection)
-                elif build_configurator and not isinstance(connection, (CLIConnection, ModbusConnection)):
+                elif startup_mode == StartupMode.CONFIGURATOR and not isinstance(connection, (CLIConnection, ModbusConnection)):
                     sonicamp = await device_builder.build_configurator(connection, try_deduce_protocol_used=True)
+                elif startup_mode == StartupMode.DIAGNOSTICS_TOOL and not isinstance(connection, (CLIConnection, ModbusConnection)):
+                    sonicamp = await device_builder.build_diagnostics_tool(connection, try_deduce_protocol_used=True)
                 elif isinstance(connection, ModbusConnection):
                     communicator = ModbusCommunicator(logger=logger) # type: ignore
                     await communicator.open_communication(connection)
@@ -152,7 +174,7 @@ class DeviceWindowManager:
             assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
 
             device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
-            window = await self._open_device_window(device_window, connection, is_legacy_device=is_legacy_device, build_configurator=build_configurator)
+            window = await self._open_device_window(device_window, connection, is_legacy_device=is_legacy_device, startup_mode=startup_mode)
         else:
             window = await self._open_rescue_window(sonicamp, connection)
         
@@ -225,14 +247,14 @@ class ConnectionWindow(TopLevelWindow):
         animation_decorator = load_animation(animation)
         self._device_window_manager = DeviceWindowManager(self._view)
         
-        def decorate_connection_func(connection_func: Callable[[Connection, bool, bool], Coroutine[Any, Any, Any]]):
+        def decorate_connection_func(connection_func: Callable[[Connection, bool, StartupMode], Coroutine[Any, Any, Any]]):
             # the wrapper is responsible for setting the future and is_connecting variable, as well as handling errors
-            async def _wrapper(_connection: Connection, is_legacy_device: bool = False, build_configurator: bool = False):
+            async def _wrapper(_connection: Connection, is_legacy_device: bool = False, startup_mode: StartupMode = StartupMode.DEFAULT):
                 window_opened_future = self._create_window_opened_future()
                 self._window_opened_future = window_opened_future
 
                 try:
-                    window = await connection_func(_connection, is_legacy_device, build_configurator)
+                    window = await connection_func(_connection, is_legacy_device, startup_mode)
                 except asyncio.CancelledError as e:
                     if not window_opened_future.done():
                         window_opened_future.set_exception(e)
@@ -301,7 +323,7 @@ class ConnectionWindow(TopLevelWindow):
         # force_remove_connection is only used for remote devices at the moment. But may change in the future
         connection = create_connection_to_device(dev_info, baudrate, force_remove_connection=self._on_connection_already_open, is_modbus=self._view.is_modbus_device)
         
-        await self._attempt_connection(connection, self._view.is_legacy_device, self._view.should_start_configurator)
+        await self._attempt_connection(connection, self._view.is_legacy_device, self._view.startup_mode)
 
     @async_handler 
     async def _on_connect_to_simulation(self):
@@ -312,8 +334,10 @@ class ConnectionWindow(TopLevelWindow):
         bin_file = self._simulation_exe_path 
         connection_name = "simulation"
         args: List[str] = []
-        if self._view.should_start_configurator:
+        if self._view.startup_mode == StartupMode.CONFIGURATOR:
             args.append("--start-configurator=true")
+        elif self._view.startup_mode == StartupMode.DIAGNOSTICS_TOOL:
+            args.append("--force-start-diagnostics-tool")
         if self._view.use_firmware_gui:
             args.append("--gui=true")
         if self._view.profile != "none":
@@ -329,7 +353,7 @@ class ConnectionWindow(TopLevelWindow):
                 connection_name, None, APP_CONFIG.remote_server_url, 
                 force_remove_connection=True, port="simulation", cmd_args=args)
         
-        await self._attempt_connection(connection)
+        await self._attempt_connection(connection, self._view.is_legacy_device, self._view.startup_mode)
 
 
     async def _on_connection_already_open(self) -> bool:
@@ -366,15 +390,15 @@ class ConnectionWindowView(ttk.Window, View):
             state=ttk.READONLY,
         )
         WidgetRegistry.register_widget(self._ports_menue, "ports_combobox", window_name)
-        self._is_legacy_device = tk.BooleanVar()
-        self._is_legacy_device_box = tk.Checkbutton(
+        self._connection_mode = tk.StringVar(self, CONNECTION_MODE_LABELS[ConnectionMode.DEFAULT])
+        self._connection_mode_menue = ttk.Combobox(
             self._url_connection_frame, 
-            text=ui_labels.IS_LEGACY_DEVICE_LABEL,
-            variable=self._is_legacy_device, 
-            onvalue=1, 
-            offvalue=0
+            textvariable=self._connection_mode,
+            style=ttk.DARK,
+            state=ttk.READONLY,
+            values=list(CONNECTION_MODE_BY_LABEL.keys()),
         )
-        WidgetRegistry.register_widget(self._is_legacy_device_box, "is_legacy_device_box", window_name)
+        WidgetRegistry.register_widget(self._connection_mode_menue, "connection_mode_combobox", window_name)
 
         self._is_modbus_device = tk.BooleanVar()
         self._is_modbus_device_box = tk.Checkbutton(
@@ -394,16 +418,6 @@ class ConnectionWindowView(ttk.Window, View):
         WidgetRegistry.register_widget(self._connect_via_url_button, "connect_via_url_button", window_name)
 
         self._simulation_frame: ttk.Frame = ttk.Frame(self)
-
-        self._should_start_configurator = tk.BooleanVar()
-        self._start_configurator_box = tk.Checkbutton(
-            self._url_connection_frame,
-            text=ui_labels.START_CONFIGURATOR,
-            variable=self._should_start_configurator,
-            onvalue=1,
-            offvalue=0
-        )
-        WidgetRegistry.register_widget(self._start_configurator_box, "start_configurator_box", window_name)
 
         self._connect_to_simulation_button: ttk.Button = ttk.Button(
             self._simulation_frame,
@@ -451,9 +465,8 @@ class ConnectionWindowView(ttk.Window, View):
         )
         self._refresh_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._connect_via_url_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
-        self._is_legacy_device_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
+        self._connection_mode_menue.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._is_modbus_device_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
-        self._start_configurator_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         if show_simulation_button:
             self._simulation_frame.pack(side=ttk.BOTTOM, fill=ttk.X, padx=sizes.SMALL_PADDING, pady=sizes.MEDIUM_PADDING)
             self._connect_to_simulation_button.pack(side=ttk.LEFT, fill=ttk.X, expand=True, padx=sizes.SMALL_PADDING)
@@ -485,15 +498,23 @@ class ConnectionWindowView(ttk.Window, View):
     
     @property
     def is_legacy_device(self) -> bool:
-        return self._is_legacy_device.get()
+        return self.connection_mode == ConnectionMode.LEGACY_CRYSTAL
     
     @property
     def is_modbus_device(self) -> bool:
         return self._is_modbus_device.get()
     
     @property
-    def should_start_configurator(self) -> bool:
-        return self._should_start_configurator.get()
+    def connection_mode(self) -> ConnectionMode:
+        return CONNECTION_MODE_BY_LABEL[self._connection_mode.get()]
+
+    @property
+    def startup_mode(self) -> StartupMode:
+        if self.connection_mode == ConnectionMode.CONFIGURATOR:
+            return StartupMode.CONFIGURATOR
+        if self.connection_mode == ConnectionMode.DIAGNOSTICS_TOOL:
+            return StartupMode.DIAGNOSTICS_TOOL
+        return StartupMode.DEFAULT
     
     @property
     def use_firmware_gui(self) -> bool:

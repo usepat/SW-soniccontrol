@@ -1,4 +1,5 @@
 import asyncio
+from enum import Enum
 import logging
 from typing import Any, Dict
 
@@ -15,8 +16,14 @@ from soniccontrol.sonic_device import FirmwareInfo, SonicDevice
 import sonic_protocol.python_parser.commands as cmds
 
 
+class StartupMode(Enum):
+    DEFAULT = "default"
+    CONFIGURATOR = "configurator"
+    DIAGNOSTICS_TOOL = "diagnostics_tool"
+
+
 class DeviceBuilder:
-    CONFIGURATOR_RESTART_DELAY_S = 1.0
+    RESTART_DELAY_S = 1.0
     _EXPECTED_CONFIGURATOR_DISCONNECT_MESSAGES = (
         "returned no data",
         "connection was closed",
@@ -139,31 +146,55 @@ class DeviceBuilder:
 
         return device
 
-
-    async def build_configurator(self, connection: Connection, try_deduce_protocol_used: bool = True) -> SonicDevice:
+    async def _build_started_app(
+        self,
+        connection: Connection,
+        expected_device_type: DeviceType,
+        start_command: cmds.Command,
+        unsupported_command_name: str,
+        try_deduce_protocol_used: bool = True,
+    ) -> SonicDevice:
         communicator = SerialCommunicator(logger=self._logger) # type: ignore
         await communicator.open_communication(connection)
 
         device = await self.build_amp(communicator, try_deduce_protocol_used=try_deduce_protocol_used)
-        if device.info.device_type == DeviceType.CONFIGURATOR:
+        if device.info.device_type == expected_device_type:
             return device
 
-        start_configurator_command = cmds.StartConfigurator("secure_password")
-        if not device.has_command(start_configurator_command):
-            raise ConnectionError("Device does not support start_configurator")
+        if not device.has_command(start_command):
+            raise ConnectionError(f"Device does not support {unsupported_command_name}")
 
-        answer = await device.execute_command(start_configurator_command, raise_exception=False)
+        answer = await device.execute_command(start_command, raise_exception=False)
         if answer.is_error_msg:
             raise ConnectionError(answer.message)
         if not answer.valid and not self._is_expected_configurator_disconnect(answer.message):
             raise ConnectionError(answer.message)
 
         await device.disconnect()
-        await asyncio.sleep(self.CONFIGURATOR_RESTART_DELAY_S)
+        await asyncio.sleep(self.RESTART_DELAY_S)
 
         communicator = SerialCommunicator(logger=self._logger) # type: ignore
         await communicator.open_communication(connection)
         return await self.build_amp(communicator, try_deduce_protocol_used=try_deduce_protocol_used)
+
+
+    async def build_configurator(self, connection: Connection, try_deduce_protocol_used: bool = True) -> SonicDevice:
+        return await self._build_started_app(
+            connection,
+            DeviceType.CONFIGURATOR,
+            cmds.StartConfigurator("secure_password"),
+            "start_configurator",
+            try_deduce_protocol_used=try_deduce_protocol_used,
+        )
+
+    async def build_diagnostics_tool(self, connection: Connection, try_deduce_protocol_used: bool = True) -> SonicDevice:
+        return await self._build_started_app(
+            connection,
+            DeviceType.DIAGNOSTICS_TOOL,
+            cmds.StartDiagnosticsTool(),
+            "start_diagnostic_tool",
+            try_deduce_protocol_used=try_deduce_protocol_used,
+        )
 
 
     def _is_expected_configurator_disconnect(self, message: str) -> bool:
