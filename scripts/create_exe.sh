@@ -33,7 +33,7 @@ PYINSTALLER_ARGS=(
 
 # Add all extra arguments to the PyInstaller command
 PYINSTALLER_ARGS+=("${EXTRA_ARGS[@]}")
-PYINSTALLER_ARGS+=("${WORKSPACE_DIR}/src/soniccontrol_gui/__main__.py")
+PYINSTALLER_ARGS+=("${WORKSPACE_DIR}/src/soniccontrol_gui/build_main.py")
 
 echo "PyInstaller will be called with the following arguments:"
 printf '%q ' "${PYINSTALLER_ARGS[@]}"

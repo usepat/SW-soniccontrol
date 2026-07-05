@@ -109,6 +109,9 @@ style: Final[_Style] = _Style()
 
 @attrs.frozen
 class _UIStringsEN:
+    CONNECTION_MODE_DEFAULT_LABEL: Final[str] = "Default"
+    CONNECTION_MODE_CONFIGURATOR_LABEL: Final[str] = "Configurator"
+    CONNECTION_MODE_DIAGNOSTICS_TOOL_LABEL: Final[str] = "Diagnostics Tool"
     CONFIGURATION_TAB: Final[str] = "Configuration"
     UPDATER_INTERVAL_LABEL: Final[str] = "Updater Interval (ms):"
     IS_LEGACY_DEVICE_LABEL: Final[str] = "SonicCrystal"
