@@ -1,55 +1,66 @@
 {% import "modbus_api.j2" as modbus %}
 
 
+{% macro type_label(field_type) %}
+    {% if field_type.converter_ref == ConverterType.ENUM %}
+        enum {{ field_type.field_type.__name__ }}
+    {% elif field_type.converter_ref != ConverterType.PRIMITIVE %}
+        struct {{ field_type.field_type.__name__ }}
+    {% else %}
+        {{ field_type.field_type.__name__ }}
+    {% endif %}
+{% endmacro %}
+
+
+{% macro unit_label(field_type) %}
+    {% set unit_prefix = field_type.si_prefix.value if field_type.si_prefix is not none else "" %}
+    {% set si_unit = field_type.si_unit.value if field_type.si_unit is not none else "" %}
+    {% set unit = unit_prefix ~ si_unit %}
+    {{ unit if unit != "" else "-" }}
+{% endmacro %}
+
+
+{% macro constraints_label(field_type) %}
+    {% set has_min_value = field_type.min_value is not none %}
+    {% set has_max_value = field_type.max_value is not none %}
+    {% set ns = namespace(parts=[]) %}
+    {% if has_min_value and has_max_value %}
+        {% set min_label = format_constraint_value(field_type.min_value, protocol_consts) %}
+        {% set max_label = format_constraint_value(field_type.max_value, protocol_consts) %}
+        {% set ns.parts = ns.parts + ["Range: " ~ min_label ~ " to " ~ max_label] %}
+    {% elif has_min_value %}
+        {% set min_label = format_constraint_value(field_type.min_value, protocol_consts) %}
+        {% set ns.parts = ns.parts + ["Minimum: " ~ min_label] %}
+    {% elif has_max_value %}
+        {% set max_label = format_constraint_value(field_type.max_value, protocol_consts) %}
+        {% set ns.parts = ns.parts + ["Maximum: " ~ max_label] %}
+    {% endif %}
+    {% if field_type.allowed_values is not none %}
+        {% set ns.parts = ns.parts + ["Allowed: " ~ (field_type.allowed_values | join(", "))] %}
+    {% endif %}
+    {{ ns.parts | join("; ") if ns.parts else "-" }}
+{% endmacro %}
+
+
 {% macro field_entry(field_name, field_type, description) %}
-    <div class="bg-white border border-slate-200 rounded-none p-4 mb-4 field-entry-card">
-        <div class="text-sm font-semibold text-slate-800 mb-1">{{ field_name.name }}</div>
-
-        <p class="text-sm text-slate-600 mb-1">Type:
-            <b class="text-slate-800">
-            {% if field_type.converter_ref == ConverterType.ENUM %}
-                enum
-            {% elif field_type.converter_ref != ConverterType.PRIMITIVE %}
-                struct
-            {% endif %}
-            {{ field_type.field_type.__name__ }}
-            </b>
-        </p>
-
-        {% set unit_prefix = field_type.si_prefix.value if field_type.si_prefix is not none else "" %}
-        {% set si_unit = field_type.si_unit.value if field_type.si_unit is not none else "" %}
-        {% set unit = unit_prefix ~ si_unit %}
-        {% if unit != "" %}
-            <p class="text-sm text-slate-600 mb-2">Unit: <b class="text-slate-800">{{ unit }}</b></p>
-        {% endif %}
-        
-        <div class="text-sm text-slate-600 mb-2">
-            {% set has_min_value = field_type.min_value is not none %}
-            {% set has_max_value = field_type.max_value is not none %}
-            {% set has_constraints = has_min_value or has_max_value or field_type.allowed_values is not none %}
-
-            {% if has_constraints %}
-                <div class="mb-2 font-medium text-slate-700">Allowed values:</div>
-
-                {% if has_max_value or field_type.max_value is not none %}
-                    <div class="mb-1">
-                        Range:
-                        <span class="font-mono text-slate-800">{{ protocol_constants[field_type.min_value.value] if has_min_value else "[type-dependent minimum]" }}</span>
-                        to <span class="font-mono text-slate-800">{{ protocol_constants[field_type.max_value.value] if has_max_value else "[type-dependent maximum]" }}</span>
-                    </div>
-                {% endif %}
-                {% if field_type.allowed_values is not none %}
-                    <ul class="list-disc pl-6">
-                        {% for value in field_type.allowed_values %}
-                            <li class="text-sm">{{ value }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-            {% endif %}
-        </div>
-
+    <div class="manual-field-card">
+        <div class="manual-field-card-title">{{ field_name.name }}</div>
+        <dl class="manual-field-card-grid">
+            <div>
+                <dt>Type</dt>
+                <dd>{{ type_label(field_type) }}</dd>
+            </div>
+            <div>
+                <dt>Unit</dt>
+                <dd>{{ unit_label(field_type) }}</dd>
+            </div>
+            <div class="manual-field-card-wide">
+                <dt>Allowed values</dt>
+                <dd>{{ constraints_label(field_type) }}</dd>
+            </div>
+        </dl>
         {% if description is not none %}
-            <p class="text-sm text-slate-600 mt-2">{{ description }}</p>
+            <p class="manual-field-card-description">{{ description }}</p>
         {% endif %}
     </div>
 {% endmacro %}
@@ -65,14 +76,116 @@
 
 
 {% macro command_code_headline(command_code) %}
-    <div class="text-base font-semibold text-slate-800 mb-3 flex items-center gap-3">
-        <span class="inline-flex font-mono text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">{{ command_code.value }}</span>
-        <span>- {{ command_code.name }}</span>
+    <div class="manual-command-code mb-3 flex items-center gap-3">
+        <span class="manual-command-code-badge">{{ command_code.value }}</span>
+        <span class="manual-command-code-name">{{ command_code.name }}</span>
+    </div>
+{% endmacro %}
+
+
+{% macro field_table(fields, kind) %}
+    <div class="overflow-x-auto my-3">
+        <table class="manual-table w-full text-sm border-collapse table-fixed">
+            <colgroup>
+                <col class="w-[7%]" />
+                <col class="w-[19%]" />
+                <col class="w-[17%]" />
+                <col class="w-[10%]" />
+                <col class="w-[20%]" />
+                <col class="w-[27%]" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="text-left px-3 py-2">#</th>
+                    <th class="text-left px-3 py-2">{{ "Parameter" if kind == "parameter" else "Field" }}</th>
+                    <th class="text-left px-3 py-2">Type</th>
+                    <th class="text-left px-3 py-2">Unit</th>
+                    <th class="text-left px-3 py-2">Allowed values</th>
+                    <th class="text-left px-3 py-2">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for field_def in fields %}
+                    {% if kind == "parameter" %}
+                        {% set field_name = field_def.name %}
+                        {% set type_def = field_def.param_type %}
+                        {% set description = field_def.user_manual_attrs.description %}
+                    {% else %}
+                        {% set field_name = field_def.field_name %}
+                        {% set type_def = field_def.field_type %}
+                        {% set description = field_def.user_manual_attrs.description %}
+                    {% endif %}
+                    <tr>
+                        <td class="px-3 py-2 font-mono text-slate-500">{{ loop.index }}</td>
+                        <td class="px-3 py-2 font-semibold text-slate-800">{{ field_name.name }}</td>
+                        <td class="px-3 py-2">{{ type_label(type_def) }}</td>
+                        <td class="px-3 py-2">{{ unit_label(type_def) }}</td>
+                        <td class="px-3 py-2">{{ constraints_label(type_def) }}</td>
+                        <td class="px-3 py-2">{{ description if description is not none and description|trim != "" else "-" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endmacro %}
+
+
+{% macro text_api_summary(command_contract) %}
+    <div class="overflow-x-auto my-3">
+        <table class="manual-table w-full text-sm border-collapse table-fixed">
+            <colgroup>
+                <col class="w-[24%]" />
+                <col class="w-[76%]" />
+            </colgroup>
+            <tbody>
+                {% if command_contract.command_def is not none %}
+                    {% set raw_identifiers = command_contract.command_def.sonic_text_attrs.string_identifier %}
+                    {% set identifiers = raw_identifiers if raw_identifiers is sequence and raw_identifiers is not string else [raw_identifiers] %}
+                    {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] | select | list %}
+                    {% set has_command_parameters = command_parameters | count != 0 %}
+                    <tr>
+                        <th class="text-left px-3 py-2 align-top">
+                            {% if not has_command_parameters %}
+                                Command
+                            {% else %}
+                                Command identifiers
+                            {% endif %}
+                        </th>
+                        <td class="px-3 py-2">
+                            {% if not has_command_parameters %}
+                                {% for identifier in identifiers %}
+                                    <span class="manual-chip">{{ identifier }}</span>
+                                {% endfor %}
+                            {% else %}
+                                {% for identifier in identifiers %}
+                                    <span class="manual-chip">{{ identifier }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% set text_example = deduce_single_command_example_for_contract(protocol_consts, command_contract) %}
+                    {% if has_command_parameters and text_example is not none and text_example|trim != "" %}
+                    <tr>
+                        <th class="text-left px-3 py-2 align-top">Example command</th>
+                        <td class="px-3 py-2"><code>{{ text_example | e }}</code></td>
+                    </tr>
+                    {% endif %}
+                {% endif %}
+                {% set answer_example = deduce_answer_command_example_for_contract(protocol_consts, command_contract) %}
+                {% if answer_example is not none and answer_example|trim != "" %}
+                <tr>
+                    <th class="text-left px-3 py-2 align-top">Example response</th>
+                    <td class="px-3 py-2"><code>{{ answer_example | e }}</code></td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
     </div>
 {% endmacro %}
 
 {% macro command_contract_entry(command_contract, show_header=True) %}
-    <article class="bg-white border border-slate-200 rounded-none p-4 shadow-none mb-6">
+    {% set is_notification = command_contract.command_def is none and command_contract.code.value < 20000 %}
+    <article class="manual-command-card bg-white border border-slate-200 rounded-none p-5 shadow-none mb-6">
         <div class="command-header-block avoid-break">
             {% if show_header %}
                 {{ command_code_headline(command_contract.code) }}
@@ -84,75 +197,50 @@
             {% endif %}
             
             {% if command_contract.tags|count != 0 %}
-                <div class="mt-2 flex items-center gap-3">
-                    <div class="text-sm text-slate-600 whitespace-nowrap">Tags:</div>
-                    <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                <div class="manual-tag-row mt-2 flex items-center gap-3">
+                    <div class="text-sm text-slate-600 whitespace-nowrap">Tags</div>
+                    <div class="flex flex-wrap gap-2 overflow-x-auto no-scrollbar py-1">
                         {% for tag in command_contract.tags %}
-                            <span class="whitespace-nowrap text-sm bg-white border border-slate-300 text-slate-700 px-3 py-1 rounded-none">{{ tag }}</span>
+                            <span class="manual-chip">{{ tag }}</span>
                         {% endfor %}
                     </div>
                 </div>
             {% endif %}
             
             {% if command_description is not none and command_description|trim != "" %}
-                <p class="text-sm text-slate-600 mb-3">{{ command_description }}</p>
+                <p class="manual-copy mb-3">{{ command_description }}</p>
             {% endif %}
         </div>
 
         {% if command_contract.command_def is not none %}
+            {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] | select | list %}
+            {% if command_parameters %}
             <div class="params-block avoid-break">
-                <div class="text-sm font-medium text-slate-800 mb-2">Parameters:</div>
-                {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] %}
-                {% if any(command_parameters) %}
-                    <ol class="list-decimal pl-6 mb-3 param-list">
-                    {% for command_param in command_parameters %}
-                        {% if command_param is not none %}
-                            <li class="mb-2 param-item avoid-break">
-                                {{ param_entry(command_param) }}
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-                    </ol>
-                {% else %}
-                    <p class="text-sm text-slate-600 mb-3">No parameters.</p>
-                {% endif %}
+                <div class="manual-subsection-title">Parameters</div>
+                {{ field_table(command_parameters, "parameter") }}
             </div>
+            {% endif %}
         {% endif %}
 
         {% set answer_fields = command_contract.answer_def.fields %}
         {% if answer_fields|count != 0 %}
             <div class="answer-fields-first-block avoid-break">
-                <div class="text-sm font-medium text-slate-800 mb-2">Answer fields:</div>
-                <ol class="list-decimal pl-6 mb-4 answer-field-list">
-                    <li class="mb-3 answer-field-item avoid-break">
-                        {{ answer_field_entry(answer_fields[0]) }}
-                    </li>
-                </ol>
+                <div class="manual-subsection-title">Response fields</div>
+                {{ field_table(answer_fields, "answer") }}
             </div>
-
-            {% if answer_fields|count > 1 %}
-                <ol class="list-decimal pl-6 mb-4 answer-field-list" start="2">
-                {% for answer_field_def in answer_fields[1:] %}
-                    <li class="mb-3 answer-field-item avoid-break">
-                        {{ answer_field_entry(answer_field_def) }}
-                    </li>
-                {% endfor %}
-                </ol>
-            {% endif %}
         {% else %}
-            <div class="text-sm font-medium text-slate-800 mb-2">Answer fields:</div>
-            <p class="text-sm text-slate-600 mb-4">No response fields.</p>
+            <div class="manual-subsection-title">Response fields</div>
+            <p class="manual-copy mb-4">This command returns no additional response fields.</p>
         {% endif %}
 
         {% if include_modbus %}
-            <div class="text-sm font-medium text-slate-800 mb-2 mt-8 modbus-section-title">MODBUS API</div>
-            {% set is_notification = command_contract.command_def is none and command_contract.code.value < 20000 %}
+            <div class="manual-subsection-title mt-8 modbus-section-title">MODBUS API</div>
             {% if is_notification %}
-                <p class="text-sm text-slate-600">Notification messages are not supported for MODBUS.</p>
+                <p class="manual-copy">Notifications are not exposed through MODBUS.</p>
             {% else %}
                 {% if command_contract.command_def is not none %}
                 <div class="mb-4 modbus-layout-block">
-                    <p class="text-sm text-slate-600 mb-2 modbus-layout-title">Command request memory layout:</p>
+                    <p class="manual-copy mb-2 modbus-layout-title">Request register layout</p>
                     <div class="modbus-layout-table">
                         {{ modbus.modbus_layout(command_contract.code, command_contract.command_def.field_defs(), 1024, false) }}
                     </div>
@@ -160,7 +248,7 @@
                 {% endif %}
 
                 <div class="pt-4 border-t border-slate-100 mt-4 modbus-layout-block">
-                    <p class="text-sm text-slate-600 mb-2 modbus-layout-title">Response memory layout:</p>
+                    <p class="manual-copy mb-2 modbus-layout-title">Response register layout</p>
                     <div class="modbus-layout-table">
                         {{ modbus.modbus_layout(command_contract.code, command_contract.answer_def.field_defs()) }}
                     </div>
@@ -169,43 +257,27 @@
         {% endif %}
 
         {% if include_text %}
-            <div class="text-sm font-medium text-slate-800 mb-2 mt-12">Text-based API</div>
-            {% if command_contract.command_def is not none %}
-                <p class="text-sm text-slate-600 mb-2">Command identifiers:
-                    <ul class="list-disc pl-6">
-                    {% for identifier in command_contract.command_def.sonic_text_attrs.string_identifier %}
-                        <li>{{ identifier }}</li>
-                    {% endfor %}
-                    </ul>
-                </p>
-                {% set text_example = deduce_single_command_example_for_contract(protocol_consts, command_contract) %}
-                {% if text_example is not none and text_example|trim != "" %}
-                    <p class="text-sm text-slate-600 mb-3">Example command: <code>{{ text_example }}</code></p>
-                {% endif %}
-                {% set answer_example = deduce_answer_command_example_for_contract(protocol_consts, command_contract) %}
-                {% if answer_example is not none and answer_example|trim != "" %}
-                    <p class="text-sm text-slate-600 mb-3">Example answer: <code>{{ answer_example }}</code></p>
-                {% endif %}
-            {% endif %}
+            <div class="manual-subsection-title mt-10">{{ "Text notification" if is_notification else "Text-based API" }}</div>
+            {{ text_api_summary(command_contract) }}
         {% endif %}
     </article>
 {% endmacro %}
 
 
 {% macro enum_class_entry(enum_class) %}
-    <section class="enum-entry bg-white border border-slate-200 rounded-none p-4 mb-6 shadow-none">
+    <section class="enum-entry bg-white border border-slate-200 rounded-none p-3 mb-5 shadow-none">
         <div class="enum-entry-content avoid-break">
             <div class="enum-table-wrap">
-                <table class="manual-table w-full text-sm border-collapse">
-                <caption class="caption-top text-left mb-2">
+                <table class="manual-table manual-enum-table w-full text-sm border-collapse">
+                <caption class="caption-top text-left mb-2 manual-enum-caption">
                     <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-slate-800">{{ enum_class.__name__ }}</span>
-                        <span class="text-xs text-slate-500">{{ enum_class|length }} entries</span>
+                        <span class="manual-enum-name">{{ enum_class.__name__ }}</span>
+                        <span class="manual-enum-count">{{ enum_class|length }} entries</span>
                     </div>
                 </caption>
                 <colgroup>
-                    <col class="w-[10%]" />
-                    <col class="w-[90%]" />
+                    <col class="w-[9%]" />
+                    <col class="w-[91%]" />
                 </colgroup>
                     <thead class="text-left text-xs text-slate-600">
                         <tr>
@@ -216,8 +288,8 @@
                     <tbody>
                         {% for i, enum_member in enumerate(enum_class) %}
                             <tr class="border-t border-slate-100">
-                                <td class="py-2 pr-4 font-mono text-slate-800">{{ i }}</td>
-                                <td class="py-2 text-slate-800">{{ enum_member.name }}</td>
+                                <td class="py-1.5 pr-4 font-mono text-slate-600">{{ i }}</td>
+                                <td class="py-1.5 text-slate-800">{{ add_wbr_before_underscore(enum_member.name) | safe }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>

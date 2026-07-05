@@ -10,6 +10,7 @@ This page and its subpages describe how to setup the project and all other neces
   - @subpage VsCode
 - @subpage Documentation
 - @subpage Deployment
+- @subpage CodeSigning
 - @subpage CIandCD
 
 @}

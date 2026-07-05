@@ -56,18 +56,77 @@ def _append_numeric_bound_examples(param_limits: List[Any], value: object, delta
         _append_unique(param_limits, int(value) + delta)
 
 
-def _append_type_specific_examples(param_limits: List[Any], field_type: type) -> None:
+def _schema_name_label(name: object) -> str:
+    symbolic_name = getattr(name, "name", None)
+    if isinstance(symbolic_name, str) and symbolic_name != "":
+        return symbolic_name
+    return str(name)
+
+
+def _example_value_from_bounds(field_type, consts: DeviceParamConstants) -> Any:
+    if field_type.allowed_values:
+        return field_type.allowed_values[0]
+    if field_type.min_value is not None:
+        if isinstance(field_type.min_value, DeviceParamConstantType):
+            return consts.get_constant_value_from_type(field_type.min_value)
+        return field_type.min_value
+    if field_type.max_value is not None:
+        if isinstance(field_type.max_value, DeviceParamConstantType):
+            return consts.get_constant_value_from_type(field_type.max_value)
+        return field_type.min_value
+    return None
+
+
+def _example_value_for_field_type(field_def: AnswerFieldDef) -> Any:
+    field_type = field_def.field_type.field_type
+
+    if field_type is bool:
+        return "true"
+    if _is_enum_field_type(field_type):
+        enum_members = [member.value for member in getattr(field_type, "__members__", {}).values()]
+        return enum_members[0]
+    if issubclass(field_type, Version):
+        return str(Version(1, 0, 0))
+    if issubclass(field_type, str):
+        return f"<{_schema_name_label(field_def.field_name)}_str>"
+    if issubclass(field_type, Timestamp):
+        return str(Timestamp(12, 30, 15, 15, 10, 2000))
+    if issubclass(field_type, numbers.Integral):
+        return "0"
+    if issubclass(field_type, numbers.Real):
+        return "0.0"
+    return None
+
+
+def _field_type_identity(field_type) -> object:
+    return getattr(field_type, "field_type", field_type)
+
+
+def _answer_field_matches_setter_param(field_def: AnswerFieldDef, setter_param: CommandParamDef | None) -> bool:
+    if setter_param is None:
+        return False
+
+    setter_name = _schema_name_label(setter_param.name).lower()
+    field_name = _schema_name_label(field_def.field_name).lower()
+    if setter_name == field_name:
+        return True
+
+    return _field_type_identity(field_def.field_type) is _field_type_identity(setter_param.param_type)
+
+
+def _append_type_specific_examples(param_limits: List[Any], param_def: CommandParamDef) -> None:
+    field_type = param_def.param_type.field_type
     if field_type is bool:
         _append_unique(param_limits, True)
         _append_unique(param_limits, False)
         
     elif field_type is str:
-        _append_unique(param_limits, "SomeString")
+        _append_unique(param_limits, f"<{_schema_name_label(param_def.name)}_str>")
 
     elif _is_enum_field_type(field_type):
-        enum_members = list(getattr(field_type, "__members__", {}).values())
-        for value in enum_members:
-            _append_unique(param_limits, value)
+        enum_members = list(getattr(field_type, "__members__", {}))
+        for enum in enum_members:
+            _append_unique(param_limits, enum.lower() if isinstance(enum, str) else enum)
 
 
 def deduce_param_limit_values(consts: DeviceParamConstants, param_def: CommandParamDef | None) -> List[Any]:
@@ -88,7 +147,7 @@ def deduce_param_limit_values(consts: DeviceParamConstants, param_def: CommandPa
         for value in allowed_values:
             _append_unique(param_limits, value)
 
-    _append_type_specific_examples(param_limits, param_def.param_type.field_type)
+    _append_type_specific_examples(param_limits, param_def)
 
     return param_limits
 
@@ -188,39 +247,18 @@ def deduce_single_command_example_for_contract_as_command(
 
 
 
-def generate_answer_field_example(field_def: AnswerFieldDef, consts: DeviceParamConstants) -> str:
+def generate_answer_field_example(
+    field_def: AnswerFieldDef,
+    consts: DeviceParamConstants,
+    preferred_value: Any = None,
+) -> str:
     field_example = field_def.sonic_text_attrs.prefix
     field_type = field_def.field_type
-    example_value = None
-    if field_type.allowed_values:
-        example_value = field_type.allowed_values[0]
-    elif field_type.min_value is not None: 
-        if isinstance(field_type.min_value, DeviceParamConstantType):
-            example_value = consts.get_constant_value_from_type(field_type.min_value)
-        else:
-            example_value = field_type.min_value
-    elif field_type.max_value is not None:
-        if isinstance(field_type.max_value, DeviceParamConstantType):
-            example_value = consts.get_constant_value_from_type(field_type.max_value)
-        else:
-            example_value = field_type.min_value
-    elif field_type is bool:
-        example_value = "true"
-    elif _is_enum_field_type(field_type.field_type):
-        enum_members = [member.value for member in getattr(field_type.field_type, "__members__", {}).values()]
-        example_value = enum_members[0]
-    elif issubclass(field_type.field_type, Version):
-        vs = Version(1, 0, 0)
-        example_value = str(vs)
-    elif issubclass(field_type.field_type, str):
-        example_value = "example string"
-    elif issubclass(field_type.field_type, Timestamp):
-        ts = Timestamp(12, 30 , 15, 15, 10, 2000)
-        example_value = str(ts)
-    elif issubclass(field_type.field_type, numbers.Integral):
-        example_value = "0"
-    elif issubclass(field_type.field_type, numbers.Real):
-        example_value = "0.0"
+    example_value = preferred_value
+    if example_value is None:
+        example_value = _example_value_from_bounds(field_type, consts)
+    if example_value is None:
+        example_value = _example_value_for_field_type(field_def)
     if example_value is None:
         raise ValueError("Answer field example value missing")
     field_example += str(example_value) + " "
@@ -237,7 +275,13 @@ def deduce_answer_example_for_contract(
 ) -> Optional[str]:
     ans_prefix = f"ANS#0={command_contract.code}#"
     answer = ans_prefix
+    setter_param = None
+    setter_value = None
+    if command_contract.command_def is not None:
+        setter_param = command_contract.command_def.setter_param
+        setter_value = deduce_single_param_example_value(consts, setter_param)
     for field in command_contract.answer_def.fields:
-        answer += generate_answer_field_example(field, consts) + "#"
+        preferred_value = setter_value if _answer_field_matches_setter_param(field, setter_param) else None
+        answer += generate_answer_field_example(field, consts, preferred_value) + "#"
     return answer[:-1]
     

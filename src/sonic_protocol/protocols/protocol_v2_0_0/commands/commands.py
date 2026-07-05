@@ -107,6 +107,7 @@ start_configurator = CommandContract(
         description="Starts the configurator."
     ),
     is_release=True,
+    is_admin_command=True,
     group_id=GROUPS.generic,
     tags=["debug"]
 )
@@ -204,7 +205,7 @@ set_dac = CommandContract(
     user_manual_attrs=UserManualAttrs(
         description="Sets the DAC voltage."
     ),
-    is_release=True,
+    is_release=False,
     group_id=GROUPS.transducer,
     tags=["DAC"]
 )
@@ -222,7 +223,7 @@ get_dac = CommandContract(
     user_manual_attrs=UserManualAttrs(
         description="Retrieves the currently configured DAC voltage."
     ),
-    is_release=True,
+    is_release=False,
     group_id=GROUPS.transducer,
     tags=["DAC"]
 )
@@ -255,9 +256,10 @@ go_into_device_state = CommandContract(
         )
     ),
     answer_def=AnswerDef([f.field_device_state]),
-    user_manual_attrs=UserManualAttrs(description="Sets or retrieves the device state."),
+    user_manual_attrs=UserManualAttrs(description="Sets the device state."),
     group_id=GROUPS.generic,
-    is_release=True
+    is_release=True,
+    is_admin_command=True
 )
 
 get_postman_update = CommandContract(
@@ -275,6 +277,7 @@ get_postman_update = CommandContract(
         description="Smaller version of the dash command that sends the device information the postman needs to update the UI."
     ),
     group_id=GROUPS.measurements,
+    tags=["postman"],
 )
 
 get_on_timer = CommandContract(

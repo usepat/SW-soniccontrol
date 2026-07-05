@@ -25,6 +25,7 @@ flash_usb = CommandContract(
         description="Starts firmware flashing over USB."
     ),
     is_release=True,
+    is_admin_command=True,
     tags=["flashing"]
 )
 
@@ -42,6 +43,7 @@ flash_uart9600 = CommandContract(
         description="Starts firmware flashing over UART at 9600 baud."
     ),
     is_release=True,
+    is_admin_command=True,
     tags=["flashing"]
 )
 
@@ -59,6 +61,7 @@ flash_uart115200 = CommandContract(
         description="Starts firmware flashing over UART at 115200 baud."
     ),
     is_release=True,
+    is_admin_command=True,
     tags=["flashing"]
 )
 

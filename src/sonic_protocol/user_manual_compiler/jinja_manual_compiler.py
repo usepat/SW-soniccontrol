@@ -18,6 +18,7 @@ from sonic_protocol.groups import GroupId, get_spec
 from sonic_protocol.schema import (
     CommandContract,
     ConverterType,
+    DeviceParamConstantType,
     DeviceType,
     ProtocolType,
     Timestamp,
@@ -62,9 +63,41 @@ def device_name_to_label(value: object) -> str:
     text = "" if value is None else str(value)
     return text.replace("_", " ").strip().upper()
 
+
+def format_constraint_value(value: object, consts: object) -> str:
+    if isinstance(value, DeviceParamConstantType):
+        value = getattr(consts, value.value)
+
+    if isinstance(value, np.generic):
+        value = value.item()
+
+    if isinstance(value, float):
+        return f"{value:g}"
+
+    return str(value)
+
+
+def should_include_command_in_manual(
+    command_contract: CommandContract,
+    *,
+    include_text: bool,
+    is_postman_device: bool,
+) -> bool:
+    if not include_text and command_contract.group_id == GroupId("logging"):
+        return False
+
+    if not is_postman_device:
+        command_name = getattr(command_contract.code, "name", "")
+        command_tags = getattr(command_contract, "tags", [])
+        if command_name == "GET_POSTMAN_UPDATE" or "postman" in command_tags:
+            return False
+
+    return True
+
 def build_group_tree(
     command_contracts: List["CommandContract"],
     is_release: bool,
+    is_admin: bool,
 ) -> List[GroupNode]:
     """
     Returns root nodes. Each node has children + commands.
@@ -75,7 +108,7 @@ def build_group_tree(
     leaf_groups: set[GroupId] = set()
 
     for c in command_contracts:
-        if is_release and not c.is_release:
+        if (is_release and not c.is_release) or (not is_admin and c.is_admin_command):
             continue
         gid: GroupId = getattr(c, "group_id", GroupId("misc")) or GroupId("misc")
         by_group[gid].append(c)
@@ -141,17 +174,35 @@ def build_group_tree(
 
 
 class HtmlManualCompiler(ManualCompiler):
-    def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True, mode: str = "both") -> str:
+    def compile_manual_for_specific_device(self, device_type: DeviceType, protocol_version: Version, is_release: bool = True, is_admin: bool = False, mode: str = "both") -> str:
         try:
             protocol = protocol_list.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
         except Exception as e:
             return "Error constructing manual: " + str(e)
+
+        # mode: "both" | "modbus" | "text"
+        include_modbus = mode in ("modbus", "both")
+        include_text = mode in ("text", "both")
+        is_postman_device = device_type == DeviceType.POSTMAN
         
         error_code_begin = 20000 # all command codes greater than 20000 are error codes
-        pure_command_contracts = [ elem for elem in protocol.command_contracts.values() if elem.command_def is not None ]
-        command_groups = build_group_tree(pure_command_contracts, is_release=is_release)
+        pure_command_contracts = [
+            elem
+            for elem in protocol.command_contracts.values()
+            if elem.command_def is not None
+            and should_include_command_in_manual(
+                elem,
+                include_text=include_text,
+                is_postman_device=is_postman_device,
+            )
+        ]
+        command_groups = build_group_tree(pure_command_contracts, is_release=is_release, is_admin=is_admin)
         error_codes = [ code for code in protocol.command_code_cls if code >= error_code_begin ]
-        notification_messages = [ elem for elem in protocol.command_contracts.values() if elem.command_def is None and elem.code.value < error_code_begin ]
+        notification_messages = [
+            elem
+            for elem in protocol.command_contracts.values()
+            if include_text and elem.command_def is None and elem.code.value < error_code_begin
+        ]
         enum_classes = [ elem for elem in protocol.custom_data_types.values() if issubclass(elem, Enum) ]
 
         template_path = rs.files(sonic_protocol).joinpath("user_manual_compiler/jinja_templates")
@@ -176,14 +227,11 @@ class HtmlManualCompiler(ManualCompiler):
             "deduce_single_command_example_for_contract": deduce_single_command_example_for_contract,
             "deduce_answer_command_example_for_contract": deduce_answer_example_for_contract,
             "device_name_to_label": device_name_to_label,
+            "format_constraint_value": format_constraint_value,
             "anchor_group": lambda gid: f"group-{str(gid).replace('.', '-')}",
             "anchor_cmd": lambda code: f"cmd-{int(code.value)}",
             "add_wbr_before_underscore": add_wbr_before_underscore,
         }) # export functions and classes to jinja environment. So we can use them inside the templates
-
-        # mode: "both" | "modbus" | "text"
-        include_modbus = mode in ("modbus", "both")
-        include_text = mode in ("text", "both")
 
         template = environment.get_template("index.j2")
         device_type_name = device_type.value
@@ -199,6 +247,7 @@ class HtmlManualCompiler(ManualCompiler):
             enum_classes=enum_classes,
             include_modbus=include_modbus,
             include_text=include_text,
+            is_postman_device=is_postman_device,
             device_type_name=device_type_name,
             protocol_version_str=protocol_version_str,
             release_type=release_type,
@@ -217,9 +266,9 @@ def main():
     targets = (("text", "manual_text"), ("modbus", "manual_modbus"), ("both", "manual"))
     for mode, basename in targets:
         manual = manual_compiler.compile_manual_for_specific_device(
-            DeviceType.MVP_WORKER,
-            Version(2, 0, 0),
-            False,
+            DeviceType.DESCALE,
+            Version(3, 0, 0),
+            True,
             mode=mode,
         )
 
