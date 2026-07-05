@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 from enum import Enum
+import os
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional
 from async_tkinter_loop import async_handler
@@ -40,6 +41,9 @@ class ConnectionMode(Enum):
     DIAGNOSTICS_TOOL = "diagnostics_tool"
 
 
+CONNECTION_MODE_ENV_VAR = "SONICCONTROL_CONNECTION_MODES"
+
+
 CONNECTION_MODE_LABELS = {
     ConnectionMode.DEFAULT: ui_labels.CONNECTION_MODE_DEFAULT_LABEL,
     ConnectionMode.LEGACY_CRYSTAL: ui_labels.IS_LEGACY_DEVICE_LABEL,
@@ -50,6 +54,27 @@ CONNECTION_MODE_LABELS = {
 CONNECTION_MODE_BY_LABEL = {
     label: mode for mode, label in CONNECTION_MODE_LABELS.items()
 }
+
+
+def get_enabled_connection_modes() -> List[ConnectionMode]:
+    configured_modes = os.environ.get(CONNECTION_MODE_ENV_VAR)
+    if not configured_modes:
+        return list(ConnectionMode)
+
+    enabled_modes: List[ConnectionMode] = []
+    for configured_mode in configured_modes.split(","):
+        normalized_mode = configured_mode.strip().lower()
+        if not normalized_mode:
+            continue
+        try:
+            enabled_modes.append(ConnectionMode(normalized_mode))
+        except ValueError:
+            continue
+
+    if enabled_modes:
+        return enabled_modes
+
+    return [ConnectionMode.DEFAULT, ConnectionMode.LEGACY_CRYSTAL]
 
 class DeviceConnectionClass:
     def __init__(self, device_window : DeviceWindow, connection : Connection, startup_mode: StartupMode = StartupMode.DEFAULT):
@@ -369,6 +394,11 @@ class ConnectionWindowView(ttk.Window, View):
         super().__init__(*args, **kwargs)
 
         window_name: str = "connection"
+        enabled_connection_modes = get_enabled_connection_modes()
+        enabled_connection_mode_labels = [CONNECTION_MODE_LABELS[mode] for mode in enabled_connection_modes]
+        default_connection_mode = (
+            ConnectionMode.DEFAULT if ConnectionMode.DEFAULT in enabled_connection_modes else enabled_connection_modes[0]
+        )
 
         image = ImageLoader.load_image_resource(images.LOGO, sizes.LARGE_BUTTON_ICON_SIZE)
         self.iconphoto(True, image)
@@ -390,13 +420,13 @@ class ConnectionWindowView(ttk.Window, View):
             state=ttk.READONLY,
         )
         WidgetRegistry.register_widget(self._ports_menue, "ports_combobox", window_name)
-        self._connection_mode = tk.StringVar(self, CONNECTION_MODE_LABELS[ConnectionMode.DEFAULT])
+        self._connection_mode = tk.StringVar(self, CONNECTION_MODE_LABELS[default_connection_mode])
         self._connection_mode_menue = ttk.Combobox(
             self._url_connection_frame, 
             textvariable=self._connection_mode,
             style=ttk.DARK,
             state=ttk.READONLY,
-            values=list(CONNECTION_MODE_BY_LABEL.keys()),
+            values=enabled_connection_mode_labels,
         )
         WidgetRegistry.register_widget(self._connection_mode_menue, "connection_mode_combobox", window_name)
 

@@ -3,10 +3,11 @@ import logging
 from collections.abc import Awaitable, Callable
 from os import environ
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 import attrs
 
 from sonic_protocol.python_parser import commands
+from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import DeviceType, Version
@@ -96,7 +97,12 @@ class RemoteController:
 
 
     @staticmethod
-    async def connect_via_serial(url: Path | str, baudrate: int = 9600, log_path: Optional[Path]=None) -> "RemoteController":
+    async def connect_via_serial(
+        url: Path | str,
+        baudrate: int = 9600,
+        log_path: Optional[Path]=None,
+        protocol_factories: Optional[Dict[DeviceType, ProtocolList]] = None,
+    ) -> "RemoteController":
         """
         Creates a RemoteController by establishing a connection to a device over serial.
 
@@ -125,7 +131,11 @@ class RemoteController:
 
         dev_info = await resolve_current_device_info(url)
         connection = create_connection_to_device(dev_info, baudrate)
-        return await RemoteController.connect(connection, log_path)
+        return await RemoteController.connect(
+            connection,
+            log_path,
+            protocol_factories=protocol_factories,
+        )
 
     @staticmethod
     async def connect_via_modbus(
@@ -151,8 +161,15 @@ class RemoteController:
         return await RemoteController.connect(CLIConnection("simulation", None, simulation_executable, cmd_args), log_path)
 
     @staticmethod
-    async def _build_device(connection: Connection, logger: logging.Logger):
-        device_builder = DeviceBuilder(logger=logger)
+    async def _build_device(
+        connection: Connection,
+        logger: logging.Logger,
+        protocol_factories: Optional[Dict[DeviceType, ProtocolList]] = None,
+    ):
+        device_builder = DeviceBuilder(
+            protocol_factories={} if protocol_factories is None else protocol_factories,
+            logger=logger,
+        )
 
         if isinstance(connection, ModbusConnection):
             communicator = ModbusCommunicator()
@@ -168,12 +185,20 @@ class RemoteController:
             raise
 
     @staticmethod
-    async def _build_device_with_retry(connection: Connection, logger: logging.Logger) -> SonicDevice:
+    async def _build_device_with_retry(
+        connection: Connection,
+        logger: logging.Logger,
+        protocol_factories: Optional[Dict[DeviceType, ProtocolList]] = None,
+    ) -> SonicDevice:
         last_error: Exception | None = None
 
         for attempt in range(1, RemoteController.CONNECT_MAX_ATTEMPTS + 1):
             try:
-                device = await RemoteController._build_device(connection, logger)
+                device = await RemoteController._build_device(
+                    connection,
+                    logger,
+                    protocol_factories=protocol_factories,
+                )
             except Exception as exc:
                 last_error = exc
                 logger.debug(
@@ -210,10 +235,15 @@ class RemoteController:
         connection: Connection,
         log_path: Optional[Path]=None,
         restart_executor: Callable[[Command, "RemoteController"], Awaitable["RemoteController"]] | None = None,
+        protocol_factories: Optional[Dict[DeviceType, ProtocolList]] = None,
     ) -> "RemoteController":
         logger = create_logger_for_connection(connection.connection_name, log_path if log_path is not None else Path("."))   
 
-        device = await RemoteController._build_device_with_retry(connection, logger)
+        device = await RemoteController._build_device_with_retry(
+            connection,
+            logger,
+            protocol_factories=protocol_factories,
+        )
         
         controller = RemoteController(device, logger, restart_executor=restart_executor)
         

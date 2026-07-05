@@ -7,7 +7,7 @@ set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%..") do set "PROJECT_ROOT=%%~fI"
 
 set "PYTHON_EXE=%PROJECT_ROOT%\.venv\Scripts\python.exe"
-set "MAIN_SCRIPT=%PROJECT_ROOT%\src\soniccontrol_gui\__main__.py"
+set "MAIN_SCRIPT=%PROJECT_ROOT%\src\soniccontrol_gui\build_main.py"
 set "SONIC_SCRIPT_EXAMPLES=%PROJECT_ROOT%\sonic_script_examples"
 set "DIST_DIR=%PROJECT_ROOT%\dist"
 set "WORK_DIR=%PROJECT_ROOT%\build\temp"
