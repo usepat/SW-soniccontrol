@@ -54,6 +54,29 @@ def add_wbr_before_underscore(value: object) -> str:
     return text.replace("_", "<wbr>_")
 
 
+def load_asset_data_uri(asset_path: Path) -> str | None:
+    if not asset_path.exists():
+        return None
+
+    suffix = asset_path.suffix.lower()
+    mime_type = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+        ".svg": "image/svg+xml",
+        ".ttf": "font/ttf",
+        ".otf": "font/otf",
+        ".woff": "font/woff",
+        ".woff2": "font/woff2",
+    }.get(suffix)
+
+    if mime_type is None:
+        return None
+
+    return f"data:{mime_type};base64,{base64.b64encode(asset_path.read_bytes()).decode('ascii')}"
+
+
 def device_name_to_label(value: object) -> str:
     """Convert device type identifiers to a human-friendly label.
 
@@ -238,6 +261,34 @@ class HtmlManualCompiler(ManualCompiler):
         protocol_version_str = str(protocol_version)
         release_type = "Release" if is_release else "Development"
         build_date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cover_date_str = datetime.now().strftime("%d.%m.%Y")
+        if mode == "text":
+            cover_reference_title = "Sonic Text Protocol Reference"
+        elif mode == "modbus":
+            cover_reference_title = "Sonic MODBUS Protocol Reference"
+        else:
+            cover_reference_title = "Sonic Protocol Reference"
+
+        repo_root = Path(__file__).resolve().parents[3]
+        gui_resources = repo_root / "src" / "soniccontrol_gui" / "resources"
+        usepat_logo_src = load_asset_data_uri(
+            gui_resources / "pictures" / "usepat_neu-4c-mSL.png"
+        )
+        footer_image_src = load_asset_data_uri(
+            gui_resources / "icons" / "thumbnail_usePAT_Briefpapier_Adressblock_end 1.jpg"
+        )
+        qtype_cond_light_src = load_asset_data_uri(
+            gui_resources / "fonts" / "QTypeOT-CondLight.otf"
+        )
+        qtype_cond_book_src = load_asset_data_uri(
+            gui_resources / "fonts" / "QTypeOT-CondBook.otf"
+        )
+        qtype_cond_medium_src = load_asset_data_uri(
+            gui_resources / "fonts" / "QTypeOT-CondMedium.otf"
+        )
+        qtype_cond_bold_src = load_asset_data_uri(
+            gui_resources / "fonts" / "QTypeOT-CondBold.otf"
+        )
 
         content = template.render(
             command_groups=command_groups,  
@@ -251,7 +302,15 @@ class HtmlManualCompiler(ManualCompiler):
             device_type_name=device_type_name,
             protocol_version_str=protocol_version_str,
             release_type=release_type,
-                build_date_str=build_date_str,
+            build_date_str=build_date_str,
+            cover_date_str=cover_date_str,
+            cover_reference_title=cover_reference_title,
+            usepat_logo_src=usepat_logo_src,
+            footer_image_src=footer_image_src,
+            qtype_cond_light_src=qtype_cond_light_src,
+            qtype_cond_book_src=qtype_cond_book_src,
+            qtype_cond_medium_src=qtype_cond_medium_src,
+            qtype_cond_bold_src=qtype_cond_bold_src,
         )
 
         return content 
