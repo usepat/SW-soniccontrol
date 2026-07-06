@@ -431,6 +431,15 @@ def main():
                 cdp_options = {
                     "printBackground": True,
                     "preferCSSPageSize": True,
+                    "displayHeaderFooter": True,
+                    "headerTemplate": "<div></div>",
+                    "footerTemplate": """
+                        <div style=\"width:100%; font-size:9px; color:#6b7280; padding:0 8mm 4mm; box-sizing:border-box; text-align:right; font-family:Arial, sans-serif;\">
+                            page <span class=\"pageNumber\"></span> of <span class=\"totalPages\"></span>
+                        </div>
+                    """,
+                    "marginTop": 0.4724,
+                    "marginBottom": 0.7087,
                     "generateTaggedPDF": True,
                     "generateDocumentOutline": True,
                 }
