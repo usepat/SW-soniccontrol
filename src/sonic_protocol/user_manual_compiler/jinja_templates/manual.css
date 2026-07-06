@@ -132,7 +132,7 @@ a:hover {
 }
 
 .manual-cover-logo {
-    width: min(15rem, 40vw);
+    width: min(10rem, 35vw);
     object-fit: contain;
 }
 
@@ -248,7 +248,7 @@ a:hover {
 }
 
 .manual-cover-footer-image {
-    width: min(34rem, calc(100% - var(--manual-cover-footer-left-padding)));
+    width: min(34rem, calc(40% - var(--manual-cover-footer-left-padding)));
     height: auto;
     object-fit: contain;
 }
@@ -619,10 +619,6 @@ a:hover {
 .manual-table tbody th {
     font-size: 0.8rem;
     font-weight: 600;
-}
-
-.toc-page::before {
-    content: "p. " attr(data-page);
 }
 
 .toc-page {

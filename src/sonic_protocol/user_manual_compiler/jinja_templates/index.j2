@@ -35,7 +35,7 @@
             <div class="manual-cover-body">
                 <div class="manual-cover-column">
                     <div class="manual-cover-ribbon">
-                        <div>Manual</div>
+                        <div>usePAT API Reference</div>
                     </div>
 
                     <div class="manual-cover-product">
@@ -97,7 +97,7 @@
 
             <div class="manual-panel">
                 {% macro toc_page(target_id) %}
-                    <span class="toc-page ml-3 text-slate-500" data-target="{{ target_id }}" data-page="?">—</span>
+                    <span class="toc-page ml-3 text-slate-500" data-target="{{ target_id }}" data-page="?">p. ?</span>
                 {% endmacro %}
 
                 {% macro render_command_index(nodes, prefix) %}
@@ -239,7 +239,7 @@
             </p>
 
             <p class="manual-copy">
-                Each mailbox is a block of 16-bit registers. To execute a command, write the request header and payload into the command mailbox, then set the execute flag. The device writes the result into the response mailbox. If execution fails, the response contains an error code and message instead of the normal command response.
+                Each mailbox is a block of 16-bit registers. To execute a command, write the request header, payload, and execute flag into the command mailbox. These values can be written together in the same MODBUS write request. The command mailbox keeps that content until execution is complete. The device writes the result into the response mailbox, and once the response pending flag is cleared, the device clears the command register. If execution fails, the response contains an error code and message instead of the normal command response.
             </p>
 
             <div class="overflow-x-auto my-4">
@@ -269,7 +269,7 @@
                             <td class="px-3 py-2 font-semibold text-slate-800">Command mailbox</td>
                             <td class="px-3 py-2">1024</td>
                             <td class="px-3 py-2">Write a command request</td>
-                            <td class="px-3 py-2">Starts with an execute flag, a transceiver id, the command code, and the command payload.</td>
+                            <td class="px-3 py-2">Starts with an execute flag, a transceiver id, the command code, and the command payload. The written content stays in place until execution completes and the response pending flag clears.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -620,12 +620,14 @@
                     const target = document.getElementById(targetId);
                     if (!target || printableHeight <= 0) {
                         pageEl.setAttribute("data-page", "?");
+                        pageEl.textContent = "p. ?";
                         return;
                     }
 
                     const top = target.getBoundingClientRect().top + window.scrollY;
                     const page = Math.max(1, Math.floor(top / printableHeight) + 1);
                     pageEl.setAttribute("data-page", String(page));
+                    pageEl.textContent = "p. " + String(page);
                 });
             };
 

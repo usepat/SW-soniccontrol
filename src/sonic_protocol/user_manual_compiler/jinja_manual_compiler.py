@@ -321,18 +321,27 @@ def main():
 
     Path("./output").mkdir(exist_ok=True, parents=True)
 
+    device_type = DeviceType.MVP_WORKER
+    protocol_version = Version(3, 0, 0)
+    is_release = True
+
+    def build_pdf_path(basename: str) -> str:
+        release_mode = "release" if is_release else "development"
+        device_label = str(device_type.value).lower().replace(" ", "_")
+        version_label = str(protocol_version).replace(" ", "_")
+        return f"./output/{basename}_{device_label}_{version_label}_{release_mode}.pdf"
+
     # Produce two documents: one for the text-based API and one for MODBUS
     targets = (("text", "manual_text"), ("modbus", "manual_modbus"), ("both", "manual"))
     for mode, basename in targets:
         manual = manual_compiler.compile_manual_for_specific_device(
-            DeviceType.DESCALE,
-            Version(3, 0, 0),
-            True,
+            device_type,
+            protocol_version,
+            is_release,
             mode=mode,
         )
 
         html_path = f"./output/{basename}.html"
-        pdf_path = f"./output/{basename}.pdf"
         with open(html_path, "w", encoding="utf-8") as file:
             file.write(manual)
     
@@ -402,6 +411,21 @@ def main():
                 await page.waitForFunction("document.fonts && document.fonts.status === 'loaded'")
                 await page.emulateMedia("print")
                 await page.evaluate("window.updateTocPageNumbers && window.updateTocPageNumbers()")
+                await page.waitForFunction(
+                    """
+                    () => {
+                        const tocPages = Array.from(document.querySelectorAll('.toc-page[data-target]'));
+                        if (tocPages.length === 0) {
+                            return true;
+                        }
+
+                        return tocPages.every((element) => {
+                            const pageNumber = element.getAttribute('data-page');
+                            return pageNumber && pageNumber !== '?' && element.textContent.trim() !== 'p. ?';
+                        });
+                    }
+                    """
+                )
 
                 client = page._client
                 cdp_options = {
@@ -426,7 +450,7 @@ def main():
 
     for mode, basename in targets:
         html_path = f"./output/{basename}.html"
-        pdf_path = f"./output/{basename}.pdf"
+        pdf_path = build_pdf_path(basename)
         try:
             convert_html_to_pdf(html_path, pdf_path)
             print(f"Wrote {pdf_path}")
