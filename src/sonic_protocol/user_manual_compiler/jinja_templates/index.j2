@@ -611,8 +611,8 @@
 
             window.updateTocPageNumbers = function updateTocPageNumbers() {
                 const pageHeightPx = mmToPx(297);
-                const marginTopPx = mmToPx(14);
-                const marginBottomPx = mmToPx(14);
+                const marginTopPx = mmToPx(12);
+                const marginBottomPx = mmToPx(18);
                 const printableHeight = pageHeightPx - marginTopPx - marginBottomPx;
 
                 document.querySelectorAll(".toc-page[data-target]").forEach(function (pageEl) {
@@ -625,7 +625,7 @@
                     }
 
                     const top = target.getBoundingClientRect().top + window.scrollY;
-                    const page = Math.max(1, Math.floor(top / printableHeight) + 1);
+                    const page = Math.max(1, Math.floor(top / printableHeight) + 2);
                     pageEl.setAttribute("data-page", String(page));
                     pageEl.textContent = "p. " + String(page);
                 });

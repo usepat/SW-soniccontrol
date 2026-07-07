@@ -3,6 +3,7 @@ import asyncio
 import base64
 from datetime import datetime
 from enum import Enum
+import io
 import os
 import shutil
 import tempfile
@@ -34,6 +35,7 @@ from sonic_protocol.user_manual_compiler.manual_compiler import ManualCompiler
 
 import importlib.resources as rs
 import jinja2
+from pypdf import PdfReader
 from pyppeteer import launch
 from pyppeteer import chromium_downloader as cd
 
@@ -321,7 +323,7 @@ def main():
 
     Path("./output").mkdir(exist_ok=True, parents=True)
 
-    device_type = DeviceType.MVP_WORKER
+    device_type = DeviceType.DESCALE
     protocol_version = Version(3, 0, 0)
     is_release = True
 
@@ -402,6 +404,21 @@ def main():
 
         return browser, user_data_dir
 
+    def extract_destination_page_numbers(pdf_bytes: bytes) -> Dict[str, int]:
+        destination_pages: Dict[str, int] = {}
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        destination_tree = reader.trailer["/Root"].get("/Dests")
+        if destination_tree is None:
+            return destination_pages
+
+        for raw_name, destination in destination_tree.get_object().items():
+            page_ref = destination[0]
+            page_number = reader.get_page_number(page_ref.get_object())
+            if page_number >= 0:
+                destination_pages[str(raw_name).lstrip("/")] = page_number + 1
+
+        return destination_pages
+
     def convert_html_to_pdf(html_path: str, pdf_path: str) -> None:
         async def _pdf():
             browser, user_data_dir = await get_browser()
@@ -443,6 +460,48 @@ def main():
                     "generateTaggedPDF": True,
                     "generateDocumentOutline": True,
                 }
+
+                toc_targets = await page.evaluate(
+                    """
+                    () => Array.from(document.querySelectorAll('.toc-page[data-target]')).map((element) =>
+                        element.getAttribute('data-target')
+                    )
+                    """
+                )
+
+                if toc_targets:
+                    destination_pdf = await client.send("Page.printToPDF", cdp_options)
+                    destination_pages = extract_destination_page_numbers(base64.b64decode(destination_pdf["data"]))
+                    exact_toc_pages = {
+                        target_id: destination_pages[target_id]
+                        for target_id in toc_targets
+                        if target_id in destination_pages
+                    }
+
+                    await page.evaluate(
+                        """
+                        (pageMap) => {
+                            document.querySelectorAll('.toc-page[data-target]').forEach((element) => {
+                                const targetId = element.getAttribute('data-target');
+                                const pageNumber = pageMap[targetId];
+                                if (!pageNumber) {
+                                    return;
+                                }
+
+                                element.setAttribute('data-page', String(pageNumber));
+                                element.textContent = `p. ${pageNumber}`;
+                            });
+
+                            if (window.updateTocPageNumbers) {
+                                window.removeEventListener('beforeprint', window.updateTocPageNumbers);
+                                window.removeEventListener('resize', window.updateTocPageNumbers);
+                                window.removeEventListener('load', window.updateTocPageNumbers);
+                            }
+                        }
+                        """,
+                        exact_toc_pages,
+                    )
+
                 result = await client.send("Page.printToPDF", cdp_options)
                 Path(pdf_path).write_bytes(base64.b64decode(result["data"]))
             finally:
