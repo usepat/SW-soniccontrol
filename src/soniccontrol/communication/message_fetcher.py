@@ -113,7 +113,7 @@ class MessageFetcher:
                 continue
             except Exception as e:
                 log_fn = self._logger.warning if self._should_warn_on_exception(e) else self._logger.error
-                log_fn("Exception occured while reading the package:\n%s", e)
+                log_fn("Exception occured while reading the package:\n%s\nwith content:\n%s", e, response)
                 raise e 
 
             if isinstance(message, AnswerMessage):
