@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-source "$WORKSPACE_DIR/.venv/bin/python"
+source "$WORKSPACE_DIR/.venv/bin/activate"
 
 # Collect all arguments passed to the script
 EXTRA_ARGS=("$@")
