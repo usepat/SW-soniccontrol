@@ -164,6 +164,8 @@ async def write(port: str):
     if port not in connections:
         abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
 
+    connections[port].timestamp = time.time()
+
     if request.content_type != "application/octet-stream":
         abort(HTTP_CLIENT_ERROR, description="Invalid content type")
 
@@ -181,6 +183,8 @@ async def read(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
         abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
+
+    connections[port].timestamp = time.time()
 
     reader = connections[port].reader
 
