@@ -14,7 +14,7 @@ class RemoteDeviceDiscovery(DeviceDiscovery):
         self,
         include_ttys: bool = True,
         include_disks: bool = True,
-        include_unverified_ttys: bool = False,
+        include_unverified_ttys: bool = True,
     ) -> List[FwDeviceInfo]:
         async with RemoteClient(self._server_url) as client:
             return await client.get_devices(include_ttys, include_disks, include_unverified_ttys)

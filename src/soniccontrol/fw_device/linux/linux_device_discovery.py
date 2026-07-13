@@ -137,7 +137,7 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         self,
         include_ttys: bool = True,
         include_disks: bool = True,
-        include_unverified_ttys: bool = False,
+        include_unverified_ttys: bool = True,
     ) -> List[FwDeviceInfo]:
         devices_by_key: dict[tuple[str, str], FwDeviceInfo] = {}
 

@@ -26,7 +26,7 @@ class AnswerFieldToStringConverter:
     def convert(self, value: Any) -> str:
         if self._converter_ref is not None:
             converter = get_converter(self._converter_ref, self._target_class)
-            assert (converter.validate_val(value)) # TODO:this should not be an assert probably
+            assert converter.validate_val(value), f"The value {value} of type {self._target_class} cannot be converted to a string"     
             converted_value = converter.convert_val_to_str(value)
             string_repr_value = converted_value
         else:

@@ -110,7 +110,7 @@ async def get_devices():
     # type is a callable that converts the param string to the value
     include_ttys = request.args.get("include_ttys", True, type=is_it_true) 
     include_disks = request.args.get("include_disks", True, type=is_it_true)
-    include_unverified_ttys = request.args.get("include_unverified_ttys", False, type=is_it_true)
+    include_unverified_ttys = request.args.get("include_unverified_ttys", True, type=is_it_true)
     device_infos: List[FwDeviceInfo] = await create_device_discovery().list_fw_device_infos(
         include_ttys,
         include_disks,

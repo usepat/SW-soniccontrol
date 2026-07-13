@@ -116,7 +116,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
         self,
         include_ttys: bool = True,
         include_disks: bool = True,
-        include_unverified_ttys: bool = False,
+        include_unverified_ttys: bool = True,
     ) -> List[FwDeviceInfo]:
         devices_by_key: dict[tuple[str, str], FwDeviceInfo] = {}
 
@@ -225,7 +225,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
 
         return None
 
-    def _list_serial_devices(self, include_unverified_ttys: bool = False) -> List[FwDeviceInfo]:
+    def _list_serial_devices(self, include_unverified_ttys: bool = True) -> List[FwDeviceInfo]:
         devices: List[FwDeviceInfo] = []
         for port in list_ports.comports():
             is_pico = port.vid == RASPBERRY_PI_USB_VID or _contains_pico_marker(
