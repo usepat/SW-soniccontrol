@@ -161,6 +161,7 @@ class DeviceBuilder:
         if device.info.device_type == expected_device_type:
             return device
 
+        # TODO: instead of executing the start command directly, use device.restart(command)
         if not device.has_command(start_command):
             raise ConnectionError(f"Device does not support {unsupported_command_name}")
 
@@ -171,6 +172,7 @@ class DeviceBuilder:
             raise ConnectionError(answer.message)
 
         await device.disconnect()
+        # TODO: do not use sleep, use instead proper device detection
         await asyncio.sleep(self.RESTART_DELAY_S)
 
         communicator = SerialCommunicator(logger=self._logger) # type: ignore

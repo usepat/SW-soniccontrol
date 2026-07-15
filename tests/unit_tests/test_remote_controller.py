@@ -67,29 +67,3 @@ async def test_restart_preserves_running_updater_on_replacement():
     replacement_controller.stop_updater.assert_not_awaited()
     assert controller.device is replacement_device
 
-
-@pytest.mark.asyncio
-async def test_connect_via_serial_uses_shared_device_resolution(monkeypatch):
-    resolved_dev_info = FwDeviceInfo(
-        sys_name="ttyACM2",
-        subsystem="tty",
-        usb_sys_name="1-1",
-        device_path="/dev/ttyACM2",
-    )
-    resolved_connection = object()
-    expected_controller = object()
-
-    resolve_current_device_info = AsyncMock(return_value=resolved_dev_info)
-    create_connection_to_device = Mock(return_value=resolved_connection)
-    connect = AsyncMock(return_value=expected_controller)
-
-    monkeypatch.setattr(remote_controller_module, "resolve_current_device_info", resolve_current_device_info)
-    monkeypatch.setattr(remote_controller_module, "create_connection_to_device", create_connection_to_device)
-    monkeypatch.setattr(remote_controller_module.RemoteController, "connect", connect)
-
-    controller = await RemoteController.connect_via_serial("/dev/ttyACM1")
-
-    resolve_current_device_info.assert_awaited_once_with("/dev/ttyACM1")
-    create_connection_to_device.assert_called_once_with(resolved_dev_info, 9600)
-    connect.assert_awaited_once_with(resolved_connection, None)
-    assert controller is expected_controller

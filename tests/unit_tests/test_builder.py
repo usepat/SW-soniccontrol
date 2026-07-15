@@ -79,7 +79,7 @@ async def test_build_configurator_switches_mode_and_rebuilds(monkeypatch):
     assert command.value == "secure_password"
     assert amp.execute_command.await_args.kwargs["raise_exception"] is False
     amp.disconnect.assert_awaited_once()
-    sleep_mock.assert_awaited_once_with(builder.CONFIGURATOR_RESTART_DELAY_S)
+    sleep_mock.assert_awaited_once_with(builder.RESTART_DELAY_S)
 
 
 @pytest.mark.asyncio
@@ -108,7 +108,7 @@ async def test_build_configurator_tolerates_expected_disconnect(monkeypatch):
 
     assert result is configurator
     amp.disconnect.assert_awaited_once()
-    sleep_mock.assert_awaited_once_with(builder.CONFIGURATOR_RESTART_DELAY_S)
+    sleep_mock.assert_awaited_once_with(builder.RESTART_DELAY_S)
 
 
 @pytest.mark.asyncio
