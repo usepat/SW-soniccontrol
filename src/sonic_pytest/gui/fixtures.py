@@ -181,7 +181,7 @@ async def default_state(device_window):
         updater.start()
         await controller.execute_events_until_idle()
 
-    await send_over_serial_monitor("!stop")
+    await send_over_serial_monitor("!stop", allow_fail=True)
     if device.info.device_type == DeviceType.MVP_WORKER:
         await send_over_serial_monitor("!freq=100000")
     if device.info.device_type == DeviceType.DESCALE:

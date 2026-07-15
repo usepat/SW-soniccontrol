@@ -53,6 +53,7 @@ class Updater(EventManager, CyclicTask):
                 self.running.clear()
                 return
             if "closed transport" in str(e).lower():
+                # FIXME: isnt it possible to catch via the error type?
                 self.running.clear()
                 return
             raise

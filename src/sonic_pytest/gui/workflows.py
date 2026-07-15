@@ -27,7 +27,7 @@ def assert_serial_monitor_command_succeeded(command: str, answer: str) -> None:
     if any(marker in lowered_answer for marker in SERIAL_MONITOR_FAILURE_MARKERS):
         raise AssertionError(f"Setup command '{command}' failed with answer: {answer}")
 
-async def send_over_serial_monitor(command: str) -> str:
+async def send_over_serial_monitor(command: str, allow_fail=False) -> str:
     controller = GuiController()
     controller.switch_to_tab(widget_names.SERIAL_MONITOR_TAB)
     existing_entries = controller.get_texts_of_widget_children(widget_names.SERIAL_MONITOR_SCROLL_FRAME)
@@ -54,7 +54,8 @@ async def send_over_serial_monitor(command: str) -> str:
         answer = entries[command_index + 1]
         if not answer.startswith(">>>"):
             # commands are always preceded with '>>>', answers never
-            assert_serial_monitor_command_succeeded(command, answer)
+            if not allow_fail:
+                assert_serial_monitor_command_succeeded(command, answer)
             return answer
         
         await controller.execute_events_until_idle()

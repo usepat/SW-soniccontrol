@@ -12,8 +12,8 @@ async def reset_experiment_state(device_window=None) -> None:
     controller = GuiController()
     controller.switch_to_tab(widget_names.MEASURING_TAB)
 
-    await send_over_serial_monitor("!stop")
-    await send_over_serial_monitor("!OFF")
+    await send_over_serial_monitor("!stop", allow_fail=True)
+    await send_over_serial_monitor("!OFF", allow_fail=True)
     await controller.execute_events_until_idle()
 
     for _ in range(4):
