@@ -21,7 +21,8 @@ def assert_answer_is_not_error(answer: Answer, errors_to_check: List[CommandCode
     unsignificant_error_strings = ['Procedure error no procedure running', 'No procedure was selected', 'Procedure error invalid args']
     if answer.is_error_msg:
         if errors_to_check is not None:
-            assert answer.command_code not in errors_to_check or answer.message in unsignificant_error_strings, "Significant error occured"
+            is_insignificant_error = any(x in answer.message for x in unsignificant_error_strings)
+            assert answer.command_code not in errors_to_check or is_insignificant_error, "Significant error occured"
         else:
             assert answer.is_error_msg, "Answer is an error"
     else:
