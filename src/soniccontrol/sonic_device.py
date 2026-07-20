@@ -310,12 +310,9 @@ class SonicDevice:
                 return Answer(err_msg, ValidationStatus.NOT_VALID)
 
         if not self._uses_modbus():
-            # FIXME do we need some kind of backwards compatability manager?
-            # Move into Experiment store?
             answer = await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
             if self.protocol.info.version < Version(3, 0, 0) and self.protocol.info.device_type in [DeviceType.DESCALE, DeviceType.MVP_WORKER]:
-
-                # TODO ask David if there is a safer way to do this 
+                # With a proper unit system library, we could get rid of this manual conversions 
                 answer[EFieldName.URMS] = answer[EFieldName.URMS] / 1000
                 answer[EFieldName.IRMS] = answer[EFieldName.IRMS] / 1000
                 answer[EFieldName.TS_FLAG] = answer[EFieldName.TS_FLAG] / 1000

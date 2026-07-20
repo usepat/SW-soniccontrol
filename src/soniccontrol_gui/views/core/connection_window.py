@@ -184,7 +184,6 @@ class DeviceWindowManager:
                 sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=False)
                 break
 
-        # TODO: Maybe we should move this into a plugin
         device_type = sonicamp.info.device_type
         if device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.CRYSTAL, DeviceType.UNKNOWN]:
             # some devices are automatically in default routine.

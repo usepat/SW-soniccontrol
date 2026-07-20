@@ -17,7 +17,7 @@ class ProcedureController(EventManager):
     PROCEDURE_STOPPED: Literal["<<PROCEDURE_STOPPED>>"] = "<<PROCEDURE_STOPPED>>"
     PROCEDURE_RUNNING: Literal["<<PROCEDURE_RUNNING>>"] = "<<PROCEDURE_RUNNING>>"
 
-    def __init__(self, device: SonicDevice, updater: EventManager, logger = None): # TODO: add type hint to updater after moving updater into sonic control
+    def __init__(self, device: SonicDevice, updater: EventManager, logger = None):
         super().__init__()
         if logger is None:
             logger = get_base_logger(device._logger)

@@ -196,7 +196,6 @@ class PostmanHomeTabView(TabView):
     def __init__(self, master: ttk.Frame, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
 
-    #TODO: better icon and label needed
     @property
     def image(self) -> ttk.ImageTk.PhotoImage:
         return ImageLoader.load_image_resource(images.HOME_ICON_BLACK, sizes.TAB_ICON_SIZE)

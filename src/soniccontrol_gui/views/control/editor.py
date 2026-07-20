@@ -84,7 +84,6 @@ class Editor(UIComponent):
         self._view.bind_editor_text(set_text)
 
         self._set_interpreter_state(self._interpreter.interpreter_state)
-        # TODO: highlight errors in script
         self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, lambda e: self._handle_script_error(e.data["exception"]))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_INTERPRETER_STATE, lambda e: self._set_interpreter_state(e.new_value))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda e: self._set_current_target(e.new_value))

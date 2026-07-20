@@ -48,7 +48,6 @@ class AutoProc(Procedure):
 
     async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
         try:
-            # TODO ensure GetAuto returns a answer where all FieldName of both scan and tune are returned
             answer = await device.execute_command(commands.GetAuto())
         except (CommandValidationError, CommandExecutionError) as _:
             return {}

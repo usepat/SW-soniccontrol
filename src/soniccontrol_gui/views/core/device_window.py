@@ -156,10 +156,11 @@ class RescueWindow(DeviceWindow):
             log_storage_handler.setLevel(logging.DEBUG)
 
              # Models
-            self._proc_controller = ProcedureController(self._device, EventManager()) # FIXME: what to do if devices do not support updates?
+            fake_updater = EventManager()
+            self._proc_controller = ProcedureController(self._device, fake_updater) 
             self._scripting = NewScriptingFacade()
             self._script_file = ScriptFile(logger=self._logger)
-            self._interpreter = InterpreterEngine(self._device, EventManager(), self._logger) # type: ignore
+            self._interpreter = InterpreterEngine(self._device, fake_updater, self._logger) # type: ignore
 
             self._logger.debug("Create views")
             self._serialmonitor = SerialMonitor(self, self._device.communicator)

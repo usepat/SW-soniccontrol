@@ -77,11 +77,6 @@ class RamperLocal(Ramper):
     ) -> None:
         values = [int(args.f_start.to_prefix(SIPrefix.NONE)) + i * int(args.f_step.to_prefix(SIPrefix.NONE)) for i in range(int((int(args.f_stop.to_prefix(SIPrefix.NONE)) - int(args.f_start.to_prefix(SIPrefix.NONE))) / int(args.f_step.to_prefix(SIPrefix.NONE))) + 1) ]
 
-        # await device.get_overview() # FIXME I dont think we need this
-        # I am removing it for now because we can't send commands to the crystal device that have no command code
-        # TODO: Do we need those two lines?
-        # await device.execute_command(f"!freq={start}")
-        # await device.set_signal_on()
         await device.execute_command(commands.SetGain(args.gain.value))
         await self._ramp(device, list(values), args.t_on, args.t_off)
     

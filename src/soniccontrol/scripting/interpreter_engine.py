@@ -29,6 +29,7 @@ class CurrentTarget:
 
 class InterpreterEngine(EventManager):
     INTERPRETATION_ERROR = "<<INTERPRETATION_ERROR>>"
+    INTERPRETATION_WARNING = "<<INTERPRETATION_WARNING>>"
     PROPERTY_INTERPRETER_STATE = "interpreter_state"
     PROPERTY_CURRENT_TARGET = "current_target"
 
@@ -130,9 +131,19 @@ class InterpreterEngine(EventManager):
         try:
             while True:
                 step = next(self._execution_steps)
+
                 self._set_current_target(CurrentTarget(step.line, step.description))
                 self._logger.info("Current task: %s", step.description)
-                await step.command(self._device, self._proc_controller)
+                
+                try:
+                    await step.command(self._device, self._proc_controller)
+                except Warning as w:
+                    # has to be handled here, because we do not want to stop on warnings
+                    # we want to continue the loop
+                    self._logger.warning(w)
+                    self._set_current_target(CurrentTarget(step.line, str(w)))
+                    self.emit(Event(InterpreterEngine.INTERPRETATION_WARNING, warning=w)) 
+
                 if single_instruction:
                     self._set_interpreter_state(InterpreterState.PAUSED)
                     break

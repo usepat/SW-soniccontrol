@@ -91,7 +91,6 @@ class RemoteClient:
     async def is_port_free(self, port: str) -> bool:
         assert self._session
 
-        # TODO: maybe we need to refactor this, because we changed device detection
         async with self._session.get(self._url + "/is_port_free/" + port) as response:
             await self._check_response_ok(response)
             return (await response.json())["is_connected"]

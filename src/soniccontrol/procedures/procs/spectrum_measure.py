@@ -83,8 +83,6 @@ class SpectrumMeasure(Procedure):
         values = [f_start + i * f_step for i in range(num_steps + 1) ] # +1, because range stop is exclusive
 
         try:
-            # await device.get_overview() # FIXME I dont think we need this
-            # I am removing it for now because we can't send commands to the crystal device that have no command code
             self._raise_if_stop_requested()
             await device.execute_command(commands.SetGain(args.gain.to_prefix(SIPrefix.NONE)))
             await self._ramp(device, list(values), args.t_on, args.t_off, args.time_offset_measure)

@@ -30,7 +30,6 @@ class SerialCommunicator(Communicator):
 
     def __attrs_post_init__(self) -> None:
         self._logger = logging.getLogger(self._logger.name + "." + SerialCommunicator.__name__)
-        #self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
         self._protocol: CommunicationProtocol = SonicMessageProtocol()
         super().__init__()
 
@@ -58,7 +57,8 @@ class SerialCommunicator(Communicator):
     async def _send_chunks(self, message: bytes) -> None:
         assert self._writer
 
-        total_length = len(message)  # TODO Quick fix for sending messages in small chunks
+        # FIXME: Quick fix for sending messages in small chunks
+        total_length = len(message)  
         offset = 0
         chunk_size=30 # Messages longer than 30 characters could not be sent
         delay = 1

@@ -2186,9 +2186,9 @@ class FormWidgetView(View):
         self._title_label.pack()
         self._content_frame.pack(fill=ttk.BOTH, pady=10, expand=True)
 
-        # TODO: refactor this, because we have now only one child inside the scroll frame
-        for i, child in enumerate(self._content_frame.children.values()):
-            child.pack(fill=ttk.BOTH, expand=True, padx=5, pady=5)
+        # there is only a single child inside the frame.
+        child = next(iter(self._content_frame.children.values()))
+        child.pack(fill=ttk.BOTH, expand=True, padx=5, pady=5)
 
     @property
     def field_slot(self) -> ttk.Frame:

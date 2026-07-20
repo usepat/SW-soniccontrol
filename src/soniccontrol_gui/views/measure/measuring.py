@@ -45,7 +45,7 @@ class Measuring(UIComponent):
         self._logger.debug("Create SonicMeasure")
         self._experiment_execution_state = ExperimentExecutionState.FINISHED
         self._selected_target: CaptureTargets = CaptureTargets.FREE 
-        self._capture = capture # TODO: move this to device window
+        self._capture = capture
         self._capture_targets = capture_targets
         self._firmware_info = firmware_info
 

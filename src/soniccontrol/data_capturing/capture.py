@@ -101,7 +101,6 @@ class Capture(EventManager):
 
             attrs: Dict[str, Any] = { k.name: v for k, v in status.items() }
             
-            # TODO: Maybe it would be better to move this into updater?
             timestamp_col = EFieldName.TIMESTAMP.name
             if EFieldName.TIMESTAMP not in status.keys():
                 attrs[timestamp_col] = datetime.datetime.now()

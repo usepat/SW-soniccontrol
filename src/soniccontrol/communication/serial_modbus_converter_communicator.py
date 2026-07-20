@@ -42,7 +42,6 @@ class SerialModbusConverterCommunicator(Communicator):
     async def close_communication(self, restart: bool = False) -> None: 
         pass
 
-    # TODO Communicator api should take commandstructs and internally take care of serialization
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str: 
         self._logger.debug("Serial monitor Modbus request: %s", request)
         res = self._deserializer.get_command_struct(request)

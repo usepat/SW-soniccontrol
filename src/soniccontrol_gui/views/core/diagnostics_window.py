@@ -43,7 +43,7 @@ class HwTestingTab(UIComponent):
         self._test_executor.subscribe(TestExecutor.NEEDS_USER_INTERACTION_EVENT, self._on_user_interaction_needed)
         self._test_executor.subscribe_property_listener(TestExecutor.RUNNING_TEST_INDEX_PROPERTY, self._on_running_test_index_changed)
         self._view.set_run_all_tests_callback(self._on_run_all_tests)
-        self._view.set_stop_callback(self._on_stop_all_tests)
+        self._view.set_stop_callback(async_handler(self._on_stop_all_tests))
         self._view.set_create_test_report_callback(self._on_create_test_report)
 
     def _is_running_all_tests(self) -> bool:
@@ -87,12 +87,11 @@ class HwTestingTab(UIComponent):
 
         finally:
             for test_widget in self._test_widgets:
-                test_widget.enable(True) # FIXME: if it is actually enabled depends on the app state
+                test_widget.enable(True)
 
             self._view.enable_run_all_tests_button(True)
             self._view.enable_stop_button(False)
 
-    @async_handler
     async def _on_stop_all_tests(self):
         if self._is_running_all_tests():
             assert self._run_all_tests_task is not None
@@ -130,14 +129,17 @@ class HwTestingTab(UIComponent):
 
         self._test_executor.proceed_semi_automated_test()
 
-    def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
+    @async_handler
+    async def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state
+        if execution_state == ExecutionState.NOT_RESPONSIVE:
+            await self._on_stop_all_tests()
+
         enabled = execution_state != ExecutionState.NOT_RESPONSIVE
         for test_widget in self._test_widgets:
             test_widget.enable(enabled)
             self._view.enable_run_all_tests_button(enabled)
             self._view.enable_stop_button(enabled)
-        # TODO: stop tests
 
     def _on_create_test_report(self):
         file_path = self._view.file_path_test_report

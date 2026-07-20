@@ -22,8 +22,6 @@ from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceW
 from importlib.metadata import entry_points
 # ------------------------------------------------------------------------
 
-# TODO add UIPluginSlotComponent and PluginSlotRegistry
-
 
 # FACTORY now takes master + parent_component so views are born with the correct master
 class UIComponentFactory(abc.ABC):

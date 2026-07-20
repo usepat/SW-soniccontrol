@@ -14,7 +14,6 @@ from sonic_protocol.si_unit import SIVar
 def custom_validator_factory(data_type, min, max):
     def custom_validator(instance, attribute, value):
         if value < min or value > max:
-            #TODO improve messsage
             raise TypeError(f"{attribute.name} must be inside the range {min} - {max}. Got: {value}")
     return custom_validator
 

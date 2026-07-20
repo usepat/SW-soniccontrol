@@ -88,9 +88,6 @@ class MessageFetcher:
                 return logging.DEBUG
 
     async def _worker(self) -> None:
-        # TODO: use the command_code_dash from the protocol directly or inject it
-        COMMAND_CODE_DASH = "20"
-
         response = ""
         while True:
             try:
@@ -117,6 +114,9 @@ class MessageFetcher:
                 raise e 
 
             if isinstance(message, AnswerMessage):
+                # TODO: use the command_code_dash from the protocol directly or inject it
+                COMMAND_CODE_DASH = "20"
+
                 if message.content.startswith(COMMAND_CODE_DASH):
                     self._logger.info("Read message: %s", response)
             
@@ -126,7 +126,7 @@ class MessageFetcher:
                     self._answer_received[message.msg_id] = asyncio.Event()
                 self._answer_received[message.msg_id].set()
             elif isinstance(message, NotifyMessage):
-                pass # TODO: implement producer consumer architecture here for notify events. We need a NotificationFetcher class similar to updater
+                pass #  This could be extended in the future. But at the moment notify messages are simply ignored
             elif isinstance(message, LogMessage):
                 log_level = self._convert_log_levels(message.log_level)
                 self._device_logger.log(log_level, message.content)

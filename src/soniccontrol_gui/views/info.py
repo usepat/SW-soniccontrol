@@ -40,7 +40,7 @@ class Info(UIComponent):
             # ui_labels.HOME_HELP_AUTO,
             ui_labels.NEW_LINE,
             ui_labels.NEW_LINE,
-            ui_labels.TODO,
+            ui_labels.INFO_TAB_REMARKS,
             Text(ui_labels.CONTACT, font=fonts.QTYPE_OT_CONDLIGHT),
             Text("Stefan Schöller: stefan.schoeller@usepat.com", font=fonts.QTYPE_OT_CONDLIGHT, selectable=True),
             Text("Christoph Gasser: christoph.gasser@usepat.com", font=fonts.QTYPE_OT_CONDLIGHT, selectable=True),
