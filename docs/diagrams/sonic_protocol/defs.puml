@@ -62,7 +62,6 @@ package sonic_protocol.defs {
     CommandParamDef o-- FieldType: param_type
     FieldType o-- SIUnit: si_unit
     FieldType o-- SIPrefix: si_prefix
-    FieldType o-- ConverterType: converter_ref
     FieldType o-- DeviceParamConstantType: max_value
     FieldType o-- DeviceParamConstantType: min_value
     MetaExport o-- MetaExportDescriptor: descriptor

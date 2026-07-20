@@ -3,7 +3,7 @@ from enum import Enum, IntEnum
 from typing import Any, TypeVar
 import numpy as np
 
-from sonic_protocol.schema import ConverterType, Timestamp, Version
+from sonic_protocol.schema import Timestamp, Version
 
 
 class Converter(abc.ABC):
@@ -129,14 +129,13 @@ class PrimitiveTypeConverter(Converter):
 
 
 
-def get_converter(converter_type: ConverterType, target_class: Any) -> Converter:
-    match converter_type:
-        case ConverterType.ENUM:
-            assert(issubclass(target_class, Enum))
-            return EnumConverter(target_class)
-        case ConverterType.VERSION:
-            return VersionConverter()
-        case ConverterType.PRIMITIVE:
-            return PrimitiveTypeConverter(target_class)
-        case ConverterType.TIMESTAMP:
-            return TimestampConverter()
+def get_converter(target_class: Any) -> Converter:
+    if issubclass(target_class, Enum):
+        return EnumConverter(target_class)
+    elif issubclass(target_class, Version):
+        return VersionConverter()    
+    elif issubclass(target_class, Timestamp):
+        return TimestampConverter() 
+    else:
+        return PrimitiveTypeConverter(target_class)
+

@@ -41,8 +41,6 @@ class Answer:
     valid: ValidationStatus = attrs.field(on_setattr=attrs.setters.NO_OP)
     command_code: ICommandCode | None = attrs.field(default=None)
     field_value_dict: Dict[IEFieldName, Any] = attrs.field(default={})
-    # TODO: timing should be provided here as an attribute instead inside field_value_dict
-    # however hard to propagate with the current architecture
 
     # received_timestamp: float = attrs.field(factory=time.time, init=False, on_setattr=attrs.setters.NO_OP)
 
@@ -58,7 +56,6 @@ class Answer:
         return self.field_value_dict[key]
     
     def __setitem__(self, key: IEFieldName, value):
-        # TODO ask David if there is a safer way to do this 
         self.field_value_dict[key] = value
 
 

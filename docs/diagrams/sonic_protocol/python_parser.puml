@@ -8,9 +8,6 @@ package sonic_protocol.defs {
   }
   class "CommandDef" {
   }
-  class "ConverterType"  {
-    name
-  }
   class "FieldType" {
   }
   class "Protocol" {
@@ -35,7 +32,6 @@ class "Answer" as sonic_protocol.python_parser.answer.Answer {
   is_error_msg() -> bool
 }
 class "AnswerFieldToStringConverter" as sonic_protocol.python_parser.answer_field_converter.AnswerFieldToStringConverter {
-  converter_ref
   convert(value: Any) -> str
 }
 class "AnswerValidator" as sonic_protocol.python_parser.answer.AnswerValidator {

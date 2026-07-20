@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 
 import numpy as np
-from sonic_protocol.schema import AnswerFieldDef, ICommandCode, CommandContract, CommandParamDef, ConverterType, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
+from sonic_protocol.schema import AnswerFieldDef, ICommandCode, CommandContract, CommandParamDef, DeviceParamConstantType, DeviceParamConstants, DeviceType, FieldType, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version, Protocol
 from sonic_protocol.protocol import protocol_list
 
 class ManualCompiler(abc.ABC):
@@ -105,8 +105,7 @@ class MarkdownManualCompiler(ManualCompiler):
 
 
         possible_values = field_type.allowed_values
-        if possible_values is None and field_type.converter_ref == ConverterType.ENUM:
-            assert issubclass(field_type.field_type, Enum)
+        if possible_values is None and issubclass(field_type.field_type, Enum):
             possible_values = [ enum_member.value for enum_member in field_type.field_type ]
         if possible_values is not None:
             type_header += "\tPossible values:  \n"

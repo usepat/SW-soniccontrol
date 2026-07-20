@@ -4,7 +4,7 @@ from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
-    CommandParamDef, ControlMode, ConverterType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    CommandParamDef, ControlMode, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, SystemState, TransducerState, Anomaly
 )
 from ...protocol_v1_0_0.flashing_commands.flashing_commands import field_success

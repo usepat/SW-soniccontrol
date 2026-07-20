@@ -1,7 +1,7 @@
 
 
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.schema import Anomaly, AnswerFieldDef, ControlMode, ConverterType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SystemState, TransducerState
+from sonic_protocol.schema import Anomaly, AnswerFieldDef, ControlMode, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SystemState, TransducerState
 
 from ..types import types as t
 import numpy as np
@@ -12,8 +12,7 @@ snr_field = AnswerFieldDef(
 )
 
 field_type_control_mode = FieldType(
-    field_type=ControlMode, 
-    converter_ref=ConverterType.ENUM
+    field_type=ControlMode
 )
 field_control_mode = AnswerFieldDef(
     field_name=EFieldName.CONTROL_MODE,
@@ -40,22 +39,21 @@ field_dac_voltage = AnswerFieldDef(
 
 field_anomaly_detection = AnswerFieldDef(
     field_name=EFieldName.ANOMALY_DETECTION,
-    field_type=FieldType(field_type=Anomaly, converter_ref=ConverterType.ENUM),
+    field_type=FieldType(field_type=Anomaly),
 )
 
 field_transducer_state = AnswerFieldDef(
     field_name=EFieldName.TRANSDUCER_STATE,
-    field_type=FieldType(TransducerState, converter_ref=ConverterType.ENUM),
+    field_type=FieldType(TransducerState),
 )
 
 field_system_state = AnswerFieldDef(
     field_name=EFieldName.SYSTEM_STATE,
-    field_type=FieldType(SystemState, converter_ref=ConverterType.ENUM),
+    field_type=FieldType(SystemState),
 )
 
 field_type_device_state = FieldType(
-    field_type=t.DeviceState,
-    converter_ref=ConverterType.ENUM
+    field_type=t.DeviceState
 )
 
 field_device_state = AnswerFieldDef(

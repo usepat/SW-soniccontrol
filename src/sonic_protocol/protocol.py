@@ -4,5 +4,4 @@ LatestProtocol = Protocol_v3_0_0
 protocol_list = LatestProtocol()
 # TODO add plugin for manual building
 
-# from configuration.protocol import configuration_protocol_list
-# protocol_list = configuration_protocol_list
+

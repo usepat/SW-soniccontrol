@@ -73,7 +73,7 @@ class EFieldName(IEFieldName):
     LOG_LEVEL = BaseFieldName.LOG_LEVEL.value 
     LOGGER_NAME = BaseFieldName.LOGGER_NAME.value 
 
-    TIMESTAMP = BaseFieldName.TIMESTAMP.value 
+    TIMESTAMP = BaseFieldName.TIMESTAMP.value # never use this as a field. It gets set by sonic device
 
     ALLOCATOR_NAME = BaseFieldName.ALLOCATOR_NAME.value 
     SIZE = BaseFieldName.SIZE.value 

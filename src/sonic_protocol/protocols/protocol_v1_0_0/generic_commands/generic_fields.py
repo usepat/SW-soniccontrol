@@ -1,11 +1,11 @@
 import numpy as np
-from sonic_protocol.schema import Procedure, DeviceType, FieldType, AnswerFieldDef, ConverterType, Timestamp
+from sonic_protocol.schema import Procedure, DeviceType, FieldType, AnswerFieldDef, Timestamp
 from sonic_protocol.field_names import EFieldName
 
 
 field_device_type = AnswerFieldDef(
 	field_name=EFieldName.DEVICE_TYPE,
-	field_type=FieldType(DeviceType, converter_ref=ConverterType.ENUM),
+	field_type=FieldType(DeviceType),
 )
 
 build_date_field = AnswerFieldDef(
@@ -33,8 +33,7 @@ param_type_timestamp = FieldType(
         day= 1,
         month= 1,
         year= 1970
-    ),
-    converter_ref=ConverterType.TIMESTAMP
+    )
 )
 
 field_timestamp = AnswerFieldDef(

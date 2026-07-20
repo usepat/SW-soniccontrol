@@ -18,7 +18,6 @@ from sonic_protocol.protocol import protocol_list
 from sonic_protocol.groups import GroupId, get_spec
 from sonic_protocol.schema import (
     CommandContract,
-    ConverterType,
     DeviceParamConstantType,
     DeviceType,
     ProtocolType,
@@ -243,7 +242,6 @@ class HtmlManualCompiler(ManualCompiler):
             "str": str,
             "float": float,
             "np": np, # needed for np.uint8, etc.
-            "ConverterType": ConverterType,
             "Version": Version,
             "Enum": Enum,
             "Timestamp": Timestamp,

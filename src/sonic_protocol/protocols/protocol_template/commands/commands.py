@@ -3,7 +3,7 @@ from enum import Enum, IntEnum
 from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import (
-    CommandParamDef, ControlMode, ConverterType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    CommandParamDef, ControlMode, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, SystemState, TransducerState, Anomaly
 )
 from sonic_protocol.command_codes import CommandCode

@@ -5,7 +5,7 @@ from sonic_protocol.command_codes_deprecated import CommandCodeDeprecated
 from sonic_protocol.groups import GROUPS
 from sonic_protocol.protocols.contract_generators import create_version_field
 from sonic_protocol.schema import (
-    BuildType, CommunicationChannel, CommunicationProtocol, ConverterType, DeviceParamConstantType, FieldType, IEFieldName, InputSource, LoggerName, Loglevel, Procedure, 
+    BuildType, CommunicationChannel, CommunicationProtocol, DeviceParamConstantType, FieldType, IEFieldName, InputSource, LoggerName, Loglevel, Procedure, 
     ProtocolType, Signal, SonicTextCommandAttrs, Activation, UserManualAttrs, Version, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, DeviceType, Waveform,
 )
@@ -54,7 +54,7 @@ get_protocol = CommandContract(
             create_version_field(EFieldName.PROTOCOL_VERSION),
             AnswerFieldDef(
                 field_name=EFieldName.IS_RELEASE, 
-                field_type=FieldType(BuildType, converter_ref=ConverterType.ENUM), 
+                field_type=FieldType(BuildType), 
             ),
             AnswerFieldDef(
                 EFieldName.ADDITIONAL_OPTIONS,

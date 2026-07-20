@@ -3,7 +3,7 @@
 import copy
 
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.schema import Anomaly, AnswerFieldDef, ControlMode, ConverterType, DeviceParamConstantType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SystemState, TransducerState
+from sonic_protocol.schema import Anomaly, AnswerFieldDef, ControlMode, DeviceParamConstantType, FieldType, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SystemState, TransducerState
 
 from ..types import types as t
 import numpy as np
@@ -144,8 +144,7 @@ dac_mV_field = AnswerFieldDef(
 )
 
 field_type_parity = FieldType(
-    field_type=t.Parity,
-    converter_ref=ConverterType.ENUM
+    field_type=t.Parity
 )
 
 parity_field = AnswerFieldDef(
@@ -166,8 +165,7 @@ baudrate_field = AnswerFieldDef(
 )
 
 field_type_uart_interface = FieldType(
-    field_type=t.UartInterface,
-    converter_ref=ConverterType.ENUM
+    field_type=t.UartInterface
 )
 
 uart_interface_field = AnswerFieldDef(
