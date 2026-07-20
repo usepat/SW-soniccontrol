@@ -58,6 +58,6 @@ class Updater(EventManager, CyclicTask):
                 return
             raise
 
-        if answer.valid:
+        if answer.is_valid:
             self.emit(Event(Updater.UPDATE_EVENT, status=answer.field_value_dict))
 

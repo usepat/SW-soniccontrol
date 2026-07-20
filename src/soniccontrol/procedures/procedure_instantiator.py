@@ -17,7 +17,7 @@ class ProcedureInstantiator:
     async def _is_command_valid(self, device: SonicDevice, cmd: Command) -> bool:
         if device.has_command(cmd):
             answer = await device.execute_command(cmd, raise_exception=False)
-            return answer.valid
+            return answer.is_valid
         return False
         
         

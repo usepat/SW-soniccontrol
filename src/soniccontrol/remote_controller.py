@@ -578,7 +578,7 @@ async def main():
     answer = await controller.send_command(cmds.SetAtf(1, 100000))
     
     print(answer.message)
-    if answer.valid:
+    if answer.is_valid:
         print(answer[EFieldName.ATF])
 
     await controller.disconnect()

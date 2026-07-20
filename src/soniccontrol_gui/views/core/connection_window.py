@@ -217,7 +217,7 @@ class DeviceWindowManager:
                 disconnect_on_exception=False,
                 should_log=False,
             )
-            if answer.valid:
+            if answer.is_valid:
                 return
 
             last_error = RuntimeError(answer.message)

@@ -5,7 +5,7 @@ import logging
 
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import BaseFieldName, EFieldName
-from sonic_protocol.python_parser.answer import Answer, AnswerValidator
+from sonic_protocol.python_parser.answer import Answer, AnswerValidator, ValidationStatus
 from sonic_protocol.python_parser.answer_validator_builder import AnswerValidatorBuilder
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
@@ -116,7 +116,7 @@ class SonicDevice:
             
         ERROR_CODES_START = 20000
         if code is not None and code.value >= ERROR_CODES_START:
-            answer = Answer(response_str, False, True, code)
+            answer = Answer(response_str, ValidationStatus.NOT_VALID, code)
             answer.field_value_dict[EFieldName.TIMING] = time_needed
             return answer
         
@@ -129,7 +129,7 @@ class SonicDevice:
             # In open rescue mode, if we cannot understand the answers of the device.
             # So in rescue mode, we skip the validation of the answers
             # Also for the serial monitor we do not want to validate answers.
-            answer = Answer(response_str, False, was_validated=False)
+            answer = Answer(response_str, ValidationStatus.NOT_CHECKED)
         else:
             answer = answer_validator.validate(response_str)
         
@@ -211,9 +211,9 @@ class SonicDevice:
 
             if raise_exception:
                 raise e
-            return Answer(str(e), False, True)
+            return Answer(str(e), ValidationStatus.NOT_VALID)
 
-        if raise_exception and answer.was_validated and not answer.valid:
+        if raise_exception and answer.valid == ValidationStatus.NOT_VALID:
             raise CommandValidationError(answer.message)
         
         if raise_exception and answer.is_error_msg:
@@ -307,7 +307,7 @@ class SonicDevice:
             if raise_exception:
                 raise NotImplementedError(err_msg)
             else:
-                return Answer(err_msg, False, True)
+                return Answer(err_msg, ValidationStatus.NOT_VALID)
 
         if not self._uses_modbus():
             # FIXME do we need some kind of backwards compatability manager?
@@ -326,7 +326,7 @@ class SonicDevice:
             return answer
 
         if self._has_pending_modbus_commands() or self._modbus_operation_lock.locked():
-            return Answer("Skipped update polling while command is running", False, False)
+            return Answer("Skipped update polling while command is running", ValidationStatus.NOT_CHECKED)
 
         async with self._modbus_operation_lock:
             return await self._execute_command_impl(

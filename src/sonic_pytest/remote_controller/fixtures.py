@@ -132,7 +132,7 @@ async def apply_modbus_user_settings(
     await controller.send_command(commands.SetModbusServerAddress(slave_id), raise_exception=True)
 
     answer = await controller.send_command(commands.GetModbusSettings(), raise_exception=True)
-    assert answer.valid, f"GetModbusSettings returned an invalid answer: {answer.message}"
+    assert answer.is_valid, f"GetModbusSettings returned an invalid answer: {answer.message}"
     assert answer[EFieldName.PARITY] == parity, (
         f"Expected modbus parity {parity}, got {answer[EFieldName.PARITY]}"
     )

@@ -14,7 +14,7 @@ from sonic_protocol.protocol import protocol_list
 from sonic_protocol.command_codes import BaseCommandCode, CommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
-from sonic_protocol.python_parser.answer import Answer
+from sonic_protocol.python_parser.answer import Answer, ValidationStatus
 from sonic_protocol.python_parser.commands import Command, FlashUSB, GetSwf, GetUpdateDescale, RestartDevice, SetOff, SetOn, SetSwf
 from sonic_protocol.schema import BuildType, CommandContract, CommandParamDef, DeviceType, FieldType, ProtocolType, Timestamp, Version
 from soniccontrol.communication.communicator import Communicator
@@ -334,16 +334,14 @@ class ModbusCommunicator(Communicator):
         if self._modbus_client is None or not self._modbus_client.connected:
             return Answer(
                 "Modbus communicator is not connected",
-                False,
-                True,
+                ValidationStatus.NOT_VALID,
                 command.code,
             )
 
         if self._has_unsupported_string_index(command_contract, command):
             return Answer(
                 "Modbus does not support commands with string index parameters",
-                False,
-                False,
+                ValidationStatus.NOT_CHECKED,
                 command.code,
             )
         while self._lock.locked():
@@ -385,7 +383,7 @@ class ModbusCommunicator(Communicator):
                 device_id=self.DEFAULT_DEVICE_ID,
             )
         except asyncio.TimeoutError:
-            return Answer("Timeout writing modbus command", False, True, command.code), True
+            return Answer("Timeout writing modbus command", ValidationStatus.NOT_VALID, command.code), True
         write_time = time.perf_counter() - write_started_at
         write_retries = getattr(write_result, "retries", 0)
         if write_time >= self.SLOW_TRANSACTION_LOG_THRESHOLD_S or write_retries:
@@ -396,13 +394,13 @@ class ModbusCommunicator(Communicator):
                 write_retries,
             )
         if write_result.isError():
-            return Answer("Error sending modbus command", False, True, command.code), True
+            return Answer("Error sending modbus command", ValidationStatus.NOT_VALID, command.code), True
 
         response_len, error_message = await self._wait_for_response_ready()
         if error_message is not None:
-            return Answer(error_message, False, True, command.code), True
+            return Answer(error_message, ValidationStatus.NOT_VALID, command.code), True
         if response_len <= 0:
-            return Answer("Empty modbus response", False, True, command.code), True
+            return Answer("Empty modbus response", ValidationStatus.NOT_VALID, command.code), True
 
         try:
             response = await self._read_input_registers(
@@ -411,9 +409,9 @@ class ModbusCommunicator(Communicator):
                 device_id=self.DEFAULT_DEVICE_ID,
             )
         except asyncio.TimeoutError:
-            return Answer("Timeout reading modbus response", False, True, command.code), True
+            return Answer("Timeout reading modbus response", ValidationStatus.NOT_VALID, command.code), True
         if response.isError():
-            return Answer("Error reading modbus response", False, True, command.code), True
+            return Answer("Error reading modbus response", ValidationStatus.NOT_VALID, command.code), True
 
         payload_registers = list(response.registers)
         response_code = payload_registers[0]
@@ -424,8 +422,7 @@ class ModbusCommunicator(Communicator):
             error_text = self.parse_error_message(response_fields)
             answer = Answer(
                 error_text,
-                False,
-                True,
+                ValidationStatus.NOT_VALID,
                 response_code_enum,
                 field_value_dict={EFieldName.ERROR_MESSAGE: error_text},
             )
@@ -436,8 +433,7 @@ class ModbusCommunicator(Communicator):
         message = self.answer_message_from_fields(answer_dict)
         answer = Answer(
             message,
-            True,
-            True,
+            ValidationStatus.VALID,
             response_code_enum,
             field_value_dict=answer_dict,
         )

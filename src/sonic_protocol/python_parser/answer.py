@@ -8,6 +8,13 @@ import attrs
 from sonic_protocol.python_parser.converters import Converter
 from sonic_protocol.field_names import IEFieldName
 from sonic_protocol.schema import ICommandCode
+from enum import Enum, auto
+
+
+class ValidationStatus(Enum):
+    NOT_CHECKED = auto() # means that the answer was not checked, if it is valid
+    VALID = auto()
+    NOT_VALID = auto()
 
 
 @attrs.define()    
@@ -19,14 +26,8 @@ class Answer:
     ----------
     message: str
         Contains the plain text answer that was received
-    valid: bool
-        Is True, if the answer could be validated successfully and is not an error
-    was_validated: bool
-        Is True, if the answer was parsed and validated. 
-        It is only False, if the sent command was a plain string 
-        and no validator for it could be deduced. 
-        Therefore it is recommended to always use Command Objects instead of strings 
-        for sending commands to the device.
+    valid: ValidationStatus
+        if the answer could be validated successfully and is not an error
     command_code: ICommandCode | None
         The command code returned from the device. Is the same as for the command sent, 
         if the device could execute the command successfully
@@ -37,15 +38,17 @@ class Answer:
     """
 
     message: str = attrs.field(on_setattr=attrs.setters.NO_OP) 
-    # TODO: probably better to make an enum ValidationStatus and merge valid and was_validated
-    valid: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
-    was_validated: bool = attrs.field(on_setattr=attrs.setters.NO_OP)
+    valid: ValidationStatus = attrs.field(on_setattr=attrs.setters.NO_OP)
     command_code: ICommandCode | None = attrs.field(default=None)
     field_value_dict: Dict[IEFieldName, Any] = attrs.field(default={})
     # TODO: timing should be provided here as an attribute instead inside field_value_dict
     # however hard to propagate with the current architecture
 
     # received_timestamp: float = attrs.field(factory=time.time, init=False, on_setattr=attrs.setters.NO_OP)
+
+    @property
+    def is_valid(self) -> bool:
+        return self.valid == ValidationStatus.VALID
 
     @property
     def is_error_msg(self) -> bool:
@@ -230,7 +233,7 @@ class AnswerValidator:
         #logging.info("Searching: %s", data)
         result: Optional[re.Match] = self._compiled_pattern.search(data)
         if result is None:
-            return Answer(data, False, True)
+            return Answer(data, ValidationStatus.NOT_VALID)
 
         result_dict: Dict[IEFieldName, Any] = {}
         for keyword, value in result.groupdict().items():
@@ -238,7 +241,7 @@ class AnswerValidator:
             converter = self._converters[field_name]
 
             if not converter.validate_str(value):
-                return Answer(data, False, True) 
+                return Answer(data, ValidationStatus.NOT_VALID) 
             result_dict[field_name] = converter.convert_str_to_val(value)
 
         for field_name, worker in self._after_converters.items():
@@ -249,6 +252,6 @@ class AnswerValidator:
             }
             result_dict[field_name] = worker.convert_func(kwargs)
 
-        answer = Answer(data, True, True, field_value_dict=result_dict)
+        answer = Answer(data, ValidationStatus.VALID, field_value_dict=result_dict)
         #logging.info("AnswerValidator: %s", answer)
         return answer

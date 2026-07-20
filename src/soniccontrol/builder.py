@@ -97,7 +97,7 @@ class DeviceBuilder:
             warn_on_transport_error=True,
             suppress_exception_log=True,
         )
-        if answer.valid:
+        if answer.is_valid:
             assert EFieldName.DEVICE_TYPE in answer.field_value_dict
             assert EFieldName.PROTOCOL_VERSION in answer.field_value_dict
             assert EFieldName.IS_RELEASE in answer.field_value_dict
@@ -168,7 +168,7 @@ class DeviceBuilder:
         answer = await device.execute_command(start_command, raise_exception=False)
         if answer.is_error_msg:
             raise ConnectionError(answer.message)
-        if not answer.valid and not self._is_expected_configurator_disconnect(answer.message):
+        if not answer.is_valid and not self._is_expected_configurator_disconnect(answer.message):
             raise ConnectionError(answer.message)
 
         await device.disconnect()

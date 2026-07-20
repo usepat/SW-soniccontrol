@@ -6,7 +6,7 @@ import pytest
 
 import sonic_protocol.python_parser.commands as cmds
 import soniccontrol.builder as builder_module
-from sonic_protocol.python_parser.answer import Answer
+from sonic_protocol.python_parser.answer import Answer, ValidationStatus
 from sonic_protocol.schema import DeviceType
 from soniccontrol.builder import DeviceBuilder
 
@@ -21,7 +21,7 @@ def _device_mock(device_type: DeviceType, supports_start_configurator: bool = Fa
     device = Mock()
     device.info = SimpleNamespace(device_type=device_type)
     device.has_command.return_value = supports_start_configurator
-    device.execute_command = AsyncMock(return_value=Answer("ok", True, True))
+    device.execute_command = AsyncMock(return_value=Answer("ok", ValidationStatus.VALID))
     device.disconnect = AsyncMock()
     return device
 
@@ -97,8 +97,7 @@ async def test_build_configurator_tolerates_expected_disconnect(monkeypatch):
     amp.execute_command = AsyncMock(
         return_value=Answer(
             "device reports readiness to read but returned no data (device disconnected or multiple access on port?)",
-            False,
-            True,
+            ValidationStatus.NOT_VALID
         )
     )
     configurator = _device_mock(DeviceType.CONFIGURATOR)
@@ -119,7 +118,7 @@ async def test_build_configurator_raises_on_unexpected_start_failure(monkeypatch
     monkeypatch.setattr(builder_module, "SerialCommunicator", serial_communicator_factory)
 
     amp = _device_mock(DeviceType.DESCALE, supports_start_configurator=True)
-    amp.execute_command = AsyncMock(return_value=Answer("permission denied", False, True))
+    amp.execute_command = AsyncMock(return_value=Answer("permission denied", ValidationStatus.NOT_VALID))
     builder.build_amp = AsyncMock(return_value=amp)  # type: ignore[method-assign]
 
     with pytest.raises(ConnectionError, match="permission denied"):

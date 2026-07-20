@@ -565,7 +565,7 @@ set_att = CommandContract(
     code=CommandCode.SET_ATT,
     command_def=CommandDef(
         index_param=param_index,
-        setter_param=param_att, # TODO make a better param for att
+        setter_param=param_att,
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["!att"]
         )

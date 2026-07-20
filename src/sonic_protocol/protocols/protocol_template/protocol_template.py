@@ -21,9 +21,8 @@ from sonic_protocol.protocol_list import ProtocolList
 
 class Protocol_Template(ProtocolList):
     """
-        TODO: Description of changes in this protocol and why they were necessary
-
-
+        Each Protocol should contain a doc string comment about:
+        changes in this protocol and why they were necessary
     """
     def __init__(self):
         self._previous_protocol = Protocol_Template()

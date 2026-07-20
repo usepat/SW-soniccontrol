@@ -5,6 +5,7 @@ from attrs import validators
 
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
+from sonic_protocol.python_parser.answer import ValidationStatus
 from soniccontrol.procedures.holder import HolderArgs, convert_to_holder_args
 from soniccontrol.procedures.procedure import Procedure, ProcedureArgs
 from sonic_protocol.command_codes import CommandCode
@@ -71,6 +72,6 @@ class WipeLegacyProc(Procedure):
 
     async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
         answer = await device.execute_command(commands.GetPvalLegacy(), raise_exception=False)
-        if answer.was_validated and answer.valid:
+        if answer.is_valid:
             return WipeLegacyArgs.to_dict_with_holder_args(answer)
         return {}

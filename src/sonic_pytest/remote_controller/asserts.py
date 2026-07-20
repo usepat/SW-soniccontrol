@@ -1,13 +1,14 @@
 from typing import Any, Dict, List
 from pytest_check.context_manager import check
 from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.python_parser.answer import ValidationStatus
 from soniccontrol import Answer, EFieldName
 from soniccontrol import Command
 from soniccontrol.remote_controller import RemoteController
 
 
 def assert_answer(answer: Answer, expected_fields: Dict[EFieldName, Any], should_be_valid: bool = True):
-    assert answer.valid == should_be_valid, f"Answer should be {should_be_valid}, but is {answer.valid}"
+    assert answer.is_valid == should_be_valid, f"Answer should be {should_be_valid}, but is {answer.is_valid}"
 
     with check:
         for field_name, value in expected_fields.items():
@@ -26,7 +27,7 @@ def assert_answer_is_not_error(answer: Answer, errors_to_check: List[CommandCode
         else:
             assert answer.is_error_msg, "Answer is an error"
     else:
-        assert answer.valid, "answer is not valid and not an error"
+        assert answer.is_valid, "answer is not valid and not an error"
 
 
 async def send_command_and_check_response(controller: RemoteController, command: str | Command, raise_exception: bool = True) -> Answer:
