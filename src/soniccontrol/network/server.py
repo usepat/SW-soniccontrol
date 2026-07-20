@@ -19,37 +19,8 @@ from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.fw_device import create_device_discovery, create_connection_to_device
 from soniccontrol.network.plugin import register_server_plugins
 
-if sys.platform.startswith("linux"):
-    import pyudev
-else:
-    pyudev = None
 
 
-def get_tty_device_from_name(name: str) -> Any | None:
-    if pyudev is None:
-        return None
-
-    context = pyudev.Context()
-    device: Any | None = None
-    for subsystem in ["tty", "usb"]:
-        try: 
-            device = pyudev.Devices.from_name(context, subsystem, name)
-        except pyudev.DeviceNotFoundByNameError:
-            pass
-        else:
-            break
-    
-    if device is None:
-        return None
-
-    if device.subsystem == "usb":
-        for tty_dev in context.list_devices(subsystem="tty"):
-            parent_dev = tty_dev.find_parent(subsystem="usb", device_type="usb_device")
-            if parent_dev and parent_dev.sys_name == device.sys_name:
-                return tty_dev
-        return None
-
-    return device
 
 
 @attrs.define()
