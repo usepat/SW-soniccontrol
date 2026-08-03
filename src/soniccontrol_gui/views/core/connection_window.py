@@ -1,8 +1,10 @@
 import asyncio
 import contextlib
 from enum import Enum
+import logging
 import os
 from pathlib import Path
+import traceback
 from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional
 from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
@@ -155,7 +157,8 @@ class DeviceWindowManager:
                     sonicamp = await device_builder.build_amp(communicator, try_deduce_protocol_used=True)
                 break
             except Exception as e:
-                logger.error(e)
+                error_str = "".join(traceback.format_exception(e))
+                logger.error(error_str)
 
                 if isinstance(connection, ModbusConnection):
                     modbus_retry_count += 1
@@ -284,7 +287,13 @@ class ConnectionWindow(TopLevelWindow):
                         window_opened_future.set_exception(e)
                     raise
                 except Exception as e:
-                    MessageBox.show_error(self.view.root, str(e))
+                    error_str = "".join(traceback.format_exception(e, limit=10))
+                    # a logger instance can be monkey patched to exceptions
+                    # like this we can propagate error to a central error, while still 
+                    # supply the correct logger
+                    logger = getattr(e, "logger", logging.getLogger(_connection.connection_name))
+                    logger.error(error_str)
+                    MessageBox.show_error(self.view.root, error_str)
                     if not window_opened_future.done():
                         window_opened_future.set_exception(e)
                 else:
@@ -323,6 +332,11 @@ class ConnectionWindow(TopLevelWindow):
         self._loaded_ports.set()
 
     async def wait_until_window_loaded(self):
+        """
+        This function is mainly used for test automation. 
+
+        It may throw an exception, if some errors occurs during loading. 
+        """
         window_opened_future = self._window_opened_future
         await window_opened_future
         return window_opened_future.result()

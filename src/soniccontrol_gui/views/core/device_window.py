@@ -9,6 +9,7 @@ from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.communication.serial_modbus_converter_communicator import SerialModbusConverterCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
+from soniccontrol.logger.utils import add_logger_context_to_exception
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -40,6 +41,7 @@ from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.constants import files
+import traceback
 
 
 class DeviceWindow(TopLevelWindow):
@@ -184,7 +186,7 @@ class RescueWindow(DeviceWindow):
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
         
         except Exception as e:
-            self._logger.error(e)
+            add_logger_context_to_exception(e, self.logger)
             raise
 
 
@@ -285,10 +287,10 @@ class KnownDeviceWindow(DeviceWindow):
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
+            raise RuntimeError("uhh")
         except Exception as e:
-            self._logger.error(e)
-            MessageBox.show_error(root, str(e))
-            raise
+            add_logger_context_to_exception(e, self.logger)
+            raise e
 
     def _schedule_updater_start(self) -> None:
         if not isinstance(self._device.communicator, ModbusCommunicator):

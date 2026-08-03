@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import traceback
 from typing import Dict
 from asyncio import StreamReader
 
@@ -73,7 +74,8 @@ class MessageFetcher:
             except asyncio.CancelledError:
                 pass
             except Exception as e:
-                self._logger.error(str(e))
+                error_str = "".join(traceback.format_exception(e))
+                self._logger.error(error_str)
             self._task = None
 
     def _convert_log_levels(self, log_level: DeviceLogLevel) -> int:
@@ -109,8 +111,9 @@ class MessageFetcher:
                 self._logger.error(e)
                 continue
             except Exception as e:
+                error_str = "".join(traceback.format_exception(e))
                 log_fn = self._logger.warning if self._should_warn_on_exception(e) else self._logger.error
-                log_fn("Exception occured while reading the package:\n%s\nwith content:\n%s", e, response)
+                log_fn("Exception occured while reading the package:\n%s\nwith content:\n%s", error_str, response)
                 raise e 
 
             if isinstance(message, AnswerMessage):

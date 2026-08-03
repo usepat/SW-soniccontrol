@@ -2187,8 +2187,9 @@ class FormWidgetView(View):
         self._content_frame.pack(fill=ttk.BOTH, pady=10, expand=True)
 
         # there is only a single child inside the frame.
-        child = next(iter(self._content_frame.children.values()))
-        child.pack(fill=ttk.BOTH, expand=True, padx=5, pady=5)
+        child = next(iter(self._content_frame.children.values()), None)
+        if child is not None:
+            child.pack(fill=ttk.BOTH, expand=True, padx=5, pady=5)
 
     @property
     def field_slot(self) -> ttk.Frame:

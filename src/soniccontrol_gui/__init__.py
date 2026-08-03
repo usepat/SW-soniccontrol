@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import traceback
 
 from PIL import Image
 
@@ -102,10 +103,11 @@ def start_gui(remote_server_url: str | None):
         soniccontrol_logger.error(context['message'])
         exception = context.get("exception")
         if exception:
-            soniccontrol_logger.error(str(exception))
+            error_str = "".join(traceback.format_exception(exception, limit=10))
+            soniccontrol_logger.error(error_str)
             try:
                 if root.winfo_exists():
-                    MessageBox.show_error(root, str(exception))
+                    MessageBox.show_error(root, error_str)
             except Exception:
                 soniccontrol_logger.warning("Could not show error dialog during shutdown")
     

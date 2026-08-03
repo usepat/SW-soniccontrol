@@ -10,6 +10,7 @@ from soniccontrol.events import Event, PropertyChangeEvent
 from soniccontrol.hw_tests.test_base import SemiAutomatedStep, TestInfo
 from soniccontrol.hw_tests.test_executor import TestExecutor
 from soniccontrol.hw_tests.test_report_writer import TestReportWriter
+from soniccontrol.logger.utils import add_logger_context_to_exception
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -177,8 +178,7 @@ class DiagnosticsWindow(DeviceWindow):
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._testing_tab.on_execution_state_changed)
 
         except Exception as e:
-            self._logger.error(e)
-            MessageBox.show_error(root, str(e))
+            add_logger_context_to_exception(e, self.logger)
             raise
 
     @property
