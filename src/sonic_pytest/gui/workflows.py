@@ -1,31 +1,10 @@
 import asyncio
+from sonic_protocol.command_codes import CommandCode
 from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
 from soniccontrol_gui.constants import ui_labels
+from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 
-
-SERIAL_MONITOR_FAILURE_MARKERS = (
-    "no answer returned",
-    "timeout while waiting for response",
-    "device is not responding",
-    "the connection was closed",
-    "device error:",
-    "error reading",
-    "error sending",
-    "unknown command",
-    "invalid",
-    "exception",
-    "traceback",
-)
-
-
-def assert_serial_monitor_command_succeeded(command: str, answer: str) -> None:
-    if not command.startswith("!"):
-        return
-
-    lowered_answer = answer.strip().lower()
-    if any(marker in lowered_answer for marker in SERIAL_MONITOR_FAILURE_MARKERS):
-        raise AssertionError(f"Setup command '{command}' failed with answer: {answer}")
 
 async def send_over_serial_monitor(command: str, allow_fail=False) -> str:
     controller = GuiController()
@@ -54,8 +33,13 @@ async def send_over_serial_monitor(command: str, allow_fail=False) -> str:
         answer = entries[command_index + 1]
         if not answer.startswith(">>>"):
             # commands are always preceded with '>>>', answers never
-            if not allow_fail:
-                assert_serial_monitor_command_succeeded(command, answer)
+            assert answer.startswith(SerialMonitor.COMMUNICATION_EXCEPTION_PREFIX), \
+                f"Setup command '{command}' failed with communication error: {answer}"
+            
+            fields = answer.strip().split("#")
+            command_code = int(fields[0])
+            assert allow_fail or command_code < 20000, f"Device returned error: {answer}"
+
             return answer
         
         await controller.execute_events_until_idle()

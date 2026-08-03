@@ -30,7 +30,7 @@ async def reset_remote_controller_state(remote_controller: RemoteController) -> 
     await send_command_and_check_response(remote_controller, commands.SetControlMode(ControlMode.REMOTE))
     await send_command_and_check_response(remote_controller, commands.ClearErrors())
     await send_command_and_check_response(remote_controller, commands.SonicForce())
-    await send_command_and_check_response(remote_controller, commands.SetStop(), raise_exception = False)
+    await send_command_and_check_response(remote_controller, commands.SetStop(), raise_exception = False, check_command_not_permitted=True)
     await send_command_and_check_response(remote_controller, commands.SetOff())
 
 

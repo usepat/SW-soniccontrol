@@ -17,26 +17,28 @@ def assert_answer(answer: Answer, expected_fields: Dict[EFieldName, Any], should
         
 
 def assert_answer_is_not_error(answer: Answer, errors_to_check: List[CommandCode] | None = None):
-    unsignificant_error_strings = ['Procedure error no procedure running', 'No procedure was selected', 'Procedure error invalid args']
     if answer.is_error_msg:
         if errors_to_check is not None:
-            is_insignificant_error = any(x in answer.message for x in unsignificant_error_strings)
-            assert answer.command_code not in errors_to_check or is_insignificant_error, "Significant error occured"
+            assert answer.command_code not in errors_to_check, "Significant error occured"
         else:
             assert answer.is_error_msg, "Answer is an error"
     else:
         assert answer.is_valid, "answer is not valid and not an error"
 
 
-async def send_command_and_check_response(controller: RemoteController, command: str | Command, raise_exception: bool = True) -> Answer:
+async def send_command_and_check_response(controller: RemoteController, command: str | Command, raise_exception: bool = True, check_command_not_permitted: bool = False) -> Answer:
     answer = await controller.send_command(command, raise_exception=raise_exception)
     errors = [
         CommandCode.E_INTERNAL_DEVICE_ERROR, 
         CommandCode.E_COMMAND_NOT_KNOWN, 
         CommandCode.E_PARSING_ERROR, 
-        CommandCode.E_SYNTAX_ERROR
+        CommandCode.E_SYNTAX_ERROR,
+        CommandCode.E_INVALID_VALUE,
+        CommandCode.E_COMMAND_NOT_KNOWN,
+        CommandCode.E_COMMAND_INVALID,
+        CommandCode.E_COMMAND_NOT_IMPLEMENTED,
     ]
-    if (isinstance(command, str) and command == "!stop") or (isinstance(command, Command) and command.code == CommandCode.SET_STOP):
+    if check_command_not_permitted:
         errors.append(CommandCode.E_COMMAND_NOT_PERMITTED)
     assert_answer_is_not_error(answer, errors_to_check=errors)
     return answer

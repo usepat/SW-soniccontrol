@@ -287,7 +287,6 @@ class KnownDeviceWindow(DeviceWindow):
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
-            raise RuntimeError("uhh")
         except Exception as e:
             add_logger_context_to_exception(e, self.logger)
             raise e

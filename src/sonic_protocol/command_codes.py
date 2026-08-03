@@ -43,15 +43,23 @@ class BaseCommandCode(ICommandCode):
     # However it is cleaner to avoid this. TODO: remove this in the future
     INTERNAL_COMMAND = 19000 
 
-    E_INTERNAL_DEVICE_ERROR = 20000
-    E_COMMAND_NOT_KNOWN = 20001
+    # an internal device error is most of the time a hardware error and needs special handling
+    E_INTERNAL_DEVICE_ERROR = 20000 # no user error, some hardware or software error occurred internally
+
+    # those errors occur when wrong commands where send. The commands could not be understand by the device
+    E_COMMAND_NOT_KNOWN = 20001 # command not known, no valid command
     E_COMMAND_NOT_IMPLEMENTED = 20002
-    E_COMMAND_NOT_PERMITTED = 20003
-    E_COMMAND_INVALID = 20004
-    E_SYNTAX_ERROR = 20005
-    E_INVALID_VALUE = 20006
-    E_PARSING_ERROR = 20007 
-    E_TIMEOUT_ERROR = 20008
+    E_COMMAND_INVALID = 20004 # parsing error, no valid command
+    E_SYNTAX_ERROR = 20005 # wrong syntax,  no valid command
+    E_INVALID_VALUE = 20006 # wrong value, no valid command
+    E_PARSING_ERROR = 20007  # wrong format, no valid command
+    E_TIMEOUT_ERROR = 20008 
+
+    # those errors are when the user operates the device wrongly. The Commands are not allowed or can not be executed,
+    # by the device given the current device state.
+    # For tests this errors may be ignored for setup and teardown actions
+    E_COMMAND_NOT_PERMITTED = 20003 # user error, action is not allowed to be executed in the current device state
+    E_INVALID_ACTION = 20009 # user error, action cannot be executed, like trying to stop a procedure while no procedure is running
 
 
 @unique
@@ -255,6 +263,7 @@ class CommandCode(ICommandCode):
     E_INVALID_VALUE = BaseCommandCode.E_INVALID_VALUE.value
     E_PARSING_ERROR = BaseCommandCode.E_PARSING_ERROR.value
     E_TIMEOUT_ERROR = BaseCommandCode.E_TIMEOUT_ERROR.value
+    E_INVALID_ACTION = BaseCommandCode.E_INVALID_ACTION.value
 
 
     # Legacy commands. They are not really used for anything but for the device to select the correct command class

@@ -20,6 +20,8 @@ from soniccontrol_gui.resources import resources
 from soniccontrol_gui.widgets.message_box import MessageBox
 
 class SerialMonitor(UIComponent):
+    COMMUNICATION_EXCEPTION_PREFIX = "Communication Failure: "
+
     def __init__(self, parent: UIComponent, communicator: Communicator):
         self._logger = logging.getLogger(parent.logger.name + "." + SerialMonitor.__name__)
         self._view = SerialMonitorView(parent.view, parent_widget_name=parent.component_name)
@@ -80,11 +82,11 @@ class SerialMonitor(UIComponent):
                     self._communicator.__class__.__name__,
                 )
                 await asyncio.sleep(0.2)
-                return "No answer returned"
+                return SerialMonitor.COMMUNICATION_EXCEPTION_PREFIX + "No answer returned"
             return answer_str
         except Exception as e:
             self._logger.error(str(e))
-            return str(e)        
+            return SerialMonitor.COMMUNICATION_EXCEPTION_PREFIX + str(e)        
 
     def _print_answer(self, answer_str: str):
         self._logger.debug("Answer: %s", answer_str)
@@ -315,5 +317,5 @@ class SerialMonitorView(TabView):
         self._scrolled_frame.yview_moveto(1)
 
     def clear(self):
-        for child in self._scrolled_frame.winfo_children():
+        for child in self._monitor_frame.winfo_children():
             child.destroy()

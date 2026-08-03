@@ -107,7 +107,7 @@ async def setup_procedures(request, remote_controller):
 
     yield
 
-    await send_command_and_check_response(remote_controller, commands.SetStop(), raise_exception = False)
+    await send_command_and_check_response(remote_controller, commands.SetStop(), raise_exception = False, check_command_not_permitted=True)
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package")
@@ -162,7 +162,7 @@ async def test_stop_turns_off_procedure(remote_controller, disable_procedure_log
     await send_command_and_check_response(remote_controller, commands.SetRamp())
     assert_answer(await remote_controller.get_update(), {EFieldName.PROCEDURE: Procedure.RAMP})
 
-    await send_command_and_check_response(remote_controller, commands.SetStop())
+    await send_command_and_check_response(remote_controller, commands.SetStop(), check_command_not_permitted=True)
     assert_answer(await remote_controller.get_update(), {EFieldName.PROCEDURE: Procedure.NO_PROC})
 
 
