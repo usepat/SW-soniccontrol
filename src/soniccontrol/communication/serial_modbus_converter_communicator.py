@@ -63,7 +63,7 @@ class SerialModbusConverterCommunicator(Communicator):
 
         self._logger.debug(
             "Serial monitor Modbus answer: valid=%s, code=%s, message=%r, fields=%s",
-            answer.valid,
+            answer.is_valid,
             answer.command_code,
             answer.message,
             answer.field_value_dict,

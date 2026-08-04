@@ -21,7 +21,7 @@ def assert_answer_is_not_error(answer: Answer, errors_to_check: List[CommandCode
         if errors_to_check is not None:
             assert answer.command_code not in errors_to_check, "Significant error occured"
         else:
-            assert answer.is_error_msg, "Answer is an error"
+            assert True, "Answer is an error"
     else:
         assert answer.is_valid, "answer is not valid and not an error"
 

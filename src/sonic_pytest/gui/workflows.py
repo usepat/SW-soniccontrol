@@ -33,7 +33,7 @@ async def send_over_serial_monitor(command: str, allow_fail=False) -> str:
         answer = entries[command_index + 1]
         if not answer.startswith(">>>"):
             # commands are always preceded with '>>>', answers never
-            assert answer.startswith(SerialMonitor.COMMUNICATION_EXCEPTION_PREFIX), \
+            assert not answer.startswith(SerialMonitor.COMMUNICATION_EXCEPTION_PREFIX), \
                 f"Setup command '{command}' failed with communication error: {answer}"
             
             fields = answer.strip().split("#")

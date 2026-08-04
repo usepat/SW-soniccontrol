@@ -46,5 +46,5 @@ async def test_send_command_and_validate_returns_error_when_disconnected():
 
     answer = await communicator.send_command_and_validate(Mock(), SetGain(50))
 
-    assert not answer.valid
+    assert not answer.is_valid
     assert answer.message == "Modbus communicator is not connected"

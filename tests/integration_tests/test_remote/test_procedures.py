@@ -129,7 +129,7 @@ async def test_procedure_returns_error_if_f_start_and_f_stop_are_the_same(remote
     await send_command_and_check_response(remote_controller, commands.SetRampFStop(val))
 
     answer = await remote_controller.send_command(commands.SetRamp())
-    assert not answer.valid, "Expected answer to be false, because f_start and f_stop are the same"
+    assert not answer.is_valid, "Expected answer to be false, because f_start and f_stop are the same"
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
@@ -140,7 +140,7 @@ async def test_setter_commands_get_blocked_during_procedure_run(remote_controlle
     assert_answer(answer, {EFieldName.PROCEDURE: Procedure.RAMP})
 
     answer = await remote_controller.send_command(commands.SetFrequency(200000))
-    assert not answer.valid, "Expected set_freq to fail, while a procedure is running"
+    assert not answer.is_valid, "Expected set_freq to fail, while a procedure is running"
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
@@ -152,7 +152,7 @@ async def test_getter_commands_are_allowed_during_procedure_run(remote_controlle
     assert_answer(answer, {EFieldName.PROCEDURE: Procedure.RAMP})
 
     answer = await remote_controller.send_command(commands.GetFreq())
-    assert answer.valid, "Expected get_freq to succeed, while a procedure is running"
+    assert answer.is_valid, "Expected get_freq to succeed, while a procedure is running"
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)

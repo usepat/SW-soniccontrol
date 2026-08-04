@@ -361,7 +361,7 @@ class RemoteController:
         answer = await controller.send_command(cmds.SetAtf(1, 100000))
         # contains the pure str message received from the serial connection
         print(answer.message) 
-        if answer.valid:
+        if answer.is_valid:
             # if the answer could be parsed and is valid, we can access the parsed fields like this
             print(answer[EFieldName.ATF]) 
         ```
