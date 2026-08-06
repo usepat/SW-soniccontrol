@@ -50,4 +50,9 @@ For that a Device Parameter Constant can be used, that are referenced over a Dev
 
 A wrapper class that attaches information about for what devices, protocol_versions the wrapped content is available.
 
+### Nested DataTypes and streams will never be supported
+
+We could theoretically implement the ability to send nested data types like lists and dictionaries. Aside from that it can become quite complex to implement, We have also the problem that messages need to have a fixed size. We did this, because when the embedded device wants to receive or send a message it has to first create it in an internal buffer. However with lists and dicts such messages can become very fast very large, leading to overflows. Fixed size containers may work. But there exists  also variable length arrays sometimes and in either case it might not always be possible to store the resulting message in the buffer, because it is just too large. 
+It makes then also no sense to send the whole message per se as packets, because it has to be reassembled anyways later and then we run into the same problem. So now for the moment we prefer to fetch the single items of lists and nested data types, and then construct the resulting type directly.
+
 @}
