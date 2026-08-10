@@ -91,6 +91,8 @@ def _example_value_for_field_type(field_def: AnswerFieldDef) -> Any:
         return f"<{_schema_name_label(field_def.field_name)}_str>"
     if issubclass(field_type, Timestamp):
         return str(Timestamp(12, 30, 15, 15, 10, 2000))
+    if issubclass(field_type, bytes):
+        return bytes([])
     if issubclass(field_type, numbers.Integral):
         return "0"
     if issubclass(field_type, numbers.Real):

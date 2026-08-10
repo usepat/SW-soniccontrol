@@ -216,7 +216,7 @@
             {% set answer_length.words = answer_length.words + 4 %}
         {% elif field_type == Version %}
             {% set answer_length.words = answer_length.words + 3 %}
-        {% elif field_type == str %}
+        {% elif field_type == str or field_type == bytes %}
             {% set answer_length.words = answer_length.words + 32 %}
         {% endif %}
     {% endfor %}
@@ -286,7 +286,7 @@
         {% elif field_type == float %}    
             {{ float_layout(field_name, ns.address) }}
             {% set ns.address = ns.address + 2 %}
-        {% elif field_type == str %}    
+        {% elif field_type == str or field_type == bytes %}    
             {{ string64_layout(field_name, ns.address) }}
             {% set ns.address = ns.address + 32 %}
         {% elif issubclass(field_type, Enum) %}    

@@ -245,6 +245,7 @@ class HtmlManualCompiler(ManualCompiler):
             "Version": Version,
             "Enum": Enum,
             "Timestamp": Timestamp,
+            "bytes": bytes,
             "protocol_constants": attrs.asdict(protocol.consts), # FIXME: It would be better to pass this as render variable, but I am lazy
             "protocol_consts": protocol.consts,
             "deduce_single_command_example_for_contract": deduce_single_command_example_for_contract,

@@ -3,6 +3,7 @@ from typing import Any
 from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import CommandParamDef, Protocol
 import numpy as np
+from base64 import b64encode
 
 class CommandSerializer:
     def __init__(self, protocol: Protocol):
@@ -11,6 +12,8 @@ class CommandSerializer:
     def _serialize_field(self, obj: Any) -> str:
         if isinstance(obj, Enum):
             return str(obj.value)
+        elif isinstance(obj, bytes):
+            return str(b64encode(obj, altchars=b"-_"))
         else:
             return str(obj)
 

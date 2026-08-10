@@ -210,6 +210,8 @@ class ModbusCommunicator(Communicator):
             return self.bytes_to_registers(struct.pack(">f", float(value)))
         if typ is str:
             return self.string_to_registers(str(value))
+        if typ is bytes:
+            return self.byte_array_to_registers(value)
         if typ is Timestamp:
             return self.bytes_to_registers(
                 struct.pack(">q", self.timestamp_to_posix(value))
@@ -279,6 +281,11 @@ class ModbusCommunicator(Communicator):
         encoded = value.encode("utf-8")[: self.MODBUS_MAX_STR_LENGTH]
         payload = len(encoded).to_bytes(2, byteorder="big", signed=False)
         payload += encoded.ljust(self.MODBUS_MAX_STR_LENGTH, b"\x00")
+        return self.bytes_to_registers(payload)
+
+    def byte_array_to_registers(self, value: bytes) -> list[int]:
+        payload = len(value).to_bytes(2, byteorder="big", signed=False)
+        payload += value.ljust(self.MODBUS_MAX_STR_LENGTH, b"\x00")
         return self.bytes_to_registers(payload)
 
     @staticmethod
@@ -498,13 +505,15 @@ class ModbusCommunicator(Communicator):
             return int.from_bytes(payload[:4], byteorder="big"), current_index + 2
         if typ is float:
             return struct.unpack(">f", payload[:4])[0], current_index + 2
-        if typ is str:
+        if typ is str or typ is bytes:
             str_length = min(
                 int.from_bytes(payload[:2], byteorder="big"),
                 self.MODBUS_MAX_STR_LENGTH,
             )
-            decoded = payload[2:2 + str_length].decode("utf-8", errors="ignore")
-            return decoded, current_index + 32
+            value = payload[2:2 + str_length]
+            if typ is str:
+                value = value.decode("utf-8", errors="ignore")
+            return value, current_index + 32
         if typ is Timestamp:
             posix_time = int.from_bytes(payload[:8], byteorder="big", signed=True)
             dt = datetime.fromtimestamp(posix_time)

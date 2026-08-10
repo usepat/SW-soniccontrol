@@ -364,7 +364,8 @@ class UserManualAttrs:
     description: Optional[str] = attrs.field(default=None)
     example: Optional[str] = attrs.field(default=None)
 
-T = TypeVar("T", int, np.uint8, np.uint16, np.uint32, float, bool, str, Version, Enum, Timestamp)
+T = TypeVar("T", int, np.uint8, np.uint16, np.uint32, float, bool, str, 
+            bytes, Version, Enum, Timestamp, )
 
 @attrs.define(auto_attribs=True)
 class FieldType(Generic[T]):

@@ -446,6 +446,18 @@
                                 {% endif %}
                             </td>
                         </tr>
+                         <tr>
+                            <td class="px-3 py-2"><code>bytes</code></td>
+                            <td class="px-3 py-2">
+                                {% if include_text and include_modbus %}
+                                array of bytes. The exact representation depends on the transport.
+                                {% elif include_text %}
+                                encoded as base64 according to rfc4648.
+                                {% elif include_modbus %}
+                                Text value stored in the MODBUS mailbox as string layout.
+                                {% endif %}
+                            </td>
+                        </tr>
                         <tr>
                             <td class="px-3 py-2"><code>Version</code></td>
                             <td class="px-3 py-2">Semantic version with major, minor, and patch components.</td>

@@ -44,6 +44,8 @@ class AnswerValidatorBuilder:
             value_str = r"([Tt]rue)|([Ff]alse)|0|1"
         elif field_type is str:
             value_str = r".*"
+        elif field_type is bytes:
+            value_str = r"[a-zA-Z0-9\-\_\=]*"
         else:
             value_str = r".*"
 
