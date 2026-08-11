@@ -43,6 +43,13 @@ class BaseFieldName(IEFieldName):
     WATERMARK_ALLOCATIONS = 29
     LIMIT = 30
 
+    CHIP_ARCHITECTURE = 31
+    STACK_UNWIND_STRATEGY = 32
+
+    FILE_NAME = 33
+    FILE_TYPE = 34
+    DATA = 35
+
 
 @unique
 class EFieldName(IEFieldName):
@@ -84,6 +91,13 @@ class EFieldName(IEFieldName):
     WATERMARK_WASTED = BaseFieldName.WATERMARK_WASTED.value 
     WATERMARK_ALLOCATIONS = BaseFieldName.WATERMARK_ALLOCATIONS.value 
     LIMIT = BaseFieldName.LIMIT.value
+
+    CHIP_ARCHITECTURE = BaseFieldName.CHIP_ARCHITECTURE.value
+    STACK_UNWIND_STRATEGY = BaseFieldName.STACK_UNWIND_STRATEGY.value
+
+    FILE_NAME = BaseFieldName.FILE_NAME.value
+    FILE_TYPE = BaseFieldName.FILE_TYPE.value
+    DATA = BaseFieldName.DATA.value
 
     HELP = 106
 

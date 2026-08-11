@@ -7,6 +7,13 @@ from sonic_protocol.protocol_list import ProtocolList
 from ..protocol_v3_0_0.protocol_v3_0_0 import Protocol_v3_0_0
 from .commands import debug_test_command
 
+from .commands import (
+    get_crash_dump_info, get_file_data, get_file_info, get_num_crash_dumps,
+    ChipArchitecture, StackUnwindingStrategy, FileType
+)
+
+
+
 class Protocol_v3_1_0(ProtocolList):
     """
     TODO
@@ -35,7 +42,15 @@ class Protocol_v3_1_0(ProtocolList):
 
     @property
     def custom_data_types(self) -> Dict[str, type]:
-        return self._previous_protocol.custom_data_types
+        data_types = {
+            "E_CHIP_ARCHITECTURE": ChipArchitecture,
+            "E_STACK_UNWINDING_STRATEGY": StackUnwindingStrategy,
+            "E_FILE_TYPE": FileType
+        }
+        data_types.update(self._previous_protocol.custom_data_types)
+    
+        return data_types
+
 
     def supports_device_type(self, device_type: DeviceType) -> bool:
         return self._previous_protocol.supports_device_type(device_type)
@@ -45,6 +60,15 @@ class Protocol_v3_1_0(ProtocolList):
 
         if protocol_type.device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE]:
             command_contract_dict[debug_test_command.code] = debug_test_command
+
+        new_commands = [
+            get_num_crash_dumps,
+            get_crash_dump_info,
+            get_file_info,
+            get_file_data
+        ]
+        for command in new_commands:
+            command_contract_dict[command.code] = command
 
         # get_adc is deprecated and not used anymore
         # we can remove it "safely", because it is no release command 

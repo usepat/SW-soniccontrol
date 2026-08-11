@@ -14,11 +14,18 @@ class BaseCommandCode(ICommandCode):
     GET_LOGGER_LIST_ITEM = 11
     SET_LOG_LEVEL = 12
 
+    GET_FILE_INFO = 15
+    GET_FILE_DATA = 16
+
     SET_DATETIME = 20
     GET_DATETIME = 21
 
     GET_ERROR_HISTO_SIZE = 30
     POP_ERROR_HISTO_MESSAGE = 31
+
+    GET_NUM_CRASH_DUMPS = 35
+    GET_CRASH_DUMP_INFO = 36
+    GET_CRASH_DUMP_DATA = 37
 
     RESTART_DEVICE = 40 
     START_DIAGNOSTIC_TOOL = 41
@@ -45,6 +52,7 @@ class BaseCommandCode(ICommandCode):
 
     # an internal device error is most of the time a hardware error and needs special handling
     E_INTERNAL_DEVICE_ERROR = 20000 # no user error, some hardware or software error occurred internally
+    E_TIMEOUT_ERROR = 20008 # in case of the postman it can happen that the worker did not respond in a given timeout
 
     # those errors occur when wrong commands where send. The commands could not be understand by the device
     E_COMMAND_NOT_KNOWN = 20001 # command not known, no valid command
@@ -53,7 +61,6 @@ class BaseCommandCode(ICommandCode):
     E_SYNTAX_ERROR = 20005 # wrong syntax,  no valid command
     E_INVALID_VALUE = 20006 # wrong value, no valid command
     E_PARSING_ERROR = 20007  # wrong format, no valid command
-    E_TIMEOUT_ERROR = 20008 
 
     # those errors are when the user operates the device wrongly. The Commands are not allowed or can not be executed,
     # by the device given the current device state.
@@ -84,8 +91,15 @@ class CommandCode(ICommandCode):
     SET_DATETIME = BaseCommandCode.SET_DATETIME.value
     GET_DATETIME = BaseCommandCode.GET_DATETIME.value
 
+    GET_FILE_INFO = BaseCommandCode.GET_FILE_INFO.value
+    GET_FILE_DATA = BaseCommandCode.GET_FILE_DATA.value
+
     GET_ERROR_HISTO_SIZE = BaseCommandCode.GET_ERROR_HISTO_SIZE.value
     POP_ERROR_HISTO_MESSAGE = BaseCommandCode.POP_ERROR_HISTO_MESSAGE.value
+
+    GET_NUM_CRASH_DUMPS = BaseCommandCode.GET_NUM_CRASH_DUMPS.value
+    GET_CRASH_DUMP_INFO = BaseCommandCode.GET_CRASH_DUMP_INFO.value
+    GET_CRASH_DUMP_DATA = BaseCommandCode.GET_CRASH_DUMP_DATA.value
 
     RESTART_DEVICE = BaseCommandCode.RESTART_DEVICE.value
     START_DIAGNOSTIC_TOOL = BaseCommandCode.START_DIAGNOSTIC_TOOL.value
