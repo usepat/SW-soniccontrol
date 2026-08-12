@@ -8,15 +8,6 @@ from sonic_protocol.schema import AnswerDef, AnswerFieldDef, CommandContract, Co
 from enum import Enum
 
 
-class ChipArchitecture(Enum):
-    SIMULATION = 0
-    PICO = 1
-
-class StackUnwindingStrategy(Enum):
-    NONE = 0
-    FRAME_POINTERS = 1
-    UNWIND_TABLES = 2
-
 class FileType(Enum):
     BINARY = 0
     TEXT_UTF8 = 1
@@ -40,53 +31,31 @@ debug_test_command = CommandContract(
     is_admin_command=False,
 ) 
 
-
-get_num_crash_dumps = CommandContract(
-    code=CommandCode.GET_NUM_CRASH_DUMPS,
+get_num_files = CommandContract(
+    code=CommandCode.GET_NUM_FILES,
     command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?num_crash_dumps")
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?num_files")
     ),
     answer_def=AnswerDef([
         AnswerFieldDef(EFieldName.COUNT, field_type=FieldType(field_type=np.uint8))
     ]),
     user_manual_attrs=UserManualAttrs(
-        description="Retrieves the number of available crash dumps"
+        description="Retrieves the number of available files"
     ),
     is_release=True,
     is_admin_command=True,
     group_id=GROUPS.misc,
-    tags=["crash_dump"]
-)
-
-get_crash_dump_info = CommandContract(
-    code=CommandCode.GET_CRASH_DUMP_INFO,
-    command_def=CommandDef(
-        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?crash_dump_info"),
-        index_param=CommandParamDef(EFieldName.INDEX, param_type=FieldType(field_type=np.uint8))
-    ),
-    answer_def=AnswerDef([
-        AnswerFieldDef(EFieldName.TIMESTAMP, Timestamp),
-        AnswerFieldDef(EFieldName.CHIP_ARCHITECTURE, ChipArchitecture),
-        AnswerFieldDef(EFieldName.STACK_UNWIND_STRATEGY, StackUnwindingStrategy),
-        AnswerFieldDef(EFieldName.FILE_NAME, str, user_manual_attrs=UserManualAttrs("file name of the stack dump")),
-    ]),
-    user_manual_attrs=UserManualAttrs(
-        description="get information about a crash dump, like when it happened and information needed for analyzing the stack dump"
-    ),
-    is_release=True,
-    is_admin_command=True,
-    group_id=GROUPS.misc,
-    tags=["crash_dump"]
+    tags=["file"]
 )
 
 
-file_name_param = CommandParamDef(EFieldName.FILE_NAME, param_type=FieldType(field_type=str))
+file_index_param = CommandParamDef(EFieldName.FILE_INDEX, param_type=FieldType(field_type=np.uint16))
 
 get_file_info = CommandContract(
     code=CommandCode.GET_FILE_INFO,
     command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?file_info"),
-        index_param=file_name_param
+        index_param=file_index_param
     ),
     answer_def=AnswerDef([
         AnswerFieldDef(EFieldName.FILE_NAME, str),
@@ -107,8 +76,8 @@ get_file_data = CommandContract(
     code=CommandCode.GET_FILE_DATA,
     command_def=CommandDef(
         sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?file_data"),
-        index_param=file_name_param,
-        setter_param=CommandParamDef(EFieldName.INDEX, param_type=np.uint32),
+        index_param=file_index_param,
+        setter_param=CommandParamDef(EFieldName.INDEX, param_type=np.uint32, user_manual_attrs=UserManualAttrs("offset where to read from the file")),
     ),
     answer_def=AnswerDef([
         AnswerFieldDef(EFieldName.DATA, bytes),

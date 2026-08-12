@@ -14,8 +14,9 @@ class BaseCommandCode(ICommandCode):
     GET_LOGGER_LIST_ITEM = 11
     SET_LOG_LEVEL = 12
 
-    GET_FILE_INFO = 15
-    GET_FILE_DATA = 16
+    GET_NUM_FILES = 15
+    GET_FILE_INFO = 16
+    GET_FILE_DATA = 17
 
     SET_DATETIME = 20
     GET_DATETIME = 21
@@ -23,9 +24,6 @@ class BaseCommandCode(ICommandCode):
     GET_ERROR_HISTO_SIZE = 30
     POP_ERROR_HISTO_MESSAGE = 31
 
-    GET_NUM_CRASH_DUMPS = 35
-    GET_CRASH_DUMP_INFO = 36
-    GET_CRASH_DUMP_DATA = 37
 
     RESTART_DEVICE = 40 
     START_DIAGNOSTIC_TOOL = 41
@@ -91,15 +89,12 @@ class CommandCode(ICommandCode):
     SET_DATETIME = BaseCommandCode.SET_DATETIME.value
     GET_DATETIME = BaseCommandCode.GET_DATETIME.value
 
+    GET_NUM_FILES = BaseCommandCode.GET_NUM_FILES.value
     GET_FILE_INFO = BaseCommandCode.GET_FILE_INFO.value
     GET_FILE_DATA = BaseCommandCode.GET_FILE_DATA.value
 
     GET_ERROR_HISTO_SIZE = BaseCommandCode.GET_ERROR_HISTO_SIZE.value
     POP_ERROR_HISTO_MESSAGE = BaseCommandCode.POP_ERROR_HISTO_MESSAGE.value
-
-    GET_NUM_CRASH_DUMPS = BaseCommandCode.GET_NUM_CRASH_DUMPS.value
-    GET_CRASH_DUMP_INFO = BaseCommandCode.GET_CRASH_DUMP_INFO.value
-    GET_CRASH_DUMP_DATA = BaseCommandCode.GET_CRASH_DUMP_DATA.value
 
     RESTART_DEVICE = BaseCommandCode.RESTART_DEVICE.value
     START_DIAGNOSTIC_TOOL = BaseCommandCode.START_DIAGNOSTIC_TOOL.value

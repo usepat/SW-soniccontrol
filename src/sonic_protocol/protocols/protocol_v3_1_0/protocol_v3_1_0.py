@@ -8,8 +8,7 @@ from ..protocol_v3_0_0.protocol_v3_0_0 import Protocol_v3_0_0
 from .commands import debug_test_command
 
 from .commands import (
-    get_crash_dump_info, get_file_data, get_file_info, get_num_crash_dumps,
-    ChipArchitecture, StackUnwindingStrategy, FileType
+    get_num_files, get_file_data, get_file_info, FileType
 )
 
 
@@ -43,8 +42,6 @@ class Protocol_v3_1_0(ProtocolList):
     @property
     def custom_data_types(self) -> Dict[str, type]:
         data_types = {
-            "E_CHIP_ARCHITECTURE": ChipArchitecture,
-            "E_STACK_UNWINDING_STRATEGY": StackUnwindingStrategy,
             "E_FILE_TYPE": FileType
         }
         data_types.update(self._previous_protocol.custom_data_types)
@@ -62,8 +59,7 @@ class Protocol_v3_1_0(ProtocolList):
             command_contract_dict[debug_test_command.code] = debug_test_command
 
         new_commands = [
-            get_num_crash_dumps,
-            get_crash_dump_info,
+            get_num_files,
             get_file_info,
             get_file_data
         ]
