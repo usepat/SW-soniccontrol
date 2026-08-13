@@ -15,6 +15,7 @@ from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.view import TabView, View
+from soniccontrol_gui.views.control.file_fetcher import FileTab
 from soniccontrol_gui.views.control.logging import Logging
 from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
@@ -165,13 +166,15 @@ class DiagnosticsWindow(DeviceWindow):
             self._logging = Logging(self, connection_name, self._device)
             self._test_executor = TestExecutor(self._device)
             self._testing_tab = HwTestingTab(self, self._test_executor)
+            self._files_tab = FileTab(self, self._device)
 
             self._view.add_tab_views([
                 self._testing_tab.view,
                 self._serialmonitor.view,
             ], right_one=False)
             self._view.add_tab_views([
-                self._logging.view
+                self._logging.view,
+                self._files_tab.view
             ], right_one=True)
 
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)

@@ -146,6 +146,7 @@ class _UIStringsEN:
     INFO_LABEL: Final[str] = "Info"
     SERIAL_MONITOR_LABEL: Final[str] = "Serial Monitor"
     LOGS_LABEL: Final[str] = "Logs"
+    FILES_LABEL: Final[str] = "Files"
     APP_LOGS_LABEL: Final[str] = "Application Logs"
     APP_LOG_SETTINGS_LABEL: Final[str] = "Application Log Settings"
     DEVICE_LOGS_LABEL: Final[str] = "Device Logs"
@@ -295,6 +296,7 @@ class _UIStringsEN:
     FAILURE: Final[str] = "Failure"
     RELOAD_LOGGERS: Final[str] = "Reload loggers"
     ERROR_MSG_CONNECTION_ALREADY_OPEN: Final[str] = "There is already a connection open for this serial port, do you want to close it?"
+    DOWNLOAD: Final[str] = "Download"
     
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()
