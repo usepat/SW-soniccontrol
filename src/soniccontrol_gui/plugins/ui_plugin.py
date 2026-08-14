@@ -99,6 +99,11 @@ class UIPluginSlotView(View):
 
 @attrs.define(hash=True)
 class UIPlugin:
+    """
+    A UI Widget Plugin has to be placed into a specific slot.
+    That name has to be specified and a factory for creating the component
+    has also to be provided.
+    """
     slot_name: str
     component_factory: UIComponentFactory
 
@@ -126,91 +131,6 @@ class UIPluginRegistry:
     def get_ui_plugins() -> List[UIPlugin]:
         return list(UIPluginRegistry._registered_plugins)
 
-
-# --- TEST PLUGIN VIEWS ---
-class TestPluginView1(View):
-    def _initialize_children(self) -> None:
-        label = ttk.Label(self, text="Test Plugin 1")
-        label.pack(padx=10, pady=10)
-
-    def _initialize_publish(self) -> None:
-        pass
-
-    @property
-    def tab_title(self):
-        return "Plugin 1"
-
-
-class TestPluginView2(View):
-    def _initialize_children(self) -> None:
-        label = ttk.Label(self, text="Test Plugin 2")
-        label.pack(padx=10, pady=10)
-
-    def _initialize_publish(self) -> None:
-        pass
-
-    @property
-    def tab_title(self):
-        return "Plugin 2"
-
-
-class TestPluginView3(View):
-    def _initialize_children(self) -> None:
-        label = ttk.Label(self, text="Test Plugin 3")
-        label.pack(padx=10, pady=10)
-
-    def _initialize_publish(self) -> None:
-        pass
-
-    @property
-    def tab_title(self):
-        return "Plugin 3"
-
-
-# --- TEST PLUGIN COMPONENTS (accept master, parent_component) ---
-class TestPluginComponent1(UIComponent):
-    def __init__(self, master, parent_component: UIComponent):
-        self._view = TestPluginView1(master)
-        super().__init__(parent_component, self._view)
-
-    @property
-    def tab_title(self):
-        return self._view.tab_title
-
-
-class TestPluginComponent2(UIComponent):
-    def __init__(self, master, parent_component: UIComponent):
-        self._view = TestPluginView2(master)
-        super().__init__(parent_component, self._view)
-
-    @property
-    def tab_title(self):
-        return self._view.tab_title
-
-
-class TestPluginComponent3(UIComponent):
-    def __init__(self, master, parent_component: UIComponent):
-        self._view = TestPluginView3(master)
-        super().__init__(parent_component, self._view)
-
-    @property
-    def tab_title(self):
-        return self._view.tab_title
-
-
-class TestPluginComponent1Factory(UIComponentFactory):
-    def __call__(self, master, parent: UIComponent, *args, **kwargs) -> UIComponent:
-        return TestPluginComponent1(master, parent)
-
-
-class TestPluginComponent2Factory(UIComponentFactory):
-    def __call__(self, master, parent: UIComponent, *args, **kwargs) -> UIComponent:
-        return TestPluginComponent2(master, parent)
-
-
-class TestPluginComponent3Factory(UIComponentFactory):
-    def __call__(self, master, parent: UIComponent, *args, **kwargs) -> UIComponent:
-        return TestPluginComponent3(master, parent)
 
 
 def register_ui_plugins():

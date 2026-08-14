@@ -10,6 +10,14 @@ from soniccontrol import EFieldName
 
 
 class PerformanceMonitor(EventManager, CyclicTask):
+    """
+        Summary
+        =======
+        This class fetches meta data from the device about stack and memory usage.
+        It is designed like the Updater class. It fetches cyclicly  the data and emits it to its listeners.
+    
+        This class is used in conjunction with the performance monitor gui from the firmware tools folder. 
+    """
     SAMPLED_SNAP_SHOT_EVENT = "SAMPLED_SNAP_SHOT_EVENT"
 
     def __init__(self, device: SonicDevice, time_between_snapshots_ms: int = 5000):

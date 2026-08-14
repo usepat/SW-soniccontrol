@@ -11,7 +11,8 @@ With Measuring we can capture the state of the device over time. This is very us
 
 ## Use Cases
 
-The User should be able to start and stop a capture manually. It should also be possible to synchronize the capture with a script or procedure.
+The User should be able to start and stop a capture manually. It should also be possible to synchronize the capture with a script or procedure.  
+Before doing this the user should fill out an experiment form, where he adds meaningful meta data.
 
 There should be a sonic measure procedure, that does a ramp and captures exactly one data point for every frequency.
 
@@ -19,12 +20,14 @@ There should be a graph of the captured data points.
 
 There should be generated a csv table for each measurement.
 
+At the end of a capture the whole experiment should be saved.
+
 
 ## Implementation
 
 @see data_capturing
 
-The MeasuringTab enforces you to first create an experiment, then select the target (procedure, scripting, free, sonic_measure), then insert meta data and then you can finally start capturing.  
+The MeasuringTab enforces you to first create an experiment, then then fill out a form and then select the target (procedure, scripting, free, sonic_measure) and then you can finally start capturing.  
 Because of this whole sequence of states, Measuring Tab is kind of a little state machine.  
 For creating the meta data form, the [FormWidget](@ref soniccontrol_gui.widgets.form_widget.FormWidget) class is used, that deduces it automatically from the [ExperimentMetaData](@ref soniccontrol.data_capturing.experiment.ExperimentMetaDAta) class over attrs introspection.
 

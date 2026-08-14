@@ -10,6 +10,10 @@ import soniccontrol.bin.avrdude
 from importlib import resources as rs
 
 class LegacyFirmwareFlasher(FirmwareFlasher):
+    """
+    This is the old legacy firmware flasher.
+    The new flasher is part of sonic firmware repo and is designed as a plugin for sonic control.
+    """
     def __init__(self, serial_port: str, filepath: pathlib.Path | str) -> None:
         super().__init__()
         self._port: str = serial_port

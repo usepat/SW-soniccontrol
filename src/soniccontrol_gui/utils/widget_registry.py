@@ -7,7 +7,7 @@ from ttkbootstrap.scrolled import ScrolledText
 import datetime
 
 from soniccontrol_gui.view import TabView
-from soniccontrol_gui.views.core.custom_meter import CustomMeter
+from soniccontrol_gui.widgets.custom_meter import CustomMeter
 
 
 def get_text_of_widget(widget: tk.Widget | tk.Variable) -> str:

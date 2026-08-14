@@ -42,6 +42,10 @@ class DiagnosticsWindowFactory(WindowFactoryBase):
 
 @attrs.define(hash=True)
 class DevicePlugin:
+    """
+    A Plugin for a device. It should define how to create the device window and 
+    which protocol should be used for communication (configurator uses its completely own protocol.)
+    """
     device_type: DeviceType
     window_factory: WindowFactoryBase
     protocol_factory: ProtocolList
