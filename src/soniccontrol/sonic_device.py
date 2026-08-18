@@ -383,6 +383,7 @@ class SonicDevice:
             # When using modbus the command can not be validated because the device restarts during the validation stage
         except Exception as e:
             pass
+        
         try:
             await self.disconnect()
         except (TimeoutError, ConnectionError, asyncio.IncompleteReadError):

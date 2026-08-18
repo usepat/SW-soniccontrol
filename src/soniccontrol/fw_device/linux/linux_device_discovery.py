@@ -237,6 +237,7 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
             ])
 
             if device is not None:
+                time.sleep(1)
                 return _get_device_info(device)
 
             time.sleep(0.5)

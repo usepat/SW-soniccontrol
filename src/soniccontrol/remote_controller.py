@@ -102,6 +102,7 @@ class RemoteController:
         baudrate: int = 9600,
         log_path: Optional[Path]=None,
         protocol_factories: Optional[Dict[DeviceType, ProtocolList]] = None,
+        remote_server_url: str | None = None
     ) -> "RemoteController":
         """
         Creates a RemoteController by establishing a connection to a device over serial.
@@ -129,7 +130,7 @@ class RemoteController:
         if isinstance(url, Path):
             url = str(url)
 
-        dev_info = await resolve_current_device_info(url)
+        dev_info = await resolve_current_device_info(url, remote_server_url)
         connection = create_connection_to_device(dev_info, baudrate)
         return await RemoteController.connect(
             connection,
