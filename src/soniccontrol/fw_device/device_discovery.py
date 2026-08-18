@@ -52,4 +52,18 @@ class DeviceDiscovery(abc.ABC):
             if dev_info.device_path == device_path
         ), None)
         return dev_info
+
+    async def get_fw_device_info_via_sys_name(self, sys_name: str):
+        """
+            Returns the firmware device info for a device that is registered under the sys_name.
+
+            Returns
+            =======
+                If no corresponding device was found, then it returns None, else FwDeviceInfo
+        """
+        dev_info = next((
+            dev_info for dev_info in await self.list_fw_device_infos(include_unverified_ttys=True)
+            if dev_info.sys_name == sys_name
+        ), None)
+        return dev_info
         
