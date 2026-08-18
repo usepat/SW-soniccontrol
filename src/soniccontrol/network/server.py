@@ -220,7 +220,7 @@ def wait_for_device_redetection():
     dev_info = cattrs.Converter().structure(data, FwDeviceInfo)
 
     async def redetection_task(): 
-        dev_info_new = await create_device_discovery().wait_for_device_redetection(dev_info, timeout_s=5)
+        dev_info_new = await create_device_discovery().wait_for_device_redetection(dev_info, timeout_s=10)
         return dev_info_new
     
     future_registry: Dict[uuid.UUID, concurrent.futures.Future[Any]] = current_app.extensions[FUTURE_REGISTRY]
