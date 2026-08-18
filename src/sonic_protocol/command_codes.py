@@ -240,6 +240,8 @@ class CommandCode(ICommandCode):
 
     SET_TERMINATION = 590
 
+    DEBUG_TEST = 600 # command used by developers to test different stuff.
+
     # can we delete those?
     # SET_PHYS_COM_CHANNEL = 2020 
 
