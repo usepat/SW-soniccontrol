@@ -49,7 +49,7 @@ get_num_files = CommandContract(
 )
 
 
-file_index_param = CommandParamDef(EFieldName.FILE_INDEX, param_type=FieldType(field_type=np.uint16))
+file_index_param = CommandParamDef(EFieldName.FILE_INDEX, param_type=FieldType(field_type=np.uint8))
 
 get_file_info = CommandContract(
     code=CommandCode.GET_FILE_INFO,
