@@ -24,7 +24,7 @@ class FileEntryView(View):
     def _initialize_children(self) -> None:
         self._label_name = ttk.Label(self, text=self._file_desc.name)
         self._label_type = ttk.Label(self, text=self._file_desc.file_type.name.lower())
-        self._label_timestamp = ttk.Label(self, text=self._file_desc.time_stamp.isoformat())
+        self._label_timestamp = ttk.Label(self, text=str(self._file_desc.time_stamp))
         self._label_size = ttk.Label(self, text=str(self._file_desc.file_size))
         self._download_button = ttk.Button(self, text=ui_labels.DOWNLOAD)
 
@@ -63,7 +63,7 @@ class FileTab(UIComponent):
     async def _load_files(self):
         async with self._lock:
             # destroy previous entries
-            for child in self._view.file_list_slot.children.values():
+            for child in self._view.file_list_slot.winfo_children(): # copy to avoid error: dict changed during iteration
                 child.destroy()
 
             for f in await discover_files(self._device):
@@ -76,7 +76,7 @@ class FileTab(UIComponent):
         file_desc, file_data = await load_file(self._device, file_index)
 
         ext = get_file_extension_for_file_type(file_desc.file_type)
-        file_path = Path.home() / "Downloads" / f"{file_index}_{file_desc.name}.{ext}"
+        file_path = Path.home() / "Downloads" / f"file{file_index}_{file_desc.name}.{ext}"
         with open(file_path, "wb") as f:
             f.write(file_data)
 

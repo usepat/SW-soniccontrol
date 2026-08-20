@@ -2,7 +2,7 @@ import abc
 from enum import Enum, IntEnum
 from typing import Any, TypeVar
 import numpy as np
-from base64 import b64decode, b64encode
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 from sonic_protocol.schema import Timestamp, Version
 
@@ -129,18 +129,16 @@ class PrimitiveTypeConverter(Converter):
         return self._target_class(text)
 
 class BinaryConverter(Converter):
-    ALT_CHARS = b"-_"
-
     def validate_val(self, value: Any) -> bool:
         return isinstance(value, bytes)
 
     def convert_val_to_str(self, value: Any) -> str:
         assert (self.validate_val(value))
-        return str(b64encode(value, self.ALT_CHARS))
+        return str(urlsafe_b64encode(value))
 
     def validate_str(self, text: str) -> bool: 
         try:
-            b64decode(text, self.ALT_CHARS, validate=True)
+            urlsafe_b64decode(text)
         except Exception:
             return False
         else:
@@ -148,7 +146,7 @@ class BinaryConverter(Converter):
 
     def convert_str_to_val(self, text: str) -> Any: 
         assert(self.validate_str(text))
-        return b64decode(text, self.ALT_CHARS)
+        return urlsafe_b64decode(text)
 
 
 

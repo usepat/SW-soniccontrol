@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Tuple
 
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.schema import Timestamp
 from soniccontrol.sonic_device import SonicDevice
 import sonic_protocol.python_parser.commands as cmds
 from sonic_protocol.protocols.protocol_v3_1_0.protocol_v3_1_0 import FileType
@@ -13,7 +14,7 @@ class FileDescription:
     file_index: int
     name: str
     file_type: FileType
-    time_stamp: datetime
+    time_stamp: Timestamp
     file_size: int
 
 
@@ -60,6 +61,6 @@ async def load_file(device: SonicDevice, file_index: int) -> Tuple[FileDescripti
     data = bytearray()
     while len(data) < file_description.file_size:
         answer = await device.execute_command(cmds.GetFileData(file_index, len(data)))
-        data.append(answer.field_value_dict[EFieldName.DATA])
+        data.extend(answer.field_value_dict[EFieldName.DATA])
 
     return file_description, bytes(data)
