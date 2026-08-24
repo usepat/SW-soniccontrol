@@ -211,28 +211,6 @@ async def poll_future(future_id: uuid.UUID):
     return jsonify({ "done": future.done(), "result": result, "exception": exception }), HTTP_OK
 
 
-@server_bp.post("/wait_for_device_redetection")
-def wait_for_device_redetection():
-    if request.content_type != "application/json":
-        abort(HTTP_CLIENT_ERROR, description="Invalid content type")
-
-    data = request.get_json()
-    dev_info = cattrs.Converter().structure(data, FwDeviceInfo)
-
-    async def redetection_task(): 
-        dev_info_new = await create_device_discovery().wait_for_device_redetection(dev_info, timeout_s=10)
-        return dev_info_new
-    
-    future_registry: Dict[uuid.UUID, concurrent.futures.Future[Any]] = current_app.extensions[FUTURE_REGISTRY]
-    loop: asyncio.AbstractEventLoop = current_app.extensions[EVENT_LOOP]
-
-    future_id = uuid.uuid4()
-    future = asyncio.run_coroutine_threadsafe(redetection_task(), loop)
-    future_registry[future_id] = future
-
-    return jsonify({"future_id": str(future_id)}), HTTP_OK
-
-
 @click.command()
 @click.option("--host", default=None)
 @click.option("--port", type=click.INT, default=None)

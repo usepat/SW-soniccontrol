@@ -41,7 +41,6 @@ RemotePicoDevice --|> PicoDeviceController
 
 interface DeviceDiscovery {
     + detect_pico_devices(): List[DeviceInfo]
-    + wait_for_device_redetection(device: DeviceInfo) -> DeviceInfo
 }
 
 DeviceDiscovery .u.> DeviceInfo 

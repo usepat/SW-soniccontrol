@@ -1,6 +1,7 @@
 
 
 import abc
+import asyncio
 from pathlib import Path
 from typing import List
 
@@ -17,9 +18,29 @@ class DeviceDiscovery(abc.ABC):
     ) -> List[FwDeviceInfo]:
         ...
 
-    @abc.abstractmethod
+    async def wait_for_device_to_appear(self, sys_name: str) -> FwDeviceInfo:
+        while True:
+            pico_device = await self.get_fw_device_info_via_sys_name(sys_name)
+            if pico_device:
+                return pico_device
+            
+            await asyncio.sleep(0.5)
+
+    async def wait_for_device_to_disappear(self, sys_name: str) -> None:
+        while True:
+            pico_device = await self.get_fw_device_info_via_sys_name(sys_name)
+            if pico_device is None:
+                return
+            
+            await asyncio.sleep(0.5)
+
     async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 10) -> FwDeviceInfo:
-        ...
+        async def _redetect():
+            await self.wait_for_device_to_disappear(device_info.usb_sys_name)
+            return await self.wait_for_device_to_appear(device_info.usb_sys_name)
+
+        return await asyncio.wait_for(_redetect(), timeout_s)
+        
 
     async def list_fw_device_names(
         self,
