@@ -9,6 +9,7 @@ from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.schema import BuildType, DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName, IEFieldName
 from soniccontrol.communication.communicator import Communicator
+from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, redetect_connection
 from soniccontrol.fw_device.connection import Connection
 from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
@@ -161,22 +162,14 @@ class DeviceBuilder:
         if device.info.device_type == expected_device_type:
             return device
 
-        # TODO: instead of executing the start command directly, use device.restart(command)
         if not device.has_command(start_command):
             raise ConnectionError(f"Device does not support {unsupported_command_name}")
 
-        answer = await device.execute_command(start_command, raise_exception=False)
-        if answer.is_error_msg:
-            raise ConnectionError(answer.message)
-        if not answer.is_valid and not self._is_expected_configurator_disconnect(answer.message):
-            raise ConnectionError(answer.message)
-
-        await device.disconnect()
-        # TODO: do not use sleep, use instead proper device detection
-        await asyncio.sleep(self.RESTART_DELAY_S)
+        await device.restart(start_command) # closes the connection
+        new_connection = await redetect_connection(connection) 
 
         communicator = SerialCommunicator(logger=self._logger) # type: ignore
-        await communicator.open_communication(connection)
+        await communicator.open_communication(new_connection)
         return await self.build_amp(communicator, try_deduce_protocol_used=try_deduce_protocol_used)
 
 
