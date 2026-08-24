@@ -99,7 +99,7 @@ In general events can be bubbled up or down the "chain" of components. See [Even
 
 In the Code there exists a class [UIComponent](@ref soniccontrol_gui.ui_component.UIComponent) as a base for all Components. They are the same time the Presenter class.  
 The [View](@ref soniccontrol_gui.view.View) class is the base class for all Views and contains the whole gui frontend presentation logic. So all [tkinter](https://docs.python.org/3/library/tkinter.html) code. This is important, because the Presenter should have no knowledge about which framework is used. The idea is to switch later to [Dash](https://dash.plotly.com/) or another gui framework. Keep things separate so they can be exchanged easily.  
-For the Model there exists no explicit base class, but a model has to inherit from [EventManager](@ref soniccontrol.events.EventManger), because the Presenter listens to its [Events](@ref soniccontrol.events.Event), especially [PropertyChangeEvent](@ref soniccontrol.events.PropertyChangeEvent). Also a Presenter can have multiple Models. 
+For the Model there exists no explicit base class, but a model has to inherit from [EventManager](@ref soniccontrol.utils.events.EventManger), because the Presenter listens to its [Events](@ref soniccontrol.utils.events.Event), especially [PropertyChangeEvent](@ref soniccontrol.utils.events.PropertyChangeEvent). Also a Presenter can have multiple Models. 
 Models are business logic classes. So is [ProcedureController](@ref soniccontrol.procedures.procedure_controller.ProcedureController) a Model for example.  
 But sometimes they can also be pure data classes.
 
