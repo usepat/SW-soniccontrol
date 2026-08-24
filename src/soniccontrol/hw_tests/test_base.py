@@ -1,7 +1,7 @@
 from typing import Any, Dict
 import attrs
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import TestInteraction
-from soniccontrol.events import EventManager, PropertyChangeEvent
+from soniccontrol.utils.events import EventManager, PropertyChangeEvent
 
 @attrs.define()
 class TestResult:

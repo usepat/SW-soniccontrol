@@ -15,7 +15,7 @@ from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
 
 from soniccontrol_gui.constants import sizes, ui_labels
-from soniccontrol.events import Event, PropertyChangeEvent
+from soniccontrol.utils.events import Event, PropertyChangeEvent
 from soniccontrol_gui.views.core.app_state import AppState
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader

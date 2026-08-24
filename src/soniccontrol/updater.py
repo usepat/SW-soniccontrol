@@ -5,7 +5,7 @@ from typing import Optional
 from sonic_protocol.schema import DeviceType
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 from soniccontrol.utils.cyclic_task import CyclicTask
 
 class Updater(EventManager, CyclicTask):

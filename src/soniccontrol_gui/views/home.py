@@ -13,7 +13,7 @@ from soniccontrol_gui.widgets.form_widget import FormWidget
 import ttkbootstrap as ttk
 import attrs
 
-from soniccontrol.events import PropertyChangeEvent
+from soniccontrol.utils.events import PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images

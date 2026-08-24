@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 from sonic_protocol.field_names import EFieldName
-from soniccontrol.events import EventManager, PropertyChangeEvent
+from soniccontrol.utils.events import EventManager, PropertyChangeEvent
 from collections import deque
 
 

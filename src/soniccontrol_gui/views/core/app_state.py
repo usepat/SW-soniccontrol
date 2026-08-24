@@ -2,7 +2,7 @@ from enum import Enum
 import logging
 import attrs
 
-from soniccontrol.events import EventManager, PropertyChangeEvent
+from soniccontrol.utils.events import EventManager, PropertyChangeEvent
 
 
 class ExecutionState(Enum):

@@ -1,7 +1,9 @@
+from __future__ import annotations
 import asyncio
 import time
 from typing import List
 import logging
+import attrs
 
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import BaseFieldName, EFieldName
@@ -12,9 +14,22 @@ from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
 from sonic_protocol.schema import DeviceType, ICommandCode, Protocol, Version
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
-from soniccontrol.device_data import FirmwareInfo
+from soniccontrol.sonic_device import FirmwareInfo
 from soniccontrol.communication.serial_communicator import Communicator
 from sonic_protocol.python_parser import commands
+from sonic_protocol.schema import DeviceType, Version
+
+
+@attrs.define(auto_attribs=True)
+class FirmwareInfo:
+    serial_number: str = attrs.field(default="unknown")
+    device_type: DeviceType = attrs.field(default=DeviceType.UNKNOWN)
+    hardware_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version)
+    firmware_info: str = attrs.field(default="")
+    firmware_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version) 
+    protocol_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version)
+    is_release: bool = attrs.field(default=True)
+
 
 class CommandValidationError(Exception):
     """Raised when a command's response fails validation."""

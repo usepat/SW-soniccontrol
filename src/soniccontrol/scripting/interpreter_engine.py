@@ -4,7 +4,7 @@ import logging
 from typing import Iterable, Optional
 
 import attrs
-from soniccontrol.events import Event, EventManager, PropertyChangeEvent
+from soniccontrol.utils.events import Event, EventManager, PropertyChangeEvent
 from soniccontrol.scripting.scripting_facade import ExecutionStep, RunnableScript, ScriptException
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.sonic_device import SonicDevice

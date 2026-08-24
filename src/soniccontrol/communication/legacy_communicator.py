@@ -10,7 +10,7 @@ from soniccontrol.fw_device.connection import Connection, SerialConnection
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol
 from soniccontrol.app_config import ENCODING
-from soniccontrol.events import Event
+from soniccontrol.utils.events import Event
 from soniccontrol.app_config import PLATFORM, System
 
 @attrs.define()

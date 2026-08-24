@@ -12,7 +12,7 @@ from soniccontrol.communication.communicator import Communicator
 from soniccontrol_gui.views.control.message_fetcher import MessageFetcher
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
 from soniccontrol_gui.constants import sizes, style, ui_labels
-from soniccontrol.events import PropertyChangeEvent
+from soniccontrol.utils.events import PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images

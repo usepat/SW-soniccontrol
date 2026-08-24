@@ -11,7 +11,7 @@ from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
 from soniccontrol.procedures.remote_procedure_state import RemoteProcedureState
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logger.utils import get_base_logger
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 
 class ProcedureController(EventManager):
     PROCEDURE_STOPPED: Literal["<<PROCEDURE_STOPPED>>"] = "<<PROCEDURE_STOPPED>>"

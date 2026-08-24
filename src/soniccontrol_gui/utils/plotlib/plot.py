@@ -6,7 +6,7 @@ import pandas as pd
 
 from typing import Dict, Optional
 
-from soniccontrol.events import EventManager, PropertyChangeEvent
+from soniccontrol.utils.events import EventManager, PropertyChangeEvent
 
 
 class Plot(EventManager):

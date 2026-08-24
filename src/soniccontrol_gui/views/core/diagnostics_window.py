@@ -6,7 +6,7 @@ import json
 from async_tkinter_loop import async_handler
 from ttkbootstrap.scrolled import ScrolledFrame
 from soniccontrol.hw_tests.test_base import TestInteraction, TestResult
-from soniccontrol.events import Event, PropertyChangeEvent
+from soniccontrol.utils.events import Event, PropertyChangeEvent
 from soniccontrol.hw_tests.test_base import SemiAutomatedStep, TestInfo
 from soniccontrol.hw_tests.test_executor import TestExecutor
 from soniccontrol.hw_tests.test_report_writer import TestReportWriter

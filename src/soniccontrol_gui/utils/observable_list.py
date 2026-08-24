@@ -1,6 +1,6 @@
 
 from typing import Literal
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 
 
 class ObservableList(EventManager):

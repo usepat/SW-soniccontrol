@@ -9,7 +9,7 @@ from sonic_protocol.schema import IEFieldName
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
-from soniccontrol.events import Event, PropertyChangeEvent
+from soniccontrol.utils.events import Event, PropertyChangeEvent
 from soniccontrol.logger.utils import add_logger_context_to_exception
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater

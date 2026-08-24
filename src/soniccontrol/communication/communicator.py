@@ -8,7 +8,7 @@ from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import CommandContract
 from soniccontrol.fw_device.connection import Connection
 from soniccontrol.communication.message_protocol import CommunicationProtocol
-from soniccontrol.events import EventManager
+from soniccontrol.utils.events import EventManager
 
 
 class Communicator(abc.ABC, EventManager):

@@ -1,7 +1,7 @@
 import asyncio
 from typing import Optional
 from soniccontrol.communication.communicator import Communicator
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 
 
 class MessageFetcher(EventManager):

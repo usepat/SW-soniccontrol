@@ -5,7 +5,7 @@ from typing import Any, Dict
 import attrs
 from soniccontrol.procedures.procs.spectrum_measure import SpectrumMeasure, SpectrumMeasureArgs
 from soniccontrol.updater import Updater
-from soniccontrol.events import Event, EventManager, PropertyChangeEvent
+from soniccontrol.utils.events import Event, EventManager, PropertyChangeEvent
 from soniccontrol.procedures.procedure import ProcedureArgs, ProcedureType
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine, InterpreterState

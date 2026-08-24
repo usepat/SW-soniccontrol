@@ -8,7 +8,7 @@ from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLATFORM, SOFTWARE_VERSION
 from soniccontrol.data_capturing.capture_target import CaptureTarget, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment
-from soniccontrol.device_data import FirmwareInfo
+from soniccontrol.sonic_device import FirmwareInfo
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.file_explorer import open_file_explorer
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry

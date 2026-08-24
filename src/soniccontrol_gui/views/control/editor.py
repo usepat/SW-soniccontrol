@@ -19,7 +19,7 @@ from soniccontrol.scripting.interpreter_engine import CurrentTarget, Interpreter
 from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade
 from soniccontrol_gui.constants import (sizes, scripting_cards_data,
                                                      ui_labels)
-from soniccontrol.events import PropertyChangeEvent
+from soniccontrol.utils.events import PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import AppExecutionContext, AppState, ExecutionState
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox

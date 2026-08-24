@@ -8,7 +8,7 @@ from soniccontrol.communication.message_fetcher import MessageFetcher
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol
 from soniccontrol.app_config import ENCODING
-from soniccontrol.events import Event
+from soniccontrol.utils.events import Event
 from soniccontrol.app_config import PLATFORM, System
 
 @attrs.define()

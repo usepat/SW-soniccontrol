@@ -12,7 +12,7 @@ from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureTarge
 from soniccontrol.data_capturing.data_provider import DataProvider
 from soniccontrol.data_capturing.experiment import Experiment
 from soniccontrol.data_capturing.experiment_store import DataTableDescale, DataTableWorker, ExperimentWriter, HDF5ExperimentWriter
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 
 
 

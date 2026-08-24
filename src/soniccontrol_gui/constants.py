@@ -4,7 +4,7 @@ import attrs
 
 from soniccontrol.app_config import APP_DATA_DIR, SONIC_CONTROL_BASE_DIR, PLUGIN_DIR
 from soniccontrol_gui.utils.types import ScriptingGuideCardDataDict
-from soniccontrol.events import PropertyChangeEvent
+from soniccontrol.utils.events import PropertyChangeEvent
 from soniccontrol.procedures.procedure_controller import ProcedureController
 
 

@@ -12,7 +12,7 @@ import ttkbootstrap as ttk
 from soniccontrol_gui.views.control.log_settings import LogSettingsTab
 from soniccontrol_gui.views.control.log_storage import DeviceLogFilter, LogStorage, NotDeviceLogFilter
 from soniccontrol_gui.constants import sizes, ui_labels
-from soniccontrol.events import Event
+from soniccontrol.utils.events import Event
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.observable_list import ObservableList

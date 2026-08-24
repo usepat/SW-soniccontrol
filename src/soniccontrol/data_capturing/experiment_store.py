@@ -13,7 +13,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import Version
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
-from soniccontrol.device_data import FirmwareInfo
+from soniccontrol.sonic_device import FirmwareInfo
 
 
 

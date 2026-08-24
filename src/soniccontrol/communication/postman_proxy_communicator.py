@@ -2,7 +2,7 @@ import asyncio
 import logging
 from soniccontrol.fw_device.connection import Connection
 from soniccontrol.communication.message_protocol import SonicMessageProtocol
-from soniccontrol.events import Event
+from soniccontrol.utils.events import Event
 from .serial_communicator import Communicator
 from async_tkinter_loop import async_handler
 

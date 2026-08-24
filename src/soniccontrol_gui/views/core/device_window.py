@@ -23,7 +23,7 @@ from soniccontrol_gui.views.configuration.settings import Settings
 from soniccontrol_gui.views.control.log_storage import LogStorage, NotDeviceLogFilter
 from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 from soniccontrol_gui.views.configuration.configuration import Configuration
 from soniccontrol_gui.views.configuration.legacy_configuration import LegacyConfiguration
 from soniccontrol_gui.views.configuration.flashing import Flashing

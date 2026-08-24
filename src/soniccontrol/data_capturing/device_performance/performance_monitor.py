@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from soniccontrol.utils.cyclic_task import CyclicTask
 from .memory_snapshot import AllocationHistogramBin, AllocatorInfo, AllocatorUsage, MemorySnapShot, StackInfo
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol import commands as cmds
 from soniccontrol import EFieldName

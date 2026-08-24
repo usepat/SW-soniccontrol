@@ -23,7 +23,7 @@ from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFa
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence
 from soniccontrol_gui.constants import sizes, ui_labels, file_dialog_opts
-from soniccontrol.events import PropertyChangeEvent
+from soniccontrol.utils.events import PropertyChangeEvent
 from soniccontrol_gui.views.core.app_state import ExecutionState
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
