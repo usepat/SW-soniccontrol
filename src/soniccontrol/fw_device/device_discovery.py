@@ -18,23 +18,23 @@ class DeviceDiscovery(abc.ABC):
     ) -> List[FwDeviceInfo]:
         ...
 
-    async def wait_for_device_to_appear(self, sys_name: str) -> FwDeviceInfo:
+    async def wait_for_device_to_appear(self, usb_sys_name: str) -> FwDeviceInfo:
         while True:
-            pico_device = await self.get_fw_device_info_via_sys_name(sys_name)
+            pico_device = await self.get_fw_device_info_via_usb_sys_name(usb_sys_name)
             if pico_device:
                 return pico_device
             
             await asyncio.sleep(0.5)
 
-    async def wait_for_device_to_disappear(self, sys_name: str) -> None:
+    async def wait_for_device_to_disappear(self, usb_sys_name: str) -> None:
         while True:
-            pico_device = await self.get_fw_device_info_via_sys_name(sys_name)
+            pico_device = await self.get_fw_device_info_via_usb_sys_name(usb_sys_name)
             if pico_device is None:
                 return
             
             await asyncio.sleep(0.5)
 
-    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 10) -> FwDeviceInfo:
+    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 20) -> FwDeviceInfo:
         async def _redetect():
             await self.wait_for_device_to_disappear(device_info.usb_sys_name)
             return await self.wait_for_device_to_appear(device_info.usb_sys_name)
@@ -74,9 +74,9 @@ class DeviceDiscovery(abc.ABC):
         ), None)
         return dev_info
 
-    async def get_fw_device_info_via_sys_name(self, sys_name: str):
+    async def get_fw_device_info_via_usb_sys_name(self, usb_sys_name: str):
         """
-            Returns the firmware device info for a device that is registered under the sys_name.
+            Returns the firmware device info for a device that is registered under the usb_sys_name.
 
             Returns
             =======
@@ -84,7 +84,7 @@ class DeviceDiscovery(abc.ABC):
         """
         dev_info = next((
             dev_info for dev_info in await self.list_fw_device_infos(include_unverified_ttys=True)
-            if dev_info.sys_name == sys_name
+            if dev_info.usb_sys_name == usb_sys_name
         ), None)
         return dev_info
         
