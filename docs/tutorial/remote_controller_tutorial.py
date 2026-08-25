@@ -27,14 +27,14 @@ async def main():
     # Do not use RemoteController constructor directly instead use the static connect methods
 
     # connecting over serial to a USB port
-    # controller = await RemoteController.connect_via_serial(Path("/dev/ttyUSB0"))
+    controller = await RemoteController.connect_via_serial(Path("/dev/ttyUSB0"))
 
-    sim_exe = get_simulation_exe()
-    assert sim_exe is not None, "No path defined in env to firmware directory"
-    controller = await RemoteController.connect_via_simulation(
-        sim_exe, 
-        ['--profile=worker']
-    )
+    # sim_exe = get_simulation_exe()
+    # assert sim_exe is not None, "No path defined in env to firmware directory"
+    # controller = await RemoteController.connect_via_simulation(
+    #     sim_exe, 
+    #     ['--profile=worker']
+    # )
 
     # device_info attribute gives you information about the connected device.
     # ensure that it is in operator mode and really the device you expect (Sometimes devices can be misconfigured or have the wrong firmware flashed or some weird firmware bugs)
@@ -69,7 +69,7 @@ async def main():
     answer = await controller.send_command(cmds.SetAtf(1, 100000)) # some commands take arguments as input
     
     print(answer.message) # the full message as string
-    if answer.is_valid: # if the command could not be executed is_valid will be false
+    if answer.valid: # if the command could not be executed is_valid will be false
         # We can access the parsed contents of the answer by its field name. 
         print(answer[EFieldName.ATF])
 
