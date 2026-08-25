@@ -130,6 +130,13 @@ class ProcedureController(EventManager):
     async def wait_for_proc_to_finish(self) -> None:
         await self._remote_procedure_state.wait_till_procedure_halted()
 
+        # Edgecase: is_proc_running checks only the _running_proc_task and not the remote_procedure_state
+        # therefore we need to cancel the task explicitly here
+        if self._running_proc_task:
+            self._running_proc_task.cancel()
+
+            await self._running_proc_task
+
     def _on_proc_finished(self) -> None:
         self._logger.info("Procedure stopped")
         self._running_proc_task = None
