@@ -144,9 +144,9 @@ class HDF5ExperimentWriter(ExperimentWriter):
         data = data.copy() # make a copy, so that we do not transform the original data
 
         # convert the time to a string for direct readability in storage
-        timestamp_col = EFieldName.TIMESTAMP.name.lower()
+        timestamp_col = EFieldName.TIMESTAMP.name
         if timestamp_col in data:
-            data[timestamp_col] = data[EFieldName.TIMESTAMP.name].isoformat()  
+            data[timestamp_col] = data[timestamp_col].isoformat()  
 
         # filter data, so that it only contains the columns of the table
         filtered_data = { k.lower(): v for k, v in data.items() if k.lower() in self._data_table.colnames }

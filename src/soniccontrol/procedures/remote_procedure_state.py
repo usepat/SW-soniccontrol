@@ -25,3 +25,6 @@ class RemoteProcedureState:
 
     async def wait_till_procedure_halted(self):
         await self._halted.wait()
+
+    def did_procedure_halt(self):
+        return self._halted.is_set()
