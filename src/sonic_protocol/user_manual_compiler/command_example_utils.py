@@ -1,7 +1,7 @@
 import numbers
 from enum import Enum
 from typing import Any, List, Optional
-
+from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.schema import (
     AnswerFieldDef,
     CommandContract,
@@ -130,6 +130,12 @@ def _append_type_specific_examples(param_limits: List[Any], param_def: CommandPa
         for enum in enum_members:
             _append_unique(param_limits, enum.lower() if isinstance(enum, str) else enum)
 
+    elif issubclass(field_type, numbers.Integral) and not issubclass(field_type, bool) and len(param_limits) == 0:
+        param_limits.append(0)
+    elif field_type is float and len(param_limits) == 0:
+            param_limits.append(0.0)
+    
+
 
 def deduce_param_limit_values(consts: DeviceParamConstants, param_def: CommandParamDef | None) -> List[Any]:
     if param_def is None:
@@ -212,7 +218,6 @@ def deduce_command_examples_for_contract_as_commands(
         index_limits = [None]
 
     setter_limits = deduce_param_limit_values(consts, command_def.setter_param)
-
     for index_limit in index_limits:
         if len(setter_limits) == 0:
             args = {} if index_limit is None else {"index": index_limit}
