@@ -35,11 +35,23 @@ class DeviceDiscovery(abc.ABC):
             await asyncio.sleep(0.5)
 
     async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 20) -> FwDeviceInfo:
-        async def _redetect():
-            await self.wait_for_device_to_disappear(device_info.usb_sys_name)
-            return await self.wait_for_device_to_appear(device_info.usb_sys_name)
-
-        return await asyncio.wait_for(_redetect(), timeout_s)
+        try:
+            await asyncio.wait_for(
+                self.wait_for_device_to_disappear(device_info.usb_sys_name), 
+                timeout_s
+            )
+        except TimeoutError as e:
+            # If the device never disappeared, it could be that it already rebooted
+            # Look if the device is enumerated  
+            rebooted = await self.get_fw_device_info_via_usb_sys_name(device_info.usb_sys_name)
+            if rebooted is None:
+                raise e
+            return rebooted
+        else:
+            return await asyncio.wait_for(
+                self.wait_for_device_to_appear(device_info.usb_sys_name), 
+                timeout_s
+            )
         
 
     async def list_fw_device_names(
