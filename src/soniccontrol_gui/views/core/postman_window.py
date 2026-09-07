@@ -1,19 +1,22 @@
 import asyncio
 import logging
 from typing import Any, Callable, Dict
+
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from async_tkinter_loop import async_handler
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.schema import IEFieldName
+import sonic_protocol.python_parser.commands as commands
+from sonic_protocol.schema import DeviceType, IEFieldName
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
-from soniccontrol.utils.events import Event, PropertyChangeEvent
 from soniccontrol.logger.utils import add_logger_context_to_exception
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
+from soniccontrol.utils.events import Event, PropertyChangeEvent
 from soniccontrol_gui.constants import style, ui_labels, sizes
+from soniccontrol_gui.resources import images
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -25,7 +28,38 @@ from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
 from soniccontrol_gui.views.core.device_window import DeviceWindow, DeviceWindowView, KnownDeviceWindow
 from soniccontrol_gui.views.home import DeviceInfoFrame
 from soniccontrol_gui.widgets.message_box import MessageBox
-from soniccontrol_gui.resources import images
+
+
+class PostmanConnectionStatusUpdater(Updater):
+    async def update(self) -> None:
+        is_not_connected = not self._device.communicator.connection_opened.is_set()
+        if self._device.info.device_type != DeviceType.POSTMAN or is_not_connected:
+            self.running.clear()
+            return
+
+        try:
+            answer = await self._device.execute_command(
+                commands.GetConnectionStatus(),
+                raise_exception=False,
+                should_log=False,
+            )
+        except (ConnectionError, TimeoutError):
+            self.running.clear()
+            return
+        except asyncio.CancelledError:
+            self.running.clear()
+            raise
+        except Exception as e:
+            if not self._device.communicator.connection_opened.is_set():
+                self.running.clear()
+                return
+            if "closed transport" in str(e).lower():
+                self.running.clear()
+                return
+            raise
+
+        if answer.is_valid:
+            self.emit(Event(Updater.UPDATE_EVENT, status=answer.field_value_dict))
 
 
 class PostmanStatusBar(UIComponent):
@@ -89,6 +123,7 @@ class PostmanHomeTab(UIComponent):
             self._worker_device_window.subscribe(DeviceWindow.CLOSE_EVENT, self._on_close_communication_worker)  
             self._worker_device_window.subscribe(DeviceWindow.RECONNECT_EVENT, lambda _: self._on_connect_to_worker())
             await self._worker_device_window.wait_finished_loading()
+            self._worker_device_window.start_background_tasks()
             self._is_connected.set()
 
     async def wait_until_worker_window_loaded(self) -> DeviceWindow:
@@ -128,8 +163,8 @@ class PostmanDeviceWindow(DeviceWindow):
             self._view = DeviceWindowView(root=root, title=f"Device Window - Postman - {connection_name}")
             super().__init__(self._logger, self._view, self._device.communicator, "postman")
 
-            self._updater = Updater(self._device)
-            self._updater.iteration_interval = 1000
+            self._connection_status_updater = PostmanConnectionStatusUpdater(self._device)
+            self._connection_status_updater.iteration_interval = 1000
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
             self._logging = Logging(self, connection_name, self._device)
             self._worker_connection_tab = PostmanHomeTab(self, self._device, connection_name)
@@ -145,9 +180,7 @@ class PostmanDeviceWindow(DeviceWindow):
                 self._logging.view
             ], right_one=True)
 
-            self._updater.subscribe(Updater.UPDATE_EVENT,self._status_bar.on_update)
-            self._updater.subscribe(Updater.UPDATE_EVENT,self._worker_connection_tab.on_update)
-            self._updater.start()
+            self._connection_status_updater.subscribe(Updater.UPDATE_EVENT, self._on_update)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._worker_connection_tab.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
 
@@ -155,6 +188,18 @@ class PostmanDeviceWindow(DeviceWindow):
             self._logger.error(e)
             MessageBox.show_error(root, str(e))
             raise
+
+    def _on_update(self, e: Event) -> None:
+        self._status_bar.on_update(e)
+        self._worker_connection_tab.on_update(e)
+
+    async def _shutdown_before_close(self) -> None:
+        if self._connection_status_updater.running.is_set():
+            await self._connection_status_updater.stop()
+
+    def start_background_tasks(self) -> None:
+        if not self._connection_status_updater.running.is_set():
+            self._connection_status_updater.start()
 
     @property
     def device(self) -> SonicDevice | None:
