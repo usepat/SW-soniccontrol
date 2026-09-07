@@ -43,6 +43,12 @@ class BaseFieldName(IEFieldName):
     WATERMARK_ALLOCATIONS = 29
     LIMIT = 30
 
+    FILE_NAME = 31
+    FILE_TYPE = 32
+    DATA = 33
+    FILE_INDEX = 34
+
+
 
 @unique
 class EFieldName(IEFieldName):
@@ -73,7 +79,7 @@ class EFieldName(IEFieldName):
     LOG_LEVEL = BaseFieldName.LOG_LEVEL.value 
     LOGGER_NAME = BaseFieldName.LOGGER_NAME.value 
 
-    TIMESTAMP = BaseFieldName.TIMESTAMP.value 
+    TIMESTAMP = BaseFieldName.TIMESTAMP.value # never use this as a field. It gets set by sonic device
 
     ALLOCATOR_NAME = BaseFieldName.ALLOCATOR_NAME.value 
     SIZE = BaseFieldName.SIZE.value 
@@ -84,6 +90,11 @@ class EFieldName(IEFieldName):
     WATERMARK_WASTED = BaseFieldName.WATERMARK_WASTED.value 
     WATERMARK_ALLOCATIONS = BaseFieldName.WATERMARK_ALLOCATIONS.value 
     LIMIT = BaseFieldName.LIMIT.value
+
+    FILE_NAME = BaseFieldName.FILE_NAME.value
+    FILE_INDEX = BaseFieldName.FILE_INDEX.value
+    FILE_TYPE = BaseFieldName.FILE_TYPE.value
+    DATA = BaseFieldName.DATA.value
 
     HELP = 106
 

@@ -26,6 +26,9 @@ that can also be tested in the firmware with a loopback.
 
 So this here is just a simple test for compliance. To check if it works at all with an 
 extern implementation of modbus with different serial settings.
+
+Note: this file cannot be part of test_remote folder as there a remote_controller is used via auto-use.
+Therefore to avoid issues, it is better to isolate this here
 """
 
 

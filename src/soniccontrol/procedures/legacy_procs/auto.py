@@ -76,6 +76,6 @@ class AutoLegacyProc(Procedure):
 
     async def fetch_args(self, device: SonicDevice) -> dict[str, Any]:
         # answer = await device.execute_command(commands.GetPvalLegacy())
-        # if answer.was_validated and answer.valid:
+        # if answer.was_validated and answer.is_valid:
         #     return AutoLegacyArgs.to_dict_with_holder_args(answer)
         return {}

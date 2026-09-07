@@ -66,4 +66,9 @@ The RescueWindow has only the tabs [SerialMonitor](@ref sonic_control_gui.views.
 
 For the postman exists an own Device Window, because it is a shallow router and only needs a tab for establishing a connection with the worker and configuring modbus settings. All the other tabs for the other devices make no sense for the postman.
 
+### Device Diagnostics Window
+
+When the device encounters a critical error that does not allow it to start the operator, it instead goes into the diagnostics debugger mode. 
+In this mode other tabs are available, mainly only serial communicator, logging, info and hw testing. In contrast to the rescue window, here sonic control could establish a communication with the device and know exactly with which device it communicates.
+
 @}

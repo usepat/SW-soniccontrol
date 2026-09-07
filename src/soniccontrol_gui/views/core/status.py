@@ -16,10 +16,19 @@ from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.widgets.xyscrolled_frame import XYScrolledFrame
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
-from soniccontrol_gui.views.core.custom_meter import CustomMeter
+from soniccontrol_gui.widgets.custom_meter import CustomMeter
 
 class StatusBar(UIComponent):
     def __init__(self, parent: UIComponent, parent_slot: View, answer_field_defs: List[AnswerFieldDef]):
+        """
+            Params
+            ======
+            answer_field_defs:
+                Should contain the list of answer fields of the update command. Different devices may differ in those fields.
+                Those fields are then used for mapping the update command answer to the labels in the status bar.
+                It also states which labels at all should be generated. 
+        """
+
         self._logger = logging.getLogger(parent.logger.name + "." + StatusBar.__name__)
         
         self._field_converters = {
@@ -44,6 +53,12 @@ class StatusBar(UIComponent):
         self._view.expand_panel_frame(self._status_panel_expanded)
 
     def on_update_status(self, status: Dict[IEFieldName, Any]):
+        """
+            This function is set as listener callback on the data provider.
+            So each time the updater fetches new status information, this function retrieves it
+            and then updates the labels in the status bar with it.
+        """
+
         status = copy.copy(status)
         if EFieldName.TEMPERATURE in status and (status[EFieldName.TEMPERATURE] == 404 or status[EFieldName.TEMPERATURE] == 0):
             status[EFieldName.TEMPERATURE] = float("nan")

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock
 
-from soniccontrol.events import EventManager, Event, PropertyChangeEvent
+from soniccontrol.utils.events import EventManager, Event, PropertyChangeEvent
 
 @pytest.mark.asyncio
 async def test_emit_notfifies_listeners_on_event():

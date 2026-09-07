@@ -9,7 +9,8 @@ from sonic_protocol.schema import IEFieldName
 from soniccontrol.builder import DeviceBuilder
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
-from soniccontrol.events import Event, PropertyChangeEvent
+from soniccontrol.utils.events import Event, PropertyChangeEvent
+from soniccontrol.logger.utils import add_logger_context_to_exception
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import style, ui_labels, sizes
@@ -46,18 +47,22 @@ class PostmanStatusBar(UIComponent):
 class PostmanHomeTab(UIComponent):
     def __init__(self, parent: UIComponent, device: SonicDevice, connection_name: str):
         self._logger = logging.getLogger(parent.logger.name + "." + PostmanHomeTab.__name__)
-        self._device = device
-        self._connection_name = connection_name
-        self._worker_device_window: DeviceWindow | None = None
-        self._is_connected = asyncio.Event()
+        try:
+            self._device = device
+            self._connection_name = connection_name
+            self._worker_device_window: DeviceWindow | None = None
+            self._is_connected = asyncio.Event()
 
-        self._view = PostmanHomeTabView(parent.view, parent_widget_name=parent.component_name)
-        super().__init__(parent, self._view, self._logger)
+            self._view = PostmanHomeTabView(parent.view, parent_widget_name=parent.component_name)
+            super().__init__(parent, self._view, self._logger)
 
-        self._info_frame = DeviceInfoFrame(self, self._view.info_frame_slot, "postman_home", self._device)
+            self._info_frame = DeviceInfoFrame(self, self._view.info_frame_slot, "postman_home", self._device)
 
-        self._view.set_connect_to_worker_button_pressed_callback(self._on_connect_to_worker)
-        self._view.enable_connection_button(False)
+            self._view.set_connect_to_worker_button_pressed_callback(self._on_connect_to_worker)
+            self._view.enable_connection_button(False)
+        except Exception as e:
+            add_logger_context_to_exception(e, self.logger)
+            raise e
 
     @async_handler
     async def _on_connect_to_worker(self):
@@ -196,7 +201,6 @@ class PostmanHomeTabView(TabView):
     def __init__(self, master: ttk.Frame, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
 
-    #TODO: better icon and label needed
     @property
     def image(self) -> ttk.ImageTk.PhotoImage:
         return ImageLoader.load_image_resource(images.HOME_ICON_BLACK, sizes.TAB_ICON_SIZE)

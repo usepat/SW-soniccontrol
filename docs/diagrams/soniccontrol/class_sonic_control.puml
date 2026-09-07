@@ -73,10 +73,10 @@ class "InterpreterEngine" as soniccontrol.scripting.interpreter_engine.Interpret
 
 soniccontrol.sonic_device.SonicDevice o-- soniccontrol.communication.communicator.Communicator : _serial
 
-soniccontrol.updater.Updater --|> soniccontrol.events.EventManager
+soniccontrol.updater.Updater --|> soniccontrol.utils.events.EventManager
 soniccontrol.sonic_device.SonicDevice --o soniccontrol.updater.Updater : _device
 
-soniccontrol.procedures.procedure_controller.ProcedureController --|> soniccontrol.events.EventManager
+soniccontrol.procedures.procedure_controller.ProcedureController --|> soniccontrol.utils.events.EventManager
 soniccontrol.sonic_device.SonicDevice -l-o soniccontrol.procedures.procedure_controller.ProcedureController : _device
 
 soniccontrol.remote_controller.RemoteController o-- soniccontrol.procedures.procedure_controller.ProcedureController
@@ -87,6 +87,6 @@ soniccontrol.scripting.legacy_scripting.ScriptingFacade --* soniccontrol.remote_
 soniccontrol.procedures.procedure_controller.ProcedureController --o soniccontrol.scripting.legacy_scripting.ScriptingFacade : _proc_controller
 soniccontrol.sonic_device.SonicDevice --o soniccontrol.scripting.legacy_scripting.ScriptingFacade : _device
 
-soniccontrol.scripting.interpreter_engine.InterpreterEngine --|> soniccontrol.events.EventManager
+soniccontrol.scripting.interpreter_engine.InterpreterEngine --|> soniccontrol.utils.events.EventManager
 
 @enduml

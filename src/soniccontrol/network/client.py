@@ -69,7 +69,7 @@ class RemoteClient:
         self,
         include_ttys: bool = True,
         include_disks: bool = True,
-        include_unverified_ttys: bool = False,
+        include_unverified_ttys: bool = True,
     ) -> List[FwDeviceInfo]:
         assert self._session
         
@@ -91,7 +91,6 @@ class RemoteClient:
     async def is_port_free(self, port: str) -> bool:
         assert self._session
 
-        # TODO: maybe we need to refactor this, because we changed device detection
         async with self._session.get(self._url + "/is_port_free/" + port) as response:
             await self._check_response_ok(response)
             return (await response.json())["is_connected"]
@@ -131,18 +130,4 @@ class RemoteClient:
         async with self._session.post(self._url + "/disconnect/" + port) as response:
             await self._check_response_ok(response)
 
-
-    async def wait_for_device_redetection(self, dev_info: FwDeviceInfo) -> FwDeviceInfo:
-        assert self._session
-        
-        data = cattrs.Converter().unstructure(dev_info)
-        async with self._session.post(self._url + "/wait_for_device_redetection", json=data) as response:
-            await self._check_response_ok(response)
-            future_id: str = (await response.json())["future_id"]
-        
-        future_result = await self.wait_for_future(uuid.UUID(future_id))
-
-        new_dev_info = cattrs.structure(future_result, FwDeviceInfo)
-        new_dev_info = attrs.evolve(new_dev_info, remote_server_url=self._url)
-        return new_dev_info
         

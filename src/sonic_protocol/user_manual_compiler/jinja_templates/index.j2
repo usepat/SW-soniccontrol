@@ -19,30 +19,53 @@
     <title>UsePAT API Reference</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>{% include "manual.css" %}</style>
 </head>
 <body class="bg-stone-100 text-slate-800 antialiased">
     <section id="title-page" class="manual-title-page">
-        <div class="manual-title-wrap">
-            <p class="manual-eyebrow">Device protocol reference</p>
-            <h1>UsePAT API Reference</h1>
-            <p class="manual-title-subtitle">Command and response reference for remote control, diagnostics, and integration work.</p>
-            <div class="manual-title-meta">
-                <div>
-                    <span class="manual-title-meta-label">Device</span>
-                    <strong>{{ device_name_to_label(device_type_name) }}</strong>
+        <div class="manual-cover">
+            <div class="manual-cover-top">
+                {% if usepat_logo_src %}
+                    <img class="manual-cover-logo" src="{{ usepat_logo_src }}" alt="UsePAT logo" />
+                {% else %}
+                    <div class="manual-cover-logo-fallback">USEPAT</div>
+                {% endif %}
+            </div>
+
+            <div class="manual-cover-body">
+                <div class="manual-cover-column">
+                    <div class="manual-cover-ribbon">
+                        <div>usePAT API Reference</div>
+                    </div>
+
+                    <div class="manual-cover-product">
+                        <div class="manual-cover-product-name">
+                            <span class="manual-cover-product-name-light">sonic</span><span class="manual-cover-product-name-bold">clean</span>
+                        </div>
+                        <div class="manual-cover-product-tagline">cleaning sensors in liquids</div>
+                    </div>
+
+                    <div class="manual-cover-meta">
+                        <div class="manual-cover-subject">{{ cover_reference_title }}</div>
+                        <div class="manual-cover-edition">Version {{ protocol_version_str }} | {{ release_type }}</div>
+                        <div class="manual-cover-date">{{ cover_date_str }}</div>
+                    </div>
                 </div>
-                <div>
-                    <span class="manual-title-meta-label">Protocol</span>
-                    <strong>{{ protocol_version_str }}</strong>
-                </div>
-                <div>
-                    <span class="manual-title-meta-label">Build</span>
-                    <strong>{{ release_type }}</strong>
-                </div>
-                <div>
-                    <span class="manual-title-meta-label">Generated</span>
-                    <strong>{{ build_date_str }}</strong>
-                </div>
+            </div>
+
+            <div class="manual-cover-footer">
+                {% if footer_image_src %}
+                    <img class="manual-cover-footer-image" src="{{ footer_image_src }}" alt="usePAT address footer" />
+                {% else %}
+                    <div class="manual-cover-footer-mark" aria-hidden="true"></div>
+                    <div class="manual-cover-footer-copy">
+                        <strong>usePAT gmbh</strong>
+                        <span>1120 Vienna | Austria</span>
+                        <span>schonbrunnerstrasse 231 / 2.01</span>
+                        <span>info@usePAT.com | www.usePAT.com</span>
+                        <span>FN 484920v | ATU7301958</span>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </section>
@@ -74,7 +97,7 @@
 
             <div class="manual-panel">
                 {% macro toc_page(target_id) %}
-                    <span class="toc-page ml-3 text-slate-500" data-target="{{ target_id }}" data-page="?">—</span>
+                    <span class="toc-page ml-3 text-slate-500" data-target="{{ target_id }}" data-page="?">p. ?</span>
                 {% endmacro %}
 
                 {% macro render_command_index(nodes, prefix) %}
@@ -216,7 +239,7 @@
             </p>
 
             <p class="manual-copy">
-                Each mailbox is a block of 16-bit registers. To execute a command, write the request header and payload into the command mailbox, then set the execute flag. The device writes the result into the response mailbox. If execution fails, the response contains an error code and message instead of the normal command response.
+                Each mailbox is a block of 16-bit registers. To execute a command, write the request header, payload, and execute flag into the command mailbox. These values can be written together in the same MODBUS write request. The command mailbox keeps that content until execution is complete. The device writes the result into the response mailbox, and once the response pending flag is cleared, the device clears the command register. If execution fails, the response contains an error code and message instead of the normal command response.
             </p>
 
             <div class="overflow-x-auto my-4">
@@ -246,7 +269,7 @@
                             <td class="px-3 py-2 font-semibold text-slate-800">Command mailbox</td>
                             <td class="px-3 py-2">1024</td>
                             <td class="px-3 py-2">Write a command request</td>
-                            <td class="px-3 py-2">Starts with an execute flag, a transceiver id, the command code, and the command payload.</td>
+                            <td class="px-3 py-2">Starts with an execute flag, a transceiver id, the command code, and the command payload. The written content stays in place until execution completes and the response pending flag clears.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -423,6 +446,18 @@
                                 {% endif %}
                             </td>
                         </tr>
+                         <tr>
+                            <td class="px-3 py-2"><code>bytes</code></td>
+                            <td class="px-3 py-2">
+                                {% if include_text and include_modbus %}
+                                array of bytes. The exact representation depends on the transport.
+                                {% elif include_text %}
+                                encoded as base64 according to rfc4648.
+                                {% elif include_modbus %}
+                                Text value stored in the MODBUS mailbox as string layout.
+                                {% endif %}
+                            </td>
+                        </tr>
                         <tr>
                             <td class="px-3 py-2"><code>Version</code></td>
                             <td class="px-3 py-2">Semantic version with major, minor, and patch components.</td>
@@ -573,463 +608,6 @@
         </div>
     </footer>
 
-    <style>
-        :root {
-            --manual-font-sans: "Calibri", "Segoe UI", Arial, Helvetica, sans-serif;
-            --manual-font-mono: Consolas, "Courier New", monospace;
-            --manual-font-serif: Cambria, Georgia, "Times New Roman", serif;
-            --manual-paper: #fcfbf7;
-            --manual-panel: #ffffff;
-            --manual-ink: #1e293b;
-            --manual-muted: #5b677a;
-            --manual-rule: #d9e0e7;
-            --manual-accent: #0f766e;
-            --manual-accent-soft: #dff4f1;
-            --manual-accent-deep: #0b5d56;
-            --manual-table-stripe: #fbfcfd;
-            --manual-command-bg: linear-gradient(180deg, rgba(248,251,252,0.96), rgba(255,255,255,1));
-        }
-
-        body {
-            font-family: var(--manual-font-sans);
-            color: var(--manual-ink);
-            background:
-                linear-gradient(180deg, #e9efe9 0, #f6f3eb 22rem, #f2efe8 100%),
-                var(--manual-paper);
-        }
-        pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Source Code Pro", monospace; }
-        pre, code { font-family: var(--manual-font-mono); }
-        code { background: rgba(15,23,42,0.05); padding: .1rem .3rem; border-radius: .2rem; }
-        .manual-doc { line-height: 1.58; }
-        .manual-title-page {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 3rem 1.5rem;
-            background:
-                radial-gradient(circle at top left, rgba(15,118,110,0.12), transparent 30%),
-                radial-gradient(circle at bottom right, rgba(180,83,9,0.08), transparent 32%),
-                var(--manual-paper);
-        }
-        .manual-title-wrap {
-            width: min(980px, 100%);
-            padding: 3.6rem 3.2rem;
-            border: 1px solid var(--manual-rule);
-            background: rgba(255,255,255,0.84);
-            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.06);
-        }
-        .manual-eyebrow {
-            margin: 0 0 1rem;
-            font-size: 0.82rem;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--manual-accent);
-            font-weight: 700;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            letter-spacing: -0.01em;
-            color: rgb(15 23 42);
-        }
-        h1, h2, h3 { font-family: var(--manual-font-serif); }
-        h1 {
-            font-size: clamp(2.8rem, 4vw, 4.2rem);
-            line-height: 1.03;
-            margin: 0;
-        }
-        .manual-title-subtitle {
-            margin: 1rem 0 0;
-            max-width: 42rem;
-            font-size: 1.12rem;
-            line-height: 1.6;
-            color: var(--manual-muted);
-        }
-        .manual-title-meta {
-            margin-top: 2rem;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1rem 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--manual-rule);
-        }
-        .manual-title-meta > div {
-            display: grid;
-            gap: 0.18rem;
-        }
-        .manual-title-meta-label {
-            font-size: 0.76rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--manual-muted);
-        }
-        .manual-section {
-            background: var(--manual-panel);
-            border: 1px solid var(--manual-rule);
-            padding: 1.4rem 1.2rem 1.65rem;
-            position: relative;
-        }
-        .manual-section::before {
-            content: "";
-            position: absolute;
-            inset: 0 auto 0 0;
-            width: 3px;
-            background: linear-gradient(180deg, var(--manual-accent) 0%, rgba(15,118,110,0.18) 100%);
-        }
-        .manual-section-title {
-            display: flex;
-            align-items: baseline;
-            gap: 0.75rem;
-            font-size: 1.55rem;
-            font-weight: 700;
-            margin: 0;
-            padding-left: 0.1rem;
-        }
-        .manual-section-number {
-            font-family: var(--manual-font-mono);
-            font-size: 0.88rem;
-            letter-spacing: 0.04em;
-            color: var(--manual-accent);
-            min-width: 2.9rem;
-        }
-        .manual-section-intro {
-            margin: 1rem 0 0;
-            max-width: 60rem;
-        }
-        .manual-subheading {
-            font-family: var(--manual-font-serif);
-            font-size: 1.02rem;
-            font-weight: 700;
-            margin: 1.5rem 0 0.6rem;
-        }
-        .manual-lead {
-            margin: 1rem 0 0.8rem;
-            font-size: 1.04rem;
-            line-height: 1.65;
-            color: #334155;
-        }
-        .manual-copy {
-            margin: 0.8rem 0;
-            color: var(--manual-muted);
-        }
-        .manual-panel {
-            margin-top: 1rem;
-            padding: 1rem 1.1rem;
-            border: 1px solid var(--manual-rule);
-            background: linear-gradient(180deg, #fafcfc 0%, #ffffff 100%);
-        }
-        .manual-subsection-title {
-            margin: 1rem 0 0.55rem;
-            font-size: 0.82rem;
-            font-weight: 700;
-            text-transform: none;
-            letter-spacing: 0.01em;
-            color: var(--manual-accent-deep);
-        }
-        .manual-command-code {
-            font-size: 1.14rem;
-            font-weight: 700;
-            color: var(--manual-ink);
-        }
-        .manual-command-code-name {
-            letter-spacing: -0.015em;
-        }
-        .manual-command-code-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.28rem 0.62rem;
-            background: var(--manual-accent-soft);
-            border: 1px solid #b9e6df;
-            color: #115e59;
-            font-family: var(--manual-font-mono);
-            font-size: 0.92rem;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
-        }
-        .manual-chip {
-            display: inline-flex;
-            align-items: center;
-            margin: 0.15rem 0.35rem 0.15rem 0;
-            padding: 0.22rem 0.58rem;
-            border: 1px solid #d7dee7;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
-            color: #334155;
-            font-size: 0.84rem;
-            white-space: nowrap;
-        }
-        .manual-group-heading {
-            margin: 1.9rem 0 0.55rem;
-            font-family: var(--manual-font-serif);
-            font-weight: 700;
-            color: #162435;
-        }
-        .manual-group-heading-l1 { font-size: 1.22rem; }
-        .manual-group-heading-l2 { font-size: 1.08rem; }
-        .manual-group-heading-l3,
-        .manual-group-heading-l4 { font-size: 1rem; }
-        .manual-command-heading {
-            margin: 1.1rem 0 0.55rem;
-            font-family: var(--manual-font-serif);
-            font-weight: 700;
-            color: #142033;
-            letter-spacing: -0.01em;
-            line-height: 1.25;
-        }
-        .manual-command-heading-l1 { font-size: 1.02rem; }
-        .manual-command-heading-l2 { font-size: 0.96rem; }
-        .manual-group-heading .group-number,
-        h3 > .group-number,
-        h4 > .group-number,
-        h5 > .group-number,
-        h6 > .group-number {
-            display: inline-block !important;
-            color: var(--manual-accent);
-            margin-right: .5rem;
-            font-family: var(--manual-font-mono);
-        }
-        .manual-command-card {
-            margin-top: 0.9rem;
-            background: var(--manual-command-bg);
-            border: 1px solid #d8e2ea !important;
-            position: relative;
-            padding: 1rem 1rem 1.15rem !important;
-        }
-        .manual-command-card::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--manual-accent) 0%, rgba(15,118,110,0.16) 100%);
-        }
-        .command-header-block {
-            padding-bottom: 0.2rem;
-            border-bottom: 1px solid rgba(217,224,231,0.72);
-            margin-bottom: 0.85rem;
-        }
-        .manual-tag-row {
-            margin-top: 0.45rem;
-        }
-        .manual-field-card {
-            border: 1px solid var(--manual-rule);
-            padding: 0.95rem 1rem;
-            background: #fff;
-        }
-        .manual-field-card-title {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--manual-ink);
-        }
-        .manual-field-card-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.7rem 1rem;
-            margin: 0.75rem 0 0;
-        }
-        .manual-field-card-grid dt {
-            font-size: 0.73rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--manual-muted);
-        }
-        .manual-field-card-grid dd {
-            margin: 0.16rem 0 0;
-            color: var(--manual-ink);
-        }
-        .manual-field-card-wide { grid-column: 1 / -1; }
-        .manual-field-card-description {
-            margin: 0.8rem 0 0;
-            color: var(--manual-muted);
-        }
-        .manual-enum-caption {
-            margin-bottom: 0.35rem;
-        }
-        .manual-enum-name {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--manual-ink);
-        }
-        .manual-enum-count {
-            font-size: 0.8rem;
-            color: var(--manual-muted);
-        }
-        .manual-enum-table thead th {
-            font-size: 0.72rem;
-        }
-        .manual-enum-table tbody td {
-            font-size: 0.88rem;
-        }
-
-        .manual-table {
-            border-radius: 0;
-            overflow: hidden;
-            border: 1px solid rgb(211 219 229);
-            background: white;
-        }
-        .manual-table thead th {
-            background: linear-gradient(180deg, #f8fafc 0%, #eef3f6 100%);
-            color: rgb(31 41 55);
-            font-size: 0.74rem;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgb(203 213 225);
-        }
-        .manual-table tbody tr:nth-child(even) {
-            background: var(--manual-table-stripe);
-        }
-        .manual-table tbody td {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            border-top: 1px solid rgb(226 232 240);
-            vertical-align: top;
-            color: rgb(30 41 59);
-            line-height: 1.42;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-        }
-        .manual-table tbody th {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-            border-top: 1px solid rgb(226 232 240);
-            color: rgb(30 41 59);
-            font-size: 0.8rem;
-            font-weight: 600;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-        }
-
-        section.bg-white,
-        article.bg-white,
-        .bg-white.border,
-        .not-prose.bg-slate-50,
-        .manual-section,
-        .manual-panel {
-            border-radius: 0 !important;
-            box-shadow: none !important;
-        }
-
-        .major-heading-separator {
-            border-top: 1px solid rgb(226 232 240);
-            margin-top: 0.75rem;
-            margin-left: 0.1rem;
-            background: linear-gradient(90deg, rgba(15,118,110,0.16), rgba(15,118,110,0));
-            height: 1px;
-        }
-        .toc-page::before { content: "p. " attr(data-page); }
-        .toc-page { min-width: 3.5rem; text-align: right; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { scrollbar-width: none; }
-
-        @media (max-width: 800px) {
-            .manual-section::before {
-                width: 2px;
-            }
-            .manual-title-wrap {
-                padding: 2rem 1.25rem;
-            }
-            .manual-title-meta,
-            .manual-field-card-grid {
-                grid-template-columns: minmax(0, 1fr);
-            }
-            .manual-section {
-                padding: 1.05rem 0.85rem 1.2rem;
-            }
-            .manual-section-number {
-                min-width: 2.2rem;
-            }
-        }
-
-        @media print {
-            @page {
-                size: A4;
-                margin: 12mm 8mm;
-            }
-
-            body { background: white !important; }
-            .manual-section::before,
-            .manual-command-card::before {
-                display: none;
-            }
-            .manual-title-page {
-                background: white !important;
-                padding: 0;
-            }
-            .manual-title-wrap {
-                box-shadow: none;
-                background: white;
-            }
-            .manual-command-card {
-                background: white !important;
-            }
-            .manual-table tbody tr:nth-child(even) {
-                background: transparent !important;
-            }
-            .page-break-before { break-before: page; page-break-before: always; }
-            .avoid-break { break-inside: avoid; page-break-inside: avoid; }
-            .overflow-x-auto { overflow: visible !important; }
-            .manual-table { min-width: 0 !important; width: 100% !important; }
-            #document-index { break-inside: auto; page-break-inside: auto; }
-            table { break-inside: auto; page-break-inside: auto; }
-            tr, td, th { break-inside: avoid; page-break-inside: avoid; }
-            h2, h3, h4, h5, h6 { break-after: avoid; page-break-after: avoid; }
-            h2 + *, h3 + *, h4 + *, h5 + *, h6 + * { break-before: avoid; page-break-before: avoid; }
-            #commands h3 + *, #commands h4 + *, #commands h5 + *, #commands h6 + * { break-before: avoid; page-break-before: avoid; }
-            #commands .command-group-top { break-before: page; page-break-before: always; }
-            #commands .command-group-top:first-child { break-before: auto; page-break-before: auto; }
-            #commands .command-group-sub + .command-group-sub { break-before: page; page-break-before: always; }
-            #commands .param-list, #commands .answer-field-list { break-inside: auto; page-break-inside: auto; }
-            #commands .param-item, #commands .answer-field-item, #commands .field-entry-card {
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-            #commands .modbus-section-title,
-            #commands .modbus-layout-title {
-                break-after: avoid;
-                page-break-after: avoid;
-            }
-            #commands .modbus-section-title + .modbus-layout-block,
-            #commands .modbus-layout-title + .modbus-layout-table {
-                break-before: avoid;
-                page-break-before: avoid;
-            }
-            #types .enum-entry {
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-            #types .enum-entry-content,
-            #types .enum-table-wrap {
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-            #types .enum-entry table,
-            #types .enum-entry thead,
-            #types .enum-entry tbody {
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-            #types .enum-table-wrap { overflow: visible !important; }
-            a { color: inherit; text-decoration: none; }
-            .shadow-sm { box-shadow: none !important; }
-            section.bg-white,
-            article.bg-white,
-            .bg-white.border,
-            .not-prose.bg-slate-50,
-            .manual-section,
-            .manual-panel {
-                border-radius: 0 !important;
-                box-shadow: none !important;
-            }
-            .toc-page { min-width: 4rem; text-align: right; }
-        }
-    </style>
-
     <script>
         (function () {
             function mmToPx(mm) {
@@ -1045,8 +623,8 @@
 
             window.updateTocPageNumbers = function updateTocPageNumbers() {
                 const pageHeightPx = mmToPx(297);
-                const marginTopPx = mmToPx(14);
-                const marginBottomPx = mmToPx(14);
+                const marginTopPx = mmToPx(12);
+                const marginBottomPx = mmToPx(18);
                 const printableHeight = pageHeightPx - marginTopPx - marginBottomPx;
 
                 document.querySelectorAll(".toc-page[data-target]").forEach(function (pageEl) {
@@ -1054,12 +632,14 @@
                     const target = document.getElementById(targetId);
                     if (!target || printableHeight <= 0) {
                         pageEl.setAttribute("data-page", "?");
+                        pageEl.textContent = "p. ?";
                         return;
                     }
 
                     const top = target.getBoundingClientRect().top + window.scrollY;
-                    const page = Math.max(1, Math.floor(top / printableHeight) + 1);
+                    const page = Math.max(1, Math.floor(top / printableHeight) + 2);
                     pageEl.setAttribute("data-page", String(page));
+                    pageEl.textContent = "p. " + String(page);
                 });
             };
 

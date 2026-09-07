@@ -77,10 +77,10 @@ class "Updater" as soniccontrol.updater.Updater {
 
 
 
-soniccontrol.updater.Updater --|> soniccontrol.events.EventManager
+soniccontrol.updater.Updater --|> soniccontrol.utils.events.EventManager
 soniccontrol.sonic_device.SonicDevice --o soniccontrol.updater.Updater : _device
 
-soniccontrol.procedures.procedure_controller.ProcedureController -d-|> soniccontrol.events.EventManager
+soniccontrol.procedures.procedure_controller.ProcedureController -d-|> soniccontrol.utils.events.EventManager
 soniccontrol.procedures.procs.ramper.Ramper -d-|> soniccontrol.procedures.procedure.Procedure
 soniccontrol.procedures.procs.ramper.RamperLocal -d-|> soniccontrol.procedures.procs.ramper.Ramper
 soniccontrol.procedures.procs.ramper.RamperRemote -d-|> soniccontrol.procedures.procs.ramper.Ramper

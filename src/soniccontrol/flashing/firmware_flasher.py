@@ -1,15 +1,27 @@
-
+import abc
 import pathlib
 import asyncio
 import subprocess
 from soniccontrol import logger
 from soniccontrol.app_config import ENCODING
-from soniccontrol.interfaces import FirmwareFlasher
 from soniccontrol.app_config import PLATFORM
 import soniccontrol.bin.avrdude
 from importlib import resources as rs
 
+
+class FirmwareFlasher:
+    def __init__(self) -> None:
+        super().__init__()
+
+    @abc.abstractmethod
+    async def flash_firmware(self) -> bool: ...
+
+
 class LegacyFirmwareFlasher(FirmwareFlasher):
+    """
+    This is the old legacy firmware flasher.
+    The new flasher is part of sonic firmware repo and is designed as a plugin for sonic control.
+    """
     def __init__(self, serial_port: str, filepath: pathlib.Path | str) -> None:
         super().__init__()
         self._port: str = serial_port

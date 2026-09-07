@@ -5,7 +5,7 @@ from typing import Optional
 from sonic_protocol.schema import DeviceType
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 from soniccontrol.utils.cyclic_task import CyclicTask
 
 class Updater(EventManager, CyclicTask):
@@ -53,10 +53,11 @@ class Updater(EventManager, CyclicTask):
                 self.running.clear()
                 return
             if "closed transport" in str(e).lower():
+                # FIXME: isnt it possible to catch via the error type?
                 self.running.clear()
                 return
             raise
 
-        if answer.valid:
+        if answer.is_valid:
             self.emit(Event(Updater.UPDATE_EVENT, status=answer.field_value_dict))
 

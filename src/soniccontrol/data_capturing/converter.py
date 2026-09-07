@@ -3,6 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, List, get_origin
 import cattrs
+import numpy as np
 from sonic_protocol.schema import SIPrefix, SIUnit, Version
 from soniccontrol.data_capturing.experiment import ExperimentMetaData, convert_authors
 from soniccontrol.procedures.holder import HolderArgs
@@ -248,3 +249,14 @@ def create_cattrs_converter_for_basic_serialization():
     add_author_hooks_to_converter(converter)
 
     return converter
+
+
+def register_unstructure_hooks_for_numpy(converter: cattrs.Converter) -> int:
+    converter.register_unstructure_hook_func(
+        lambda t: issubclass(t, np.integer),
+        lambda v: int(v)
+    )
+    converter.register_unstructure_hook_func(
+        lambda t: issubclass(t, np.floating),
+        lambda v: float(v)
+    )

@@ -19,37 +19,8 @@ from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.fw_device import create_device_discovery, create_connection_to_device
 from soniccontrol.network.plugin import register_server_plugins
 
-if sys.platform.startswith("linux"):
-    import pyudev
-else:
-    pyudev = None
 
 
-def get_tty_device_from_name(name: str) -> Any | None:
-    if pyudev is None:
-        return None
-
-    context = pyudev.Context()
-    device: Any | None = None
-    for subsystem in ["tty", "usb"]:
-        try: 
-            device = pyudev.Devices.from_name(context, subsystem, name)
-        except pyudev.DeviceNotFoundByNameError:
-            pass
-        else:
-            break
-    
-    if device is None:
-        return None
-
-    if device.subsystem == "usb":
-        for tty_dev in context.list_devices(subsystem="tty"):
-            parent_dev = tty_dev.find_parent(subsystem="usb", device_type="usb_device")
-            if parent_dev and parent_dev.sys_name == device.sys_name:
-                return tty_dev
-        return None
-
-    return device
 
 
 @attrs.define()
@@ -110,7 +81,7 @@ async def get_devices():
     # type is a callable that converts the param string to the value
     include_ttys = request.args.get("include_ttys", True, type=is_it_true) 
     include_disks = request.args.get("include_disks", True, type=is_it_true)
-    include_unverified_ttys = request.args.get("include_unverified_ttys", False, type=is_it_true)
+    include_unverified_ttys = request.args.get("include_unverified_ttys", True, type=is_it_true)
     device_infos: List[FwDeviceInfo] = await create_device_discovery().list_fw_device_infos(
         include_ttys,
         include_disks,
@@ -164,6 +135,8 @@ async def write(port: str):
     if port not in connections:
         abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
 
+    connections[port].timestamp = time.time()
+
     if request.content_type != "application/octet-stream":
         abort(HTTP_CLIENT_ERROR, description="Invalid content type")
 
@@ -181,6 +154,8 @@ async def read(port: str):
     connections: Dict[str, ConnectionObject] = current_app.extensions[CONNECTIONS_REGISTRY]
     if port not in connections:
         abort(HTTP_CLIENT_ERROR, description=NO_ACTIVE_CONNECTION_ERROR_STR)
+
+    connections[port].timestamp = time.time()
 
     reader = connections[port].reader
 
@@ -234,28 +209,6 @@ async def poll_future(future_id: uuid.UUID):
     result = cattrs.Converter().unstructure(result)
 
     return jsonify({ "done": future.done(), "result": result, "exception": exception }), HTTP_OK
-
-
-@server_bp.post("/wait_for_device_redetection")
-def wait_for_device_redetection():
-    if request.content_type != "application/json":
-        abort(HTTP_CLIENT_ERROR, description="Invalid content type")
-
-    data = request.get_json()
-    dev_info = cattrs.Converter().structure(data, FwDeviceInfo)
-
-    async def redetection_task(): 
-        dev_info_new = await create_device_discovery().wait_for_device_redetection(dev_info, timeout_s=5)
-        return dev_info_new
-    
-    future_registry: Dict[uuid.UUID, concurrent.futures.Future[Any]] = current_app.extensions[FUTURE_REGISTRY]
-    loop: asyncio.AbstractEventLoop = current_app.extensions[EVENT_LOOP]
-
-    future_id = uuid.uuid4()
-    future = asyncio.run_coroutine_threadsafe(redetection_task(), loop)
-    future_registry[future_id] = future
-
-    return jsonify({"future_id": str(future_id)}), HTTP_OK
 
 
 @click.command()

@@ -6,7 +6,7 @@ import logging
 import pytest_asyncio
 from sonic_protocol.python_parser.answer import Answer
 from sonic_protocol.python_parser import commands
-from soniccontrol.events import Event
+from soniccontrol.utils.events import Event
 from soniccontrol.procedures.holder import HolderArgs
 from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType

@@ -4,7 +4,7 @@ import attrs
 
 from soniccontrol.app_config import APP_DATA_DIR, SONIC_CONTROL_BASE_DIR, PLUGIN_DIR
 from soniccontrol_gui.utils.types import ScriptingGuideCardDataDict
-from soniccontrol.events import PropertyChangeEvent
+from soniccontrol.utils.events import PropertyChangeEvent
 from soniccontrol.procedures.procedure_controller import ProcedureController
 
 
@@ -146,6 +146,7 @@ class _UIStringsEN:
     INFO_LABEL: Final[str] = "Info"
     SERIAL_MONITOR_LABEL: Final[str] = "Serial Monitor"
     LOGS_LABEL: Final[str] = "Logs"
+    FILES_LABEL: Final[str] = "Files"
     APP_LOGS_LABEL: Final[str] = "Application Logs"
     APP_LOG_SETTINGS_LABEL: Final[str] = "Application Log Settings"
     DEVICE_LOGS_LABEL: Final[str] = "Device Logs"
@@ -284,7 +285,7 @@ class _UIStringsEN:
     WAITING_FOR_ANSWER: Final[str] = "Waiting for answer"
     START_CONFIGURATOR: Final[str] = "--start-configurator"
     USE_FIRMWARE_GUI: Final[str] = "--gui"
-    TODO: Final[str] = "In the future the INFO tab will provide all necessary information about the Sonic Control and the SonicAmp and furthermore will link a more detailed documentation about both the software and the device. For now if you have any questions feel free to contact us"
+    INFO_TAB_REMARKS: Final[str] = "In the future the INFO tab will provide all necessary information about the Sonic Control and the SonicAmp and furthermore will link a more detailed documentation about both the software and the device. For now if you have any questions feel free to contact us"
     CONTACT: Final[str] = "Contact"
     NEW_LINE: Final[str] = ""
     RUN_LABEL: Final[str] = "Run"
@@ -295,6 +296,7 @@ class _UIStringsEN:
     FAILURE: Final[str] = "Failure"
     RELOAD_LOGGERS: Final[str] = "Reload loggers"
     ERROR_MSG_CONNECTION_ALREADY_OPEN: Final[str] = "There is already a connection open for this serial port, do you want to close it?"
+    DOWNLOAD: Final[str] = "Download"
     
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()

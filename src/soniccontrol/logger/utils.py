@@ -36,3 +36,13 @@ def create_logger_for_connection(connection_name: str, out_dir=Path(".")) -> log
     log_file_handler.setFormatter(detailed_formatter)
     logger.addHandler(log_file_handler)
     return logger
+
+def add_logger_context_to_exception(e: Exception, logger: logging.Logger, should_overwrite: bool = False):
+    """
+    attaches logger information to an exception.
+    It is better to only log exceptions in the final handler to avoid noisy logs.
+    Therefore we also add information to exceptions, so we know which specific logger to use.
+    """
+    if not hasattr(e, "logger") or should_overwrite:
+        setattr(e, "logger", logger)
+    

@@ -137,7 +137,7 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
         self,
         include_ttys: bool = True,
         include_disks: bool = True,
-        include_unverified_ttys: bool = False,
+        include_unverified_ttys: bool = True,
     ) -> List[FwDeviceInfo]:
         devices_by_key: dict[tuple[str, str], FwDeviceInfo] = {}
 
@@ -158,90 +158,4 @@ class LinuxDeviceDiscovery(DeviceDiscovery):
                 _add_device(_get_device_info(dev))
 
         return list(devices_by_key.values())
-
-
-    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 2) -> FwDeviceInfo:
-        stop_event = threading.Event()
-        future = asyncio.create_task(
-            asyncio.to_thread(self._wait_for_usb_device_redetection, device_info, stop_event)
-        )
-
-        try:
-            done, _pending = await asyncio.wait({future}, timeout=timeout_s)
-            if done:
-                dev_info = future.result()
-                if dev_info is not None:
-                    return dev_info
-        finally:
-            stop_event.set()
-
-        with contextlib.suppress(asyncio.TimeoutError, asyncio.CancelledError):
-            await asyncio.wait_for(asyncio.shield(future), 1.0)
-
-        if future.done():
-            with contextlib.suppress(asyncio.CancelledError):
-                dev_info = future.result()
-                if dev_info is not None:
-                    return dev_info
-
-        if not future.done():
-            future.cancel()
-        
-        dev_infos = await self.list_fw_device_infos(include_unverified_ttys=True)
-        dev_info = next(
-            (dev for dev in dev_infos if dev.usb_sys_name == device_info.usb_sys_name),
-            None
-        )
-
-        if dev_info is None:
-            raise RuntimeError("The device could not be redetected")
-        
-        # Note: On restart the device reenumerates itself, it appears with the same subsystem etc. tty -> tty
-        # On force into boot or after flashing, this is not the case. tty -> block and block -> tty
-        # Therefore checking if the subsystem changed or stayed the same is inapplicable for this problem
-
-        return dev_info
-
-
-    def _wait_for_usb_device_redetection(self, device_info: FwDeviceInfo, stop_event: threading.Event):
-        assert device_info.usb_sys_name is not None, "The usb_sys_name must be set on the device"
-        context = pyudev.Context()
-        monitor = pyudev.Monitor.from_netlink(context)
-        monitor.filter_by(subsystem="usb")
-
-        seen_remove = False
-
-        usb_device = None
-        while not stop_event.is_set():
-            device = monitor.poll(timeout=0.25)
-            if device is None:
-                continue
-            if device.sys_name != device_info.usb_sys_name:
-                continue
-
-            action = device.action
-
-            if action == "remove":
-                seen_remove = True
-            elif action == "add" and seen_remove:
-                usb_device = device
-                break
-
-        if usb_device is None:
-            return None
-
-        while not stop_event.is_set():
-            device = _get_descendant_device(usb_device, [
-                PyudevDeviceQuery("tty", None), 
-                PyudevDeviceQuery("block", "partition")
-            ])
-
-            if device is not None:
-                return _get_device_info(device)
-
-            time.sleep(0.5)
-
-        return None
-
-        
 

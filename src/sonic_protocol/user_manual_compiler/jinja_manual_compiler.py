@@ -3,6 +3,7 @@ import asyncio
 import base64
 from datetime import datetime
 from enum import Enum
+import io
 import os
 import shutil
 import tempfile
@@ -17,7 +18,6 @@ from sonic_protocol.protocol import protocol_list
 from sonic_protocol.groups import GroupId, get_spec
 from sonic_protocol.schema import (
     CommandContract,
-    ConverterType,
     DeviceParamConstantType,
     DeviceType,
     ProtocolType,
@@ -34,6 +34,7 @@ from sonic_protocol.user_manual_compiler.manual_compiler import ManualCompiler
 
 import importlib.resources as rs
 import jinja2
+from pypdf import PdfReader
 from pyppeteer import launch
 from pyppeteer import chromium_downloader as cd
 
@@ -52,6 +53,29 @@ class GroupNode:
 def add_wbr_before_underscore(value: object) -> str:
     text = "" if value is None else str(value)
     return text.replace("_", "<wbr>_")
+
+
+def load_asset_data_uri(asset_path: Path) -> str | None:
+    if not asset_path.exists():
+        return None
+
+    suffix = asset_path.suffix.lower()
+    mime_type = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+        ".svg": "image/svg+xml",
+        ".ttf": "font/ttf",
+        ".otf": "font/otf",
+        ".woff": "font/woff",
+        ".woff2": "font/woff2",
+    }.get(suffix)
+
+    if mime_type is None:
+        return None
+
+    return f"data:{mime_type};base64,{base64.b64encode(asset_path.read_bytes()).decode('ascii')}"
 
 
 def device_name_to_label(value: object) -> str:
@@ -218,10 +242,10 @@ class HtmlManualCompiler(ManualCompiler):
             "str": str,
             "float": float,
             "np": np, # needed for np.uint8, etc.
-            "ConverterType": ConverterType,
             "Version": Version,
             "Enum": Enum,
             "Timestamp": Timestamp,
+            "bytes": bytes,
             "protocol_constants": attrs.asdict(protocol.consts), # FIXME: It would be better to pass this as render variable, but I am lazy
             "protocol_consts": protocol.consts,
             "deduce_single_command_example_for_contract": deduce_single_command_example_for_contract,
@@ -238,6 +262,34 @@ class HtmlManualCompiler(ManualCompiler):
         protocol_version_str = str(protocol_version)
         release_type = "Release" if is_release else "Development"
         build_date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cover_date_str = datetime.now().strftime("%d.%m.%Y")
+        if mode == "text":
+            cover_reference_title = "Sonic Text Protocol Reference"
+        elif mode == "modbus":
+            cover_reference_title = "Sonic MODBUS Protocol Reference"
+        else:
+            cover_reference_title = "Sonic Protocol Reference"
+
+        repo_root = Path(__file__).resolve().parents[3]
+        gui_resources = repo_root / "src" / "soniccontrol_gui" / "resources"
+        usepat_logo_src = load_asset_data_uri(
+            gui_resources / "pictures" / "usepat_neu-4c-mSL.png"
+        )
+        footer_image_src = load_asset_data_uri(
+            gui_resources / "icons" / "thumbnail_usePAT_Briefpapier_Adressblock_end 1.jpg"
+        )
+        qtype_cond_light_src = load_asset_data_uri(
+            gui_resources / "fonts" / "QTypeOT-CondLight.otf"
+        )
+        qtype_cond_book_src = load_asset_data_uri(
+            gui_resources / "fonts" / "QTypeOT-CondBook.otf"
+        )
+        qtype_cond_medium_src = load_asset_data_uri(
+            gui_resources / "fonts" / "QTypeOT-CondMedium.otf"
+        )
+        qtype_cond_bold_src = load_asset_data_uri(
+            gui_resources / "fonts" / "QTypeOT-CondBold.otf"
+        )
 
         content = template.render(
             command_groups=command_groups,  
@@ -251,7 +303,15 @@ class HtmlManualCompiler(ManualCompiler):
             device_type_name=device_type_name,
             protocol_version_str=protocol_version_str,
             release_type=release_type,
-                build_date_str=build_date_str,
+            build_date_str=build_date_str,
+            cover_date_str=cover_date_str,
+            cover_reference_title=cover_reference_title,
+            usepat_logo_src=usepat_logo_src,
+            footer_image_src=footer_image_src,
+            qtype_cond_light_src=qtype_cond_light_src,
+            qtype_cond_book_src=qtype_cond_book_src,
+            qtype_cond_medium_src=qtype_cond_medium_src,
+            qtype_cond_bold_src=qtype_cond_bold_src,
         )
 
         return content 
@@ -262,18 +322,27 @@ def main():
 
     Path("./output").mkdir(exist_ok=True, parents=True)
 
+    device_type = DeviceType.DESCALE
+    protocol_version = Version(3, 0, 0)
+    is_release = True
+
+    def build_pdf_path(basename: str) -> str:
+        release_mode = "release" if is_release else "development"
+        device_label = str(device_type.value).lower().replace(" ", "_")
+        version_label = str(protocol_version).replace(" ", "_")
+        return f"./output/{basename}_{device_label}_{version_label}_{release_mode}.pdf"
+
     # Produce two documents: one for the text-based API and one for MODBUS
     targets = (("text", "manual_text"), ("modbus", "manual_modbus"), ("both", "manual"))
     for mode, basename in targets:
         manual = manual_compiler.compile_manual_for_specific_device(
-            DeviceType.DESCALE,
-            Version(3, 0, 0),
-            True,
+            device_type,
+            protocol_version,
+            is_release,
             mode=mode,
         )
 
         html_path = f"./output/{basename}.html"
-        pdf_path = f"./output/{basename}.pdf"
         with open(html_path, "w", encoding="utf-8") as file:
             file.write(manual)
     
@@ -334,6 +403,21 @@ def main():
 
         return browser, user_data_dir
 
+    def extract_destination_page_numbers(pdf_bytes: bytes) -> Dict[str, int]:
+        destination_pages: Dict[str, int] = {}
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        destination_tree = reader.trailer["/Root"].get("/Dests")
+        if destination_tree is None:
+            return destination_pages
+
+        for raw_name, destination in destination_tree.get_object().items():
+            page_ref = destination[0]
+            page_number = reader.get_page_number(page_ref.get_object())
+            if page_number >= 0:
+                destination_pages[str(raw_name).lstrip("/")] = page_number + 1
+
+        return destination_pages
+
     def convert_html_to_pdf(html_path: str, pdf_path: str) -> None:
         async def _pdf():
             browser, user_data_dir = await get_browser()
@@ -343,14 +427,80 @@ def main():
                 await page.waitForFunction("document.fonts && document.fonts.status === 'loaded'")
                 await page.emulateMedia("print")
                 await page.evaluate("window.updateTocPageNumbers && window.updateTocPageNumbers()")
+                await page.waitForFunction(
+                    """
+                    () => {
+                        const tocPages = Array.from(document.querySelectorAll('.toc-page[data-target]'));
+                        if (tocPages.length === 0) {
+                            return true;
+                        }
+
+                        return tocPages.every((element) => {
+                            const pageNumber = element.getAttribute('data-page');
+                            return pageNumber && pageNumber !== '?' && element.textContent.trim() !== 'p. ?';
+                        });
+                    }
+                    """
+                )
 
                 client = page._client
                 cdp_options = {
                     "printBackground": True,
                     "preferCSSPageSize": True,
+                    "displayHeaderFooter": True,
+                    "headerTemplate": "<div></div>",
+                    "footerTemplate": """
+                        <div style=\"width:100%; font-size:9px; color:#6b7280; padding:0 8mm 4mm; box-sizing:border-box; text-align:right; font-family:Arial, sans-serif;\">
+                            page <span class=\"pageNumber\"></span> of <span class=\"totalPages\"></span>
+                        </div>
+                    """,
+                    "marginTop": 0.4724,
+                    "marginBottom": 0.7087,
                     "generateTaggedPDF": True,
                     "generateDocumentOutline": True,
                 }
+
+                toc_targets = await page.evaluate(
+                    """
+                    () => Array.from(document.querySelectorAll('.toc-page[data-target]')).map((element) =>
+                        element.getAttribute('data-target')
+                    )
+                    """
+                )
+
+                if toc_targets:
+                    destination_pdf = await client.send("Page.printToPDF", cdp_options)
+                    destination_pages = extract_destination_page_numbers(base64.b64decode(destination_pdf["data"]))
+                    exact_toc_pages = {
+                        target_id: destination_pages[target_id]
+                        for target_id in toc_targets
+                        if target_id in destination_pages
+                    }
+
+                    await page.evaluate(
+                        """
+                        (pageMap) => {
+                            document.querySelectorAll('.toc-page[data-target]').forEach((element) => {
+                                const targetId = element.getAttribute('data-target');
+                                const pageNumber = pageMap[targetId];
+                                if (!pageNumber) {
+                                    return;
+                                }
+
+                                element.setAttribute('data-page', String(pageNumber));
+                                element.textContent = `p. ${pageNumber}`;
+                            });
+
+                            if (window.updateTocPageNumbers) {
+                                window.removeEventListener('beforeprint', window.updateTocPageNumbers);
+                                window.removeEventListener('resize', window.updateTocPageNumbers);
+                                window.removeEventListener('load', window.updateTocPageNumbers);
+                            }
+                        }
+                        """,
+                        exact_toc_pages,
+                    )
+
                 result = await client.send("Page.printToPDF", cdp_options)
                 Path(pdf_path).write_bytes(base64.b64decode(result["data"]))
             finally:
@@ -367,7 +517,7 @@ def main():
 
     for mode, basename in targets:
         html_path = f"./output/{basename}.html"
-        pdf_path = f"./output/{basename}.pdf"
+        pdf_path = build_pdf_path(basename)
         try:
             convert_html_to_pdf(html_path, pdf_path)
             print(f"Wrote {pdf_path}")

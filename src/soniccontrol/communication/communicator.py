@@ -8,7 +8,7 @@ from sonic_protocol.python_parser.commands import Command
 from sonic_protocol.schema import CommandContract
 from soniccontrol.fw_device.connection import Connection
 from soniccontrol.communication.message_protocol import CommunicationProtocol
-from soniccontrol.events import EventManager
+from soniccontrol.utils.events import EventManager
 
 
 class Communicator(abc.ABC, EventManager):
@@ -32,7 +32,6 @@ class Communicator(abc.ABC, EventManager):
     @abc.abstractmethod
     async def close_communication(self, restart: bool = False) -> None: ...
 
-    # TODO Communicator api should take commandstructs and internally take care of serialization
     @abc.abstractmethod
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str: ...
 

@@ -5,7 +5,7 @@ import datetime
 
 from sonic_protocol.schema import SIPrefix, SIUnit, Version
 from soniccontrol.data_capturing.capture_target import CaptureTargets
-from soniccontrol.device_data import FirmwareInfo
+from soniccontrol.sonic_device import FirmwareInfo
 from sonic_protocol.si_unit import MeterSIVar, MilliMeterSIVar, SIVar, SIVarMeta, TemperatureSIVar
 
 

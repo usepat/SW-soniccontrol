@@ -27,4 +27,7 @@ The device can also send logs. Those are parsed and then forwarded to an own Dev
 
 SonicControl uses Log handlers to display then the logs in the **Logging Window**.
 
+To let the user select which logs to filter (setting log levels on the single loggers) we have a log settings tab in the gui, that uses internally a LoggerDiscovery.  
+There is a LoggerDiscovery implementation for the soniccontrol python loggers and one for the device loggers. Those are fetched via `?logger[INDEX]` and `?num_loggers` commands and the log levels can be set via `!log[LOGGER_NAME]=LOG_LEVEL`.
+
 @}

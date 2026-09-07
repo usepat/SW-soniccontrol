@@ -2,8 +2,9 @@ import abc
 from enum import Enum, IntEnum
 from typing import Any, TypeVar
 import numpy as np
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 
-from sonic_protocol.schema import ConverterType, Timestamp, Version
+from sonic_protocol.schema import Timestamp, Version
 
 
 class Converter(abc.ABC):
@@ -127,16 +128,37 @@ class PrimitiveTypeConverter(Converter):
         
         return self._target_class(text)
 
+class BinaryConverter(Converter):
+    def validate_val(self, value: Any) -> bool:
+        return isinstance(value, bytes)
+
+    def convert_val_to_str(self, value: Any) -> str:
+        assert (self.validate_val(value))
+        return str(urlsafe_b64encode(value))
+
+    def validate_str(self, text: str) -> bool: 
+        try:
+            urlsafe_b64decode(text)
+        except Exception:
+            return False
+        else:
+            return True
+
+    def convert_str_to_val(self, text: str) -> Any: 
+        assert(self.validate_str(text))
+        return urlsafe_b64decode(text)
 
 
-def get_converter(converter_type: ConverterType, target_class: Any) -> Converter:
-    match converter_type:
-        case ConverterType.ENUM:
-            assert(issubclass(target_class, Enum))
-            return EnumConverter(target_class)
-        case ConverterType.VERSION:
-            return VersionConverter()
-        case ConverterType.PRIMITIVE:
-            return PrimitiveTypeConverter(target_class)
-        case ConverterType.TIMESTAMP:
-            return TimestampConverter()
+
+def get_converter(target_class: Any) -> Converter:
+    if issubclass(target_class, Enum):
+        return EnumConverter(target_class)
+    elif issubclass(target_class, Version):
+        return VersionConverter()    
+    elif issubclass(target_class, Timestamp):
+        return TimestampConverter() 
+    elif issubclass(target_class, bytes):
+        return BinaryConverter() 
+    else:
+        return PrimitiveTypeConverter(target_class)
+

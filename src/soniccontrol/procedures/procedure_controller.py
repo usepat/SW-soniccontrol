@@ -11,13 +11,13 @@ from soniccontrol.procedures.procedure_instantiator import ProcedureInstantiator
 from soniccontrol.procedures.remote_procedure_state import RemoteProcedureState
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logger.utils import get_base_logger
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 
 class ProcedureController(EventManager):
     PROCEDURE_STOPPED: Literal["<<PROCEDURE_STOPPED>>"] = "<<PROCEDURE_STOPPED>>"
     PROCEDURE_RUNNING: Literal["<<PROCEDURE_RUNNING>>"] = "<<PROCEDURE_RUNNING>>"
 
-    def __init__(self, device: SonicDevice, updater: EventManager, logger = None): # TODO: add type hint to updater after moving updater into sonic control
+    def __init__(self, device: SonicDevice, updater: EventManager, logger = None):
         super().__init__()
         if logger is None:
             logger = get_base_logger(device._logger)

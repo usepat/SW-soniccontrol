@@ -1,6 +1,6 @@
 import logging
 from typing import Callable
-from soniccontrol.events import Event, PropertyChangeEvent
+from soniccontrol.utils.events import Event, PropertyChangeEvent
 from soniccontrol.hw_tests.test_base import TestInfo
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import View

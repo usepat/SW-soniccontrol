@@ -4,7 +4,7 @@ from typing import List
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
-    CommandParamDef, ControlMode, ConverterType, FieldType, Loglevel, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    CommandParamDef, ControlMode, FieldType, Loglevel, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, SystemState, TransducerState, Anomaly
 )
 from sonic_protocol.command_codes import CommandCode
@@ -95,8 +95,7 @@ set_log_level_v3_0_0 = CommandContract(
         setter_param=CommandParamDef(
             name=EFieldName.LOG_LEVEL,
             param_type=FieldType(
-                field_type=Loglevel,
-                converter_ref=ConverterType.ENUM
+                field_type=Loglevel
             )
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
@@ -114,8 +113,7 @@ set_log_level_v3_0_0 = CommandContract(
             AnswerFieldDef(
                 field_name=EFieldName.LOG_LEVEL,
                 field_type=FieldType(
-                    field_type=Loglevel,
-                    converter_ref=ConverterType.ENUM
+                    field_type=Loglevel
                 )   
             )
         ]
@@ -152,7 +150,7 @@ get_logger_list_item = CommandContract(
     ),
     answer_def=AnswerDef([
         AnswerFieldDef(EFieldName.LOGGER_NAME, FieldType(str)),
-        AnswerFieldDef(EFieldName.LOG_LEVEL, FieldType(Loglevel, converter_ref=ConverterType.ENUM))
+        AnswerFieldDef(EFieldName.LOG_LEVEL, FieldType(Loglevel))
     ]),
     user_manual_attrs=UserManualAttrs(
         description="Retrieves the logger name and level for the specified logger ID."
@@ -217,9 +215,9 @@ run_test = CommandContract(
         sonic_text_attrs=SonicTextCommandAttrs("!run_test")
     ),
     answer_def=AnswerDef( [
-        AnswerFieldDef(EFieldName.TEST_RESULT, FieldType(t.TestResult, converter_ref=ConverterType.ENUM)),
+        AnswerFieldDef(EFieldName.TEST_RESULT, FieldType(t.TestResult)),
         AnswerFieldDef(EFieldName.TEST_STEP_INDEX, FieldType(np.uint8), sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="test step: ")),
-        AnswerFieldDef(EFieldName.TEST_INTERACTION, FieldType(t.TestInteraction, converter_ref=ConverterType.ENUM)),
+        AnswerFieldDef(EFieldName.TEST_INTERACTION, FieldType(t.TestInteraction)),
         AnswerFieldDef(EFieldName.NUM_TEST_VALIDATION_ARGS, FieldType(np.uint8)),
         AnswerFieldDef(EFieldName.MESSAGE, FieldType(str)),
     ]),

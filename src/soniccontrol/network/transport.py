@@ -78,8 +78,6 @@ class RemoteClientTransport(asyncio.Transport):
         This does not block; it buffers the data and arranges for it
         to be sent out asynchronously.
         """
-        # Fuck non blocking. We ballin...
-        # TODO: make this non blocking
         if isinstance(data, memoryview):
             data = data.tobytes()
         self._loop.create_task(self._client.write(self._port, bytes(data)))

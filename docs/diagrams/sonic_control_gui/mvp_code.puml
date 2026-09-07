@@ -32,12 +32,12 @@ class "HomeView" as soniccontrol_gui.views.home.HomeView {
   set_send_button_enabled(enabled: bool) -> None
 }
 
-class "Event" as soniccontrol.events.Event {
+class "Event" as soniccontrol.utils.events.Event {
   data
   type_
 }
 
-class "EventManager" as soniccontrol.events.EventManager {
+class "EventManager" as soniccontrol.utils.events.EventManager {
   emit(event: Event) -> None
   subscribe(event_type: str, listener: Callable[[Event], None]) -> None
   subscribe_property_listener(property_name: str, listener: Callable[[PropertyChangeEvent], None]) -> None
@@ -63,12 +63,12 @@ soniccontrol_gui.ui_component.UIComponent -u-> soniccontrol_gui.view.View : view
 
 soniccontrol_gui.views.home.Home -l-|> soniccontrol_gui.ui_component.UIComponent
 soniccontrol_gui.views.home.Home -u-> soniccontrol_gui.views.home.HomeView : view
-soniccontrol_gui.views.home.Home .r.> soniccontrol.events.Event : reacts
+soniccontrol_gui.views.home.Home .r.> soniccontrol.utils.events.Event : reacts
 
-soniccontrol.events.EventManager .r.> soniccontrol.events.Event : emits
+soniccontrol.utils.events.EventManager .r.> soniccontrol.utils.events.Event : emits
 
-soniccontrol.sonic_device.SonicDevice -d-|> soniccontrol.events.EventManager
-soniccontrol_gui.ui_component.UIComponent -d-|> soniccontrol.events.EventManager
+soniccontrol.sonic_device.SonicDevice -d-|> soniccontrol.utils.events.EventManager
+soniccontrol_gui.ui_component.UIComponent -d-|> soniccontrol.utils.events.EventManager
 soniccontrol_gui.views.home.Home -d-> soniccontrol.sonic_device.SonicDevice : _device (model)
 
 @enduml

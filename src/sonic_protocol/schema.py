@@ -17,11 +17,10 @@ class Version:
     major: int = attrs.field()
     minor: int = attrs.field()
     patch: int = attrs.field()
-    # TODO: make that the version can be converted to a list and created from a list by default
 
     def __iter__(self):
         return iter((self.major, self.minor, self.patch))
-    
+
     def __str__(self) -> str:
         return f"v{self.major}.{self.minor}.{self.patch}"
 
@@ -36,7 +35,7 @@ class Version:
             if len(version) != 3:
                 raise ValueError("The Version needs to have exactly two separators '.'")
             return Version(*version)
-        elif isinstance(x, tuple):
+        elif isinstance(x, (tuple, list)):
             return Version(*x)
         else:
             raise TypeError("The type cannot be converted into a version")
@@ -158,17 +157,6 @@ class SIPrefix(Enum):
     def __hash__(self):
         return hash(self.exponent)
 
-class ConverterType(Enum):
-    """!
-    Converters are used to convert the data send to the right class.
-    We only reference them in the protocol, instead of supplying the converters,
-    because the converters need to be implemented once in the firmware and once in the remote_controller code.
-    """
-    # TODO remove ConverterType. Its not needed. WE can deduce everything need form the Fieldtype
-    VERSION = auto()
-    ENUM = auto()
-    PRIMITIVE = auto()
-    TIMESTAMP = auto()
 
 class InputSource(Enum):
     EXTERNAL = "external" #! control by sending commands over a communication channel
@@ -376,7 +364,8 @@ class UserManualAttrs:
     description: Optional[str] = attrs.field(default=None)
     example: Optional[str] = attrs.field(default=None)
 
-T = TypeVar("T", int, np.uint8, np.uint16, np.uint32, float, bool, str, Version, Enum, Timestamp)
+T = TypeVar("T", int, np.uint8, np.uint16, np.uint32, float, bool, str, 
+            bytes, Version, Enum, Timestamp, )
 
 @attrs.define(auto_attribs=True)
 class FieldType(Generic[T]):
@@ -390,7 +379,6 @@ class FieldType(Generic[T]):
     min_value: Union[T, None, DeviceParamConstantType] = attrs.field(default=None)
     si_unit: Optional[SIUnit] = attrs.field(default=None)
     si_prefix: Optional[SIPrefix] = attrs.field(default=None)
-    converter_ref: ConverterType = attrs.field(default=ConverterType.PRIMITIVE) #! converters are defined in the code and the protocol only references to them
 
 def to_field_type(value: Any) -> FieldType:
     if isinstance(value, FieldType):
@@ -414,7 +402,7 @@ class CommandParamDef():
     param_type: FieldType = attrs.field(converter=to_field_type)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
     def __hash__(self):
-        return hash((self.name, self.param_type.field_type, self.param_type.converter_ref, self.param_type.si_unit, self.param_type.si_prefix, self.param_type.max_value, self.param_type.min_value))
+        return hash((self.name, self.param_type.field_type, self.param_type.si_unit, self.param_type.si_prefix, self.param_type.max_value, self.param_type.min_value))
 
     def to_field_def(self) -> FieldDef:
         return FieldDef(name=self.name, field_type=self.param_type, user_manual_attrs=self.user_manual_attrs)
@@ -453,7 +441,7 @@ class AnswerFieldDef():
     sonic_text_attrs: SonicTextAnswerFieldAttrs = attrs.field(default=SonicTextAnswerFieldAttrs())
 
     def __hash__(self):
-        return hash((self.field_name, self.field_type.field_type, self.field_type.converter_ref, self.field_type.si_unit, self.field_type.si_prefix, self.field_type.max_value, self.field_type.min_value))
+        return hash((self.field_name, self.field_type.field_type, self.field_type.si_unit, self.field_type.si_prefix, self.field_type.max_value, self.field_type.min_value))
 
     def to_field_def(self) -> FieldDef:
         return FieldDef(name=self.field_name, field_type=self.field_type, user_manual_attrs=self.user_manual_attrs)

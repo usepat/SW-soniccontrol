@@ -1,6 +1,7 @@
 
 
 import abc
+import asyncio
 from pathlib import Path
 from typing import List
 
@@ -13,19 +14,51 @@ class DeviceDiscovery(abc.ABC):
         self,
         include_ttys: bool = True,
         include_disks: bool = True,
-        include_unverified_ttys: bool = False,
+        include_unverified_ttys: bool = True,
     ) -> List[FwDeviceInfo]:
         ...
 
-    @abc.abstractmethod
-    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 10) -> FwDeviceInfo:
-        ...
+    async def wait_for_device_to_appear(self, usb_sys_name: str) -> FwDeviceInfo:
+        while True:
+            pico_device = await self.get_fw_device_info_via_usb_sys_name(usb_sys_name)
+            if pico_device:
+                return pico_device
+            
+            await asyncio.sleep(0.5)
+
+    async def wait_for_device_to_disappear(self, usb_sys_name: str) -> None:
+        while True:
+            pico_device = await self.get_fw_device_info_via_usb_sys_name(usb_sys_name)
+            if pico_device is None:
+                return
+            
+            await asyncio.sleep(0.5)
+
+    async def wait_for_device_redetection(self, device_info: FwDeviceInfo, timeout_s: float = 20) -> FwDeviceInfo:
+        try:
+            await asyncio.wait_for(
+                self.wait_for_device_to_disappear(device_info.usb_sys_name), 
+                timeout_s
+            )
+        except TimeoutError as e:
+            # If the device never disappeared, it could be that it already rebooted
+            # Look if the device is enumerated  
+            rebooted = await self.get_fw_device_info_via_usb_sys_name(device_info.usb_sys_name)
+            if rebooted is None:
+                raise e
+            return rebooted
+        else:
+            return await asyncio.wait_for(
+                self.wait_for_device_to_appear(device_info.usb_sys_name), 
+                timeout_s
+            )
+        
 
     async def list_fw_device_names(
         self,
         include_ttys: bool = True,
         include_disks: bool = True,
-        include_unverified_ttys: bool = False,
+        include_unverified_ttys: bool = True,
     ) -> List[str]:
         return [
             device.display_name
@@ -50,6 +83,20 @@ class DeviceDiscovery(abc.ABC):
         dev_info = next((
             dev_info for dev_info in await self.list_fw_device_infos(include_unverified_ttys=True)
             if dev_info.device_path == device_path
+        ), None)
+        return dev_info
+
+    async def get_fw_device_info_via_usb_sys_name(self, usb_sys_name: str):
+        """
+            Returns the firmware device info for a device that is registered under the usb_sys_name.
+
+            Returns
+            =======
+                If no corresponding device was found, then it returns None, else FwDeviceInfo
+        """
+        dev_info = next((
+            dev_info for dev_info in await self.list_fw_device_infos(include_unverified_ttys=True)
+            if dev_info.usb_sys_name == usb_sys_name
         ), None)
         return dev_info
         

@@ -13,7 +13,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.schema import Version
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_basic_serialization
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
-from soniccontrol.device_data import FirmwareInfo
+from soniccontrol.sonic_device import FirmwareInfo
 
 
 
@@ -113,7 +113,6 @@ class HDF5ExperimentWriter(ExperimentWriter):
         if not self._file_path.endswith(file_extension):
             self._file_path += ".h5" # add extension
         self._file = tb.open_file(self._file_path, "w")
-        # TODO docuemnt somewhere what changed and maybe why
         self._write_version(Version(3, 0, 0))
         self._data_table = self._file.create_table("/", "data", cast(tb.Description, data_table_type))
 

@@ -203,7 +203,7 @@
         {% endif %}
     </tr>
     {% else %}
-    {% set answer_length = namespace(words=1, has_variable_length=false) %}
+    {% set answer_length = namespace(words=1) %}
     {% for field in fields %}
         {% set field_type = field.field_type.field_type %}
         {% if field_type == bool or field_type == np.uint8 or issubclass(field_type, Enum) %}
@@ -216,8 +216,8 @@
             {% set answer_length.words = answer_length.words + 4 %}
         {% elif field_type == Version %}
             {% set answer_length.words = answer_length.words + 3 %}
-        {% elif field_type == str %}
-            {% set answer_length.has_variable_length = true %}
+        {% elif field_type == str or field_type == bytes %}
+            {% set answer_length.words = answer_length.words + 32 %}
         {% endif %}
     {% endfor %}
     {% set answer_length_word = answer_length.words % 65536 %}
@@ -233,17 +233,10 @@
     <tr class="border-t border-slate-100">
         <td>
             <div>Answer length</div>
-            {% if answer_length.has_variable_length %}
-            <div class="text-xs text-slate-500">Value: variable</div>
-            {% else %}
             <div class="text-xs text-slate-500">Value: {{ answer_length.words }} (0x{{ '%04X' % answer_length_word }})</div>
-            {% endif %}
         </td>
         <td>uint16</td>
         <td>{{ start_address + 1 }}</td>
-        {% if answer_length.has_variable_length %}
-        <td colspan="2">Depends on string field length</td>
-        {% else %}
         <td>
             <div class="font-mono text-slate-800">0x{{ '%02X' % answer_length_high_byte }}</div>
             <div class="text-xs text-slate-500">High Byte (MSB)</div>
@@ -252,7 +245,6 @@
             <div class="font-mono text-slate-800">0x{{ '%02X' % answer_length_low_byte }}</div>
             <div class="text-xs text-slate-500">Low Byte (LSB)</div>
         </td>
-        {% endif %}
     </tr>
     {% endif %}
     <tr class="border-t border-slate-100">
@@ -294,7 +286,7 @@
         {% elif field_type == float %}    
             {{ float_layout(field_name, ns.address) }}
             {% set ns.address = ns.address + 2 %}
-        {% elif field_type == str %}    
+        {% elif field_type == str or field_type == bytes %}    
             {{ string64_layout(field_name, ns.address) }}
             {% set ns.address = ns.address + 32 %}
         {% elif issubclass(field_type, Enum) %}    

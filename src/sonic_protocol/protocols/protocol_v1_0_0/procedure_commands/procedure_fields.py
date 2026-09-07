@@ -1,6 +1,6 @@
 import numpy as np
 from sonic_protocol.schema import (
-    Procedure, DeviceParamConstantType, FieldType, AnswerFieldDef, ConverterType, SIPrefix, SIUnit, 
+    Procedure, DeviceParamConstantType, FieldType, AnswerFieldDef, SIPrefix, SIUnit, 
     SonicTextAnswerFieldAttrs
 )
 from sonic_protocol.protocols.protocol_v1_0_0.transducer_commands.transducer_fields import (
@@ -10,7 +10,7 @@ from sonic_protocol.field_names import EFieldName
 
 field_procedure = AnswerFieldDef(
     field_name=EFieldName.PROCEDURE,
-    field_type=FieldType(field_type=Procedure, converter_ref=ConverterType.ENUM),
+    field_type=FieldType(field_type=Procedure),
 )
 
 field_type_time_span_off = FieldType(

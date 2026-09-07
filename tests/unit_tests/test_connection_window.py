@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from sonic_protocol.python_parser.answer import Answer
+from sonic_protocol.python_parser.answer import Answer, ValidationStatus
 import soniccontrol_gui.views.core.connection_window as connection_window_module
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.sonic_device import SonicDevice
@@ -19,8 +19,8 @@ async def test_wait_for_modbus_ready_retries_until_probe_succeeds(monkeypatch):
     device.communicator = ModbusCommunicator()
     device.execute_command = AsyncMock(
         side_effect=[
-            Answer("not ready", False, True),
-            Answer("ok", True, True),
+            Answer("not ready", ValidationStatus.NOT_VALID),
+            Answer("ok", ValidationStatus.VALID),
         ]
     )
 

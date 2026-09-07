@@ -597,3 +597,24 @@ class SetScstLegacy(Command):
 class GetPvalLegacy(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.LEGACY_PVAL)
+
+
+@attrs.define()
+class GetNumFiles(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_NUM_FILES)
+
+@attrs.define()
+class GetFileInfo(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_FILE_INFO)
+
+    index: int = attrs.field(alias=EFieldName.FILE_INDEX.name)
+
+@attrs.define()
+class GetFileData(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_FILE_DATA)
+
+    index: int = attrs.field(alias=EFieldName.FILE_INDEX.name)
+    value: int = attrs.field(alias=EFieldName.INDEX.name)

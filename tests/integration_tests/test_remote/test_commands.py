@@ -2,6 +2,7 @@ import attrs
 import cattrs
 from soniccontrol import DeviceParamConstantType, Answer, EFieldName, DeviceType, CommandCode
 from sonic_protocol.python_parser import commands
+from soniccontrol.data_capturing.converter import register_unstructure_hooks_for_numpy
 from tests.integration_tests.test_remote.conftest import format_command, reset_remote_controller_state, resolve_protocol_arg
 
 from sonic_pytest.remote_controller.asserts import assert_answer, assert_answer_is_not_error
@@ -29,7 +30,7 @@ async def test_if_aliases_are_working(formatted_command_str, remote_controller):
         pytest.skip("Command aliases only apply to sonic text communication, not Modbus")
 
     answer = await remote_controller.send_command(formatted_command_str)
-    assert answer.valid, "Answer should be valid"
+    assert answer.is_valid, "Answer should be valid"
 
 @pytest.mark.asyncio(loop_scope="package")
 async def test_if_gain_can_be_set_and_retrieved(remote_controller):
@@ -73,6 +74,21 @@ async def test_deduced_commands(remote_controller, progress_writer):
         CommandCode.SET_FLASH_USB,
         CommandCode.START_CUSTOMIZER
     ]
+
+    if info.device_type != DeviceType.DIAGNOSTICS_TOOL:
+        # only the diagnostics tool can execute those commands
+        # FIXME: this quick fix is needed here, because the architecture of the protocol is not as good as it should be.
+        # There should be a full set of fixed commands and the applications should only state, which sub set of them they can execute.
+        # The inheritance approach that we currently have is not that good.
+        # Related to usepat/SW-soniccontrol#234
+        commands_to_skip.extend([
+            CommandCode.GET_NUM_TESTS,
+            CommandCode.GET_TEST_INFO, 
+            CommandCode.GET_TEST_VALIDATION_ARG,
+            CommandCode.RUN_TEST,
+            CommandCode.ABORT_TEST,
+        ])
+
     deduced_commands = deduce_command_examples_as_commands(
         info.protocol_version, info.device_type, info.is_release, 
         skip_command_codes=commands_to_skip
@@ -88,9 +104,11 @@ async def test_deduced_commands(remote_controller, progress_writer):
                 assert_answer_is_not_error(answer, errors_to_check=[
                     CommandCode.E_INTERNAL_DEVICE_ERROR, 
                     CommandCode.E_COMMAND_NOT_KNOWN, 
+                    CommandCode.E_COMMAND_NOT_IMPLEMENTED,
                     CommandCode.E_PARSING_ERROR, 
-                    CommandCode.E_SYNTAX_ERROR
+                    CommandCode.E_SYNTAX_ERROR,
                 ])
+                assert remote_controller.is_connected, "The remote controller got disconnected"
             except AssertionError as e:
                 if answer.message == "Modbus does not support commands with string index parameters":
                     continue
@@ -106,12 +124,16 @@ async def test_deduced_commands(remote_controller, progress_writer):
 
         await reset_remote_controller_state(remote_controller)
 
+
+    converter = cattrs.Converter()
+    register_unstructure_hooks_for_numpy(converter)
+
     error_json = json.dumps([{ 
         "full_error_msg": str(e), 
         "index": e.step, 
         "command": {
             "code": e.command.code.name, 
-            "args": cattrs.Converter().unstructure(e.command.args)
+            "args": converter.unstructure(e.command.args)
         }, 
         "answer": e.answer.message, 
         "assert_msg": e.assert_msg 
@@ -140,7 +162,7 @@ async def test_if_invalid_syntax_throws_error(remote_controller, formatted_comma
         pytest.skip("Invalid string syntax tests only apply to sonic text communication, not Modbus")
 
     answer = await remote_controller.send_command(formatted_command_str)
-    assert not answer.valid, "Answer should be not valid"
+    assert not answer.is_valid, "Answer should be not valid"
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
@@ -159,7 +181,7 @@ async def test_if_invalid_syntax_throws_error(remote_controller, formatted_comma
 ])
 async def test_if_basic_setter_commands_work(remote_controller, command_builder):
     answer = await remote_controller.send_command(command_builder(remote_controller.protocol_consts))
-    assert answer.valid, "Answer was not valid"
+    assert answer.is_valid, "Answer was not valid"
 
 
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER, DeviceType.POSTMAN)
@@ -194,11 +216,11 @@ async def test_limits_of_parameter(remote_controller, command_builder, const, is
     const_value = resolve_protocol_arg(const, remote_controller.protocol_consts)
     valid_command = command_builder(const_value)
     answer = await remote_controller.send_command(valid_command)
-    assert answer.valid, "Answer should be valid, because the param is in the bounds"
+    assert answer.is_valid, "Answer should be valid, because the param is in the bounds"
 
     invalid_command = command_builder(const_value + (+1 if is_upper_bound else -1))
     answer = await remote_controller.send_command(invalid_command)
-    assert not answer.valid, "Answer should be not valid, because param is expected to be out of bounds"
+    assert not answer.is_valid, "Answer should be not valid, because param is expected to be out of bounds"
 
 
 @pytest.mark.allowed_devices(DeviceType.DESCALE)

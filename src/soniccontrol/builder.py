@@ -9,6 +9,7 @@ from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.schema import BuildType, DeviceType, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName, IEFieldName
 from soniccontrol.communication.communicator import Communicator
+from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, redetect_connection
 from soniccontrol.fw_device.connection import Connection
 from soniccontrol.communication.legacy_communicator import LegacyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
@@ -97,7 +98,7 @@ class DeviceBuilder:
             warn_on_transport_error=True,
             suppress_exception_log=True,
         )
-        if answer.valid:
+        if answer.is_valid:
             assert EFieldName.DEVICE_TYPE in answer.field_value_dict
             assert EFieldName.PROTOCOL_VERSION in answer.field_value_dict
             assert EFieldName.IS_RELEASE in answer.field_value_dict
@@ -164,17 +165,11 @@ class DeviceBuilder:
         if not device.has_command(start_command):
             raise ConnectionError(f"Device does not support {unsupported_command_name}")
 
-        answer = await device.execute_command(start_command, raise_exception=False)
-        if answer.is_error_msg:
-            raise ConnectionError(answer.message)
-        if not answer.valid and not self._is_expected_configurator_disconnect(answer.message):
-            raise ConnectionError(answer.message)
-
-        await device.disconnect()
-        await asyncio.sleep(self.RESTART_DELAY_S)
+        await device.restart(start_command) # closes the connection
+        new_connection = await redetect_connection(connection) 
 
         communicator = SerialCommunicator(logger=self._logger) # type: ignore
-        await communicator.open_communication(connection)
+        await communicator.open_communication(new_connection)
         return await self.build_amp(communicator, try_deduce_protocol_used=try_deduce_protocol_used)
 
 

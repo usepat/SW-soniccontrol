@@ -1,20 +1,34 @@
+from __future__ import annotations
 import asyncio
 import time
 from typing import List
 import logging
+import attrs
 
 from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.field_names import BaseFieldName, EFieldName
-from sonic_protocol.python_parser.answer import Answer, AnswerValidator
+from sonic_protocol.python_parser.answer import Answer, AnswerValidator, ValidationStatus
 from sonic_protocol.python_parser.answer_validator_builder import AnswerValidatorBuilder
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
 from sonic_protocol.schema import DeviceType, ICommandCode, Protocol, Version
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
-from soniccontrol.device_data import FirmwareInfo
 from soniccontrol.communication.serial_communicator import Communicator
 from sonic_protocol.python_parser import commands
+from sonic_protocol.schema import DeviceType, Version
+
+
+@attrs.define(auto_attribs=True)
+class FirmwareInfo:
+    serial_number: str = attrs.field(default="unknown")
+    device_type: DeviceType = attrs.field(default=DeviceType.UNKNOWN)
+    hardware_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version)
+    firmware_info: str = attrs.field(default="")
+    firmware_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version) 
+    protocol_version: Version = attrs.field(default=Version(0, 0, 0), converter=Version.to_version)
+    is_release: bool = attrs.field(default=True)
+
 
 class CommandValidationError(Exception):
     """Raised when a command's response fails validation."""
@@ -116,7 +130,7 @@ class SonicDevice:
             
         ERROR_CODES_START = 20000
         if code is not None and code.value >= ERROR_CODES_START:
-            answer = Answer(response_str, False, True, code)
+            answer = Answer(response_str, ValidationStatus.NOT_VALID, code)
             answer.field_value_dict[EFieldName.TIMING] = time_needed
             return answer
         
@@ -129,7 +143,7 @@ class SonicDevice:
             # In open rescue mode, if we cannot understand the answers of the device.
             # So in rescue mode, we skip the validation of the answers
             # Also for the serial monitor we do not want to validate answers.
-            answer = Answer(response_str, False, was_validated=False)
+            answer = Answer(response_str, ValidationStatus.NOT_CHECKED)
         else:
             answer = answer_validator.validate(response_str)
         
@@ -211,9 +225,9 @@ class SonicDevice:
 
             if raise_exception:
                 raise e
-            return Answer(str(e), False, True)
+            return Answer(str(e), ValidationStatus.NOT_VALID)
 
-        if raise_exception and answer.was_validated and not answer.valid:
+        if raise_exception and answer.valid == ValidationStatus.NOT_VALID:
             raise CommandValidationError(answer.message)
         
         if raise_exception and answer.is_error_msg:
@@ -307,15 +321,12 @@ class SonicDevice:
             if raise_exception:
                 raise NotImplementedError(err_msg)
             else:
-                return Answer(err_msg, False, True)
+                return Answer(err_msg, ValidationStatus.NOT_VALID)
 
         if not self._uses_modbus():
-            # FIXME do we need some kind of backwards compatability manager?
-            # Move into Experiment store?
             answer = await self.execute_command(self._update_command, raise_exception=raise_exception, should_log=should_log)
             if self.protocol.info.version < Version(3, 0, 0) and self.protocol.info.device_type in [DeviceType.DESCALE, DeviceType.MVP_WORKER]:
-
-                # TODO ask David if there is a safer way to do this 
+                # With a proper unit system library, we could get rid of this manual conversions 
                 answer[EFieldName.URMS] = answer[EFieldName.URMS] / 1000
                 answer[EFieldName.IRMS] = answer[EFieldName.IRMS] / 1000
                 answer[EFieldName.TS_FLAG] = answer[EFieldName.TS_FLAG] / 1000
@@ -326,7 +337,7 @@ class SonicDevice:
             return answer
 
         if self._has_pending_modbus_commands() or self._modbus_operation_lock.locked():
-            return Answer("Skipped update polling while command is running", False, False)
+            return Answer("Skipped update polling while command is running", ValidationStatus.NOT_CHECKED)
 
         async with self._modbus_operation_lock:
             return await self._execute_command_impl(
@@ -386,6 +397,7 @@ class SonicDevice:
             # When using modbus the command can not be validated because the device restarts during the validation stage
         except Exception as e:
             pass
+        
         try:
             await self.disconnect()
         except (TimeoutError, ConnectionError, asyncio.IncompleteReadError):

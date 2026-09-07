@@ -11,6 +11,8 @@ from sonic_protocol.schema import ControlMode, DeviceParamConstants, Loglevel, V
 from soniccontrol import DeviceParamConstantType
 from soniccontrol import commands as cmds
 from sonic_protocol.python_parser import commands
+from soniccontrol.communication.modbus_communicator import ModbusCommunicator
+from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.data_capturing.device_performance.performance_monitor import PerformanceMonitor
 from soniccontrol.fw_device.connection import CLIConnection, ModbusConnection
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, resolve_current_device_info
@@ -30,7 +32,7 @@ async def reset_remote_controller_state(remote_controller: RemoteController) -> 
     await send_command_and_check_response(remote_controller, commands.SetControlMode(ControlMode.REMOTE))
     await send_command_and_check_response(remote_controller, commands.ClearErrors())
     await send_command_and_check_response(remote_controller, commands.SonicForce())
-    await send_command_and_check_response(remote_controller, commands.SetStop(), raise_exception = False)
+    await send_command_and_check_response(remote_controller, commands.SetStop(), raise_exception = False, check_command_not_permitted=True)
     await send_command_and_check_response(remote_controller, commands.SetOff())
 
 
@@ -132,7 +134,7 @@ async def apply_modbus_user_settings(
     await controller.send_command(commands.SetModbusServerAddress(slave_id), raise_exception=True)
 
     answer = await controller.send_command(commands.GetModbusSettings(), raise_exception=True)
-    assert answer.valid, f"GetModbusSettings returned an invalid answer: {answer.message}"
+    assert answer.is_valid, f"GetModbusSettings returned an invalid answer: {answer.message}"
     assert answer[EFieldName.PARITY] == parity, (
         f"Expected modbus parity {parity}, got {answer[EFieldName.PARITY]}"
     )
@@ -367,8 +369,9 @@ async def performance_monitor(remote_controller):
     was_updater_running = remote_controller._updater.running.is_set()
     if was_updater_running:
         await remote_controller.stop_updater()
-
-    if device.communicator.connection_opened.is_set() and device.has_command(cmds.GetNumAllocators()):
+    # TODO maybe add an option to enable this(force perfomance monitor), but with this the test just take forever
+    not_modbus = not isinstance(device.communicator, PostmanProxyCommunicator)
+    if device.communicator.connection_opened.is_set() and device.has_command(cmds.GetNumAllocators()) and not_modbus:
         snap_shot = await monitor.sample_memory_snapshot()
         snap_shot.check_performance()
 

@@ -4,7 +4,7 @@ from collections.abc import Awaitable
 from typing import Coroutine, Optional
 
 from soniccontrol_gui.view import View
-from soniccontrol.events import EventManager
+from soniccontrol.utils.events import EventManager
 
 
 class UIComponent(EventManager):

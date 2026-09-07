@@ -148,7 +148,7 @@ class Timer():
             if time_remaining >= 0.:
                 await asyncio.sleep(time_remaining)
             else:
-                pass # TODO: throw error or log warning
+                raise UserWarning("More time passed than specified by the user")
         
         return ExecutionStep(_func, self._line, f"waiting remaining time: {round(time_remaining, 3)} s")
     

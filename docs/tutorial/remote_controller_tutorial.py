@@ -69,7 +69,7 @@ async def main():
     answer = await controller.send_command(cmds.SetAtf(1, 100000)) # some commands take arguments as input
     
     print(answer.message) # the full message as string
-    if answer.valid: # if the command could not be executed is_valid will be false
+    if answer.is_valid: # if the command could not be executed is_valid will be false
         # We can access the parsed contents of the answer by its field name. 
         print(answer[EFieldName.ATF])
 

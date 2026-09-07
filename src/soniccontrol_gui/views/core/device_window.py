@@ -9,6 +9,7 @@ from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.communication.serial_modbus_converter_communicator import SerialModbusConverterCommunicator
 from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureProcedure, CaptureScript, CaptureSpectrumMeasure, CaptureTargets
+from soniccontrol.logger.utils import add_logger_context_to_exception
 from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -22,7 +23,7 @@ from soniccontrol_gui.views.configuration.settings import Settings
 from soniccontrol_gui.views.control.log_storage import LogStorage, NotDeviceLogFilter
 from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
-from soniccontrol.events import Event, EventManager
+from soniccontrol.utils.events import Event, EventManager
 from soniccontrol_gui.views.configuration.configuration import Configuration
 from soniccontrol_gui.views.configuration.legacy_configuration import LegacyConfiguration
 from soniccontrol_gui.views.configuration.flashing import Flashing
@@ -40,6 +41,7 @@ from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.constants import files
+import traceback
 
 
 class DeviceWindow(TopLevelWindow):
@@ -156,10 +158,11 @@ class RescueWindow(DeviceWindow):
             log_storage_handler.setLevel(logging.DEBUG)
 
              # Models
-            self._proc_controller = ProcedureController(self._device, EventManager()) # FIXME: what to do if devices do not support updates?
+            fake_updater = EventManager()
+            self._proc_controller = ProcedureController(self._device, fake_updater) 
             self._scripting = NewScriptingFacade()
             self._script_file = ScriptFile(logger=self._logger)
-            self._interpreter = InterpreterEngine(self._device, EventManager(), self._logger) # type: ignore
+            self._interpreter = InterpreterEngine(self._device, fake_updater, self._logger) # type: ignore
 
             self._logger.debug("Create views")
             self._serialmonitor = SerialMonitor(self, self._device.communicator)
@@ -183,7 +186,7 @@ class RescueWindow(DeviceWindow):
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
         
         except Exception as e:
-            self._logger.error(e)
+            add_logger_context_to_exception(e, self.logger)
             raise
 
 
@@ -285,9 +288,8 @@ class KnownDeviceWindow(DeviceWindow):
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
         except Exception as e:
-            self._logger.error(e)
-            MessageBox.show_error(root, str(e))
-            raise
+            add_logger_context_to_exception(e, self.logger)
+            raise e
 
     def _schedule_updater_start(self) -> None:
         if not isinstance(self._device.communicator, ModbusCommunicator):

@@ -12,7 +12,7 @@ from soniccontrol.procedures.procedure_controller import ProcedureController, Pr
 import ttkbootstrap as ttk
 
 from soniccontrol_gui.constants import sizes, ui_labels
-from soniccontrol.events import Event, PropertyChangeEvent
+from soniccontrol.utils.events import Event, PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import AppExecutionContext, AppState, ExecutionState
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox

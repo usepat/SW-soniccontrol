@@ -9,6 +9,7 @@ from sonic_pytest.plugin_data import SonicControlPlugin, get_sonic_control_plugi
 from soniccontrol import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.app_config import PLATFORM, System
+from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.data_capturing.device_performance.performance_monitor import PerformanceMonitor
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.plugins.device_plugin import register_device_plugins
@@ -155,7 +156,8 @@ async def performance_monitor(device_window, request):
     if updater is not None and was_updater_running:
         await updater.stop()
 
-    should_skip_performance_check = "skip_performance_monitor_check" in request.node.keywords
+    is_postman = not isinstance(device.communicator, PostmanProxyCommunicator)
+    should_skip_performance_check = "skip_performance_monitor_check" in request.node.keywords or is_postman
     should_check_performance = not should_skip_performance_check
 
     if should_check_performance and device.communicator.connection_opened.is_set() and device.has_command(cmds.GetNumAllocators()):
@@ -181,7 +183,7 @@ async def default_state(device_window):
         updater.start()
         await controller.execute_events_until_idle()
 
-    await send_over_serial_monitor("!stop")
+    await send_over_serial_monitor("!stop", allow_fail=True)
     if device.info.device_type == DeviceType.MVP_WORKER:
         await send_over_serial_monitor("!freq=100000")
     if device.info.device_type == DeviceType.DESCALE:

@@ -6,7 +6,6 @@ from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 
 
 from typing import Dict, Optional
-import asyncio
 import psutil
 import attrs
 import serial.tools.list_ports as list_ports
@@ -116,7 +115,7 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
         self,
         include_ttys: bool = True,
         include_disks: bool = True,
-        include_unverified_ttys: bool = False,
+        include_unverified_ttys: bool = True,
     ) -> List[FwDeviceInfo]:
         devices_by_key: dict[tuple[str, str], FwDeviceInfo] = {}
 
@@ -130,102 +129,9 @@ class WindowsDeviceDiscovery(DeviceDiscovery):
             for device in self._list_boot_disks():
                 _add_device(device)
         return list(devices_by_key.values())
+    
 
-
-    async def wait_for_device_redetection(
-        self,
-        device_info: FwDeviceInfo,
-        timeout_s: float = 10.0,
-        poll_interval: float = 0.5,
-    ) -> FwDeviceInfo:
-        try:
-            initial_devices = await self.list_fw_device_infos()
-        except Exception:
-            initial_devices = []
-
-        known_keys = {(device.subsystem, device.sys_name) for device in initial_devices}
-        previous_key = (device_info.subsystem, device_info.sys_name)
-        previous_missing_at_start = previous_key not in known_keys
-
-        deadline = asyncio.get_running_loop().time() + timeout_s
-        while True:
-            try:
-                fw_dev_infos = await self.list_fw_device_infos()
-
-                # Always allow strict usb_sys_name matching against the full list.
-                for candidate in fw_dev_infos:
-                    if candidate.usb_sys_name == device_info.usb_sys_name and (
-                        candidate.subsystem != device_info.subsystem
-                        or candidate.sys_name != device_info.sys_name
-                    ):
-                        return candidate
-
-                # Heuristic matching (tty<->block) is allowed only for devices
-                # that appeared after we started waiting.
-                new_candidates = [
-                    candidate
-                    for candidate in fw_dev_infos
-                    if (candidate.subsystem, candidate.sys_name) not in known_keys
-                ]
-
-                if device_info.subsystem == "tty":
-                    # tty -> bootloader block: allow matching from full scan, because
-                    # the add event may happen before this wait loop starts.
-                    candidates_for_matching = fw_dev_infos
-                elif previous_missing_at_start:
-                    # We likely started late (already after reboot), so allow full scan.
-                    candidates_for_matching = fw_dev_infos
-                else:
-                    # block -> tty verification: only trust newly appeared devices to
-                    # avoid validating against unrelated pre-existing ports.
-                    candidates_for_matching = new_candidates
-
-                matched = self._match_redetected_device(device_info, candidates_for_matching)
-                if matched is not None and (
-                    matched.subsystem != device_info.subsystem
-                    or matched.sys_name != device_info.sys_name
-                ):
-                    return matched
-            except Exception:
-                pass
-
-            remaining = deadline - asyncio.get_running_loop().time()
-            if remaining <= 0:
-                raise TimeoutError(
-                    f"Device {device_info.sys_name!r} did not reappear within {timeout_s:.1f}s"
-                )
-            await asyncio.sleep(min(poll_interval, remaining))
-
-    def _match_redetected_device(
-        self,
-        previous_device: FwDeviceInfo,
-        candidates: List[FwDeviceInfo],
-    ) -> FwDeviceInfo | None:
-        for candidate in candidates:
-            if candidate.usb_sys_name == previous_device.usb_sys_name:
-                return candidate
-
-        if previous_device.subsystem == "tty":
-            pico_block_candidates = [
-                candidate
-                for candidate in candidates
-                if candidate.subsystem == "block" and _contains_pico_marker(candidate.usb_model, candidate.sys_name)
-            ]
-            if len(pico_block_candidates) == 1:
-                return pico_block_candidates[0]
-
-        if previous_device.subsystem == "block":
-            pico_tty_candidates = [
-                candidate
-                for candidate in candidates
-                if candidate.subsystem == "tty"
-            ]
-            if len(pico_tty_candidates) == 1:
-                return pico_tty_candidates[0]
-
-        return None
-
-    def _list_serial_devices(self, include_unverified_ttys: bool = False) -> List[FwDeviceInfo]:
+    def _list_serial_devices(self, include_unverified_ttys: bool = True) -> List[FwDeviceInfo]:
         devices: List[FwDeviceInfo] = []
         for port in list_ports.comports():
             is_pico = port.vid == RASPBERRY_PI_USB_VID or _contains_pico_marker(

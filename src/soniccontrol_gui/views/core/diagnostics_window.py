@@ -6,14 +6,16 @@ import json
 from async_tkinter_loop import async_handler
 from ttkbootstrap.scrolled import ScrolledFrame
 from soniccontrol.hw_tests.test_base import TestInteraction, TestResult
-from soniccontrol.events import Event, PropertyChangeEvent
+from soniccontrol.utils.events import Event, PropertyChangeEvent
 from soniccontrol.hw_tests.test_base import SemiAutomatedStep, TestInfo
 from soniccontrol.hw_tests.test_executor import TestExecutor
 from soniccontrol.hw_tests.test_report_writer import TestReportWriter
+from soniccontrol.logger.utils import add_logger_context_to_exception
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.view import TabView, View
+from soniccontrol_gui.views.control.file_fetcher import FileTab
 from soniccontrol_gui.views.control.logging import Logging
 from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
@@ -43,7 +45,7 @@ class HwTestingTab(UIComponent):
         self._test_executor.subscribe(TestExecutor.NEEDS_USER_INTERACTION_EVENT, self._on_user_interaction_needed)
         self._test_executor.subscribe_property_listener(TestExecutor.RUNNING_TEST_INDEX_PROPERTY, self._on_running_test_index_changed)
         self._view.set_run_all_tests_callback(self._on_run_all_tests)
-        self._view.set_stop_callback(self._on_stop_all_tests)
+        self._view.set_stop_callback(async_handler(self._on_stop_all_tests))
         self._view.set_create_test_report_callback(self._on_create_test_report)
 
     def _is_running_all_tests(self) -> bool:
@@ -87,12 +89,11 @@ class HwTestingTab(UIComponent):
 
         finally:
             for test_widget in self._test_widgets:
-                test_widget.enable(True) # FIXME: if it is actually enabled depends on the app state
+                test_widget.enable(True)
 
             self._view.enable_run_all_tests_button(True)
             self._view.enable_stop_button(False)
 
-    @async_handler
     async def _on_stop_all_tests(self):
         if self._is_running_all_tests():
             assert self._run_all_tests_task is not None
@@ -130,14 +131,17 @@ class HwTestingTab(UIComponent):
 
         self._test_executor.proceed_semi_automated_test()
 
-    def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
+    @async_handler
+    async def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state
+        if execution_state == ExecutionState.NOT_RESPONSIVE:
+            await self._on_stop_all_tests()
+
         enabled = execution_state != ExecutionState.NOT_RESPONSIVE
         for test_widget in self._test_widgets:
             test_widget.enable(enabled)
             self._view.enable_run_all_tests_button(enabled)
             self._view.enable_stop_button(enabled)
-        # TODO: stop tests
 
     def _on_create_test_report(self):
         file_path = self._view.file_path_test_report
@@ -162,21 +166,22 @@ class DiagnosticsWindow(DeviceWindow):
             self._logging = Logging(self, connection_name, self._device)
             self._test_executor = TestExecutor(self._device)
             self._testing_tab = HwTestingTab(self, self._test_executor)
+            self._files_tab = FileTab(self, self._device)
 
             self._view.add_tab_views([
                 self._testing_tab.view,
                 self._serialmonitor.view,
             ], right_one=False)
             self._view.add_tab_views([
-                self._logging.view
+                self._logging.view,
+                self._files_tab.view
             ], right_one=True)
 
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._testing_tab.on_execution_state_changed)
 
         except Exception as e:
-            self._logger.error(e)
-            MessageBox.show_error(root, str(e))
+            add_logger_context_to_exception(e, self.logger)
             raise
 
     @property

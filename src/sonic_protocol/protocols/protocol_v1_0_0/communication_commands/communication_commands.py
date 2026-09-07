@@ -1,7 +1,7 @@
 from typing import List
 from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
-    ConverterType, FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, 
+    FieldType, SonicTextCommandAttrs, UserManualAttrs, CommandDef, 
     AnswerDef, CommandParamDef, AnswerFieldDef, CommandContract, SonicTextAnswerFieldAttrs, LoggerName, Loglevel
 )
 from sonic_protocol.protocols.protocol_v1_0_0.communication_commands.communication_fields import (
@@ -89,14 +89,13 @@ set_log_level = CommandContract(
             name=EFieldName.LOGGER_NAME,
             param_type=FieldType(
                 field_type=LoggerName,
-                converter_ref=ConverterType.ENUM,
+                
             )
         ),
         setter_param=CommandParamDef(
             name=EFieldName.LOG_LEVEL,
             param_type=FieldType(
-                field_type=Loglevel,
-                converter_ref=ConverterType.ENUM
+                field_type=Loglevel
             )
         ),
         sonic_text_attrs=SonicTextCommandAttrs(
@@ -108,16 +107,14 @@ set_log_level = CommandContract(
             AnswerFieldDef(
                 field_name=EFieldName.LOGGER_NAME,
                 field_type=FieldType(
-                    field_type=LoggerName,
-                    converter_ref=ConverterType.ENUM
+                    field_type=LoggerName
                 ),
                 sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="Set ", postfix=r" log level to \\") # Escape the # character
             ),
             AnswerFieldDef(
                 field_name=EFieldName.LOG_LEVEL,
                 field_type=FieldType(
-                    field_type=Loglevel,
-                    converter_ref=ConverterType.ENUM
+                    field_type=Loglevel
                 )   
             )
         ]

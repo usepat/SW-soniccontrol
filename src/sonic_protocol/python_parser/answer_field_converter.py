@@ -1,6 +1,6 @@
 from typing import Any
 from sonic_protocol.python_parser.converters import get_converter
-from sonic_protocol.schema import AnswerFieldDef, ConverterType
+from sonic_protocol.schema import AnswerFieldDef
 
 
 class AnswerFieldToStringConverter:
@@ -16,21 +16,15 @@ class AnswerFieldToStringConverter:
             self._unit += si_unit.value
         self._prefix = field_def.sonic_text_attrs.prefix
         self._postfix = field_def.sonic_text_attrs.postfix
-        self._converter_ref = field_def.field_type.converter_ref
         self._target_class = field_def.field_type.field_type
     
-    @property
-    def converter_ref(self) -> ConverterType | None:
-        return self._converter_ref 
     
     def convert(self, value: Any) -> str:
-        if self._converter_ref is not None:
-            converter = get_converter(self._converter_ref, self._target_class)
-            assert (converter.validate_val(value)) # TODO:this should not be an assert probably
-            converted_value = converter.convert_val_to_str(value)
-            string_repr_value = converted_value
-        else:
-            string_repr_value = str(value)
+        converter = get_converter(self._target_class)
+        assert converter.validate_val(value), f"The value {value} of type {self._target_class} cannot be converted to a string"     
+        converted_value = converter.convert_val_to_str(value)
+        string_repr_value = converted_value
+        
         if self._unit != "":
             string_repr_value += " " + self._unit
         return self._prefix + string_repr_value + self._postfix

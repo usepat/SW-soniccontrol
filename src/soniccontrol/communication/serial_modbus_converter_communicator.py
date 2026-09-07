@@ -42,7 +42,6 @@ class SerialModbusConverterCommunicator(Communicator):
     async def close_communication(self, restart: bool = False) -> None: 
         pass
 
-    # TODO Communicator api should take commandstructs and internally take care of serialization
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str: 
         self._logger.debug("Serial monitor Modbus request: %s", request)
         res = self._deserializer.get_command_struct(request)
@@ -63,15 +62,14 @@ class SerialModbusConverterCommunicator(Communicator):
         answer = await self._modbus_communicator.send_command_and_validate(command_contract, command)
 
         self._logger.debug(
-            "Serial monitor Modbus answer: valid=%s, was_validated=%s, code=%s, message=%r, fields=%s",
-            answer.valid,
-            answer.was_validated,
+            "Serial monitor Modbus answer: valid=%s, code=%s, message=%r, fields=%s",
+            answer.is_valid,
             answer.command_code,
             answer.message,
             answer.field_value_dict,
         )
 
-        if answer.valid and answer.message == "":
+        if answer.is_valid and answer.message == "":
             self._logger.info(
                 "Serial monitor Modbus command succeeded without a textual response: request=%s, fields=%s",
                 request,
@@ -79,7 +77,7 @@ class SerialModbusConverterCommunicator(Communicator):
             )
             return self.EMPTY_SUCCESS_MESSAGE
 
-        if not answer.valid:
+        if not answer.is_valid:
             self._logger.warning(
                 "Serial monitor Modbus command returned an invalid answer: request=%s, message=%r, fields=%s",
                 request,

@@ -6,7 +6,7 @@ from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.schema import AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, DeviceType, FieldType, Protocol, ProtocolType, SonicTextCommandAttrs, Version
 from sonic_protocol.field_names import EFieldName
 import sonic_protocol.python_parser.commands as cmds
-from soniccontrol.device_data import FirmwareInfo
+from soniccontrol.sonic_device import FirmwareInfo
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.communication.communicator import Communicator
 

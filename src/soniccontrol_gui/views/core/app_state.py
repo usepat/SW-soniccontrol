@@ -2,7 +2,7 @@ from enum import Enum
 import logging
 import attrs
 
-from soniccontrol.events import EventManager, PropertyChangeEvent
+from soniccontrol.utils.events import EventManager, PropertyChangeEvent
 
 
 class ExecutionState(Enum):
@@ -18,6 +18,12 @@ class AppExecutionContext:
 
 
 class AppState(EventManager):
+    """
+    This class is mainly used to provide to all different tabs and nested components,
+    information about what at the moment is executed and if the application is busy, idle or not responding.
+    According to that some components may need to enable or disable buttons and other user controls.
+    """
+
     APP_EXECUTION_CONTEXT_PROP_NAME = "app_execution_context"
 
     def __init__(self, logger: logging.Logger):

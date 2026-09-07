@@ -1,13 +1,14 @@
 from typing import Any, Dict, List
 from pytest_check.context_manager import check
 from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.python_parser.answer import ValidationStatus
 from soniccontrol import Answer, EFieldName
 from soniccontrol import Command
 from soniccontrol.remote_controller import RemoteController
 
 
 def assert_answer(answer: Answer, expected_fields: Dict[EFieldName, Any], should_be_valid: bool = True):
-    assert answer.valid == should_be_valid, f"Answer should be {should_be_valid}, but is {answer.valid}"
+    assert answer.is_valid == should_be_valid, f"Answer should be {should_be_valid}, but is {answer.is_valid}"
 
     with check:
         for field_name, value in expected_fields.items():
@@ -16,27 +17,28 @@ def assert_answer(answer: Answer, expected_fields: Dict[EFieldName, Any], should
         
 
 def assert_answer_is_not_error(answer: Answer, errors_to_check: List[CommandCode] | None = None):
-    # TODO: think about how to design this function properly
-    # Fck this shit, for now we are just scanning for the strings, because I am to lazy for reworking errors right now
-    unsignificant_error_strings = ['Procedure error no procedure running', 'No procedure was selected', 'Procedure error invalid args']
     if answer.is_error_msg:
         if errors_to_check is not None:
-            assert answer.command_code not in errors_to_check or answer.message in unsignificant_error_strings, "Significant error occured"
+            assert answer.command_code not in errors_to_check, "Significant error occured"
         else:
-            assert answer.is_error_msg, "Answer is an error"
+            assert True, "Answer is an error"
     else:
-        assert answer.valid, "answer is not valid and not an error"
+        assert answer.is_valid, "answer is not valid and not an error"
 
 
-async def send_command_and_check_response(controller: RemoteController, command: str | Command, raise_exception: bool = True) -> Answer:
+async def send_command_and_check_response(controller: RemoteController, command: str | Command, raise_exception: bool = True, check_command_not_permitted: bool = False) -> Answer:
     answer = await controller.send_command(command, raise_exception=raise_exception)
     errors = [
         CommandCode.E_INTERNAL_DEVICE_ERROR, 
         CommandCode.E_COMMAND_NOT_KNOWN, 
         CommandCode.E_PARSING_ERROR, 
-        CommandCode.E_SYNTAX_ERROR
+        CommandCode.E_SYNTAX_ERROR,
+        CommandCode.E_INVALID_VALUE,
+        CommandCode.E_COMMAND_NOT_KNOWN,
+        CommandCode.E_COMMAND_INVALID,
+        CommandCode.E_COMMAND_NOT_IMPLEMENTED,
     ]
-    if (isinstance(command, str) and command == "!stop") or (isinstance(command, Command) and command.code == CommandCode.SET_STOP):
+    if check_command_not_permitted:
         errors.append(CommandCode.E_COMMAND_NOT_PERMITTED)
     assert_answer_is_not_error(answer, errors_to_check=errors)
     return answer

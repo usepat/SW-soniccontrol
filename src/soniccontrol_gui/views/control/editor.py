@@ -19,7 +19,7 @@ from soniccontrol.scripting.interpreter_engine import CurrentTarget, Interpreter
 from soniccontrol.scripting.scripting_facade import ScriptException, ScriptingFacade
 from soniccontrol_gui.constants import (sizes, scripting_cards_data,
                                                      ui_labels)
-from soniccontrol.events import PropertyChangeEvent
+from soniccontrol.utils.events import PropertyChangeEvent
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import AppExecutionContext, AppState, ExecutionState
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
@@ -84,7 +84,6 @@ class Editor(UIComponent):
         self._view.bind_editor_text(set_text)
 
         self._set_interpreter_state(self._interpreter.interpreter_state)
-        # TODO: highlight errors in script
         self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, lambda e: self._handle_script_error(e.data["exception"]))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_INTERPRETER_STATE, lambda e: self._set_interpreter_state(e.new_value))
         self._interpreter.subscribe_property_listener(InterpreterEngine.PROPERTY_CURRENT_TARGET, lambda e: self._set_current_target(e.new_value))

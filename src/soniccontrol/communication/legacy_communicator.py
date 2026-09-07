@@ -10,7 +10,7 @@ from soniccontrol.fw_device.connection import Connection, SerialConnection
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.communication.message_protocol import CommunicationProtocol, SonicMessageProtocol
 from soniccontrol.app_config import ENCODING
-from soniccontrol.events import Event
+from soniccontrol.utils.events import Event
 from soniccontrol.app_config import PLATFORM, System
 
 @attrs.define()
@@ -33,7 +33,6 @@ class LegacyCommunicator(Communicator):
     def __attrs_post_init__(self) -> None:
         self._logger = logging.getLogger(self._logger.name + "." + LegacyCommunicator.__name__)
         self._device_logger: logging.Logger = logging.getLogger(self._logger.name + ".device")
-        self._logger.setLevel("INFO") # FIXME is there a better way to set the log level?
         self._messages = asyncio.Queue(maxsize=100)
         self._send_lock = asyncio.Lock()
         super().__init__()

@@ -23,10 +23,13 @@ def create_device_discovery(server_url: str | None = None) -> DeviceDiscovery:
 
 
 def create_connection_to_device(dev_info: FwDeviceInfo, baudrate: int = 9600, **kwargs) -> Connection:
+    # modbus is not yet supported for remote server connection
+    # so we have to pop it from kwargs, before we pass kwargs to the constructor
+    is_modbus = kwargs.pop("is_modbus", False)
     if dev_info.is_remote:
         assert dev_info.remote_server_url is not None
         return RemoteServerConnection(dev_info.sys_name, dev_info, dev_info.remote_server_url, dev_info.sys_name, baudrate=baudrate, **kwargs)
-    if kwargs.get("is_modbus", False):
+    if is_modbus:
         return ModbusConnection(dev_info.sys_name, dev_info, dev_info.device_path, baudrate)
     assert dev_info.device_path, "The device has no device path set"
     return SerialConnection(dev_info.sys_name, dev_info, dev_info.device_path, baudrate)

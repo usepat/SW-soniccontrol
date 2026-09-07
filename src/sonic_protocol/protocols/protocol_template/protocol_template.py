@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List
 from sonic_protocol.command_codes import CommandCode, ICommandCode
-from sonic_protocol.schema import Anomaly, SystemState, TransducerState, AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, ControlMode, ConverterType, DeviceParamConstantType, DeviceType, FieldType, IEFieldName, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version
+from sonic_protocol.schema import Anomaly, SystemState, TransducerState, AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, ControlMode, DeviceParamConstantType, DeviceType, FieldType, IEFieldName, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 
@@ -21,9 +21,8 @@ from sonic_protocol.protocol_list import ProtocolList
 
 class Protocol_Template(ProtocolList):
     """
-        TODO: Description of changes in this protocol and why they were necessary
-
-
+        Each Protocol should contain a doc string comment about:
+        changes in this protocol and why they were necessary
     """
     def __init__(self):
         self._previous_protocol = Protocol_Template()
