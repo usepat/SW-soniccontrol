@@ -123,7 +123,7 @@ class MarkdownManualCompiler(ManualCompiler):
             type_header += f"\tMaximum value: {val}  \n"
         elif field_type.max_value is not None:
             assert isinstance(field_type.max_value, (int, float, np.number))
-            type_header += f"\Maximum value: {field_type.max_value}  \n"
+            type_header += f"\tMaximum value: {field_type.max_value}  \n"
         if description is not None:
             type_header += f"\t{description}  \n"
 
