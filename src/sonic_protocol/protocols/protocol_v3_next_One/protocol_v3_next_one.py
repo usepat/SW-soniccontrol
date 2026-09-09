@@ -6,7 +6,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 
 # Import latest protocol
-#from ..protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
+from ..protocol_v3_1_0.protocol_v3_1_0 import Protocol_v3_1_0
 
 # from .commands.commands import (
 #     {commands}
@@ -17,21 +17,19 @@ from sonic_protocol.protocol_list import ProtocolList
 # }
 
 
-
-
-class Protocol_Template(ProtocolList):
+class Protocol_v3_next_one(ProtocolList):
     """
         Each Protocol should contain a doc string comment about:
         changes in this protocol and why they were necessary
     """
     def __init__(self):
-        self._previous_protocol = Protocol_Template()
-        assert(False) # Point to the correct protocol
+        self._previous_protocol = Protocol_v3_1_0()
 
 
     @property
     def version(self) -> Version:
         assert(False)
+        # TODO determine the next version we need
         return Version(0, 0, 0)
     
     @property
@@ -72,4 +70,5 @@ class Protocol_Template(ProtocolList):
         return command_contract_dict
 
     def _get_device_constants_for(self, protocol_type: ProtocolType) -> Dict[DeviceParamConstantType, Any]:
-        return self._previous_protocol._get_device_constants_for(protocol_type)
+        constants =  self._previous_protocol._get_device_constants_for(protocol_type)
+        return constants
