@@ -211,6 +211,17 @@ async def poll_future(future_id: uuid.UUID):
     return jsonify({ "done": future.done(), "result": result, "exception": exception }), HTTP_OK
 
 
+@server_bp.get("/api_endpoints")
+def api_endpoints():
+    return [
+        {
+            "rule": str(rule),
+            "methods": list(rule.methods - {"HEAD", "OPTIONS"})
+        }
+        for rule in current_app.url_map.iter_rules()
+    ]
+
+
 @click.command()
 @click.option("--host", default=None)
 @click.option("--port", type=click.INT, default=None)
@@ -243,6 +254,7 @@ def start_server(host: str | None, port: int | None):
     app.extensions[CONNECTIONS_REGISTRY] = connection_registry
     app.extensions[EVENT_LOOP] = loop
     app.extensions[FUTURE_REGISTRY] = future_registry
+
     app.register_blueprint(server_bp)
     register_server_plugins(app)
 
