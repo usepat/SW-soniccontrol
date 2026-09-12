@@ -1,43 +1,75 @@
 #!/bin/bash
 
-# Deduce workspace directory from the script file path
+set -euo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PYTHON_EXE="${PYTHON_EXE:-$WORKSPACE_DIR/.venv/bin/python}"
+MAIN_SCRIPT="${MAIN_SCRIPT:-$WORKSPACE_DIR/src/soniccontrol_gui/build_main.py}"
+SONIC_SCRIPT_EXAMPLES="${SONIC_SCRIPT_EXAMPLES:-$WORKSPACE_DIR/sonic_script_examples}"
+DIST_DIR="${DIST_DIR:-$WORKSPACE_DIR/build/dist}"
+WORK_DIR="${WORK_DIR:-$WORKSPACE_DIR/build/temp}"
+SPEC_DIR="${SPEC_DIR:-$WORKSPACE_DIR/build/spec}"
+ICON_FILE="${ICON_FILE:-}"
+VERSION_FILE="${VERSION_FILE:-}"
 
-source "$WORKSPACE_DIR/.venv/bin/activate"
+if [[ ! -x "$PYTHON_EXE" ]]; then
+  echo "Python executable not found at $PYTHON_EXE" >&2
+  exit 1
+fi
 
-# Collect all arguments passed to the script
+if [[ ! -f "$MAIN_SCRIPT" ]]; then
+  echo "SonicControl entrypoint not found at $MAIN_SCRIPT" >&2
+  exit 1
+fi
+
+if [[ ! -d "$SONIC_SCRIPT_EXAMPLES" ]]; then
+  echo "sonic_script_examples not found at $SONIC_SCRIPT_EXAMPLES" >&2
+  exit 1
+fi
+
+if [[ -n "$ICON_FILE" && ! -f "$ICON_FILE" ]]; then
+  echo "Icon file not found at $ICON_FILE" >&2
+  exit 1
+fi
+
+if [[ -n "$VERSION_FILE" && ! -f "$VERSION_FILE" ]]; then
+  echo "Version file not found at $VERSION_FILE" >&2
+  exit 1
+fi
+
 EXTRA_ARGS=("$@")
-
 
 echo "bundle application with pyinstaller"
 
-# We need to add PIL as hidden import because it is dynamically loaded as plugin and else
-# pyinstaller will not detect it
-
 PYINSTALLER_ARGS=(
-  --noconfirm --onedir --windowed \
-  --name "SonicControl" \
-  --collect-all soniccontrol_gui \
-  --collect-all soniccontrol \
-  --collect-all sonic_protocol \
-  --collect-all tkinter \
-  --hidden-import=PIL._tkinter_finder \
-  --hidden-import=PIL._imagingtk \
-  --collect-all PIL \
-  --add-data "${WORKSPACE_DIR}/sonic_script_examples:sonic_script_examples" \
-  --distpath "${WORKSPACE_DIR}/build/dist" \
-  --workpath "${WORKSPACE_DIR}/build/temp" \
-  --specpath "${WORKSPACE_DIR}/build/spec"
+  --noconfirm --onedir --windowed
+  --name "SonicControl"
+  --collect-all soniccontrol_gui
+  --collect-all soniccontrol
+  --collect-all sonic_protocol
+  --collect-all tkinter
+  --hidden-import=PIL._tkinter_finder
+  --hidden-import=PIL._imagingtk
+  --collect-all PIL
+  --add-data "$SONIC_SCRIPT_EXAMPLES:sonic_script_examples"
+  --distpath "$DIST_DIR"
+  --workpath "$WORK_DIR"
+  --specpath "$SPEC_DIR"
 )
 
-# Add all extra arguments to the PyInstaller command
-PYINSTALLER_ARGS+=("${EXTRA_ARGS[@]}")
-PYINSTALLER_ARGS+=("${WORKSPACE_DIR}/src/soniccontrol_gui/build_main.py")
+if [[ -n "$ICON_FILE" ]]; then
+  PYINSTALLER_ARGS+=(--icon "$ICON_FILE")
+fi
+
+if [[ -n "$VERSION_FILE" ]]; then
+  PYINSTALLER_ARGS+=(--version-file "$VERSION_FILE")
+fi
+
+PYINSTALLER_ARGS+=("${EXTRA_ARGS[@]}" "$MAIN_SCRIPT")
 
 echo "PyInstaller will be called with the following arguments:"
 printf '%q ' "${PYINSTALLER_ARGS[@]}"
 echo
 
-# Execute the pyinstaller command
-pyinstaller "${PYINSTALLER_ARGS[@]}"
+"$PYTHON_EXE" -m PyInstaller "${PYINSTALLER_ARGS[@]}"
