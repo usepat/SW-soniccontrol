@@ -80,6 +80,7 @@ class Measuring(UIComponent):
         self._view.set_target_combobox_items(target_strs)
         self._view.set_guide_button_command(self._on_open_guide)
         self._view.set_open_measurements_button_command(self._on_open_measurements)
+        self._view.set_back_button_command(self._goto_previous_experiment_execution_state)
 
         self._capture.data_provider.subscribe_property_listener(
             "data", lambda e: self._timeplot.update_data(e.new_value))
@@ -118,16 +119,19 @@ class Measuring(UIComponent):
         self._view.set_metadata_form_frame_visibility(False)
         self._view.set_choose_target_frame_visibility(False)
         self._view.set_capture_frame_visibility(False)
+        self._view.set_back_button_enabled(False)
         match self._experiment_execution_state:
             case ExperimentExecutionState.FILL_IN_METADATA:
                 self._view.set_metadata_form_frame_visibility(True)
                 self._view.set_control_button_label(ui_labels.FINISH_LABEL)
                 self._view.set_control_button_command(self._on_metadata_filled_in)
             case ExperimentExecutionState.CHOOSE_CAPTURE_TARGET:
+                self._view.set_back_button_enabled(True)
                 self._view.set_choose_target_frame_visibility(True)
                 self._view.set_control_button_label(ui_labels.SELECTED)
                 self._view.set_control_button_command(self._on_continue_select_target)
             case ExperimentExecutionState.READY:
+                self._view.set_back_button_enabled(True)
                 self._view.set_capture_frame_visibility(True)
                 self._view.set_control_button_label(ui_labels.START_CAPTURE)
                 self._view.set_control_button_command(self._on_start_capture)
@@ -139,6 +143,16 @@ class Measuring(UIComponent):
                 self._view.set_capture_frame_visibility(True)
                 self._view.set_control_button_label(ui_labels.NEW_EXPERIMENT)
                 self._view.set_control_button_command(self._on_new_experiment)
+
+    def _goto_previous_experiment_execution_state(self):
+        # basically back button functionality.
+        # However makes only sense while the experiment gets set up and not while it runs.
+        match self._experiment_execution_state:
+            case ExperimentExecutionState.CHOOSE_CAPTURE_TARGET:
+                self.experiment_execution_state = ExperimentExecutionState.FILL_IN_METADATA
+            case ExperimentExecutionState.READY:
+                self.experiment_execution_state = ExperimentExecutionState.CHOOSE_CAPTURE_TARGET
+            
 
     def _on_new_experiment(self):
         self.experiment_execution_state = ExperimentExecutionState.FILL_IN_METADATA
@@ -209,6 +223,10 @@ class MeasuringView(TabView):
             self._control_frame,
             textvariable=self._capture_btn_text
         )
+        self._back_button: ttk.Button = ttk.Button(
+            self._control_frame,
+            text=ui_labels.BACK_LABEL
+        )
         self._open_measurements_button = ttk.Button(
             self._control_frame,
             text=ui_labels.GO_TO_MEASUREMENTS
@@ -245,6 +263,7 @@ class MeasuringView(TabView):
         self._control_frame.pack(fill=ttk.X, side=ttk.TOP, padx=3, pady=3)
         self._guide_button.pack(padx=sizes.SMALL_PADDING, side=ttk.RIGHT)
         self._open_measurements_button.pack(padx=sizes.SMALL_PADDING, side=ttk.RIGHT)
+        self._back_button.pack(padx=sizes.SMALL_PADDING, side=ttk.RIGHT)
         self._control_btn.pack(padx=sizes.SMALL_PADDING, side=ttk.LEFT, fill=ttk.X, expand=True)
 
         self._metadata_form_frame.pack(fill=ttk.BOTH, padx=3, pady=3, expand=True)
@@ -289,11 +308,17 @@ class MeasuringView(TabView):
         else: 
             self._capture_frame.pack_forget()
 
+    def set_back_button_enabled(self, enabled: bool) -> None:
+        self._back_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)
+
     def set_control_button_label(self, label: str):
         self._capture_btn_text.set(label)
 
     def set_control_button_command(self, command):
         self._control_btn.configure(command=command)
+
+    def set_back_button_command(self, command):
+        self._back_button.configure(command=command)
 
     def set_guide_button_command(self, command):
         self._guide_button.configure(command=command)
