@@ -1,4 +1,5 @@
 import asyncio
+from typing import List
 from sonic_protocol.command_codes import CommandCode
 from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
@@ -6,10 +7,15 @@ from soniccontrol_gui.constants import ui_labels
 from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 
 
+def get_serial_monitor_entries() -> List[str]:
+    controller = GuiController()
+    # the last entry is empty, because every line ends in \n. Therefore remove it
+    return controller.get_widget_text(widget_names.SERIAL_MONITOR_TEXT).splitlines()[:-1]
+
 async def send_over_serial_monitor(command: str, allow_fail=False) -> str:
     controller = GuiController()
     controller.switch_to_tab(widget_names.SERIAL_MONITOR_TAB)
-    existing_entries = controller.get_texts_of_widget_children(widget_names.SERIAL_MONITOR_SCROLL_FRAME)
+    existing_entries = get_serial_monitor_entries() 
     expected_command_entry = f">>> {command}"
     controller.set_widget_text(widget_names.SERIAL_MONITOR_COMMAND_LINE_INPUT_ENTRY, command)
     controller.press_button(widget_names.SERIAL_MONITOR_SEND_BUTTON)
@@ -17,7 +23,7 @@ async def send_over_serial_monitor(command: str, allow_fail=False) -> str:
 
     max_iter = 10
     for _ in range(max_iter):
-        entries = controller.get_texts_of_widget_children(widget_names.SERIAL_MONITOR_SCROLL_FRAME)
+        entries = get_serial_monitor_entries() 
         new_entries = entries[len(existing_entries):]
         if expected_command_entry not in new_entries:
             await controller.execute_events_until_idle()

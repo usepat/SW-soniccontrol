@@ -68,40 +68,36 @@ class MessageBoxView(tk.Toplevel, View):
         self._message = message
         self._dialog_options = dialog_options
         self._close_callback: Callable[[], None] = lambda: None
-        # Check if the text contains an even number of ** for formatting bold text. We could use regex here and in general create a better method for formatting text.
-        # But it works, so I dont care right now
-        if message.count("**") % 2 == 0 and message.count("**") != 0:
-            self._msg_label = tk.Text(self,
-                wrap="word",               # soft-wrap on words
-                height=1,                  # will auto-grow later
-                borderwidth=0,             # no relief
-                highlightthickness=0,      # no focus ring
-                background=self.cget("background"),
-                relief="flat",
-            )
-            self.create_bold_text()
-        else:
-            self._msg_label = ttk.Label(self, text=self._message)
+        self._msg_text = tk.Text(self,
+            wrap="word",               # soft-wrap on words
+            height=1,                  # will auto-grow later
+            borderwidth=0,             # no relief
+            highlightthickness=0,      # no focus ring
+            background=self.cget("background"),
+            relief="flat",
+        )
+        self._create_bold_text()
+
         self._options_frame = ttk.Frame(self)
         self._option_buttons =  {
             opt: ttk.Button(self._options_frame, text=opt.value) for opt in self._dialog_options
         }
 
-        self._msg_label.pack(side="top")
+        self._msg_text.pack(side="top")
         self._options_frame.pack(side="bottom", pady=10)
         for button in self._option_buttons.values():
             button.pack(side="left", padx=5)
 
         WidgetRegistry.register_widget(self, self.WIDGET_NAME)
-        WidgetRegistry.register_widget(self._msg_label, "message", self.WIDGET_NAME)
+        WidgetRegistry.register_widget(self._msg_text, "message", self.WIDGET_NAME)
         for option in self._dialog_options:
             WidgetRegistry.register_widget(self._option_buttons[option],option.name, self.WIDGET_NAME)
 
-    def create_bold_text(self,
+    def _create_bold_text(self,
                      max_chars: int = 60,      # ≈ dialog width
                      max_lines: int = 12):     # vertical ceiling
-        assert isinstance(self._msg_label, ttk.Text)
-        txt = self._msg_label
+        assert isinstance(self._msg_text, ttk.Text)
+        txt = self._msg_text
         txt.configure(state="normal",
                     wrap="word",
                     borderwidth=0,
@@ -114,9 +110,14 @@ class MessageBoxView(tk.Toplevel, View):
         bold_font.configure(weight="bold")
         txt.tag_configure("bold", font=bold_font)
 
-        for i, chunk in enumerate(self._message.split("**")):
-            tag = "bold" if i % 2 else ()
-            txt.insert("end", chunk, tag)
+        if self._message.count("**") % 2 == 0 and self._message.count("**") != 0:
+                    # Check if the text contains an even number of ** for formatting bold text. We could use regex here and in general create a better method for formatting text.
+                    # But it works, so I dont care right now
+            for i, chunk in enumerate(self._message.split("**")):
+                tag = "bold" if i % 2 else ()
+                txt.insert("end", chunk, tag)
+        else:
+            txt.insert("end", self._message)
         # -----------------------------------------------------------------
 
         txt.update_idletasks()                     # make geometry info valid

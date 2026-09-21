@@ -134,14 +134,18 @@ class LoggingTabView(TabView):
         self._output_frame: ttk.Labelframe = ttk.Labelframe(
             self._main_frame, text=ui_labels.OUTPUT_LABEL
         )
-        self._horizontal_scrolled_frame: XYScrolledFrame = XYScrolledFrame(
-            self._output_frame, autohide=True
-        )
-        self._text_var: ttk.StringVar = ttk.StringVar()
-        self._text_widget: ttk.Label = ttk.Label(
-            self._horizontal_scrolled_frame, 
-            textvariable=self._text_var, 
+
+        self._text_widget: ttk.Text = ttk.Text(
+            self._output_frame, 
             font=("Consolas", 10)
+        )
+        self._scrollbar_y = ttk.Scrollbar(self._output_frame, orient="vertical", command=self._text_widget.yview)
+        self._scrollbar_x = ttk.Scrollbar(self._output_frame, orient="horizontal", command=self._text_widget.xview)
+        
+        self._text_widget.configure(
+            state=ttk.DISABLED,
+            yscrollcommand=self._scrollbar_y.set,
+            xscrollcommand=self._scrollbar_x.set
         )
 
 
@@ -157,23 +161,31 @@ class LoggingTabView(TabView):
             pady=sizes.MEDIUM_PADDING,
             padx=sizes.LARGE_PADDING,
         )
-        self._horizontal_scrolled_frame.pack(
-            expand=True,
-            fill=ttk.BOTH,
-            pady=sizes.MEDIUM_PADDING,
-            padx=sizes.MEDIUM_PADDING,
+        self._output_frame.columnconfigure(0, weight=sizes.EXPAND)
+        self._output_frame.columnconfigure(1, weight=sizes.DONT_EXPAND)
+        self._output_frame.rowconfigure(0, weight=sizes.EXPAND)
+        self._output_frame.rowconfigure(1, weight=sizes.DONT_EXPAND)
+        self._text_widget.grid(
+            row=0, column=0, sticky=ttk.NSEW
         )
-        self._text_widget.pack(
-            fill=ttk.X, side=ttk.TOP, anchor=ttk.W
-        )
+        self._scrollbar_y.grid(row=0, column=1, sticky=ttk.NS)
+        self._scrollbar_x.grid(row=1, column=0, sticky=ttk.EW)
 
     def append_text_line(self, text: str):
-        self._text_var.set(self._text_var.get() + text + "\n")
-    
+        self._text_widget.configure(state=ttk.NORMAL)
+        self._text_widget.insert(ttk.END, text + "\n")
+        self._text_widget.configure(state=ttk.DISABLED)
+        
     def scroll_to_end(self):
-        self._horizontal_scrolled_frame.yview_moveto(1.0)
+        self._text_widget.yview_moveto(1.0)
 
     def destroy_ith_text_line(self, i: int):
-        text_lines = self._text_var.get().splitlines(keepends=True)
+        text = self._text_widget.get("1.0", ttk.END)
+        text_lines = text.splitlines(keepends=True)
         text_lines.pop(i)
-        self._text_var.set("".join(text_lines))
+        text = "".join(text_lines)
+
+        self._text_widget.configure(state=ttk.NORMAL)
+        self._text_widget.delete("1.0", ttk.END)
+        self._text_widget.insert("1.0", text)
+        self._text_widget.configure(state=ttk.DISABLED)
