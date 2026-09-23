@@ -25,7 +25,7 @@ from soniccontrol_gui.views.configuration.device_settings import DeviceSettingsT
 from soniccontrol_gui.views.control.logging import Logging
 from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
-from soniccontrol_gui.views.core.device_window import DeviceWindow, DeviceWindowView, KnownDeviceWindow
+from soniccontrol_gui.views.core.device_window import DeviceWindow, DeviceWindowView, KnownDeviceWindow, check_device_clock_time
 from soniccontrol_gui.views.home import DeviceInfoFrame
 from soniccontrol_gui.widgets.message_box import MessageBox
 
@@ -184,6 +184,7 @@ class PostmanDeviceWindow(DeviceWindow):
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._worker_connection_tab.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
 
+            self.pass_loading_task(check_device_clock_time(root, self._device))
         except Exception as e:
             self._logger.error(e)
             MessageBox.show_error(root, str(e))

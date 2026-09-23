@@ -114,6 +114,7 @@ class _UIStringsEN:
     CONNECTION_MODE_DIAGNOSTICS_TOOL_LABEL: Final[str] = "Diagnostics Tool"
     CONFIGURATION_TAB: Final[str] = "Configuration"
     UPDATER_INTERVAL_LABEL: Final[str] = "Updater Interval (ms):"
+    UPDATE_DATETIME_LABEL: Final[str] = "Update device clock with system time"
     IS_LEGACY_DEVICE_LABEL: Final[str] = "SonicCrystal"
     IS_MODBUS_DEVICE_LABEL: Final[str] = "SonicModbus"
     HOME_CONTROL_LABEL: Final[str] = "Manual Control"
@@ -297,6 +298,7 @@ class _UIStringsEN:
     RELOAD_LOGGERS: Final[str] = "Reload loggers"
     ERROR_MSG_CONNECTION_ALREADY_OPEN: Final[str] = "There is already a connection open for this serial port, do you want to close it?"
     DOWNLOAD: Final[str] = "Download"
+    UPDATE_LABEL: Final[str] = "Update"
     
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()

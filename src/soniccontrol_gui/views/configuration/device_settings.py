@@ -48,6 +48,8 @@ class DeviceSettingsTab(UIComponent):
         super().__init__(parent, self._view, self._logger)
         self._view.set_apply_settings_command(self._apply_settings)
         self._view.set_load_settings_command(self._load_settings)
+        self._view.set_update_datetime_command(async_handler(self._device.update_datetime))
+
         if not isinstance(device.communicator, ModbusCommunicator):
             self._load_settings()
 
@@ -119,20 +121,40 @@ class DeviceSettingsTabView(TabView):
             text=ui_labels.LOAD_SETTINGS,
             style=ttk.DARK
         )
+
+        self._datetime_frame: ttk.Frame = ttk.Frame(self)
+        self._update_datetime_btn: ttk.Button = ttk.Button(
+            self._datetime_frame,
+            text=ui_labels.UPDATE_DATETIME_LABEL,
+            style=ttk.DARK,
+        )
+        
         WidgetRegistry.register_widget(self._apply_settings_button, "apply_settings_button", tab_name)
         WidgetRegistry.register_widget(self._load_settings_button, "load_settings_button", tab_name)
+        WidgetRegistry.register_widget(self._update_datetime_btn, "update_datetime_button", tab_name)
+
 
     def _initialize_publish(self) -> None:
         self._settings_form_slot.pack(side=ttk.TOP, fill=ttk.BOTH, expand=True)
-        self._control_frame.pack(side=ttk.BOTTOM, fill=ttk.X, expand=True, pady=sizes.LARGE_PADDING)
+        self._datetime_frame.pack(side=ttk.BOTTOM, fill=ttk.X, pady=sizes.LARGE_PADDING)
+        self._control_frame.pack(side=ttk.BOTTOM, fill=ttk.X, pady=sizes.LARGE_PADDING)
         self._apply_settings_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._load_settings_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
+
+        self._update_datetime_btn.pack(
+            side=ttk.LEFT,
+            padx=sizes.SMALL_PADDING,
+            pady=sizes.SMALL_PADDING,
+        )
         
     def set_apply_settings_command(self, command: Callable[[], None]) -> None:
         self._apply_settings_button.configure(command=command)
 
     def set_load_settings_command(self, command: Callable[[], None]) -> None:
         self._load_settings_button.configure(command=command)
+
+    def set_update_datetime_command(self, command: Callable[[], None]) -> None:
+        self._update_datetime_btn.configure(command=command)
 
     def set_apply_settings_button_enabled(self, enabled: bool) -> None:
         self._apply_settings_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)

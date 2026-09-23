@@ -1,9 +1,13 @@
+from datetime import datetime, timezone
 from typing import Callable, List, Optional
 import logging
 from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
 import tkinter as tk
 
+from sonic_protocol.field_names import EFieldName
+from sonic_protocol.schema import Timestamp
+from soniccontrol import commands
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.communication.serial_modbus_converter_communicator import SerialModbusConverterCommunicator
@@ -190,6 +194,24 @@ class RescueWindow(DeviceWindow):
             raise
 
 
+async def check_device_clock_time(root, device: SonicDevice) -> None:
+    if not device.has_command(commands.GetDateTime()):
+        return
+
+    answer = await device.execute_command(commands.GetDateTime())
+    time_device: datetime = answer[EFieldName.TIMESTAMP].to_datetime()
+    time_system = datetime.now(timezone.utc)
+    time_diff = time_device - time_system
+
+    five_mins = 60 * 5 
+    if abs(time_diff.total_seconds()) > five_mins:
+        MessageBox.show_error(
+            root, 
+            f"Consider updating the device time!\nIt is currently {time_device} and not equal to your system time {time_system}.", 
+            title="Warning"
+        )
+
+
 class KnownDeviceWindow(DeviceWindow):
     def __init__(self, device: SonicDevice, root, connection_name: str, is_legacy_device: bool = False, update_interval_ms: int = 0):
         self._logger: logging.Logger = logging.getLogger(connection_name + ".ui")
@@ -287,6 +309,8 @@ class KnownDeviceWindow(DeviceWindow):
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
+
+            self.pass_loading_task(check_device_clock_time(root, self._device))
         except Exception as e:
             add_logger_context_to_exception(e, self.logger)
             raise e

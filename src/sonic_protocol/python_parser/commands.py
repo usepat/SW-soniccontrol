@@ -1,9 +1,10 @@
+import datetime
 from typing import Any, Dict
 import attrs
 from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity, UartInterface
-from sonic_protocol.schema import ControlMode, Loglevel
+from sonic_protocol.schema import ControlMode, Loglevel, Timestamp
 
 
 class Command:
@@ -618,3 +619,15 @@ class GetFileData(Command):
 
     index: int = attrs.field(alias=EFieldName.FILE_INDEX.name)
     value: int = attrs.field(alias=EFieldName.INDEX.name)
+
+@attrs.define()
+class GetDateTime(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_DATETIME)
+
+@attrs.define()
+class SetDateTime(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_DATETIME)
+
+    value: Timestamp = attrs.field(alias=EFieldName.TIMESTAMP.name)

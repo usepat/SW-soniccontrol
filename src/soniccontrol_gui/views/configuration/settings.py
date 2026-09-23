@@ -73,19 +73,18 @@ class SettingsView(TabView):
         self._updater_interval_entry: ttk.Entry = ttk.Entry(
             self._settings_frame, textvariable=self._updater_interval, style=ttk.DARK
         )
+
         WidgetRegistry.register_widget(self._apply_settings_button, "apply_settings_button", tab_name)
         WidgetRegistry.register_widget(self._updater_interval_entry, "updater_interval_entry", tab_name)
-        WidgetRegistry.register_widget(self._updater_interval_label, "updater_interval_label", tab_name)
 
     def _initialize_publish(self) -> None:
         self._settings_frame.pack(expand=True, fill=ttk.BOTH)
         self._settings_frame.columnconfigure(0, weight=sizes.DONT_EXPAND)
         self._settings_frame.columnconfigure(1, weight=sizes.EXPAND)
         self._settings_frame.columnconfigure(2, weight=sizes.DONT_EXPAND)
-        self._settings_frame.columnconfigure(3, weight=sizes.DONT_EXPAND)
-        self._settings_frame.columnconfigure(4, weight=sizes.DONT_EXPAND)
         self._settings_frame.rowconfigure(0, weight=sizes.DONT_EXPAND)
-        self._settings_frame.rowconfigure(1, weight=sizes.EXPAND)
+        self._settings_frame.rowconfigure(1, weight=sizes.DONT_EXPAND)
+        self._settings_frame.rowconfigure(2, weight=sizes.EXPAND)
         self._apply_settings_button.grid(
             row=0,
             column=0,
