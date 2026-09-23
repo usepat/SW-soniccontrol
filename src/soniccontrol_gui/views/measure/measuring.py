@@ -182,7 +182,8 @@ class Measuring(UIComponent):
         )
         try:
             target = self._capture_targets[self._selected_target]
-            await self._capture.start_capture(experiment, target)
+            self._capture.setup(experiment, target)
+            await self._capture.start_capture()
         except Exception as e:
             MessageBox.show_error(self._view.root, f"{e.__class__.__name__}: {str(e)}")
 

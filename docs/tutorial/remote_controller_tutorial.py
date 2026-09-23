@@ -7,7 +7,7 @@ from soniccontrol import (
     HDF5ExperimentWriter, DataTableWorker, Experiment, ExperimentMetaData
 )
 from soniccontrol.app_config import SOFTWARE_VERSION, PLATFORM, get_simulation_exe
-from soniccontrol.data_capturing.capture import CaptureFree, Capture
+from soniccontrol.data_capturing.capture import CaptureFree
 from soniccontrol.data_capturing.capture_target import CaptureTargets
 from soniccontrol.procedures.procedure import ProcedureType
 from soniccontrol.procedures.procs import RamperArgs
@@ -15,8 +15,6 @@ from soniccontrol.procedures.procs import RamperArgs
 import asyncio
 from pathlib import Path
 import pandas as pd
-
-from soniccontrol.updater import Updater
 
 
 # This is our main function.
@@ -199,29 +197,25 @@ async def main():
     # instead of fetching updates manually and adding them as datapoints,
     # we can instead also make use of the Updater together with the Capture class
 
-    capture = Capture(output_dir)
-
-    # the capture class needs to subscribe the updaters update event in order to receive status updates
-    controller._updater.subscribe(Updater.UPDATE_EVENT, lambda e: capture.on_update(e.data["status"]))
-
     # updater is needed for fetching updates in the background
     controller.start_updater()
 
+    # capture_experiment returns a capture object, with that the capture can be started and stopped.
+    # It can also be used as a context manager with the "with"-statement. 
+    # Everything inside the with block will then be captured. And on exiting the block, via failure or normal exit, it will stop the capture.
+
     # besides capture free there exist also other capture target, used by soniccontrol gui to sync data capturing with procedure and script execution. 
     # However for manually recording experiments they are not feasible
-    await capture.start_capture(experiment, CaptureFree())
+    async with controller.capture_experiment(output_dir, meta_data, CaptureFree()):
 
-    # do some stuff
-    await controller.send_command(cmds.SetOn())
-    for i in range(5):
-        await controller.send_command(cmds.SetFrequency(10_000 * i + 1_000_000))
-        await asyncio.sleep(1) # wait 1s
-    await controller.send_command(cmds.SetOff())
-
-    await capture.end_capture() # stop capture
+        # do some stuff
+        await controller.send_command(cmds.SetOn())
+        for i in range(5):
+            await controller.send_command(cmds.SetFrequency(10_000 * i + 1_000_000))
+            await asyncio.sleep(1) # wait 1s
+        await controller.send_command(cmds.SetOff())
 
     await controller.stop_updater()
-
 
     # We disconnect the controller
     await controller.disconnect()

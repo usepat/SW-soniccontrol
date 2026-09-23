@@ -230,7 +230,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._interpreter = InterpreterEngine(self._device, self._updater, self._proc_controller, self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
-            self._capture = Capture(files.MEASUREMENTS_DIR, self._logger)
+            self._capture = Capture(files.MEASUREMENTS_DIR, self._updater, self._logger)
             self._capture_targets = {
                 CaptureTargets.FREE: CaptureFree(),
                 CaptureTargets.SCRIPT: CaptureScript(self._script_file, self._scripting, self._interpreter),
@@ -304,8 +304,7 @@ class KnownDeviceWindow(DeviceWindow):
 
             self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, show_script_error)
 
-            self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
-            self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
+            self._updater.subscribe(Updater.UPDATE_EVENT, lambda e: self._status_bar.on_update_status(e.data["status"]))
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
