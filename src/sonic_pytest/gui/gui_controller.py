@@ -104,6 +104,8 @@ class GuiController:
                 return text
 
             remaining_timeout = None if deadline is None else max(0.0, deadline - asyncio.get_running_loop().time())
+            if remaining_timeout is not None and remaining_timeout <= 0:
+                raise asyncio.TimeoutError()
             await self._wait_for_pending_action_progress(remaining_timeout)
 
     async def wait_for_widget_text_to_contain(self, widget_name: str, expected_text: str, timeout_s: float | None = None) -> str:

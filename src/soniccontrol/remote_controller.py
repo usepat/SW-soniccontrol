@@ -19,7 +19,7 @@ from soniccontrol.fw_device.connection import CLIConnection, Connection, ModbusC
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.data_capturing.capture import Capture
-from soniccontrol.data_capturing.capture_target import CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTargets
+from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTarget, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.fw_device import create_connection_to_device, redetect_connection, resolve_current_device_info
 from soniccontrol.logger.utils import create_logger_for_connection
@@ -485,17 +485,53 @@ class RemoteController:
         experiment_meta_data: ExperimentMetaData
             Data about the setup and conduction of the experiment.
         """
-        capture = Capture(output_dir)
+        capture = Capture(output_dir, self._updater)
         capture_target = CaptureSpectrumMeasure(self._updater, self._proc_controller, SpectrumArgsAdapter(spectrum_args))
-        self._updater.subscribe("update", lambda e: capture.on_update(e.data["status"]))
 
         experiment = Experiment(experiment_metadata, self._device.info,
-                                 SOFTWARE_VERSION, PLATFORM.value, 
-                                 CaptureTargets.SPECTRUM_MEASURE)
+                                SOFTWARE_VERSION, PLATFORM.value, 
+                                capture_target.target_type, target_parameters=capture_target.args)
 
-        await capture.start_capture(experiment, capture_target)
+        capture.setup(experiment, capture_target)
+        await capture.start_capture()
         await capture.wait_for_capture_to_complete()
 
+
+    def capture_experiment(self, output_dir: Path, experiment_metadata: ExperimentMetaData, capture_target: CaptureTarget = CaptureFree()) -> Capture:
+        """
+        Sets up a capture object that can be used for capturing experiments.
+
+        Parameters
+        ----------
+        output_dir: Path
+            Path to the directory where the experiment should be stored
+        experiment_meta_data: ExperimentMetaData
+            Data about the setup and conduction of the experiment.
+        capture_target:
+            Used for synchronizing the capture with procedures, scripts or similar. Mainly used by the GUI.
+            Uses Free by default, that provides not synchronization.
+         
+        Example
+        -------
+        ```
+        capture_controller = remote_controller.capture_experiment(output_dir, experiment1_metadata)
+        await capture_controller.start_capture()
+        # do experiment 1
+        await capture_controller.end_capture()
+
+        # Alternatively this function can also be used directly as context manager
+        # everything inside the context with statement gets recorded by the experiment
+        async with remote_controller.capture_experiment(output_dir, experiment2_metadata):
+            # do experiment 2
+        ```
+        """
+        capture = Capture(output_dir, self._updater)
+        experiment = Experiment(experiment_metadata, self._device.info,
+                                SOFTWARE_VERSION, PLATFORM.value, 
+                                capture_target.target_type, target_parameters=capture_target.args)
+        capture.setup(experiment, capture_target)
+        return capture
+        
     async def disconnect(self) -> None:
         await self._updater.stop()
         await self._device.disconnect()

@@ -1,9 +1,13 @@
+from datetime import datetime, timezone
 from typing import Callable, List, Optional
 import logging
 from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
 import tkinter as tk
 
+from sonic_protocol.field_names import EFieldName
+from sonic_protocol.schema import Timestamp
+from soniccontrol import commands
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.communication.serial_modbus_converter_communicator import SerialModbusConverterCommunicator
@@ -14,6 +18,7 @@ from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.view import TabView, View
+from soniccontrol_gui.view import initialize_toplevel_view
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine
@@ -41,6 +46,7 @@ from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.constants import files
+from soniccontrol_gui.utils.tk_scaling import ensure_valid_tk_scaling
 import traceback
 
 
@@ -190,6 +196,24 @@ class RescueWindow(DeviceWindow):
             raise
 
 
+async def check_device_clock_time(root, device: SonicDevice) -> None:
+    if not device.has_command(commands.GetDateTime()):
+        return
+
+    answer = await device.execute_command(commands.GetDateTime())
+    time_device: datetime = answer[EFieldName.TIMESTAMP].to_datetime()
+    time_system = datetime.now(timezone.utc)
+    time_diff = time_device - time_system
+
+    five_mins = 60 * 5 
+    if abs(time_diff.total_seconds()) > five_mins:
+        MessageBox.show_error(
+            root, 
+            f"Consider updating the device time!\nIt is currently {time_device} and not equal to your system time {time_system}.", 
+            title="Warning"
+        )
+
+
 class KnownDeviceWindow(DeviceWindow):
     def __init__(self, device: SonicDevice, root, connection_name: str, is_legacy_device: bool = False, update_interval_ms: int = 0):
         self._logger: logging.Logger = logging.getLogger(connection_name + ".ui")
@@ -208,7 +232,7 @@ class KnownDeviceWindow(DeviceWindow):
             self._interpreter = InterpreterEngine(self._device, self._updater, self._proc_controller, self._logger)
             self._spectrum_measure_model = SpectrumMeasureModel()
 
-            self._capture = Capture(files.MEASUREMENTS_DIR, self._logger)
+            self._capture = Capture(files.MEASUREMENTS_DIR, self._updater, self._logger)
             self._capture_targets = {
                 CaptureTargets.FREE: CaptureFree(),
                 CaptureTargets.SCRIPT: CaptureScript(self._script_file, self._scripting, self._interpreter),
@@ -282,11 +306,12 @@ class KnownDeviceWindow(DeviceWindow):
 
             self._interpreter.subscribe(InterpreterEngine.INTERPRETATION_ERROR, show_script_error)
 
-            self._updater.subscribe("update", lambda e: self._capture.on_update(e.data["status"]))
-            self._updater.subscribe("update", lambda e: self._status_bar.on_update_status(e.data["status"]))
+            self._updater.subscribe(Updater.UPDATE_EVENT, lambda e: self._status_bar.on_update_status(e.data["status"]))
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._configuration.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._home.on_execution_state_changed)
+
+            self.pass_loading_task(check_device_clock_time(root, self._device))
         except Exception as e:
             add_logger_context_to_exception(e, self.logger)
             raise e
@@ -343,6 +368,7 @@ class DeviceWindowView(tk.Toplevel, View):
     def __init__(self, root, *args, **kwargs) -> None:
         title = kwargs.pop("title", "Device Window")
         super().__init__(root, *args, **kwargs)
+        initialize_toplevel_view(self)
         self.title(title)
         self.geometry('1200x800')
         self.minsize(600, 400)

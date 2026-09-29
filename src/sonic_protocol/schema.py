@@ -5,7 +5,7 @@ import numpy as np
 
 import re
 from functools import total_ordering
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sonic_protocol.groups import GROUPS, GroupId
 
@@ -242,19 +242,24 @@ class Timestamp():
     @staticmethod
     def now() -> "Timestamp":
         now = datetime.now()
-        return Timestamp(
-            hour=now.hour,
-            minute=now.minute,
-            second=now.second,
-            day=now.day,
-            month=now.month,
-            year=now.year
-        )
+        return Timestamp.to_timestamp(now)
+
+    def to_datetime(self)-> datetime:
+        return datetime(self.year, self.month, self.day, self.hour, self.minute, self.second, tzinfo=timezone.utc)
 
     @staticmethod
     def to_timestamp(x: Any) -> "Timestamp":
         if isinstance(x, Timestamp):
             return x
+        if isinstance(x, datetime):
+            return Timestamp(
+                hour=x.hour,
+                minute=x.minute,
+                second=x.second,
+                day=x.day,
+                month=x.month,
+                year=x.year
+            )
         if isinstance(x, str):
             # Define the regex pattern for the timestamp
             pattern = re.compile(

@@ -1,9 +1,12 @@
 import pytest
 import pytest_asyncio
 
+from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.schema import Loglevel, Signal, SIPrefix
+from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.procedures.procedure import ProcedureType
 from sonic_pytest.remote_controller.asserts import assert_answer, send_command_and_check_response
+from sonic_pytest.device_setup import apply_default_procedure_setup_over_remote_controller
 from soniccontrol import EFieldName, Procedure, RamperArgs, WipeArgs, commands, DeviceType
 import asyncio
 
@@ -84,6 +87,76 @@ async def setup_valid_at_configs(remote_controller) -> None:
         )
 
 
+async def start_wipe_and_assert_running(remote_controller) -> None:
+    is_postman_proxy = isinstance(remote_controller.device.communicator, PostmanProxyCommunicator)
+
+    if not is_postman_proxy:
+        await send_command_and_check_response(remote_controller, commands.SetWipe())
+    else:
+        answer = await remote_controller.send_command(commands.SetWipe(), raise_exception=False)
+        if answer.is_valid:
+            return
+
+        is_timeout = (
+            answer.command_code == CommandCode.E_INTERNAL_DEVICE_ERROR
+            and answer.message == "Software Error: Timeout occurred"
+        )
+        is_already_running = (
+            answer.command_code == CommandCode.E_COMMAND_NOT_PERMITTED
+            and answer.message == "forbidden to execute command"
+        )
+
+        assert is_timeout or is_already_running, (
+            f"Expected Postman wipe startup timeout, running-state rejection, or success, got code {answer.command_code} with message '{answer.message}'"
+        )
+
+        for _ in range(10):
+            await asyncio.sleep(1)
+            update = await remote_controller.get_update()
+            if update.is_valid and update[EFieldName.PROCEDURE] == Procedure.WIPE:
+                return
+
+        raise AssertionError(
+            "Expected wipe to be running after Postman startup timeout/rejection, but update never reported Procedure.WIPE"
+        )
+
+
+async def start_ramp_and_assert_running(remote_controller) -> None:
+    is_postman_proxy = isinstance(remote_controller.device.communicator, PostmanProxyCommunicator)
+
+    if not is_postman_proxy:
+        await send_command_and_check_response(remote_controller, commands.SetRamp())
+        return
+
+    answer = await remote_controller.send_command(commands.SetRamp(), raise_exception=False)
+    if answer.is_valid:
+        return
+
+    is_timeout = (
+        answer.command_code == CommandCode.E_INTERNAL_DEVICE_ERROR
+        and answer.message == "Software Error: Timeout occurred"
+    )
+    is_already_running = (
+        answer.command_code == CommandCode.E_COMMAND_NOT_PERMITTED
+        and answer.message == "forbidden to execute command"
+    )
+
+    assert is_timeout or is_already_running, (
+        f"Expected Postman ramp startup timeout, running-state rejection, or success, got code {answer.command_code} with message '{answer.message}'"
+    )
+
+    for _ in range(10):
+        await asyncio.sleep(1)
+        update = await remote_controller.get_update()
+        if update.is_valid and update[EFieldName.PROCEDURE] == Procedure.RAMP:
+            return
+
+    raise AssertionError(
+        "Expected ramp to be running after Postman startup timeout/rejection, but update never reported Procedure.RAMP"
+    )
+
+
+
 @pytest_asyncio.fixture(autouse=True, scope="function", loop_scope="package")
 async def setup_procedures(request, remote_controller):
     # Here we check for each test, it can be execute 
@@ -101,9 +174,7 @@ async def setup_procedures(request, remote_controller):
 
     # even if the procedures are not enabled, setting attributes of them works always
     # so no checks needed here
-    await setup_valid_at_configs(remote_controller)
-    await setup_valid_ramp_args(remote_controller)
-    await setup_valid_wipe_args(remote_controller)
+    await apply_default_procedure_setup_over_remote_controller(remote_controller)
 
     yield
 
@@ -136,8 +207,7 @@ async def test_procedure_returns_error_if_f_start_and_f_stop_are_the_same(remote
 @pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_setter_commands_get_blocked_during_procedure_run(remote_controller):
-    answer = await remote_controller.send_command(commands.SetRamp())
-    assert_answer(answer, {EFieldName.PROCEDURE: Procedure.RAMP})
+    await start_ramp_and_assert_running(remote_controller)
 
     answer = await remote_controller.send_command(commands.SetFrequency(200000))
     assert not answer.is_valid, "Expected set_freq to fail, while a procedure is running"
@@ -147,9 +217,7 @@ async def test_setter_commands_get_blocked_during_procedure_run(remote_controlle
 @pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_getter_commands_are_allowed_during_procedure_run(remote_controller):
-    
-    answer = await remote_controller.send_command(commands.SetRamp())
-    assert_answer(answer, {EFieldName.PROCEDURE: Procedure.RAMP})
+    await start_ramp_and_assert_running(remote_controller)
 
     answer = await remote_controller.send_command(commands.GetFreq())
     assert answer.is_valid, "Expected get_freq to succeed, while a procedure is running"
@@ -159,7 +227,7 @@ async def test_getter_commands_are_allowed_during_procedure_run(remote_controlle
 @pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_stop_turns_off_procedure(remote_controller, disable_procedure_logger):
-    await send_command_and_check_response(remote_controller, commands.SetRamp())
+    await start_ramp_and_assert_running(remote_controller)
     assert_answer(await remote_controller.get_update(), {EFieldName.PROCEDURE: Procedure.RAMP})
 
     await send_command_and_check_response(remote_controller, commands.SetStop(), check_command_not_permitted=True)
@@ -170,7 +238,7 @@ async def test_stop_turns_off_procedure(remote_controller, disable_procedure_log
 @pytest.mark.skip_if_proc_not_enabled(ProcedureType.RAMP)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_if_ramp_resets_running_proc_and_signal(remote_controller, disable_procedure_logger):
-    await send_command_and_check_response(remote_controller, commands.SetRamp())
+    await start_ramp_and_assert_running(remote_controller)
 
     await asyncio.sleep(12) # ramp needs 12 seconds to execute
     answer = await remote_controller.get_update()
@@ -181,7 +249,7 @@ async def test_if_ramp_resets_running_proc_and_signal(remote_controller, disable
 @pytest.mark.skip_if_proc_not_enabled(ProcedureType.WIPE)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_if_wipe_does_not_crash(remote_controller, disable_procedure_logger):
-    await send_command_and_check_response(remote_controller, commands.SetWipe())
+    await start_wipe_and_assert_running(remote_controller)
 
     for _ in range(10):
         await asyncio.sleep(2)

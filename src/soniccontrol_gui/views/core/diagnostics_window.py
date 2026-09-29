@@ -19,7 +19,7 @@ from soniccontrol_gui.views.control.file_fetcher import FileTab
 from soniccontrol_gui.views.control.logging import Logging
 from soniccontrol_gui.views.control.serialmonitor import SerialMonitor
 from soniccontrol_gui.views.core.app_state import AppState, ExecutionState
-from soniccontrol_gui.views.core.device_window import DeviceWindow, DeviceWindowView
+from soniccontrol_gui.views.core.device_window import DeviceWindow, DeviceWindowView, check_device_clock_time
 import ttkbootstrap as ttk
 from soniccontrol_gui.constants import ui_labels, sizes
 from soniccontrol_gui.resources import images
@@ -180,6 +180,7 @@ class DiagnosticsWindow(DeviceWindow):
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._serialmonitor.on_execution_state_changed)
             self.app_state.subscribe_property_listener(AppState.APP_EXECUTION_CONTEXT_PROP_NAME, self._testing_tab.on_execution_state_changed)
 
+            self.pass_loading_task(check_device_clock_time(root, self._device))
         except Exception as e:
             add_logger_context_to_exception(e, self.logger)
             raise
