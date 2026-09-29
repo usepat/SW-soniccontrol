@@ -10,6 +10,8 @@ from ttkbootstrap import utility
 from ttkbootstrap.style import Bootstyle
 
 M = 3 # meter image scale, higher number increases resolution
+MIN_METER_SIZE = math.ceil(20 / M)
+MIN_METER_THICKNESS = 1
 
 class CustomMeter(ttk.Frame):
     """A radial meter that can be used to show progress of long
@@ -227,14 +229,20 @@ class CustomMeter(ttk.Frame):
         self._bindids = {}
         super().__init__(master=master, **kwargs)
         # now that widget has been initialized, scale sizes
-        self._metersize = utility.scale_size(self, self._metersize_raw)
-        self._meterthickness = utility.scale_size(self, self._meterthickness_raw)
+        self._metersize = self._scale_metersize(self._metersize_raw)
+        self._meterthickness = self._scale_meterthickness(self._meterthickness_raw)
         self._set_arc_offset_range(metertype, arcoffset, arcrange)
         self._setup_widget()
 
         self.amountusedvar.trace_add("write", self._draw_meter)
         self._draw_base_image()
         self._draw_meter()
+
+    def _scale_metersize(self, size: int) -> int:
+        return max(MIN_METER_SIZE, utility.scale_size(self, size))
+
+    def _scale_meterthickness(self, thickness: int) -> int:
+        return max(MIN_METER_THICKNESS, utility.scale_size(self, thickness))
 
 
     def _setup_widget(self):
@@ -666,7 +674,7 @@ class CustomMeter(ttk.Frame):
             self._subtextstyle = kwargs.pop("subtextstyle")
             self.subtext.configure(bootstyle=[self._subtextstyle, "meter"])
         if "metersize" in kwargs:
-            self._metersize = utility.scale_size(kwargs.pop("metersize"))
+            self._metersize = self._scale_metersize(kwargs.pop("metersize"))
             self.meterframe.configure(
                 height=self._metersize, width=self._metersize
             )
@@ -676,7 +684,7 @@ class CustomMeter(ttk.Frame):
         if "metertype" in kwargs:
             self._metertype = kwargs.pop("metertype")
         if "meterthickness" in kwargs:
-            self._meterthickness = utility.scale_size(
+            self._meterthickness = self._scale_meterthickness(
                 kwargs.pop("meterthickness")
             )
         if "stripethickness" in kwargs:
