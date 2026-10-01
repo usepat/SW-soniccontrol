@@ -98,6 +98,7 @@ _cols_descale = {
     EFieldName.GAIN.name.lower(): tb.UInt8Col(), #type: ignore
     EFieldName.SIGNAL.name.lower(): tb.BoolCol(), #type: ignore
     EFieldName.IRMS.name.lower(): tb.UInt32Col(), #type: ignore
+    EFieldName.IPP.name.lower(): tb.UInt32Col(), #type: ignore
     EFieldName.TEMPERATURE.name.lower(): tb.UInt32Col() #type: ignore
 }
 # table added in version 2.1.0
