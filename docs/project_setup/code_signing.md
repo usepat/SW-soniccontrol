@@ -45,6 +45,23 @@ Signing both the application and the installer gives better results with SmartSc
 
 On Windows, the usual tool is `signtool.exe` from the Windows SDK.
 
+If PowerShell reports that `signtool` is not recognized, the SDK is either not installed or its versioned binary directory is not on `PATH`. Locate the newest installed x64 copy and add its directory for the current PowerShell session:
+
+```powershell
+$signTool = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' |
+  Sort-Object { [version]$_.Directory.Parent.Name } -Descending |
+  Select-Object -First 1 -ExpandProperty FullName
+
+if (-not $signTool) {
+  throw 'SignTool was not found. Install the Windows SDK, including Signing Tools for Desktop Apps.'
+}
+
+$env:Path = "$(Split-Path $signTool);$env:Path"
+signtool /?
+```
+
+For example, a common installed path is `C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe`. Run the setup block in every new terminal, or call that full path directly.
+
 The `/f` argument must point to an existing certificate file on disk, typically a `.pfx`. In the examples below, `soniccontrol-signing.pfx` is a filename, not a certificate nickname or Windows certificate store entry.
 
 ```powershell

@@ -3,6 +3,7 @@ import asyncio
 from sonic_protocol.schema import DeviceType
 from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
+from soniccontrol import commands
 from soniccontrol_gui.constants import ui_labels
 import pytest_asyncio
 from sonic_pytest.gui.workflows import fill_out_experiment_data, send_over_serial_monitor, start_ramp_capture, start_spectrum_measure_capture
@@ -12,9 +13,25 @@ async def reset_experiment_state(device_window=None) -> None:
     controller = GuiController()
     controller.switch_to_tab(widget_names.MEASURING_TAB)
 
-    await send_over_serial_monitor("!stop", allow_fail=True)
-    await send_over_serial_monitor("!OFF", allow_fail=True)
-    await controller.execute_events_until_idle()
+    updater = None if device_window is None else getattr(device_window, "_updater", None)
+    device = None if device_window is None else getattr(device_window, "device", None)
+    paused_updater = bool(updater is not None and updater.running.is_set())
+
+    if paused_updater:
+        await updater.stop()
+
+    try:
+        if device is not None:
+            await device.execute_command(commands.SetStop(), raise_exception=False)
+            await device.execute_command(commands.SetOff(), raise_exception=False)
+        else:
+            await send_over_serial_monitor("!stop", allow_fail=True)
+            await send_over_serial_monitor("!OFF", allow_fail=True)
+        await controller.execute_events_until_idle()
+    finally:
+        if paused_updater and updater is not None and device is not None and device.communicator.connection_opened.is_set():
+            updater.start()
+            await controller.execute_events_until_idle()
 
     for _ in range(4):
         label_control_button = controller.get_widget_text(widget_names.MEASURING_CONTROL_BUTTON)
@@ -144,7 +161,7 @@ async def test_procedure_stops_if_capture_ends():
 @pytest.mark.allowed_devices(DeviceType.MVP_WORKER)
 @pytest.mark.asyncio(loop_scope="package")
 async def test_experiment_capture_ends_if_spectrum_measure_finishes():
-    await start_spectrum_measure_capture()
+    await start_spectrum_measure_capture(f_stop="102000")
 
     controller = GuiController()
     label_control_button = await controller.wait_for_widget_text_to_equal(

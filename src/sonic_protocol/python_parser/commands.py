@@ -408,6 +408,13 @@ class ClearErrors(Command):
         super().__init__(code=CommandCode.CLEAR_ERRORS)
 
 @attrs.define()
+class DebugTest(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.DEBUG_TEST)
+
+    index: int = attrs.field(alias=EFieldName.INDEX.name)
+
+@attrs.define()
 class GetTestInfo(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.GET_TEST_INFO)

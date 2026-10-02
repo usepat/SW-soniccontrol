@@ -56,7 +56,7 @@ class Protocol_v3_1_0(ProtocolList):
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:
         command_contract_dict = self._previous_protocol._get_command_contracts_for(protocol_type)
 
-        if protocol_type.device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE]:
+        if protocol_type.device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.POSTMAN]:
             command_contract_dict[debug_test_command.code] = debug_test_command
 
         new_commands = [

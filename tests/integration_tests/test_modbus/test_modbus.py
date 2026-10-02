@@ -1,14 +1,15 @@
-import contextlib
-from typing import NamedTuple
 import asyncio
+import contextlib
 import logging
+from typing import NamedTuple
 
 import pytest
 import pytest_asyncio
 from pymodbus.client import AsyncModbusSerialClient
 from pymodbus.exceptions import ModbusIOException
 from sonic_protocol.schema import DeviceType
-from soniccontrol import RemoteController, commands, Parity
+from soniccontrol import Parity, RemoteController, commands
+from sonic_pytest.plugin_data import SonicControlPlugin, get_sonic_control_plugin
 from sonic_pytest.remote_controller.fixtures import (
     apply_modbus_user_settings,
     connect_via_serial_port,
@@ -40,6 +41,27 @@ class ModbusClientContext(NamedTuple):
     parity: str
     stopbits: int
     maintenance_controller: RemoteController
+
+
+class ModbusTestContext(NamedTuple):
+    plugin: SonicControlPlugin
+    serial_port: str
+    modbus_serial_port: str
+
+
+def get_modbus_test_context(request) -> ModbusTestContext:
+    plugin = get_sonic_control_plugin(request.config)
+    serial_port: str | None = plugin.serial_port
+    modbus_serial_port: str | None = plugin.modbus_serial_port
+
+    if plugin.is_simulation:
+        pytest.skip("These modbus test do not work for the simulation right now")
+    if serial_port is None or modbus_serial_port is None:
+        pytest.skip("Both maintenance and modbus serial ports are required for modbus compliance tests")
+    if serial_port == modbus_serial_port:
+        pytest.skip("Maintenance and modbus serial ports need to be different")
+
+    return ModbusTestContext(plugin, serial_port, modbus_serial_port)
 
 
 async def close_modbus_client(client: AsyncModbusSerialClient, settle_time_s: float = 0.25) -> None:
@@ -132,15 +154,9 @@ async def assert_modbus_client_responds(modbus_client: ModbusClientContext) -> N
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package")
 async def remote_controller(request):
-    plugin = request.config._sonic_control_plugin
-    serial_port: str | None = plugin.serial_port
-    modbus_serial_port: str | None = plugin.modbus_serial_port
-    if plugin.is_simulation:
-        pytest.skip("These modbus test do not work for the simulation right now")
-    if serial_port is None or modbus_serial_port is None:
-        pytest.skip("Both maintenance and modbus serial ports are required for modbus compliance tests")
-    if serial_port == modbus_serial_port:
-        pytest.skip("Maintenance and modbus serial ports need to be different")
+    ctx = get_modbus_test_context(request)
+    plugin = ctx.plugin
+    serial_port = ctx.serial_port
     maintenance_controller = await connect_via_serial_port(serial_port, plugin.remote_server_url, plugin.log_path)
     try:
         await maintenance_controller.stop_running_processes()
@@ -158,12 +174,11 @@ async def remote_controller(request):
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
 async def default_remote_test_setup(request):
+    ctx = get_modbus_test_context(request)
     yield
 
-    plugin = request.config._sonic_control_plugin
-    serial_port: str | None = plugin.serial_port
-    if plugin.is_simulation or serial_port is None:
-        return
+    plugin = ctx.plugin
+    serial_port = ctx.serial_port
 
     restore_logger = logging.getLogger(__name__)
     maintenance_controller: RemoteController | None = None
@@ -202,12 +217,10 @@ async def default_remote_test_setup(request):
 ])
 async def modbus_client(request, remote_controller):
     baudrate, parity, slave_id = request.param
-    plugin = request.config._sonic_control_plugin
-    serial_port: str | None = plugin.serial_port
-    port: str | None = plugin.modbus_serial_port
-
-    if serial_port is None:
-        pytest.skip("No maintenance serial port was set. Skip modbus compliance tests")
+    ctx = get_modbus_test_context(request)
+    plugin = ctx.plugin
+    serial_port = ctx.serial_port
+    port = ctx.modbus_serial_port
     
     if parity == "E":
         prot_parity = Parity.EVEN
@@ -231,9 +244,6 @@ async def modbus_client(request, remote_controller):
             commands.RestartDevice(),
         )
 
-        if port is None:
-            pytest.skip("No modbus serial port was set. Skip modbus compliance tests")
-
         stopbits = 1 if prot_parity != Parity.NO else 2
         client = await create_modbus_client(port, baudrate, parity, stopbits)
         try:
@@ -251,12 +261,10 @@ async def modbus_client(request, remote_controller):
 ])
 async def modbus_persistence_client(request, remote_controller):
     baudrate, parity, slave_id = request.param
-    plugin = request.config._sonic_control_plugin
-    serial_port: str | None = plugin.serial_port
-    port: str | None = plugin.modbus_serial_port
-
-    if serial_port is None:
-        pytest.skip("No maintenance serial port was set. Skip modbus compliance tests")
+    ctx = get_modbus_test_context(request)
+    plugin = ctx.plugin
+    serial_port = ctx.serial_port
+    port = ctx.modbus_serial_port
 
     if parity == "E":
         prot_parity = Parity.EVEN
@@ -281,9 +289,6 @@ async def modbus_persistence_client(request, remote_controller):
             commands.RestartDevice(),
         )
 
-        if port is None:
-            pytest.skip("No modbus serial port was set. Skip modbus compliance tests")
-
         stopbits = 1 if prot_parity != Parity.NO else 2
         client = await create_modbus_client(port, baudrate, parity, stopbits)
         try:
@@ -295,7 +300,7 @@ async def modbus_persistence_client(request, remote_controller):
 
 @pytest.mark.allowed_devices(DeviceType.POSTMAN, DeviceType.MVP_WORKER, DeviceType.DESCALE)
 @pytest.mark.asyncio(loop_scope="package")
-async def test_modbus_write_and_read_multiple_registers(modbus_client: AsyncModbusSerialClient):
+async def test_modbus_write_and_read_multiple_registers(modbus_client: ModbusClientContext):
     # note. first register should be 0, 
     # because that address corresponds to the execute_command_flag, 
     # that we do not want to set

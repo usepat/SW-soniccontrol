@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 from typing import Any, Callable, Dict
 
@@ -79,6 +80,8 @@ class PostmanStatusBar(UIComponent):
 
 
 class PostmanHomeTab(UIComponent):
+    WORKER_WINDOW_CONNECT_TIMEOUT_S = 15.0
+
     def __init__(self, parent: UIComponent, device: SonicDevice, connection_name: str):
         self._logger = logging.getLogger(parent.logger.name + "." + PostmanHomeTab.__name__)
         try:
@@ -86,6 +89,7 @@ class PostmanHomeTab(UIComponent):
             self._connection_name = connection_name
             self._worker_device_window: DeviceWindow | None = None
             self._is_connected = asyncio.Event()
+            self._worker_window_opened_future: asyncio.Future[DeviceWindow] | None = None
 
             self._view = PostmanHomeTabView(parent.view, parent_widget_name=parent.component_name)
             super().__init__(parent, self._view, self._logger)
@@ -98,41 +102,107 @@ class PostmanHomeTab(UIComponent):
             add_logger_context_to_exception(e, self.logger)
             raise e
 
+    @staticmethod
+    def _create_worker_window_opened_future() -> asyncio.Future[DeviceWindow]:
+        future = asyncio.get_event_loop().create_future()
+
+        def _consume_exception(done_future: asyncio.Future[DeviceWindow]) -> None:
+            if done_future.cancelled():
+                return
+            with contextlib.suppress(Exception):
+                done_future.exception()
+
+        future.add_done_callback(_consume_exception)
+        return future
+
+    async def _cleanup_failed_worker_connection(
+        self,
+        worker_device: SonicDevice | None = None,
+        worker_window: DeviceWindow | None = None,
+    ) -> None:
+        self._is_connected.clear()
+        self._worker_device_window = None
+
+        if worker_window is not None:
+            with contextlib.suppress(Exception):
+                await worker_window._shutdown_before_close()
+            with contextlib.suppress(Exception):
+                await worker_window._close_communication_safely()
+            with contextlib.suppress(Exception):
+                worker_window.view.close()
+            return
+
+        if worker_device is not None:
+            with contextlib.suppress(Exception):
+                await worker_device.communicator.close_communication()
+
+    async def _open_worker_window(self) -> DeviceWindow:
+        builder = DeviceBuilder(logger=self._logger)
+        proxy_comm = PostmanProxyCommunicator(self._device.communicator)
+        worker_device = await builder.build_amp(proxy_comm)
+        worker_window: DeviceWindow | None = None
+
+        try:
+            await worker_device.stop_running_processes()
+            worker_window = KnownDeviceWindow(worker_device, self._view.root, self._connection_name)
+            self._worker_device_window = worker_window
+            worker_window.view.focus_set()
+            worker_device.communicator.subscribe(Communicator.DISCONNECTED_EVENT, self._on_close_communication_worker)
+            worker_window.subscribe(DeviceWindow.CLOSE_EVENT, self._on_close_communication_worker)
+            worker_window.subscribe(DeviceWindow.RECONNECT_EVENT, lambda _: self._on_connect_to_worker())
+            await worker_window.wait_finished_loading()
+        except Exception:
+            await self._cleanup_failed_worker_connection(worker_device=worker_device, worker_window=worker_window)
+            raise
+
+        worker_window.start_background_tasks()
+        self._is_connected.set()
+        return worker_window
+
     @async_handler
     async def _on_connect_to_worker(self):
         self._view.enable_connection_button(False)
 
         assert self._worker_device_window is None, "there exists already a device window for the worker"
+        self._worker_window_opened_future = self._create_worker_window_opened_future()
 
         try:
-            builder = DeviceBuilder(logger=self._logger)
-            proxy_comm = PostmanProxyCommunicator(self._device.communicator)
-            worker_device = await builder.build_amp(proxy_comm)
+            worker_window = await asyncio.wait_for(
+                self._open_worker_window(),
+                timeout=self.WORKER_WINDOW_CONNECT_TIMEOUT_S,
+            )
         except Exception as e:
             self._logger.error(e)
-            message = ui_labels.COULD_NOT_CONNECT_MESSAGE.format(str(e))
+            if self._worker_window_opened_future is not None and not self._worker_window_opened_future.done():
+                self._worker_window_opened_future.set_exception(e)
+
+            if isinstance(e, TimeoutError):
+                message = (
+                    "Timed out while waiting for the worker window to open over Postman. "
+                    "Ensure the worker is in modbus mode and reachable by the Postman."
+                )
+            else:
+                message = f"Could not connect to the worker due to error:\n{e}"
+
+            await self._cleanup_failed_worker_connection(worker_window=self._worker_device_window)
             MessageBox.show_error(self._view.root, message)
 
             self._view.enable_connection_button(True)
         else:
-            await worker_device.stop_running_processes()
-            self._worker_device_window = KnownDeviceWindow(
-                worker_device, self._view.root, self._connection_name)
-            self._worker_device_window.view.focus_set()
-            worker_device.communicator.subscribe(Communicator.DISCONNECTED_EVENT, self._on_close_communication_worker)
-            self._worker_device_window.subscribe(DeviceWindow.CLOSE_EVENT, self._on_close_communication_worker)  
-            self._worker_device_window.subscribe(DeviceWindow.RECONNECT_EVENT, lambda _: self._on_connect_to_worker())
-            await self._worker_device_window.wait_finished_loading()
-            self._worker_device_window.start_background_tasks()
-            self._is_connected.set()
+            if self._worker_window_opened_future is not None and not self._worker_window_opened_future.done():
+                self._worker_window_opened_future.set_result(worker_window)
 
     async def wait_until_worker_window_loaded(self) -> DeviceWindow:
         """
             This function is only used for testing
         """
-        await self._is_connected.wait()
-        assert self._worker_device_window is not None
-        return self._worker_device_window
+        while True:
+            worker_window_opened_future = self._worker_window_opened_future
+            if worker_window_opened_future is not None:
+                await worker_window_opened_future
+                return worker_window_opened_future.result()
+
+            await asyncio.sleep(0)
 
     @async_handler
     async def _on_close_communication_worker(self, e: Event):

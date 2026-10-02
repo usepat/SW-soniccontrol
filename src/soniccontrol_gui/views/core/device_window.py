@@ -18,6 +18,7 @@ from soniccontrol.scripting.new_scripting import NewScriptingFacade
 from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.view import TabView, View
+from soniccontrol_gui.view import initialize_toplevel_view
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.procedures.procedure_controller import ProcedureController
 from soniccontrol.scripting.interpreter_engine import InterpreterEngine
@@ -45,6 +46,7 @@ from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
 from soniccontrol_gui.widgets.notebook import Notebook
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.constants import files
+from soniccontrol_gui.utils.tk_scaling import ensure_valid_tk_scaling
 import traceback
 
 
@@ -366,6 +368,7 @@ class DeviceWindowView(tk.Toplevel, View):
     def __init__(self, root, *args, **kwargs) -> None:
         title = kwargs.pop("title", "Device Window")
         super().__init__(root, *args, **kwargs)
+        initialize_toplevel_view(self)
         self.title(title)
         self.geometry('1200x800')
         self.minsize(600, 400)

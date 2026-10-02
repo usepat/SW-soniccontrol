@@ -1,14 +1,31 @@
 import asyncio
 import logging
-from soniccontrol.fw_device.connection import Connection
-from soniccontrol.communication.message_protocol import SonicMessageProtocol
-from soniccontrol.utils.events import Event
-from .serial_communicator import Communicator
 from async_tkinter_loop import async_handler
 
+from sonic_protocol.command_codes import CommandCode, ICommandCode
+from soniccontrol.communication.message_protocol import SonicMessageProtocol
+from soniccontrol.communication.serial_communicator import Communicator
+from soniccontrol.fw_device.connection import Connection
+from soniccontrol.utils.events import Event
+
 class PostmanProxyCommunicator(Communicator):
+    MAX_TIMEOUT_RETRIES = 3
+    TIMEOUT_RESPONSE_MARKER = "Timeout occurred"
+    WORKER_BUSY_RESPONSE_MARKER = "Cannot propagate command to subordinate, because still waiting for answer to previous command"
+    RETRY_DELAY_S = 0.1
+    WORKER_BUSY_RETRY_DELAY_S = 0.5
+    MAX_WORKER_BUSY_WAIT_S = 120.0
+    NON_IDEMPOTENT_TIMEOUT_COMMANDS = {
+        CommandCode.SET_RAMP,
+        CommandCode.SET_WIPE,
+        CommandCode.SET_SCAN,
+        CommandCode.SET_TUNE,
+        CommandCode.SET_AUTO,
+    }
+
     def __init__(self, communicator: Communicator):
         self._communicator = communicator
+        self._logger = logging.getLogger(type(self).__name__)
         self._connection_opened = asyncio.Event()
         super().__init__()
 
@@ -40,8 +57,43 @@ class PostmanProxyCommunicator(Communicator):
 
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str: 
         # add an address prefix to all messages, so that the postman understands, it need to forward those to the worker
-        return await self._communicator.send_and_wait_for_response(
-            request, addr_prefix=SonicMessageProtocol.ADDR_PREFIX_WORKER, **kwargs)
+        response = ""
+        worker_busy_deadline = None
+        for attempt in range(self.MAX_TIMEOUT_RETRIES):
+            response = await self._communicator.send_and_wait_for_response(
+                request, addr_prefix=SonicMessageProtocol.ADDR_PREFIX_WORKER, **kwargs
+            )
+            if self.WORKER_BUSY_RESPONSE_MARKER in response:
+                if worker_busy_deadline is None:
+                    worker_busy_deadline = asyncio.get_running_loop().time() + self.MAX_WORKER_BUSY_WAIT_S
+
+                if asyncio.get_running_loop().time() >= worker_busy_deadline:
+                    return response
+
+                self._logger.warning(
+                    "Retrying Postman proxy request after busy worker response until subordinate is free: %s -> %s",
+                    request,
+                    response,
+                )
+                await asyncio.sleep(self.WORKER_BUSY_RETRY_DELAY_S)
+                continue
+
+            if self.TIMEOUT_RESPONSE_MARKER not in response:
+                return response
+
+            if attempt + 1 == self.MAX_TIMEOUT_RETRIES:
+                return response
+
+            self._logger.warning(
+                "Retrying Postman proxy request after transient worker response (%d/%d): %s -> %s",
+                attempt + 1,
+                self.MAX_TIMEOUT_RETRIES,
+                request,
+                response,
+            )
+            await asyncio.sleep(self.RETRY_DELAY_S)
+
+        return response
 
     async def read_message(self) -> str: 
         """

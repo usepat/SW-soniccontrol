@@ -1,6 +1,3 @@
-from soniccontrol_gui.widgets.message_box import DialogOptions
-
-
 POSTMAN = "postman"
 
 def widget_of_window(window_name: str, widget_name: str) -> str:
@@ -48,6 +45,7 @@ HOME_FIRMWARE_VERSION_LABEL = 'home.firmware_version_label'
 HOME_PROTOCOL_VERSION_LABEL = 'home.protocol_version_label'
 HOME_DISCONNECT_BUTTON = 'home.disconnect_button'
 HOME_FREQUENCY_ENTRY = 'home.Home Controls.frequency.entry_str'
+HOME_FREQUENCY_ENTRY_UNIT = 'home.Home Controls.frequency.unit_combobox'
 HOME_SIGNAL_BUTTON = 'home.Home Controls.signal.checkbutton'
 HOME_GAIN_VAR = 'home.gain_var'
 HOME_GAIN_ENTRY = 'home.Home Controls.gain.entry_str'
@@ -98,20 +96,28 @@ CONFIGURATION_BROWSE_FILES_ENTRY = 'configuration.Transducer Config.init_script_
 CONFIGURATION_BROWSE_FILES_BUTTON = 'configuration.Transducer Config.init_script_path.browse_files_button'
 
 CONFIGURATION_AT_CONFIG_1_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atf.entry_str'
+CONFIGURATION_AT_CONFIG_1_ATF_ENTRY_UNIT = 'configuration.Transducer Config.atconfigs.Item 1.atf.unit_combobox'
 CONFIGURATION_AT_CONFIG_1_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.atk.entry_str'
 CONFIGURATION_AT_CONFIG_1_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 1.att.entry_str'
+CONFIGURATION_AT_CONFIG_1_ATT_ENTRY_UNIT = 'configuration.Transducer Config.atconfigs.Item 1.att.unit_combobox'
 
 CONFIGURATION_AT_CONFIG_2_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atf.entry_str'
+CONFIGURATION_AT_CONFIG_2_ATF_ENTRY_UNIT = 'configuration.Transducer Config.atconfigs.Item 2.atf.unit_combobox'
 CONFIGURATION_AT_CONFIG_2_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.atk.entry_str'
 CONFIGURATION_AT_CONFIG_2_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 2.att.entry_str'
+CONFIGURATION_AT_CONFIG_2_ATT_ENTRY_UNIT = 'configuration.Transducer Config.atconfigs.Item 2.att.unit_combobox'
 
 CONFIGURATION_AT_CONFIG_3_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atf.entry_str'
+CONFIGURATION_AT_CONFIG_3_ATF_ENTRY_UNIT = 'configuration.Transducer Config.atconfigs.Item 3.atf.unit_combobox'
 CONFIGURATION_AT_CONFIG_3_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.atk.entry_str'
 CONFIGURATION_AT_CONFIG_3_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 3.att.entry_str'
+CONFIGURATION_AT_CONFIG_3_ATT_ENTRY_UNIT = 'configuration.Transducer Config.atconfigs.Item 3.att.unit_combobox'
 
 CONFIGURATION_AT_CONFIG_4_ATF_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atf.entry_str'
+CONFIGURATION_AT_CONFIG_4_ATF_ENTRY_UNIT = 'configuration.Transducer Config.atconfigs.Item 4.atf.unit_combobox'
 CONFIGURATION_AT_CONFIG_4_ATK_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.atk.entry_str'
 CONFIGURATION_AT_CONFIG_4_ATT_ENTRY = 'configuration.Transducer Config.atconfigs.Item 4.att.entry_str'
+CONFIGURATION_AT_CONFIG_4_ATT_ENTRY_UNIT = 'configuration.Transducer Config.atconfigs.Item 4.att.unit_combobox'
 
 # Procedure Controlling constants
 PROC_CONTROLLING_PROCEDURE_COMBOBOX = 'proc_controlling.procedure_combobox'
@@ -135,8 +141,11 @@ RAMP_GAIN = 'proc_controlling.Ramp.gain.entry_str'
 # Spectrum Measure
 SPECTRUM_MEASURE_GAIN = "spectrum_measure.Spectrum Measure.gain.entry_str"
 SPECTRUM_MEASURE_F_START = "spectrum_measure.Spectrum Measure.f_start.entry_str"
+SPECTRUM_MEASURE_F_START_UNIT = "spectrum_measure.Spectrum Measure.f_start.unit_combobox"
 SPECTRUM_MEASURE_F_STOP = "spectrum_measure.Spectrum Measure.f_stop.entry_str"
+SPECTRUM_MEASURE_F_STOP_UNIT = "spectrum_measure.Spectrum Measure.f_stop.unit_combobox"
 SPECTRUM_MEASURE_F_STEP = "spectrum_measure.Spectrum Measure.f_step.entry_str"
+SPECTRUM_MEASURE_F_STEP_UNIT = "spectrum_measure.Spectrum Measure.f_step.unit_combobox"
 SPECTRUM_MEASURE_T_ON_TIME = "spectrum_measure.Spectrum Measure.t_on.time_str"
 SPECTRUM_MEASURE_T_ON_UNIT = "spectrum_measure.Spectrum Measure.t_on.unit_str"
 SPECTRUM_MEASURE_T_OFF_TIME = "spectrum_measure.Spectrum Measure.t_off.time_str"

@@ -20,18 +20,18 @@ from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
 from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
 from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
-from soniccontrol_gui.view import View
+from soniccontrol_gui.view import View, initialize_toplevel_view
 from soniccontrol.fw_device.connection import CLIConnection, Connection, ModbusConnection
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.logger.utils import create_logger_for_connection
 from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE
+from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol_gui.utils.animator import Animator, DotAnimationSequence, load_animation
 from soniccontrol_gui.constants import sizes, style, ui_labels, files
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.device_window import DeviceWindow, RescueWindow
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.widgets.message_box import DialogOptions, MessageBox
-from soniccontrol.communication.serial_communicator import SerialCommunicator
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.builder import DeviceBuilder, StartupMode
 
@@ -41,7 +41,6 @@ class ConnectionMode(Enum):
     LEGACY_CRYSTAL = "legacy_crystal"
     CONFIGURATOR = "configurator"
     DIAGNOSTICS_TOOL = "diagnostics_tool"
-
 
 CONNECTION_MODE_ENV_VAR = "SONICCONTROL_CONNECTION_MODES"
 
@@ -277,8 +276,10 @@ class ConnectionWindow(TopLevelWindow):
         def decorate_connection_func(connection_func: Callable[[Connection, bool, StartupMode], Coroutine[Any, Any, Any]]):
             # the wrapper is responsible for setting the future and is_connecting variable, as well as handling errors
             async def _wrapper(_connection: Connection, is_legacy_device: bool = False, startup_mode: StartupMode = StartupMode.DEFAULT):
-                window_opened_future = self._create_window_opened_future()
-                self._window_opened_future = window_opened_future
+                window_opened_future = self._window_opened_future
+                if window_opened_future is None or window_opened_future.done():
+                    window_opened_future = self._create_window_opened_future()
+                    self._window_opened_future = window_opened_future
 
                 try:
                     window = await connection_func(_connection, is_legacy_device, startup_mode)
@@ -305,7 +306,7 @@ class ConnectionWindow(TopLevelWindow):
             return animation_decorator(_wrapper)
 
         self._is_connecting = False
-        self._window_opened_future = self._create_window_opened_future()
+        self._window_opened_future: asyncio.Future[DeviceWindow] | None = None
         self._attempt_connection = decorate_connection_func(self._device_window_manager.attempt_connection)
         self._attempt_reconnection = decorate_connection_func(self._device_window_manager.attempt_reconnection)
         self._device_window_manager.set_attempt_reconnect_callback(self._attempt_reconnection)
@@ -337,14 +338,19 @@ class ConnectionWindow(TopLevelWindow):
 
         It may throw an exception, if some errors occurs during loading. 
         """
-        window_opened_future = self._window_opened_future
-        await window_opened_future
-        return window_opened_future.result()
+        while True:
+            window_opened_future = self._window_opened_future
+            if window_opened_future is not None:
+                await window_opened_future
+                return window_opened_future.result()
+
+            await asyncio.sleep(0)
 
 
     @async_handler
     async def _on_connect_via_url(self):
         assert (not self._is_connecting), "already connecting"
+        self._window_opened_future = self._create_window_opened_future()
         
         dev_display_name = self._view.get_dev_name()
         if dev_display_name == '':
@@ -367,6 +373,7 @@ class ConnectionWindow(TopLevelWindow):
     async def _on_connect_to_simulation(self):
         assert (not self._is_connecting)
         assert self._simulation_exe_path is not None
+        self._window_opened_future = self._create_window_opened_future()
         self._is_connecting = True
 
         bin_file = self._simulation_exe_path 
@@ -405,6 +412,7 @@ class ConnectionWindow(TopLevelWindow):
 class ConnectionWindowView(ttk.Window, View):
     def __init__(self, show_simulation_button: bool, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        initialize_toplevel_view(self)
 
         window_name: str = "connection"
         enabled_connection_modes = get_enabled_connection_modes()

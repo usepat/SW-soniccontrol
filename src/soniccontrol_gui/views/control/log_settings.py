@@ -1,9 +1,9 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 import asyncio
-from typing import Callable, List
+from collections.abc import Callable
 from async_tkinter_loop import async_handler
-from soniccontrol.logger.logger_discovery import AbstractLogger, LoggerDiscovery, Loglevel
+from soniccontrol.logger.logger_discovery import AbstractLogger, DeviceLoggerDiscovery, LoggerDiscovery, Loglevel
 from soniccontrol.sonic_device import CommandExecutionError, CommandValidationError
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -75,9 +75,10 @@ class LogSettingsTab(UIComponent):
         super().__init__(parent, self._view)
 
         self._lock = asyncio.Lock()
-        self._logger_entries: List[LoggerEntry] = []
-        
-        self.top_level_window.pass_loading_task(self._reload_loggers())
+        self._logger_entries: list[LoggerEntry] = []
+
+        if not isinstance(self._logger_discovery, DeviceLoggerDiscovery):
+            self._view.after_idle(async_handler(self._reload_loggers))
 
         self._view.set_reload_loggers_command(async_handler(self._reload_loggers))
 

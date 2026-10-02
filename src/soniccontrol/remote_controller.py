@@ -22,7 +22,11 @@ from soniccontrol.data_capturing.capture import Capture
 from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureSpectrumArgs, CaptureSpectrumMeasure, CaptureTarget, CaptureTargets
 from soniccontrol.data_capturing.experiment import Experiment, ExperimentMetaData
 from soniccontrol.fw_device import create_connection_to_device, redetect_connection, resolve_current_device_info
-from soniccontrol.logger.utils import create_logger_for_connection
+from soniccontrol.logger.utils import (
+    REMOTE_CONTROLLER_LOG_ROTATION_BACKUP_COUNT,
+    REMOTE_CONTROLLER_LOG_ROTATION_MAX_BYTES,
+    create_logger_for_connection,
+)
 from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE, DEFAULT_MODBUS_PARITY
 from soniccontrol.procedures.procedure import ProcedureArgs
 from soniccontrol.procedures.procedure_controller import ProcedureController, ProcedureType
@@ -238,7 +242,12 @@ class RemoteController:
         restart_executor: Callable[[Command, "RemoteController"], Awaitable["RemoteController"]] | None = None,
         protocol_factories: Optional[Dict[DeviceType, ProtocolList]] = None,
     ) -> "RemoteController":
-        logger = create_logger_for_connection(connection.connection_name, log_path if log_path is not None else Path("."))   
+        logger = create_logger_for_connection(
+            connection.connection_name,
+            log_path if log_path is not None else Path("."),
+            max_bytes=REMOTE_CONTROLLER_LOG_ROTATION_MAX_BYTES,
+            backup_count=REMOTE_CONTROLLER_LOG_ROTATION_BACKUP_COUNT,
+        )
 
         device = await RemoteController._build_device_with_retry(
             connection,

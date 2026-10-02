@@ -1,22 +1,22 @@
 import asyncio
-import attrs
 import logging
 from typing import Callable
+
+import attrs
 import ttkbootstrap as ttk
+from async_tkinter_loop import async_handler
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.protocols.protocol_v3_0_0.protocol_v3_0_0 import Parity, UartInterface
+from sonic_protocol.protocols.protocol_v3_0_0.protocol_v3_0_0 import Parity
+from soniccontrol import commands
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE, DEFAULT_MODBUS_PARITY, DEFAULT_MODBUS_SLAVE_ID
-from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.utils.widget_registry import WidgetRegistry
-from soniccontrol_gui.view import TabView, View
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol_gui.resources import images
+from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.image_loader import ImageLoader
-from async_tkinter_loop import async_handler
-from soniccontrol import commands
-
+from soniccontrol_gui.utils.widget_registry import WidgetRegistry
+from soniccontrol_gui.view import TabView, View
 from soniccontrol_gui.widgets.form_widget import FormWidget
 from soniccontrol_gui.widgets.message_box import MessageBox
 
@@ -25,7 +25,6 @@ from soniccontrol_gui.widgets.message_box import MessageBox
 class ModbusSettings:
     parity: Parity = attrs.field(default=DEFAULT_MODBUS_PARITY)
     baudrate: int = attrs.field(default=DEFAULT_MODBUS_BAUDRATE)
-    # interface: UartInterface = attrs.field(default=UartInterface.RS485)
     server_address: int = attrs.field(default=DEFAULT_MODBUS_SLAVE_ID)
 
 @attrs.define()
@@ -47,11 +46,11 @@ class DeviceSettingsTab(UIComponent):
 
         super().__init__(parent, self._view, self._logger)
         self._view.set_apply_settings_command(self._apply_settings)
-        self._view.set_load_settings_command(self._load_settings)
+        self._view.set_load_settings_command(async_handler(self._load_settings))
         self._view.set_update_datetime_command(async_handler(self._device.update_datetime))
 
         if not isinstance(device.communicator, ModbusCommunicator):
-            self._load_settings()
+            self.top_level_window.pass_loading_task(self._load_settings())
 
 
     @async_handler
@@ -66,7 +65,6 @@ class DeviceSettingsTab(UIComponent):
         self._view.set_apply_settings_button_enabled(False)
         try:
             await self._device.execute_command(commands.SetModbusBaudrate(modbus_settings.baudrate))
-            # await self._device.execute_command(commands.SetModbusInterface(modbus_settings.interface))
             await self._device.execute_command(commands.SetModbusParity(modbus_settings.parity))
             await self._device.execute_command(commands.SetModbusServerAddress(modbus_settings.server_address))
         except asyncio.CancelledError:
@@ -77,7 +75,6 @@ class DeviceSettingsTab(UIComponent):
             self._view.set_apply_settings_button_enabled(True)
 
 
-    @async_handler
     async def _load_settings(self) -> None:
         if not self._device.has_command(commands.GetModbusSettings()):
             return
@@ -88,7 +85,6 @@ class DeviceSettingsTab(UIComponent):
             modbus_settings=ModbusSettings(
                 parity=answer[EFieldName.PARITY],
                 baudrate=answer[EFieldName.BAUDRATE],
-                # interface=answer[EFieldName.UART_INTERFACE],
                 server_address=answer[EFieldName.MODBUS_SERVER_ID],
             )
         )
