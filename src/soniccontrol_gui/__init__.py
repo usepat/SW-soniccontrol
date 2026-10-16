@@ -4,6 +4,7 @@ import traceback
 
 from PIL import Image
 
+from soniccontrol.plugin_discovery import register_protocol_plugins
 from soniccontrol_gui.plugins.ui_plugin import register_ui_plugins
 from soniccontrol_gui.widgets.message_box import MessageBox
 Image.CUBIC = Image.BICUBIC # FIX: because ttk.bootstrap sets an deprecated, removed value
@@ -26,7 +27,7 @@ from soniccontrol.app_config import APP_CONFIG, AppConfig, System, PLATFORM, get
 from soniccontrol_gui.constants import files
 from soniccontrol_gui.resources import resources
 from importlib import resources as rs
-from soniccontrol_gui.plugins.device_plugin import register_device_plugins
+from soniccontrol_gui.plugins.device_window_plugin import register_device_window_plugins
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 
 # create directories if missing
@@ -82,7 +83,8 @@ def start_gui(remote_server_url: str | None):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    register_device_plugins()
+    register_protocol_plugins()
+    register_device_window_plugins()
     register_ui_plugins()
 
     in_dev_env = "FIRMWARE_BUILD_DIR_PATH" in os.environ

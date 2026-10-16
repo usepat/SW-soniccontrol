@@ -1,25 +1,18 @@
-from importlib import metadata
-import sys
 from typing import List, Set
 
 import attrs
 import abc
 import tkinter as tk
 
-from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol.plugin_discovery import discover_plugins
-from soniccontrol_gui.ui_component import UIComponent
-from soniccontrol_gui.view import View
 from soniccontrol_gui.views.core.device_window import DeviceWindow, KnownDeviceWindow
-from importlib.metadata import entry_points
 
 from soniccontrol_gui.views.core.postman_window import PostmanDeviceWindow
 from soniccontrol_gui.views.core.diagnostics_window import DiagnosticsWindow
 
-from soniccontrol_gui.constants import _Files
 
 
 class WindowFactoryBase(abc.ABC):
@@ -41,51 +34,49 @@ class DiagnosticsWindowFactory(WindowFactoryBase):
 
 
 @attrs.define(hash=True)
-class DevicePlugin:
+class DeviceWindowPlugin:
     """
     A Plugin for a device. It should define how to create the device window and 
     which protocol should be used for communication (configurator uses its completely own protocol.)
     """
     device_type: DeviceType
     window_factory: WindowFactoryBase
-    protocol_factory: ProtocolList
 
 
-class DevicePluginRegistry:
-    _registered_plugins: Set[DevicePlugin] = set()
-
-    @staticmethod
-    def register_device_plugin(plugin: DevicePlugin):
-        DevicePluginRegistry._registered_plugins.add(plugin)
+class DeviceWindowPluginRegistry:
+    _registered_plugins: Set[DeviceWindowPlugin] = set()
 
     @staticmethod
-    def get_device_plugins() -> List[DevicePlugin]:
-        return list(DevicePluginRegistry._registered_plugins)
+    def register_plugin(plugin: DeviceWindowPlugin):
+        DeviceWindowPluginRegistry._registered_plugins.add(plugin)
+
+    @staticmethod
+    def get_plugins() -> List[DeviceWindowPlugin]:
+        return list(DeviceWindowPluginRegistry._registered_plugins)
 
 
-_operator_protocol_factory = LatestProtocol()
 
-DevicePluginRegistry.register_device_plugin(
-    DevicePlugin(DeviceType.MVP_WORKER, KnownDeviceWindowFactory(), _operator_protocol_factory)
+DeviceWindowPluginRegistry.register_plugin(
+    DeviceWindowPlugin(DeviceType.MVP_WORKER, KnownDeviceWindowFactory())
 )
-DevicePluginRegistry.register_device_plugin(
-    DevicePlugin(DeviceType.DESCALE, KnownDeviceWindowFactory(), _operator_protocol_factory)
+DeviceWindowPluginRegistry.register_plugin(
+    DeviceWindowPlugin(DeviceType.DESCALE, KnownDeviceWindowFactory())
 )
-DevicePluginRegistry.register_device_plugin(
-    DevicePlugin(DeviceType.UNKNOWN, KnownDeviceWindowFactory(), _operator_protocol_factory)
+DeviceWindowPluginRegistry.register_plugin(
+    DeviceWindowPlugin(DeviceType.UNKNOWN, KnownDeviceWindowFactory())
 )
-DevicePluginRegistry.register_device_plugin(
-    DevicePlugin(DeviceType.CRYSTAL, KnownDeviceWindowFactory(), _operator_protocol_factory)
+DeviceWindowPluginRegistry.register_plugin(
+    DeviceWindowPlugin(DeviceType.CRYSTAL, KnownDeviceWindowFactory())
 )
-DevicePluginRegistry.register_device_plugin(
-    DevicePlugin(DeviceType.POSTMAN, PostmanDeviceWindowFactory(), _operator_protocol_factory)
+DeviceWindowPluginRegistry.register_plugin(
+    DeviceWindowPlugin(DeviceType.POSTMAN, PostmanDeviceWindowFactory())
 )
-DevicePluginRegistry.register_device_plugin(
-    DevicePlugin(DeviceType.DIAGNOSTICS_TOOL, DiagnosticsWindowFactory(), _operator_protocol_factory)
+DeviceWindowPluginRegistry.register_plugin(
+    DeviceWindowPlugin(DeviceType.DIAGNOSTICS_TOOL, DiagnosticsWindowFactory())
 )
 
-def register_device_plugins():
-    group = "soniccontrol_gui.device_plugins"
+def register_device_window_plugins():
+    group = "soniccontrol_gui.device_window_plugins"
 
     for plugin in discover_plugins(group):
-        DevicePluginRegistry.register_device_plugin(plugin)
+        DeviceWindowPluginRegistry.register_plugin(plugin)

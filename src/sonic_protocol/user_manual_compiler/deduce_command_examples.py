@@ -13,15 +13,16 @@ from sonic_protocol.user_manual_compiler.command_example_utils import (
     deduce_single_command_example_for_contract,
 )
 from sonic_protocol.python_parser.commands import Command
+from soniccontrol.plugin_discovery import register_protocol_plugins
     
 
 def _build_protocol(protocol_version: Version, device_type: DeviceType, is_release: bool):
-    from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry, register_device_plugins
+    from sonic_protocol.plugin import ProtocolPluginRegistry
 
-    register_device_plugins()
+    register_protocol_plugins()
     protocol_factories = {
         plugin.device_type: plugin.protocol_factory
-        for plugin in DevicePluginRegistry.get_device_plugins()
+        for plugin in ProtocolPluginRegistry.get_plugins()
     }
     protocol_factory = protocol_factories.get(device_type, operator_protocol_factory)
     return protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))

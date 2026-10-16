@@ -9,9 +9,10 @@ from soniccontrol import DeviceType, commands as cmds
 from soniccontrol.app_config import APP_CONFIG, PLATFORM, System
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.data_capturing.device_performance.performance_monitor import PerformanceMonitor
+from soniccontrol.plugin_discovery import register_protocol_plugins
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.constants import ui_labels
-from soniccontrol_gui.plugins.device_plugin import register_device_plugins
+from soniccontrol_gui.plugins.device_window_plugin import register_device_window_plugins
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
@@ -51,7 +52,8 @@ async def connection_window(request):
     
     ImageLoader.clear_resources()
     WidgetRegistry.set_up(loop)
-    register_device_plugins()
+    register_protocol_plugins()
+    register_device_window_plugins()
 
     connection_window = ConnectionWindow(simulation_exe_path)
     await connection_window.wait_finished_loading()

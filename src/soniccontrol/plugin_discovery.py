@@ -3,6 +3,9 @@ import sys
 from typing import Any, List
 import logging
 
+from sonic_protocol.plugin import ProtocolPlugin, ProtocolPluginRegistry
+from sonic_protocol.protocol import protocol_list as operator_protocol
+from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import PLUGIN_DIR
 
 
@@ -42,3 +45,8 @@ def discover_plugins(group: str) -> List[Any]:
                     logger.warning("Could not load plugin: %s", str(e))
 
     return plugins
+
+def register_protocol_plugins():
+    group = "sonic_protocol.protocol_plugins"
+    for plugin in discover_plugins(group):
+        ProtocolPluginRegistry.register_plugin(plugin)

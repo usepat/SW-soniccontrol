@@ -10,13 +10,14 @@ from async_tkinter_loop import async_handler
 import ttkbootstrap as ttk
 import tkinter as tk
 
+from sonic_protocol.plugin import ProtocolPluginRegistry
 from sonic_protocol.python_parser import commands
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, redetect_connection
 from soniccontrol.network.connection import RemoteServerConnection
-from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
+from soniccontrol_gui.plugins.device_window_plugin import DeviceWindowPluginRegistry
 from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
 from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -133,7 +134,7 @@ class DeviceWindowManager:
         logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
         logger.debug("Established serial connection")
 
-        protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in DevicePluginRegistry.get_device_plugins() }
+        protocol_factories = { plugin.device_type: plugin.protocol_factory for plugin in ProtocolPluginRegistry.get_plugins() }
         device_builder = DeviceBuilder(protocol_factories=protocol_factories, logger=logger)
         modbus_retry_count = 0
 
@@ -196,7 +197,7 @@ class DeviceWindowManager:
         if device_type != DeviceType.UNKNOWN:
             logger.info("Created device successfully, open device window")
 
-            device_plugin = next((plugin for plugin in DevicePluginRegistry.get_device_plugins() if plugin.device_type == device_type), None)
+            device_plugin = next((plugin for plugin in DeviceWindowPluginRegistry.get_plugins() if plugin.device_type == device_type), None)
             assert device_plugin is not None, f"No plugin found for the device type {device_type.name}"
 
             device_window = device_plugin.window_factory(sonicamp, self._root, connection.connection_name, is_legacy_device=is_legacy_device)
