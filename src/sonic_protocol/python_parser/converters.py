@@ -81,7 +81,7 @@ class EnumConverter(Converter):
             return self._target_enum_class(int(text))
         # Return the corresponding enum member, case-insensitive match on value or name
         for enum_member in self._target_enum_class:
-            if text.lower() == str(enum_member.value).lower() or text.lower() == enum_member.name.lower():
+            if text.lower() == str(enum_member.value).lower():
                 return enum_member
         raise ValueError(f"No matching enum member found for '{text}' in {self._target_enum_class}")
     

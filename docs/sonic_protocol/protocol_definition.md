@@ -44,6 +44,10 @@ Field Types are the most basic component. They describe a single data value. the
 It is also used for validation by describing what the allowed values are or min and max values of the field.  
 For that a Device Parameter Constant can be used, that are referenced over a Device parameter Constant Type.
 
+### NumStrEnum
+
+Instead of using plain Enums, IntEnums or Enums with strings use directly NumStrEnum. There should you define for each Member a NumStrValue that consists of an index and string. This is needed so that we have for each enum member a hardcoded numeric value and string for identification. This avoids a lot of issues. For example auto() makes the enum members dependent on the ordering, so this is bad. Also pure str enums have the same problem for modbus as we have to use their index as enum member identifier. And on pure IntEnums we have issues that we have to use the name instead of the value. This can conflict with internal coding guide lines, where enum member names always have to be upper case.
+
 ### Constants
 
 @see sonic_protocol.schema.DeviceParamConstants

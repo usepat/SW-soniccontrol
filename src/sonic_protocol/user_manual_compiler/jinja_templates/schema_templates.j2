@@ -276,13 +276,15 @@
                     </div>
                 </caption>
                 <colgroup>
-                    <col class="w-[9%]" />
-                    <col class="w-[91%]" />
+                    <col class="w-[10%]" />
+                    <col class="w-[45%]" />
+                    <col class="w-[45%]" />
                 </colgroup>
                     <thead class="text-left text-xs text-slate-600">
                         <tr>
                             <th class="pr-4">Index</th>
                             <th>Name</th>
+                            <th>Value</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -290,6 +292,7 @@
                             <tr class="border-t border-slate-100">
                                 <td class="py-1.5 pr-4 font-mono text-slate-600">{{ i }}</td>
                                 <td class="py-1.5 text-slate-800">{{ add_wbr_before_underscore(enum_member.name) | safe }}</td>
+                                <td class="py-1.5 text-slate-800">{{ add_wbr_before_underscore(enum_member.value) | safe }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>

@@ -2,7 +2,7 @@ import asyncio
 import logging
 import struct
 from datetime import datetime
-from enum import Enum
+from enum import Enum, IntEnum
 import time
 from typing import Any, Optional
 
@@ -16,7 +16,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
 from sonic_protocol.python_parser.answer import Answer, ValidationStatus
 from sonic_protocol.python_parser.commands import Command, FlashUSB, GetSwf, GetUpdateDescale, RestartDevice, SetOff, SetOn, SetSwf
-from sonic_protocol.schema import BuildType, CommandContract, CommandParamDef, DeviceType, FieldType, ProtocolType, Timestamp, Version
+from sonic_protocol.schema import BuildType, CommandContract, CommandParamDef, DeviceType, FieldType, NumStrEnum, NumStrValue, ProtocolType, Timestamp, Version
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.fw_device.connection import Connection, ModbusConnection
 
@@ -242,7 +242,7 @@ class ModbusCommunicator(Communicator):
                         return int(value)
                     raise ValueError(f"{value} is not a valid {enum_type.__name__}")
 
-        if isinstance(member.value, int):
+        if isinstance(member.value, (int, NumStrValue)):
             return int(member.value)
 
         members = firmware_member_order if firmware_member_order is not None else tuple(enum_type)
@@ -254,8 +254,7 @@ class ModbusCommunicator(Communicator):
         if not members:
             raise ValueError(f"Enum {enum_type.__name__} has no members")
 
-        first_value = members[0].value
-        if isinstance(first_value, int):
+        if isinstance(enum_type, (IntEnum, NumStrEnum)):
             return enum_type(raw_value)
 
         return members[raw_value]

@@ -40,6 +40,35 @@ class Version:
         else:
             raise TypeError("The type cannot be converted into a version")
         
+
+@attrs.define(hash=True, eq=True)
+class NumStrValue:
+    """
+        Because we use modbus and a text based protocol, we
+        need for enum values a string and number presentation,
+        that needs to be hardcoded (no use of auto(), because then it depends on ordering)
+    """
+    num_val: int
+    str_val: str
+
+    def __str__(self) -> str:
+            return self.str_val
+    
+    def __int__(self) -> int:
+        return self.num_val
+
+    def __index__(self) -> int:
+        return self.num_val
+
+class NumStrEnum(Enum):
+    @classmethod
+    def _missing_(cls, value):
+        for member in cls:
+            if isinstance(value, str) and value == member.value.str_val:
+                return member
+            if isinstance(value, int) and value == member.value.num_val:
+                return member
+        return None
         
 class IEFieldName(IntEnum):
     ...
@@ -47,34 +76,34 @@ class IEFieldName(IntEnum):
 class ICommandCode(IntEnum):
     ...
 
-class BuildType(Enum):
-    DEBUG = "DEBUG"
-    RELEASE = "RELEASE"
+class BuildType(NumStrEnum):
+    DEBUG = NumStrValue(0, "DEBUG")
+    RELEASE = NumStrValue(1, "RELEASE")
 
-class DeviceType(Enum):
-    DESCALE = "descale"
-    MVP_WORKER = "mvp_worker"
-    POSTMAN = "postman"
-    CRYSTAL = "crystal"
-    UNKNOWN = "unknown"
-    CONFIGURATOR = "configurator"
-    SIMULATION = "simulation"
-    DIAGNOSTICS_TOOL = "diagnostics_tool"
+class DeviceType(NumStrEnum):
+    DESCALE = NumStrValue(0, "descale")
+    MVP_WORKER = NumStrValue(1, "mvp_worker")
+    POSTMAN = NumStrValue(2, "postman")
+    CRYSTAL = NumStrValue(3, "crystal")
+    UNKNOWN = NumStrValue(4, "unknown")
+    CONFIGURATOR = NumStrValue(5, "configurator")
+    SIMULATION = NumStrValue(6, "simulation")
+    DIAGNOSTICS_TOOL = NumStrValue(7, "diagnostics_tool")
 
-class TransducerState(Enum):
-    IDLE = "idle"
-    BUSY = "busy"
-    TRANSDUCER_NOT_CONNECTED = "not connected"
-    TRANSDUCER_TOO_HOT = "too hot"
-    TRANSDUCER_SHORTED = "shorted"
-    TRANSDUCER_NOT_SUBMERGED = "not submerged"
-    TRANSDUCER_CHARACTERISTICS_CHANGED = "characteristics changed"
+class TransducerState(NumStrEnum):
+    IDLE = NumStrValue(0, "idle")
+    BUSY = NumStrValue(1, "busy")
+    TRANSDUCER_NOT_CONNECTED = NumStrValue(2, "not connected")
+    TRANSDUCER_TOO_HOT = NumStrValue(3, "too hot")
+    TRANSDUCER_SHORTED = NumStrValue(4, "shorted")
+    TRANSDUCER_NOT_SUBMERGED = NumStrValue(5, "not submerged")
+    TRANSDUCER_CHARACTERISTICS_CHANGED = NumStrValue(6, "characteristics changed")
 
-class SystemState(Enum):
-    OK = "ok"
-    RECOVERED = "recovered"
-    NO_COMM = "no comm"
-    COMPONENT_DAMAGED = "damaged"
+class SystemState(NumStrEnum):
+    OK = NumStrValue(0, "ok")
+    RECOVERED = NumStrValue(1, "recovered")
+    NO_COMM = NumStrValue(2, "no comm")
+    COMPONENT_DAMAGED = NumStrValue(3, "damaged")
 
 
 class SIUnit(Enum):
@@ -158,74 +187,74 @@ class SIPrefix(Enum):
         return hash(self.exponent)
 
 
-class InputSource(Enum):
-    EXTERNAL = "external" #! control by sending commands over a communication channel
-    ANALOG = "analog" #! control over pins and analog signals, that have predefined meanings
-    RELAY = "relay" #! control over pins and digital signals, that have predefined meanings
-    DIGITAL = "digital" #! control over pins and digital signals, that have predefined meanings
-    # MANUAL = "manual" #! control by the user pressing buttons on the device
+class InputSource(NumStrEnum):
+    EXTERNAL = NumStrValue(0, "external") #! control by sending commands over a communication channel
+    ANALOG = NumStrValue(1, "analog") #! control over pins and analog signals, that have predefined meanings
+    RELAY = NumStrValue(2, "relay") #! control over pins and digital signals, that have predefined meanings
+    DIGITAL = NumStrValue(3, "digital") #! control over pins and digital signals, that have predefined meanings
+    # MANUAL = EnumMemValue(4, "manual") #! control by the user pressing buttons on the device
     # Manual command should not be allowed to be send over serial
 
 
-class ControlMode(Enum):
-    REMOTE = "remote"
-    ANALOG = "analog"
-    DIGITAL = "digital"
-    AUTO = "auto"
+class ControlMode(NumStrEnum):
+    REMOTE = NumStrValue(0, "remote")
+    ANALOG = NumStrValue(1, "analog")
+    DIGITAL = NumStrValue(2, "digital")
+    AUTO = NumStrValue(3, "auto")
 
-class CommunicationChannel(Enum):
-    USB = "usb"
-    RS485 = "rs485"
-    RS232 = "rs232"
+class CommunicationChannel(NumStrEnum):
+    USB = NumStrValue(0, "usb")
+    RS485 = NumStrValue(1, "rs485")
+    RS232 = NumStrValue(2, "rs232")
 
-class CommunicationProtocol(Enum):
-    SONIC = "sonic"
-    MODBUS = "modbus"
+class CommunicationProtocol(NumStrEnum):
+    SONIC = NumStrValue(0, "sonic")
+    MODBUS = NumStrValue(1, "modbus")
 
-class Procedure(Enum):
-    NO_PROC = "none"
-    AUTO = "auto"
-    TUNE = "tune"
-    SCAN = "scan"
-    WIPE = "wipe"
-    RAMP = "ramp"
-    DUTY_CYCLE = "duty_cycle"
-    ANOMALY_ROUTINE = "anomaly_routine"
+class Procedure(NumStrEnum):
+    NO_PROC = NumStrValue(0, "none")
+    AUTO = NumStrValue(1, "auto")
+    TUNE = NumStrValue(2, "tune")
+    SCAN = NumStrValue(3, "scan")
+    WIPE = NumStrValue(4, "wipe")
+    RAMP = NumStrValue(5, "ramp")
+    DUTY_CYCLE = NumStrValue(6, "duty_cycle")
+    ANOMALY_ROUTINE = NumStrValue(7, "anomaly_routine")
 
-class Anomaly(Enum):
-    SUBMERGED = "submerged"
-    AIR = "air"
-    BUBBLES = "bubbles"
+class Anomaly(NumStrEnum):
+    SUBMERGED = NumStrValue(0, "submerged")
+    AIR = NumStrValue(1, "air")
+    BUBBLES = NumStrValue(2, "bubbles")
 
 
-class Waveform(Enum):
-    SINE = "sine"
-    SQUARE = "square"
+class Waveform(NumStrEnum):
+    SINE = NumStrValue(0, "sine")
+    SQUARE = NumStrValue(1, "square")
 
-class Loglevel(Enum):
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARN = "WARN"
-    ERROR = "ERROR"
-    DISABLED = "DISABLED"
-    DEBUG_EXTENSIVE = "DEBUG_EXTENSIVE"
+class Loglevel(NumStrEnum):
+    DEBUG = NumStrValue(0, "DEBUG")
+    INFO = NumStrValue(1, "INFO")
+    WARN = NumStrValue(2, "WARN")
+    ERROR = NumStrValue(3, "ERROR")
+    DISABLED = NumStrValue(4, "DISABLED")
+    DEBUG_EXTENSIVE = NumStrValue(5, "DEBUG_EXTENSIVE")
 
 # TODO: upgrade to python 3.13 so we can use the deprecated decorator
 # @deprecated("Got replaced in protocol v3.0.0 by a simple string")
-class LoggerName(Enum):
-    APP_LOGGER = "appLogger"
-    TRANSDUCER_LOGGER = "transducerLogger"
-    HWFC_LOGGER = "hwfcLogger"
-    PROCEDURE_LOGGER = "procedureLogger"
-    GLOBAL = "global"
+class LoggerName(NumStrEnum):
+    APP_LOGGER = NumStrValue(0, "appLogger")
+    TRANSDUCER_LOGGER = NumStrValue(1, "transducerLogger")
+    HWFC_LOGGER = NumStrValue(2, "hwfcLogger")
+    PROCEDURE_LOGGER = NumStrValue(3, "procedureLogger")
+    GLOBAL = NumStrValue(4, "global")
 
-class Signal(Enum):
-    ON = "ON"
-    OFF = "OFF"
+class Signal(NumStrEnum):
+    ON = NumStrValue(0, "ON")
+    OFF = NumStrValue(1, "OFF")
 
-class Activation(Enum):
-    ACTIVATED = "activated"
-    DEACTIVATED = "deactivated"
+class Activation(NumStrEnum):
+    ACTIVATED = NumStrValue(0, "activated")
+    DEACTIVATED = NumStrValue(1, "deactivated")
 
 
 @attrs.define()

@@ -8,6 +8,7 @@ from sonic_protocol.schema import (
     CommandParamDef,
     DeviceParamConstantType,
     DeviceParamConstants,
+    NumStrValue,
     Timestamp,
     Version,
 )
@@ -128,7 +129,7 @@ def _append_type_specific_examples(param_limits: List[Any], param_def: CommandPa
     elif _is_enum_field_type(field_type):
         enum_members = list(getattr(field_type, "__members__", {}))
         for enum in enum_members:
-            _append_unique(param_limits, enum.lower() if isinstance(enum, str) else enum)
+            _append_unique(param_limits, str(enum).lower() if isinstance(enum, (NumStrValue, str)) else enum)
 
     elif issubclass(field_type, numbers.Integral) and not issubclass(field_type, bool) and len(param_limits) == 0:
         param_limits.append(0)
