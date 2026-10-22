@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import ctypes
 import traceback
 
 from PIL import Image
@@ -54,17 +55,45 @@ def setup_fonts() -> None:
     for font_resource in resources.FONTS.iterdir():
         if fnmatch.fnmatch(font_resource.name, "*.ttf"):
             font_files.append(str(font_resource))
+
+    if PLATFORM == System.WINDOWS:
+        install_windows_fonts(font_files)
+        return
+
     try:
         process = subprocess.run(
             [
                 str(rs.files(f"soniccontrol_gui.bin.font-install.{sys.platform}").joinpath("font-install")),
-                *list(font for font in font_files),
+                *font_files,
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL # Devnull, so that they do not print to the command line
         )
         if process.returncode != 0:
             raise RuntimeError("Failed to install fonts")
     except Exception:
         soniccontrol_logger.warning("Failed to install fonts", exc_info=True)
+
+
+def install_windows_fonts(font_files: list[str]) -> None:
+    FR_PRIVATE = 0x10
+    gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
+    add_font_resource_ex = gdi32.AddFontResourceExW
+    add_font_resource_ex.argtypes = [ctypes.c_wchar_p, ctypes.c_uint, ctypes.c_void_p]
+    add_font_resource_ex.restype = ctypes.c_int
+
+    loaded_fonts = 0
+
+    for font_file in font_files:
+        added = add_font_resource_ex(font_file, FR_PRIVATE, None)
+        if added == 0:
+            soniccontrol_logger.warning("Failed to load font %s", font_file)
+            continue
+
+        loaded_fonts += added
+
+    if loaded_fonts == 0:
+        soniccontrol_logger.warning("No bundled fonts were loaded on Windows")
+    else:
+        soniccontrol_logger.info("Loaded %s bundled font resources on Windows", loaded_fonts)
 
 
 check_high_dpi_windows()
