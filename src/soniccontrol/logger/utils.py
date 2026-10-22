@@ -1,8 +1,14 @@
 import logging
 import logging.handlers
-from pathlib import Path
 import os
+from pathlib import Path
 import re
+
+
+DEFAULT_LOG_ROTATION_MAX_BYTES = 40_000
+DEFAULT_LOG_ROTATION_BACKUP_COUNT = 3
+REMOTE_CONTROLLER_LOG_ROTATION_MAX_BYTES = 1024 * 1024 * 1024
+REMOTE_CONTROLLER_LOG_ROTATION_BACKUP_COUNT = 5
 
 
 def is_sub_logger(child: logging.Logger, parent: logging.Logger) -> bool:
@@ -21,7 +27,13 @@ def _sanitize_log_stem(connection_name: str) -> str:
     sanitized_name = re.sub(r"[^A-Za-z0-9._-]+", "_", connection_name).strip("._-")
     return sanitized_name or "connection"
 
-def create_logger_for_connection(connection_name: str, out_dir=Path(".")) -> logging.Logger:
+def create_logger_for_connection(
+    connection_name: str,
+    out_dir=Path("."),
+    *,
+    max_bytes: int = DEFAULT_LOG_ROTATION_MAX_BYTES,
+    backup_count: int = DEFAULT_LOG_ROTATION_BACKUP_COUNT,
+) -> logging.Logger:
     logger = logging.getLogger(connection_name)
     logger.setLevel(logging.DEBUG)
     os.makedirs(out_dir, exist_ok=True)
@@ -29,8 +41,8 @@ def create_logger_for_connection(connection_name: str, out_dir=Path(".")) -> log
     log_file_path.parent.mkdir(parents=True, exist_ok=True)
     log_file_handler = logging.handlers.RotatingFileHandler(
         log_file_path,
-        maxBytes=40000,
-        backupCount=3
+        maxBytes=max_bytes,
+        backupCount=backup_count,
     )
     detailed_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)s:%(funcName)s - %(message)s - exception: %(exc_info)s")
     log_file_handler.setFormatter(detailed_formatter)

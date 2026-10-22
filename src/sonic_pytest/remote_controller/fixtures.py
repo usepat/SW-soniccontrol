@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
 from sonic_protocol.field_names import EFieldName
-from sonic_protocol.schema import ControlMode, DeviceParamConstants, Loglevel, Version
+from sonic_protocol.schema import DeviceParamConstants, Version
 from soniccontrol import DeviceParamConstantType
 from soniccontrol import commands as cmds
 from sonic_protocol.python_parser import commands
@@ -18,7 +18,7 @@ from soniccontrol.fw_device.connection import CLIConnection, ModbusConnection
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, resolve_current_device_info
 from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE, DEFAULT_MODBUS_PARITY, DEFAULT_MODBUS_SLAVE_ID
 from soniccontrol import RemoteController, DeviceType
-from sonic_pytest.remote_controller.asserts import send_command_and_check_response
+from sonic_pytest.device_setup import apply_default_test_setup_over_remote_controller, reset_remote_controller_test_state
 from sonic_pytest.plugin_data import SonicControlPlugin, get_sonic_control_plugin, mark_modbus_device_prepared, modbus_device_preparation_is_required
 from sonic_pytest.fixtures import create_worker_process_impl
 
@@ -26,14 +26,7 @@ from sonic_pytest.fixtures import create_worker_process_impl
 create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope="package", loop_scope="package")
 
 async def reset_remote_controller_state(remote_controller: RemoteController) -> None:
-    if not remote_controller._device._uses_modbus():
-        await send_command_and_check_response(remote_controller, commands.SetLogLevel("global", Loglevel.ERROR))
-
-    await send_command_and_check_response(remote_controller, commands.SetControlMode(ControlMode.REMOTE))
-    await send_command_and_check_response(remote_controller, commands.ClearErrors())
-    await send_command_and_check_response(remote_controller, commands.SonicForce())
-    await send_command_and_check_response(remote_controller, commands.SetStop(), raise_exception = False, check_command_not_permitted=True)
-    await send_command_and_check_response(remote_controller, commands.SetOff())
+    await reset_remote_controller_test_state(remote_controller)
 
 
 def resolve_protocol_arg(arg, consts: DeviceParamConstants | None = None):
@@ -273,12 +266,14 @@ async def build_remote_controller_with_restart(
     assert controller.is_connected, "Controller not connected to device"
     actual_device_type = controller.device_info.device_type
     assert actual_device_type == device_type, f"Expected to connect to a {device_type} but instead connected to a {actual_device_type}"
-
     if device_type == DeviceType.POSTMAN:
         worker_controller = await controller.connect_to_worker()
         await worker_controller.stop_updater()
         await worker_controller.stop_running_processes()
+        await apply_default_test_setup_over_remote_controller(worker_controller, worker_controller.device_info.device_type)
         return worker_controller
+
+    await apply_default_test_setup_over_remote_controller(controller, actual_device_type)
 
     return controller
 
@@ -359,8 +354,22 @@ async def remote_controller(request, tmp_path_factory, create_worker_process, pa
             await controller.disconnect()
 
 
+
+def _is_last_test_in_module(request) -> bool:
+    items = list(request.session.items)
+    current_item = request.node
+    current_index = items.index(current_item)
+    current_module = current_item.module
+
+    for next_item in items[current_index + 1 :]:
+        if next_item.module is current_module:
+            return False
+
+    return True
+
+
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
-async def performance_monitor(remote_controller):
+async def performance_monitor(remote_controller, request):
     device = remote_controller.device
     monitor = PerformanceMonitor(device)
 
@@ -369,6 +378,12 @@ async def performance_monitor(remote_controller):
     was_updater_running = remote_controller._updater.running.is_set()
     if was_updater_running:
         await remote_controller.stop_updater()
+
+    if not _is_last_test_in_module(request):
+        if was_updater_running and remote_controller.is_connected():
+            remote_controller.start_updater()
+        return
+
     # TODO maybe add an option to enable this(force perfomance monitor), but with this the test just take forever
     not_modbus = not isinstance(device.communicator, PostmanProxyCommunicator)
     if device.communicator.connection_opened.is_set() and device.has_command(cmds.GetNumAllocators()) and not_modbus:

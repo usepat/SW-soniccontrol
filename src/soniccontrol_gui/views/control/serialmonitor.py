@@ -160,14 +160,15 @@ class SerialMonitorView(TabView):
         self._output_frame: ttk.Labelframe = ttk.Labelframe(
             self._main_frame, text=ui_labels.OUTPUT_LABEL
         )
-        self._scrolled_frame: ScrolledFrame = ScrolledFrame(
-            self._output_frame, autohide=True
+
+        self._monitor_text: ttk.Text = ttk.Text(
+            self._output_frame
         )
-        self._monitor_frame: ttk.Frame = ttk.Frame(
-            self._scrolled_frame
-        )
+        self._scrollbar = ttk.Scrollbar(self._output_frame, orient="vertical", command=self._monitor_text.yview)
+
+        self._monitor_text.configure(state=ttk.DISABLED, yscrollcommand=self._scrollbar.set)
         self._loading_label: ttk.Label = ttk.Label(
-            self._scrolled_frame,
+            self._output_frame,
             text="",
             font=("Consolas", 10)
         )
@@ -203,7 +204,7 @@ class SerialMonitorView(TabView):
         WidgetRegistry.register_widget(self._read_button, "read_button", tab_name)
         WidgetRegistry.register_widget(self.command_line_input_entry, "command_line_input_entry", tab_name)
         WidgetRegistry.register_widget(self._send_button, "send_button", tab_name)
-        WidgetRegistry.register_widget(self._monitor_frame, "scroll_frame", tab_name)
+        WidgetRegistry.register_widget(self._monitor_text, "text", tab_name)
         WidgetRegistry.register_widget(self._loading_label, "loading_label", tab_name)
 
     def _initialize_publish(self) -> None:
@@ -218,20 +219,20 @@ class SerialMonitorView(TabView):
             pady=sizes.MEDIUM_PADDING,
             padx=sizes.LARGE_PADDING,
         )
-        self._scrolled_frame.pack(
-            expand=True,
-            fill=ttk.BOTH,
-            pady=sizes.MEDIUM_PADDING,
-            padx=sizes.MEDIUM_PADDING,
-        )
-        self._monitor_frame.pack(
-            fill=ttk.BOTH,
-            expand=True
-        )
         self._loading_label.pack(
             side=ttk.BOTTOM,
             anchor=ttk.W,
             fill=ttk.X
+        )
+        self._scrollbar.pack(
+            side=ttk.RIGHT,
+            fill=ttk.Y,
+            pady=sizes.MEDIUM_PADDING,
+            padx=sizes.MEDIUM_PADDING,
+        )
+        self._monitor_text.pack(
+            fill=ttk.BOTH,
+            expand=True
         )
 
         self._input_frame.grid(
@@ -310,12 +311,16 @@ class SerialMonitorView(TabView):
         self.command_line_input_entry.bind("<Return>", lambda _: command())
 
     def add_text_line(self, text: str):
-        ttk.Label(self._monitor_frame, text=text, font=("Consolas", 10)).pack(
-            fill=ttk.X, side=ttk.TOP, anchor=ttk.W
-        )
-        self._scrolled_frame.update_idletasks()
-        self._scrolled_frame.yview_moveto(1)
+        # disabled text cannot be modified
+        self._monitor_text.configure(state=ttk.NORMAL)
+        self._monitor_text.insert(ttk.END, text + "\n")
+        self._monitor_text.configure(state=ttk.DISABLED)
+
+        self._monitor_text.update_idletasks()
+        self._monitor_text.yview_moveto(1)
 
     def clear(self):
-        for child in self._monitor_frame.winfo_children():
-            child.destroy()
+        # disabled text cannot be modified
+        self._monitor_text.configure(state=ttk.NORMAL)
+        self._monitor_text.delete("1.0", "end")
+        self._monitor_text.configure(state=ttk.DISABLED)

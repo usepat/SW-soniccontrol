@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import pathlib
+from importlib.resources import as_file
 from threading import Lock
+from typing import ClassVar
 
 import ttkbootstrap as ttk
 
 from soniccontrol_gui.resources import resources
-from importlib.resources import as_file
 
 
 class SingletonMeta(type):
-    _instances: dict[SingletonMeta, object] = dict()
+    _instances: ClassVar[dict[SingletonMeta, object]] = {}
     _lock = Lock()
 
     def __call__(cls, *args, **kwargs):
@@ -22,21 +22,27 @@ class SingletonMeta(type):
 
 
 class ImageLoader(metaclass=SingletonMeta):
-    images: dict[str, ttk.ImageTk.PhotoImage] = {}
+    images: ClassVar[dict[str, ttk.ImageTk.PhotoImage]] = {}
+
+    @staticmethod
+    def _normalize_sizing(sizing: tuple[int, int]) -> tuple[int, int]:
+        width, height = sizing
+        return max(1, int(width)), max(1, int(height))
 
     @classmethod
     def generate_image_key(
         cls, image_name: str, sizing: tuple[int, int]
     ) -> str:
-        return f"{image_name}{sizing}"
+        normalized_sizing = cls._normalize_sizing(sizing)
+        return f"{image_name}{normalized_sizing}"
 
     @classmethod
     def _load_image_resource(
         cls, image_name: str, sizing: tuple[int, int]
     ) -> ttk.ImageTk.PhotoImage:
+        normalized_sizing = cls._normalize_sizing(sizing)
         with as_file(resources.PICTURES.joinpath(image_name)) as image:
-            bytes = image.read_bytes()
-            tk_image = ttk.Image.open(image, "r").resize(sizing)
+            tk_image = ttk.Image.open(image, "r").resize(normalized_sizing)
             return ttk.ImageTk.PhotoImage(image=tk_image)
 
     @classmethod

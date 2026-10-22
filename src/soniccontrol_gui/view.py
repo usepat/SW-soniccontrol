@@ -1,15 +1,22 @@
 import abc
-
 import ttkbootstrap as ttk
+
+from soniccontrol_gui.utils.tk_scaling import ensure_valid_tk_scaling
 
 
 TkinterView = ttk.tk.Widget | ttk.Window | ttk.Frame | ttk.LabelFrame
+
+
+def initialize_toplevel_view(window: ttk.tk.Misc) -> None:
+    ensure_valid_tk_scaling(window)
+
 
 class View(ttk.Frame):
     def __init__(self, master: TkinterView, *args, parent_widget_name: str = "", **kwargs) -> None:
         self._parent_widget_name: str = parent_widget_name
         super().__init__(master, *args, **kwargs)
         self._master: TkinterView = master
+        initialize_toplevel_view(self.root)
         self._initialize_children()
         self._initialize_publish()
 

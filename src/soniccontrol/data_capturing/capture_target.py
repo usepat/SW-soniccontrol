@@ -29,6 +29,10 @@ class CaptureTarget(abc.ABC, EventManager):
     @abc.abstractmethod
     def args(self) -> Dict[str, Any]: ...
 
+    @property
+    @abc.abstractmethod
+    def target_type(self) -> CaptureTargets: ...
+
     @abc.abstractmethod
     async def before_start_capture(self) -> None: ...
 
@@ -46,6 +50,10 @@ class CaptureFree(CaptureTarget):
     @property
     def args(self) -> Dict[str, Any]: 
         return {}
+
+    @property
+    def target_type(self) -> CaptureTargets: 
+        return CaptureTargets.FREE
 
     async def before_start_capture(self) -> None:
         # nothing needed
@@ -81,6 +89,10 @@ class CaptureScript(CaptureTarget):
     @property
     def args(self) -> Dict[str, Any]: 
         return { "script_text": self._script_args.script_text }
+
+    @property
+    def target_type(self) -> CaptureTargets: 
+        return CaptureTargets.SCRIPT
 
     def _complete_on_script_finish(self, _event: PropertyChangeEvent) -> None:
         if self._interpreter_engine.script is None:
@@ -135,6 +147,10 @@ class CaptureProcedure(CaptureTarget):
             "procedure_type": self._proc_args.procedure_type,
             "procedure_args": self._proc_args.procedure_args
         }
+    
+    @property
+    def target_type(self) -> CaptureTargets: 
+        return CaptureTargets.PROCEDURE
 
     def _notify_on_procedure_finished(self, _e: Event):
         if not self._is_capturing:
@@ -184,6 +200,10 @@ class CaptureSpectrumMeasure(CaptureTarget):
         return { 
             "spectrum_args": attrs.asdict(self._spectrum_args.spectrum_args)
         }
+
+    @property
+    def target_type(self) -> CaptureTargets: 
+        return CaptureTargets.SPECTRUM_MEASURE
 
     def _notify_on_procedure_finished(self, _e: Event):
         if not self._is_capturing:

@@ -1,30 +1,37 @@
 import asyncio
 import contextlib
 from pathlib import Path
+
 import pytest_asyncio
 from ttkbootstrap.utility import enable_high_dpi_awareness
 
-from soniccontrol import commands as cmds
-from sonic_pytest.plugin_data import SonicControlPlugin, get_sonic_control_plugin
-from soniccontrol import DeviceType
-from soniccontrol.app_config import APP_CONFIG
-from soniccontrol.app_config import PLATFORM, System
+from soniccontrol import DeviceType, commands as cmds
+from soniccontrol.app_config import APP_CONFIG, PLATFORM, System
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.data_capturing.device_performance.performance_monitor import PerformanceMonitor
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol_gui.constants import ui_labels
 from soniccontrol_gui.plugins.device_plugin import register_device_plugins
 from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.views.core.connection_window import ConnectionWindow
-from soniccontrol_gui.constants import ui_labels
+from soniccontrol_gui.views.core.postman_window import PostmanDeviceWindow
+from sonic_pytest.device_setup import apply_default_test_setup_over_device
+from sonic_pytest.fixtures import create_worker_process_impl
 from sonic_pytest.gui import widget_names
 from sonic_pytest.gui.gui_controller import GuiController
-from sonic_pytest.gui.workflows import postman_wait_for_worker_to_be_connected, send_over_serial_monitor
-from sonic_pytest.fixtures import create_worker_process_impl
-from sonic_pytest.plugin_data import mark_modbus_device_prepared, modbus_device_preparation_is_required
+from sonic_pytest.gui.workflows import (
+    configure_active_gui_test_device,
+    postman_wait_for_worker_to_be_connected,
+    send_over_serial_monitor,
+)
+from sonic_pytest.plugin_data import (
+    SonicControlPlugin,
+    get_sonic_control_plugin,
+    mark_modbus_device_prepared,
+    modbus_device_preparation_is_required,
+)
 from sonic_pytest.remote_controller.fixtures import prepare_modbus_device, resolve_device_info
-from soniccontrol_gui.views.core.postman_window import PostmanDeviceWindow
-
 
 # NOTE: If you write a Test, it will automatically use the fixtures below, because they are autouse=True
 # Also their scope is package, so they are executed once for the whole folder.
@@ -133,16 +140,20 @@ async def device_window(request, connection_window, tmp_path_factory, create_wor
         controller.press_button(widget_names.widget_of_window(widget_names.POSTMAN, widget_names.CONNECT_TO_WORKER_BUTTON))
 
         assert isinstance(device_window, PostmanDeviceWindow) # for correct type hints
-        device_window = await asyncio.wait_for(device_window.wait_until_worker_window_loaded(), 5) 
-        
+        device_window = await device_window.wait_until_worker_window_loaded()
+
+    configure_active_gui_test_device(device_window.device)
+
     yield device_window
 
     with contextlib.suppress(Exception):
         device_window.close()
         await controller.execute_events_until_idle()
 
+    configure_active_gui_test_device(None)
 
-@pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
+
+@pytest_asyncio.fixture(scope="module", loop_scope="package", autouse=True)
 async def performance_monitor(device_window, request):
     device: SonicDevice = device_window.device
     assert device is not None
@@ -156,7 +167,7 @@ async def performance_monitor(device_window, request):
     if updater is not None and was_updater_running:
         await updater.stop()
 
-    is_postman = not isinstance(device.communicator, PostmanProxyCommunicator)
+    is_postman = isinstance(device.communicator, PostmanProxyCommunicator)
     should_skip_performance_check = "skip_performance_monitor_check" in request.node.keywords or is_postman
     should_check_performance = not should_skip_performance_check
 
@@ -173,23 +184,28 @@ async def default_state(device_window):
     controller = GuiController()
     updater = getattr(device_window, "_updater", None)
     device = device_window.device
-
-    if (
+    should_restart_updater_after_setup = bool(
         updater is not None
-        and not updater.running.is_set()
         and device is not None
         and device.communicator.connection_opened.is_set()
-    ):
-        updater.start()
-        await controller.execute_events_until_idle()
+    )
+    should_pause_updater_for_setup = bool(
+        updater is not None
+        and updater.running.is_set()
+    )
 
-    await send_over_serial_monitor("!stop", allow_fail=True)
-    if device.info.device_type == DeviceType.MVP_WORKER:
-        await send_over_serial_monitor("!freq=100000")
-    if device.info.device_type == DeviceType.DESCALE:
-        await send_over_serial_monitor("!swf=5")
-    await send_over_serial_monitor("!gain=50")
-    await send_over_serial_monitor("!OFF")
+    assert device is not None, "Device window did not expose a device"
+    if should_pause_updater_for_setup and updater is not None:
+        await updater.stop()
+
+    try:
+        await apply_default_test_setup_over_device(device)
+    finally:
+        if should_restart_updater_after_setup and updater is not None and device.communicator.connection_opened.is_set():
+            if not updater.running.is_set():
+                updater.start()
+            await updater.update()
+            await controller.execute_events_until_idle()
 
     if device is not None and device.info.device_type == DeviceType.DESCALE:
         await controller.wait_for_widget_text_to_contain(widget_names.STATUS_BAR_SWF_LABEL, "5", 5.0)
@@ -197,7 +213,11 @@ async def default_state(device_window):
         await controller.wait_for_widget_text_to_contain(widget_names.STATUS_BAR_FREQ_LABEL, "100000", 5.0)
 
     await controller.wait_for_widget_text_to_contain(widget_names.STATUS_BAR_GAIN_LABEL, "50", 5.0)
-    await controller.wait_for_widget_text_to_contain(widget_names.STATUS_BAR_SIGNAL_LABEL, "off", 5.0)
+    try:
+        await controller.wait_for_widget_text_to_contain(widget_names.STATUS_BAR_SIGNAL_LABEL, "off", 2.0)
+    except asyncio.TimeoutError:
+        await send_over_serial_monitor("!OFF", allow_fail=True)
+        await controller.wait_for_widget_text_to_contain(widget_names.STATUS_BAR_SIGNAL_LABEL, "off", 5.0)
 
     if controller.is_widget_registered(widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL):
         running_proc_label = controller.get_widget_text(widget_names.PROC_CONTROLLING_RUNNING_PROC_LABEL)

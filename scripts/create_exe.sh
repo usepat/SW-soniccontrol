@@ -5,7 +5,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PYTHON_EXE="${PYTHON_EXE:-$WORKSPACE_DIR/.venv/bin/python}"
-MAIN_SCRIPT="${MAIN_SCRIPT:-$WORKSPACE_DIR/src/soniccontrol_gui/build_main.py}"
 SONIC_SCRIPT_EXAMPLES="${SONIC_SCRIPT_EXAMPLES:-$WORKSPACE_DIR/sonic_script_examples}"
 DIST_DIR="${DIST_DIR:-$WORKSPACE_DIR/build/dist}"
 WORK_DIR="${WORK_DIR:-$WORKSPACE_DIR/build/temp}"
@@ -19,8 +18,23 @@ if [[ ! -x "$PYTHON_EXE" ]]; then
   exit 1
 fi
 
-if [[ ! -f "$CREATE_EXE_PY" ]]; then
-  echo "SonicControl packaging helper not found at $CREATE_EXE_PY" >&2
+if [[ ! -f "$MAIN_SCRIPT" ]]; then
+  echo "SonicControl entrypoint not found at $MAIN_SCRIPT" >&2
+  exit 1
+fi
+
+if [[ ! -d "$SONIC_SCRIPT_EXAMPLES" ]]; then
+  echo "sonic_script_examples not found at $SONIC_SCRIPT_EXAMPLES" >&2
+  exit 1
+fi
+
+if [[ -n "$ICON_FILE" && ! -f "$ICON_FILE" ]]; then
+  echo "Icon file not found at $ICON_FILE" >&2
+  exit 1
+fi
+
+if [[ -n "$VERSION_FILE" && ! -f "$VERSION_FILE" ]]; then
+  echo "Version file not found at $VERSION_FILE" >&2
   exit 1
 fi
 

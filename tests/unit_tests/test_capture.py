@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from soniccontrol.data_capturing.capture import Capture
-from soniccontrol.data_capturing.capture_target import CaptureTarget
+from soniccontrol.data_capturing.capture_target import CaptureTarget, CaptureTargets
 
 
 class DummyTarget(CaptureTarget):
@@ -24,10 +24,15 @@ class DummyTarget(CaptureTarget):
     async def after_end_capture(self) -> None:
         await self.after_end_capture_mock()
 
+    @property
+    def target_type(self) -> CaptureTargets:
+        return CaptureTargets.FREE
+
 
 @pytest.mark.asyncio
 async def test_end_capture_emits_event_after_target_cleanup(tmp_path):
-    capture = Capture(tmp_path)
+    updater = Mock()
+    capture = Capture(tmp_path, updater)
     target = DummyTarget()
     capture._target = target
     capture._completed_capturing.clear()
@@ -49,7 +54,8 @@ async def test_end_capture_emits_event_after_target_cleanup(tmp_path):
 
 @pytest.mark.asyncio
 async def test_end_capture_unsubscribes_completion_callback(tmp_path):
-    capture = Capture(tmp_path)
+    updater = Mock()
+    capture = Capture(tmp_path, updater)
     target = DummyTarget()
     capture._target = target
     capture._completed_capturing.clear()
@@ -66,7 +72,8 @@ async def test_end_capture_unsubscribes_completion_callback(tmp_path):
 
 @pytest.mark.asyncio
 async def test_end_capture_is_idempotent(tmp_path):
-    capture = Capture(tmp_path)
+    updater = Mock()
+    capture = Capture(tmp_path, updater)
     target = DummyTarget()
     capture._target = target
     capture._completed_capturing.clear()

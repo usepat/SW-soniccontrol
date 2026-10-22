@@ -8,7 +8,8 @@ from ..protocol_v3_0_0.protocol_v3_0_0 import Protocol_v3_0_0
 from .commands import debug_test_command
 
 from .commands import (
-    get_num_files, get_file_data, get_file_info, FileType
+    get_num_files, get_file_data, get_file_info, FileType,
+    get_memory_region_info
 )
 
 
@@ -55,13 +56,14 @@ class Protocol_v3_1_0(ProtocolList):
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:
         command_contract_dict = self._previous_protocol._get_command_contracts_for(protocol_type)
 
-        if protocol_type.device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE]:
+        if protocol_type.device_type in [DeviceType.MVP_WORKER, DeviceType.DESCALE, DeviceType.POSTMAN]:
             command_contract_dict[debug_test_command.code] = debug_test_command
 
         new_commands = [
             get_num_files,
             get_file_info,
-            get_file_data
+            get_file_data,
+            get_memory_region_info
         ]
         for command in new_commands:
             command_contract_dict[command.code] = command

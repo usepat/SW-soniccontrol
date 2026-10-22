@@ -1,5 +1,7 @@
 from __future__ import annotations
 import asyncio
+from collections import deque
+from datetime import datetime, timezone, timedelta
 import time
 from typing import List
 import logging
@@ -12,7 +14,7 @@ from sonic_protocol.python_parser.answer_validator_builder import AnswerValidato
 from sonic_protocol.python_parser.command_deserializer import CommandDeserializer
 from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.python_parser.commands import Command, SetOff, SetOn
-from sonic_protocol.schema import DeviceType, ICommandCode, Protocol, Version
+from sonic_protocol.schema import DeviceType, ICommandCode, Protocol, Timestamp, Version
 from soniccontrol.communication.modbus_communicator import ModbusCommunicator
 from soniccontrol.communication.serial_communicator import Communicator
 from sonic_protocol.python_parser import commands
@@ -42,6 +44,27 @@ class CommandExecutionError(Exception):
         super().__init__(f"Device error: {error_message}")
         self.error_message = error_message
 
+
+class MovingAverage:
+    def __init__(self, n: int):
+        self.moving_window = deque(maxlen=n)
+        self._total = 0.0
+        self._avg = 0.0
+
+    def add_sample(self, new_sample: float):
+        if len(self.moving_window) == self.moving_window.maxlen:
+            self._total -= self.moving_window[0]
+
+        self.moving_window.append(new_sample)
+        self._total += new_sample
+
+        self._avg = self._total / len(self.moving_window)
+
+    @property
+    def avg(self) -> float:
+        return self._avg
+    
+
 class SonicDevice:
     def __init__(self, communicator: Communicator, protocol: Protocol, info: FirmwareInfo, 
                  should_validate_answers: bool = True, logger: logging.Logger=logging.getLogger()) -> None:
@@ -58,6 +81,8 @@ class SonicDevice:
         self._modbus_operation_lock = asyncio.Lock()
         self._modbus_pending_command_count = 0
 
+        self._ping = MovingAverage(8)        
+
         self._update_command = self._resolve_update_command()
 
 
@@ -72,6 +97,10 @@ class SonicDevice:
     @property
     def protocol(self) -> Protocol:
         return self._protocol
+
+    @property
+    def ping(self) -> float:
+        return self._ping.avg
     
     @property
     def update_command(self) -> Command | None:
@@ -89,6 +118,7 @@ class SonicDevice:
 
     def _has_pending_modbus_commands(self) -> bool:
         return self._modbus_pending_command_count > 0
+
 
     async def _send_command(self, command: Command, should_log: bool = True, **kwargs) -> Answer:
         command_contract = self._protocol.command_contracts.get(command.code)
@@ -121,6 +151,8 @@ class SonicDevice:
         
         end = time.perf_counter()
         time_needed = end - start
+
+        self._ping.add_sample(time_needed)
 
         code: ICommandCode | None = None
         if "#" in response_str:
@@ -404,4 +436,9 @@ class SonicDevice:
             pass # could throw a connection error, device may not respond anymore, because it is restarting
         except Exception as e:
             pass
+
+    async def update_datetime(self, t: datetime = datetime.now(timezone.utc)) -> None:
+        t += timedelta(seconds=self.ping / 2)
+        cmd = commands.SetDateTime(Timestamp.to_timestamp(t))
+        await self.execute_command(cmd)
         

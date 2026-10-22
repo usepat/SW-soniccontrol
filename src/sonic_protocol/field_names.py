@@ -48,6 +48,9 @@ class BaseFieldName(IEFieldName):
     DATA = 33
     FILE_INDEX = 34
 
+    ADDRESS = 35
+    EXISTS_NEXT = 36
+
 
 
 @unique
@@ -95,6 +98,9 @@ class EFieldName(IEFieldName):
     FILE_INDEX = BaseFieldName.FILE_INDEX.value
     FILE_TYPE = BaseFieldName.FILE_TYPE.value
     DATA = BaseFieldName.DATA.value
+
+    ADDRESS = BaseFieldName.ADDRESS.value
+    EXISTS_NEXT = BaseFieldName.EXISTS_NEXT.value
 
     HELP = 106
 

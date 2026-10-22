@@ -1,17 +1,17 @@
-import attrs
-import cattrs
-from soniccontrol import DeviceParamConstantType, Answer, EFieldName, DeviceType, CommandCode
-from sonic_protocol.python_parser import commands
-from soniccontrol.data_capturing.converter import register_unstructure_hooks_for_numpy
-from tests.integration_tests.test_remote.conftest import format_command, reset_remote_controller_state, resolve_protocol_arg
-
-from sonic_pytest.remote_controller.asserts import assert_answer, assert_answer_is_not_error
-import pytest
-from sonic_protocol.user_manual_compiler.deduce_command_examples import deduce_command_examples_as_commands
-import allure
 import json
-from allure_commons.lifecycle import AllureLifecycle 
-from allure_commons.model2 import Status, StatusDetails
+import logging
+
+import attrs
+import allure
+import cattrs
+import pytest
+from sonic_protocol.python_parser import commands
+from sonic_protocol.user_manual_compiler.deduce_command_examples import deduce_command_examples_as_commands
+from soniccontrol import Answer, CommandCode, DeviceParamConstantType, DeviceType, EFieldName
+from soniccontrol.data_capturing.converter import register_unstructure_hooks_for_numpy
+from sonic_pytest.remote_controller.asserts import assert_answer, assert_answer_is_not_error
+from tests.integration_tests.test_remote.conftest import reset_remote_controller_state, resolve_protocol_arg
+
 
 @pytest.mark.asyncio(loop_scope="package")
 @pytest.mark.skip_if_modbus_enabled
@@ -48,6 +48,11 @@ async def test_if_gain_can_be_set_and_retrieved(remote_controller):
 @pytest.mark.skip_remote_test_setup
 @pytest.mark.asyncio(loop_scope="package")
 async def test_deduced_commands(remote_controller, progress_writer):
+    remote_controller.device._logger.setLevel(logging.ERROR)
+    if hasattr(remote_controller.device.communicator, "_logger"):
+        # This is required because the PostmanProxy has no logger
+        remote_controller.device.communicator._logger.setLevel(logging.ERROR)
+
     @attrs.define()
     class DeducedCommandError(Exception):
         command: commands.Command = attrs.field()
@@ -59,6 +64,19 @@ async def test_deduced_commands(remote_controller, progress_writer):
             return f"Error on {self.step}-th command:\n" + \
                     f"'{self.command.code.name} {self.command.args}' returned '{self.answer.message}'\n" + \
                     f"triggered assertion: '{self.assert_msg}'"
+
+    converter = cattrs.Converter()
+    register_unstructure_hooks_for_numpy(converter)
+
+    def format_deduced_command_error(error: DeducedCommandError, total_commands: int) -> str:
+        command_args = json.dumps(converter.unstructure(error.command.args), sort_keys=True)
+        answer_code = error.answer.command_code.name if error.answer.command_code is not None else "None"
+        return (
+            f"Deduced command failure at step {error.step + 1}/{total_commands}: "
+            f"{error.command.code.name} args={command_args}; "
+            f"answer_code={answer_code}; answer_valid={error.answer.valid.name}; "
+            f"answer_message={error.answer.message!r}; assertion={error.assert_msg}"
+        )
 
 
     info = remote_controller.device_info
@@ -112,21 +130,13 @@ async def test_deduced_commands(remote_controller, progress_writer):
             except AssertionError as e:
                 if answer.message == "Modbus does not support commands with string index parameters":
                     continue
-                errors.append(DeducedCommandError(command, answer, i, str(e)))
-                lifecycle = AllureLifecycle()
-                lifecycle.update_step(
-                    lambda step_result, err=e: step_result.update(
-                        status=Status.FAILED,
-                        statusDetails=StatusDetails(message=str(err))
-                    )
-                )
-                progress_writer(f"Error: {answer}, {e}")
+                error = DeducedCommandError(command, answer, i, str(e))
+                errors.append(error)
+                error_summary = format_deduced_command_error(error, num_commands)
+                progress_writer(error_summary)
+                remote_controller.device._logger.error(error_summary)
 
         await reset_remote_controller_state(remote_controller)
-
-
-    converter = cattrs.Converter()
-    register_unstructure_hooks_for_numpy(converter)
 
     error_json = json.dumps([{ 
         "full_error_msg": str(e), 
@@ -142,7 +152,15 @@ async def test_deduced_commands(remote_controller, progress_writer):
         error_json,
         attachment_type=allure.attachment_type.JSON
     )
-    assert len(errors) == 0, "Errors occurred"
+
+    if errors:
+        error_summary = "\n".join(format_deduced_command_error(error, num_commands) for error in errors)
+        allure.attach(
+            error_summary,
+            name="deduced_command_failures",
+            attachment_type=allure.attachment_type.TEXT,
+        )
+        pytest.fail(f"Errors occurred during deduced commands:\n{error_summary}")
 
 
 @pytest.mark.asyncio(loop_scope="package")

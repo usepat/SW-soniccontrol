@@ -12,6 +12,7 @@ from soniccontrol.data_capturing.capture_target import CaptureFree, CaptureTarge
 from soniccontrol.data_capturing.data_provider import DataProvider
 from soniccontrol.data_capturing.experiment import Experiment
 from soniccontrol.data_capturing.experiment_store import DataTableDescale, DataTableWorker, ExperimentWriter, HDF5ExperimentWriter
+from soniccontrol.updater import Updater
 from soniccontrol.utils.events import Event, EventManager
 
 
@@ -20,8 +21,9 @@ class Capture(EventManager):
     START_CAPTURE_EVENT = "START_CAPTURE_EVENT"
     END_CAPTURE_EVENT = "END_CAPTURE_EVENT"
 
-    def __init__(self, output_dir: Path, logger: logging.Logger = logging.getLogger()):
+    def __init__(self, output_dir: Path, updater: Updater, logger: logging.Logger = logging.getLogger()):
         super().__init__()
+        self._updater = updater
         self._logger = logging.getLogger(logger.name + "." + Capture.__name__)
         self._completed_capturing: asyncio.Event = asyncio.Event()
         self._output_dir = output_dir
@@ -31,6 +33,14 @@ class Capture(EventManager):
         self._experiment_writer: ExperimentWriter | None = None
         self._metadata_written = False
         self._completed_capturing.set()
+
+        self._update_listener = lambda e: self.on_update(e.data["status"])
+
+    async def __aenter__(self):
+        await self.start_capture()
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        await self.end_capture()
 
     @property 
     def is_capturing(self) -> bool:
@@ -42,22 +52,26 @@ class Capture(EventManager):
     @property
     def data_provider(self) -> DataProvider:
         return self._data_provider
-    
-    async def start_capture(self, experiment: Experiment, capture_target: CaptureTarget = CaptureFree()):
-        assert self._completed_capturing.is_set()
 
+    def setup(self, experiment: Experiment, capture_target: CaptureTarget = CaptureFree()):
         self._experiment = experiment
-        self._experiment.target_parameters = capture_target.args
+        self._target = capture_target
+    
+    async def start_capture(self):
+        assert self._completed_capturing.is_set()
+        assert self._target is not None and self._experiment is not None, "You have to call setup before starting a capture"
+        
+        self._experiment.target_parameters = self._target.args
 
-        timestamp_str = experiment.date_time.strftime("%Y%m%d_%H%M%S")
+        timestamp_str = self._experiment.date_time.strftime("%Y%m%d_%H%M%S")
         file_name = self._output_dir / f"sonic_measure_{timestamp_str}"
         is_descale = self._experiment.firmware_info.device_type == DeviceType.DESCALE
         data_table_type = DataTableDescale if is_descale else DataTableWorker
         self._experiment_writer = HDF5ExperimentWriter(file_name, data_table_type)
         self._experiment_writer.write_metadata(self._experiment)
 
-        self._target = capture_target
         self._target.subscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
+        self._updater.subscribe(Updater.UPDATE_EVENT, self._update_listener)
         await self._target.before_start_capture()
         self._data_provider.clear_data()
         
@@ -83,7 +97,8 @@ class Capture(EventManager):
 
         target = self._target
 
-        self._completed_capturing.set()        
+        self._completed_capturing.set()   
+        self._updater.unsubscribe(Updater.UPDATE_EVENT, self._update_listener)     
         target.unsubscribe(CaptureTarget.COMPLETED_EVENT, self.capture_target_completed_callback)
 
         if self._experiment_writer:

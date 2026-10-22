@@ -42,6 +42,8 @@ class RemoteClient:
                     await self._check_response_ok(response)
                     data = await response.json()
 
+                await asyncio.sleep(0.5)
+
                 if data["done"]:
                     if data["exception"] is not None:
                         raise RemoteClientError(data["exception"])
