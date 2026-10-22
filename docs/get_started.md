@@ -16,6 +16,14 @@ Then open the repository in vscode.
 
 Install the right python version locally, so that you can run SonicControl. The current supported python versions are listed on the [Github Page](https://github.com/usepat/soniccontrol) or in the *pyproject.toml* file in the root directory of SonicControl. 
 
+#### Linux
+
+```
+sudo apt install python3.10 python3.10-dev python3.10-venv python3-pip
+```
+
+Depending on the python version maybe only pythonX.xx is needed. However some packages may contain already the venv, dev tools and pip and some other do not. 
+
 ### Virtual environment
 
 Open the root folder of SonicControl with your terminal of choice and initialize a python virtual environment.  
