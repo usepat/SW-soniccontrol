@@ -123,7 +123,8 @@ def start_gui(remote_server_url: str | None):
         simulation_exe_path=get_simulation_exe()
     )
     root = main_window.view
-
+    for seq in ("<MouseWheel>", "<Button-4>", "<Button-5>"):  # Win/mac + X11
+        root.unbind_class("TCombobox", seq)
     if PLATFORM != System.WINDOWS:
         soniccontrol_logger.info("Enabling high dpi awareness for DARWIN/ LINUX")
         enable_high_dpi_awareness(root)    

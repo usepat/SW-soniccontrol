@@ -28,6 +28,7 @@ class SIVarMeta:
     # Range values as tuples of (value, prefix)
     min_value: tuple[float, SIPrefix] = attrs.field(default=(0.0, SIPrefix.NONE))
     max_value: tuple[float, SIPrefix] = attrs.field(default=(1000.0, SIPrefix.NONE))
+    hidden_prefix: list[SIPrefix] = attrs.field(default=[])
 
 
 T = TypeVar("T", int, float)
@@ -193,7 +194,8 @@ TEMPERATURE_META = SIVarMeta(
     si_prefix_min=SIPrefix.MILLI, 
     si_prefix_max=SIPrefix.NONE,
     min_value=(-273.15, SIPrefix.NONE),     # Absolute zero
-    max_value=(1000.0, SIPrefix.NONE)       # 1000°C
+    max_value=(1000.0, SIPrefix.NONE),       # 1000°C
+    hidden_prefix=[SIPrefix.DECI, SIPrefix.CENTI, SIPrefix.MILLI]
 )
 
 class TemperatureSIVar(SIVar[float], si_meta=TEMPERATURE_META):
@@ -207,7 +209,8 @@ METER_META = SIVarMeta(
     si_prefix_min=SIPrefix.MILLI, 
     si_prefix_max=SIPrefix.NONE,
     min_value=(0.0, SIPrefix.MILLI),      # 0mm
-    max_value=(1000.0, SIPrefix.NONE)     # 1000m
+    max_value=(1000.0, SIPrefix.NONE),     # 1000m
+    hidden_prefix=[SIPrefix.HECTO, SIPrefix.DEKA]
 )
 
 class MeterSIVar(SIVar[float], si_meta=METER_META):
@@ -225,7 +228,8 @@ ABSOLUTE_FREQUENCY_META = SIVarMeta(
     si_prefix_min=SIPrefix.NONE, 
     si_prefix_max=SIPrefix.MEGA,
     min_value=(100000, SIPrefix.NONE),        # 100kHz
-    max_value=(10, SIPrefix.MEGA)       # 10MHz
+    max_value=(10, SIPrefix.MEGA),       # 10MHz
+    hidden_prefix=[SIPrefix.HECTO, SIPrefix.DEKA]  
 )
 
 class AbsoluteFrequencySIVar(SIVar[float], si_meta=ABSOLUTE_FREQUENCY_META):
@@ -239,7 +243,8 @@ RELATIVE_FREQUENCY_META = SIVarMeta(
     si_prefix_min=SIPrefix.NONE, 
     si_prefix_max=SIPrefix.MEGA,
     min_value=(0, SIPrefix.NONE),        # 0Hz
-    max_value=(5, SIPrefix.MEGA)       # 5MHz
+    max_value=(5, SIPrefix.MEGA),       # 5MHz
+    hidden_prefix=[SIPrefix.HECTO, SIPrefix.DEKA]
 )
 
 class RelativeFrequencySIVar(SIVar[float], si_meta=RELATIVE_FREQUENCY_META):
@@ -305,7 +310,8 @@ ATT_META = SIVarMeta(
     si_prefix_min=SIPrefix.MILLI, 
     si_prefix_max=SIPrefix.NONE,
     min_value=(-273.15, SIPrefix.NONE),       # 0°C
-    max_value=(1000.0, SIPrefix.NONE)      # 100°C
+    max_value=(1000.0, SIPrefix.NONE),      # 100°C
+    hidden_prefix=[SIPrefix.MILLI, SIPrefix.CENTI, SIPrefix.DECI]
 )
 
 class AttSiVar(SIVar[float], si_meta=ATT_META):

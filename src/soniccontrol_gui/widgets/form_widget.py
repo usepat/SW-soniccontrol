@@ -505,7 +505,7 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             # Normal case: use meta to determine allowed prefixes
             prefixes: List[SIPrefix] = []
             for p in SIPrefix:
-                if self._si_var_meta.si_prefix_min <= p <= self._si_var_meta.si_prefix_max:
+                if self._si_var_meta.si_prefix_min <= p <= self._si_var_meta.si_prefix_max and not p in self._si_var_meta.hidden_prefix:
                     prefixes.append(p)
             def _prefix_label(p: SIPrefix) -> str:
                 unit_str = self._si_var_meta.si_unit.value if self._si_var_meta else ""
@@ -1920,7 +1920,8 @@ class ObjectFieldView(FieldViewBase[dict]):
 
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
-                 title: str, form_class: type, widget_name: str, model_dict: dict | None = None, field_hooks: FieldHookRegistry = {}, use_scroll: bool = True):
+                 title: str, form_class: type, widget_name: str, model_dict: dict | None = None, field_hooks: FieldHookRegistry = {}, use_scroll: bool = True,
+                 model_change_callback: Optional[Callable[[dict], None]] = None):
         """
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
@@ -1944,7 +1945,13 @@ class FormWidget(UIComponent):
         # bind the model dict to the view
         self._model_dict = {} if model_dict is None else model_dict
         self._model_dict.update(**self._attr_view.value)
-        self._attr_view.bind_value_change(lambda value: self._model_dict.update(**value))
+
+        def update_model(value: dict) -> None:
+            self._model_dict.update(**value)
+            if model_change_callback is not None:
+                model_change_callback(self._model_dict)
+
+        self._attr_view.bind_value_change(update_model)
 
     @property
     def converter(self) -> cattrs.Converter:
@@ -1964,6 +1971,10 @@ class FormWidget(UIComponent):
             return self._converter.structure(self._attr_view.value, self._attrs_class)
         except cattrs.ClassValidationError as e:
             raise e
+
+    @property
+    def valid(self) -> bool:
+        return self._attr_view.valid
     
     @attrs_object.setter
     def attrs_object(self, value: Any):
@@ -2203,4 +2214,3 @@ class FormWidgetView(View):
 
     def hide(self) -> None:
         self.pack_forget()
-
