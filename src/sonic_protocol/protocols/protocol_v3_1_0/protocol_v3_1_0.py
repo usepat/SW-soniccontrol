@@ -8,7 +8,8 @@ from ..protocol_v3_0_0.protocol_v3_0_0 import Protocol_v3_0_0
 from .commands import debug_test_command
 
 from .commands import (
-    get_num_files, get_file_data, get_file_info, FileType
+    get_num_files, get_file_data, get_file_info, FileType,
+    get_memory_region_info
 )
 
 
@@ -61,7 +62,8 @@ class Protocol_v3_1_0(ProtocolList):
         new_commands = [
             get_num_files,
             get_file_info,
-            get_file_data
+            get_file_data,
+            get_memory_region_info
         ]
         for command in new_commands:
             command_contract_dict[command.code] = command

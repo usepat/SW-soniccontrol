@@ -1,3 +1,5 @@
+import asyncio
+import copy
 from typing import Callable
 from async_tkinter_loop import async_handler
 from ttkbootstrap.scrolled import ScrolledFrame
@@ -9,6 +11,7 @@ from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.widgets.form_widget import FormWidget
+from soniccontrol_gui.utils.debounce_job import DebounceJob
 
 import ttkbootstrap as ttk
 import attrs
@@ -56,8 +59,11 @@ class Home(UIComponent):
         # Initialize home configuration
         if device.info.device_type == DeviceType.DESCALE:
             self._config = DescaleTransducerState()
+            self._config_old = DescaleTransducerState()
         else:
             self._config = TransducerState()
+            self._config_old = TransducerState()
+        self._model_sync_lock = asyncio.Lock()
         # Adjust frequency range based on device type
                     # You can adjust min/max ranges here later
         
@@ -74,27 +80,73 @@ class Home(UIComponent):
             self._config.__class__, 
             "home",
             model_dict=attrs.asdict(self._config),
-            use_scroll=False
+            use_scroll=False,
+            model_change_callback=self._on_form_model_changed,
         )
+        self._model_change_debounce = DebounceJob(self._sync_changed_model, self._view)
         
         self._view.set_send_button_command(self._on_send_pressed)
 
+    def _on_form_model_changed(self, _: dict) -> None:
+        self._model_change_debounce()
+
+    @async_handler
+    async def _sync_changed_model(self) -> None:
+        async with self._model_sync_lock:
+            if not self._form_widget.valid:
+                return
+
+            config = self._form_widget.attrs_object
+            if isinstance(config, DescaleTransducerState):
+                assert isinstance(self._config_old, DescaleTransducerState)
+                swf = int(config.swf.to_prefix(SIPrefix.NONE))
+                if swf != int(self._config_old.swf.to_prefix(SIPrefix.NONE)):
+                    await self._device.execute_command(commands.SetSwf(swf))
+                    self._config_old.swf = copy.deepcopy(config.swf)
+            else:
+                assert isinstance(config, TransducerState)
+                assert isinstance(self._config_old, TransducerState)
+                frequency = int(config.frequency.to_prefix(SIPrefix.NONE))
+                if frequency != int(self._config_old.frequency.to_prefix(SIPrefix.NONE)):
+                    await self._device.execute_command(commands.SetFrequency(frequency))
+                    self._config_old.frequency = copy.deepcopy(config.frequency)
+
+            gain = config.gain.to_prefix(SIPrefix.NONE)
+            if gain != self._config_old.gain.to_prefix(SIPrefix.NONE):
+                await self._device.execute_command(commands.SetGain(gain))
+                self._config_old.gain = copy.deepcopy(config.gain)
+
+            if config.signal != self._config_old.signal:
+                if config.signal:
+                    await self._device.set_signal_on()
+                else:
+                    await self._device.set_signal_off()
+                self._config_old.signal = config.signal
+
     @async_handler
     async def _on_send_pressed(self) -> None:
-        gain = self.gain
-        signal = self.signal
+        async with self._model_sync_lock:
+            config = self._form_widget.attrs_object
+            if isinstance(config, DescaleTransducerState):
+                assert isinstance(self._config_old, DescaleTransducerState)
+                swf = int(config.swf.to_prefix(SIPrefix.NONE))
+                await self._device.execute_command(commands.SetSwf(swf))
+                self._config_old.swf = copy.deepcopy(config.swf)
+            else:
+                assert isinstance(config, TransducerState)
+                assert isinstance(self._config_old, TransducerState)
+                frequency = int(config.frequency.to_prefix(SIPrefix.NONE))
+                await self._device.execute_command(commands.SetFrequency(frequency))
+                self._config_old.frequency = copy.deepcopy(config.frequency)
 
-        if self._device.info.device_type == DeviceType.DESCALE:
-            swf = self.swf
-            await self._device.execute_command(commands.SetSwf(swf))
-        else:
-            freq = self.freq
-            await self._device.execute_command(commands.SetFrequency(freq))
-        await self._device.execute_command(commands.SetGain(gain))
-        if signal:
-            await self._device.set_signal_on()
-        else:
-            await self._device.set_signal_off()
+            gain = config.gain.to_prefix(SIPrefix.NONE)
+            await self._device.execute_command(commands.SetGain(gain))
+            self._config_old.gain = copy.deepcopy(config.gain)
+            if config.signal:
+                await self._device.set_signal_on()
+            else:
+                await self._device.set_signal_off()
+            self._config_old.signal = config.signal
 
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state

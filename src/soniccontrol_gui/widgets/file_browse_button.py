@@ -50,7 +50,10 @@ class FileBrowseButtonView(View):
 
     @path.setter
     def path(self, value: Optional[Path]) -> None:
-        self._path_str.set("" if value is None else str(value))
+        new_value = "" if value is None else str(value)
+        if self._path_str.get() == new_value:
+            return
+        self._path_str.set(new_value)
 
     def _browse_files(self) -> None:
         # I do not know why I have to do it this way and cant just pass None for the single keyword args.

@@ -90,3 +90,26 @@ get_file_data = CommandContract(
     group_id=GROUPS.misc,
     tags=["file"]
 )
+
+
+get_memory_region_info = CommandContract(
+    code=CommandCode.GET_MEMORY_REGION_INFO,
+    command_def=CommandDef(
+        sonic_text_attrs=SonicTextCommandAttrs(string_identifier="?memory_region_info"),
+        index_param=CommandParamDef(EFieldName.INDEX, param_type=np.uint8, user_manual_attrs=UserManualAttrs("index of the memory region"))
+    ),
+    answer_def=AnswerDef([
+        AnswerFieldDef(EFieldName.NAME, str),
+        AnswerFieldDef(EFieldName.ADDRESS, np.uint32),
+        AnswerFieldDef(EFieldName.SIZE, np.uint32),
+        AnswerFieldDef(EFieldName.EXISTS_NEXT, bool, user_manual_attrs=UserManualAttrs("if set to true, then it means that for the next index also a memory region exists. Can be used to iterate the regions like a linked list"))
+    ]),
+     user_manual_attrs=UserManualAttrs(
+        description="This function is used mainly for the bootloader. So that we can see what was installed on the pico"
+    ),
+    is_release=True,
+    is_admin_command=True,
+    group_id=GROUPS.misc,
+    tags=["memory"]
+)
+
