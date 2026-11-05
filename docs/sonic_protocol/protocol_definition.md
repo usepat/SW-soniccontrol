@@ -29,6 +29,16 @@ Each command contract has a CommandCode as unique identifier and defines a comma
 A Command Def defines which parameter the command takes. Note that we have index_param and setter_param. This has to do with the sonic text protocol syntax *!atf0=10000*, where the parameters are dependent on the syntax. So a command can only have 2 parameters max, a setter and an index. (Yes, this is because of the bad definition of the sonic text protocol. Could be refactored in the future. With keyword args we could improve this).  
 A Command Parameter Definition has a unique name and a field type.  
 
+#### Multiple args
+
+Because of the legacy syntax, we have now a bad implementation for the command args. To extend this to multiple args, I suggest just adding a field args, that is an array of param definitions. The index param and setter param field stay the same.  
+With this we can support two syntax for commands: 
+```
+!command[index](arg1, arg2, ..., argN)=setter
+!command(index, arg1, arg2, ..., argN, setter)
+```
+where in the second syntax index and setter are optional. And in the first one is only setter.
+
 ### Answer
 
 @see sonic_protocol.schema.AnswerDef

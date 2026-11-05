@@ -199,6 +199,13 @@ class EFieldName(IEFieldName):
     BAUDRATE = 201
 
     IPP = 202
+    PLUGIN_NAME= 203
+    VERSION = 204
+    NUM_VARIABLES = 205
+    NUM_ACTIONS = 205
+    TYPE = 206
+    ENABLED = 207
+    
 
     
 

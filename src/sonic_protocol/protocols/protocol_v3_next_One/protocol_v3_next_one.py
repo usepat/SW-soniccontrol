@@ -1,9 +1,16 @@
 from enum import Enum
 from typing import Any, Dict, List
 from sonic_protocol.command_codes import CommandCode, ICommandCode
-from sonic_protocol.schema import Anomaly, SystemState, TransducerState, AnswerDef, AnswerFieldDef, CommandContract, CommandDef, CommandParamDef, ControlMode, DeviceParamConstantType, DeviceType, FieldType, IEFieldName, ProtocolType, SonicTextCommandAttrs, UserManualAttrs, Version
+from sonic_protocol.schema import CommandContract, DeviceParamConstantType, DeviceType, IEFieldName, ProtocolType, Version
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
+
+from .commands.commands import (
+    get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
+    get_plugin_info, get_plugin_str_var, get_plugin_uint16_var, get_plugin_uint32_var, get_plugin_uint8_var,
+    get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, set_plugin_str_var, set_plugin_uint16_var,
+    set_plugin_uint32_var, set_plugin_uint8_var, do_plugin_action, enable_plugin
+)
 
 # Import latest protocol
 from ..protocol_v3_1_0.protocol_v3_1_0 import Protocol_v3_1_0
@@ -56,7 +63,10 @@ class Protocol_v3_next_one(ProtocolList):
 
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:
         command_contract_list: List[CommandContract] = [
-            
+            get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
+            get_plugin_info, get_plugin_str_var, get_plugin_uint16_var, get_plugin_uint32_var, get_plugin_uint8_var,
+            get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, set_plugin_str_var, set_plugin_uint16_var,
+            set_plugin_uint32_var, set_plugin_uint8_var, do_plugin_action, enable_plugin
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             pass

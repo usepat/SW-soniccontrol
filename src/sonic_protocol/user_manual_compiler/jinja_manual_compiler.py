@@ -3,6 +3,7 @@ import asyncio
 import base64
 from datetime import datetime
 from enum import Enum
+import functools
 import io
 import os
 import shutil
@@ -246,9 +247,9 @@ class HtmlManualCompiler(ManualCompiler):
             "Enum": Enum,
             "Timestamp": Timestamp,
             "bytes": bytes,
-            "protocol_constants": attrs.asdict(protocol.consts), # FIXME: It would be better to pass this as render variable, but I am lazy
             "protocol_consts": protocol.consts,
-            "deduce_single_command_example_for_contract": deduce_single_command_example_for_contract,
+            # we use partial, to curry the function. so that we do not have to provide protocol as global variable
+            "deduce_single_command_example_for_contract": functools.partial(deduce_single_command_example_for_contract, protocol),
             "deduce_answer_command_example_for_contract": deduce_answer_example_for_contract,
             "device_name_to_label": device_name_to_label,
             "format_constraint_value": format_constraint_value,

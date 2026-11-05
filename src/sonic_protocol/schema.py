@@ -452,6 +452,7 @@ class CommandDef():
     sonic_text_attrs: SonicTextCommandAttrs = attrs.field()
     index_param: Optional[CommandParamDef] = attrs.field(default=None)
     setter_param: Optional[CommandParamDef] = attrs.field(default=None)
+    params: List[CommandParamDef] = attrs.field(factory=list)
     user_manual_attrs: UserManualAttrs = attrs.field(default=UserManualAttrs())
 
     def field_defs(self) -> List[FieldDef]:
@@ -459,6 +460,9 @@ class CommandDef():
 
         if self.index_param:
             result.append(self.index_param.to_field_def())
+
+        result.extend([param.to_field_def() for param in self.params])
+
         if self.setter_param:
             result.append(self.setter_param.to_field_def())
 

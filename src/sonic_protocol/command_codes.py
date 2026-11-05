@@ -254,6 +254,28 @@ class CommandCode(ICommandCode):
 
     DEBUG_TEST = 600 # command used by developers to test different stuff.
 
+    # 610 - 650 are reserved for plugin functionality
+    GET_NUM_PLUGINS = 610
+    GET_PLUGIN_INFO = 611
+    GET_PLUGIN_VAR_INFO = 612
+    GET_PLUGIN_ACTION_INFO = 613
+    DO_PLUGIN_ACTION = 614
+    ENABLE_PLUGIN = 615
+
+    GET_PLUGIN_UINT8_VAR = 620
+    GET_PLUGIN_UINT16_VAR = 621
+    GET_PLUGIN_UINT32_VAR = 622
+    GET_PLUGIN_FLOAT_VAR = 623
+    GET_PLUGIN_STR_VAR = 624
+    GET_PLUGIN_BOOL_VAR = 625
+
+    SET_PLUGIN_UINT8_VAR = 630
+    SET_PLUGIN_UINT16_VAR = 631
+    SET_PLUGIN_UINT32_VAR = 632
+    SET_PLUGIN_FLOAT_VAR = 633
+    SET_PLUGIN_STR_VAR = 634
+    SET_PLUGIN_BOOL_VAR = 635
+    
     # can we delete those?
     # SET_PHYS_COM_CHANNEL = 2020 
 

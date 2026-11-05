@@ -141,8 +141,11 @@
                 {% if command_contract.command_def is not none %}
                     {% set raw_identifiers = command_contract.command_def.sonic_text_attrs.string_identifier %}
                     {% set identifiers = raw_identifiers if raw_identifiers is sequence and raw_identifiers is not string else [raw_identifiers] %}
-                    {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] | select | list %}
-                    {% set has_command_parameters = command_parameters | count != 0 %}
+                    {% set command_parameters = [
+                        command_contract.command_def.index_param, 
+                        *command_contract.command_def.params, 
+                        command_contract.command_def.setter_param
+                    ] | select | list %}                    {% set has_command_parameters = command_parameters | count != 0 %}
                     <tr>
                         <th class="text-left px-3 py-2 align-top">
                             {% if not has_command_parameters %}
@@ -163,7 +166,7 @@
                             {% endif %}
                         </td>
                     </tr>
-                    {% set text_example = deduce_single_command_example_for_contract(protocol_consts, command_contract) %}
+                    {% set text_example = deduce_single_command_example_for_contract(command_contract) %}
                     {% if has_command_parameters and text_example is not none and text_example|trim != "" %}
                     <tr>
                         <th class="text-left px-3 py-2 align-top">Example command</th>
@@ -213,7 +216,11 @@
         </div>
 
         {% if command_contract.command_def is not none %}
-            {% set command_parameters = [command_contract.command_def.index_param, command_contract.command_def.setter_param] | select | list %}
+            {% set command_parameters = [
+                command_contract.command_def.index_param, 
+                *command_contract.command_def.params, 
+                command_contract.command_def.setter_param
+            ] | select | list %}
             {% if command_parameters %}
             <div class="params-block avoid-break">
                 <div class="manual-subsection-title">Parameters</div>

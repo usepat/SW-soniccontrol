@@ -46,6 +46,7 @@ class MarkdownManualCompiler(ManualCompiler):
         if command_contract.command_def:
             setter_param = command_contract.command_def.setter_param
             index_param = command_contract.command_def.index_param
+            params = command_contract.command_def.params
             sonic_text_attrs = command_contract.command_def.sonic_text_attrs
             assert isinstance(sonic_text_attrs, SonicTextCommandAttrs) 
             string_identifier = sonic_text_attrs.string_identifier
@@ -55,10 +56,15 @@ class MarkdownManualCompiler(ManualCompiler):
             command_entry += " | ".join(map(lambda id: f"`{id}`", string_identifier)) + "  \n"
 
             command_entry += "### Params\n"
-            if index_param is None and setter_param is None:
+            if index_param is None and setter_param is None and len(params) == 0:
                 command_entry += "No parameters  \n"
+
             if index_param is not None:
                 command_entry += self.create_param_entry(index_param)
+
+            for param in params:
+                command_entry += self.create_param_entry(param)
+
             if setter_param is not None:
                 command_entry += self.create_param_entry(setter_param)
 

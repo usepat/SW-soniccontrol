@@ -173,6 +173,11 @@ class ModbusCommunicator(Communicator):
         if cmd_def.index_param is not None and "index" in args:
             registers.extend(self.value_to_registers(args["index"], cmd_def.index_param))
 
+        for i, param in enumerate(cmd_def.params):
+            arg_name = f"arg{i}"
+            if arg_name in args:
+                registers.extend(self.value_to_registers(args[arg_name], param))
+
         if cmd_def.setter_param is not None and "value" in args:
             registers.extend(self.value_to_registers(args["value"], cmd_def.setter_param))
 

@@ -57,7 +57,7 @@ def deduce_command_examples(
             continue
 
         command_examples.extend(
-            deduce_command_examples_for_contract(protocol.consts, command_contract)
+            deduce_command_examples_for_contract(protocol, command_contract)
         )
 
     return command_examples
@@ -74,7 +74,7 @@ def deduce_single_command_example(
     if command_contract is None:
         return None
 
-    return deduce_single_command_example_for_contract(protocol.consts, command_contract)
+    return deduce_single_command_example_for_contract(protocol, command_contract)
 
 
 def deduce_command_examples_as_commands(

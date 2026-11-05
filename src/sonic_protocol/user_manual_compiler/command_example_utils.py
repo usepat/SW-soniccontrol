@@ -1,7 +1,8 @@
 import numbers
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from sonic_protocol.command_codes import CommandCode
+from sonic_protocol.python_parser.command_serializer import CommandSerializer
 from sonic_protocol.schema import (
     AnswerFieldDef,
     CommandContract,
@@ -9,11 +10,13 @@ from sonic_protocol.schema import (
     DeviceParamConstantType,
     DeviceParamConstants,
     NumStrValue,
+    Protocol,
     Timestamp,
     Version,
 )
 from sonic_protocol.python_parser.command_deserializer import DeserializedCommand
 from sonic_protocol.python_parser.commands import Command
+import itertools
 
 
 def _resolve_device_param_constant(consts: DeviceParamConstants, value):
@@ -179,31 +182,6 @@ def deduce_single_param_example(consts: DeviceParamConstants, param_def: Command
     return param_limits[0]
 
 
-def deduce_command_examples_for_contract(consts: DeviceParamConstants, command_contract: CommandContract) -> List[str]:
-    command_def = command_contract.command_def
-    if command_def is None:
-        return []
-
-    examples: List[str] = []
-    string_identifiers = _normalize_string_identifiers(command_contract)
-
-    index_limits = deduce_param_limits(consts, command_def.index_param)
-    if len(index_limits) == 0:
-        index_limits = [""]
-
-    setter_limits = deduce_param_limits(consts, command_def.setter_param)
-
-    for string_identifier in string_identifiers:
-        for index_limit in index_limits:
-            formatted_index = _format_index_value(index_limit)
-            if len(setter_limits) == 0:
-                examples.append(f"{string_identifier}{formatted_index}")
-            else:
-                for setter_limit in setter_limits:
-                    examples.append(f"{string_identifier}{formatted_index}={setter_limit}")
-
-    return examples
-
 
 def deduce_command_examples_for_contract_as_commands(
     consts: DeviceParamConstants,
@@ -213,32 +191,55 @@ def deduce_command_examples_for_contract_as_commands(
     if command_def is None:
         return []
 
-    examples: List[Command] = []
-    index_limits = deduce_param_limit_values(consts, command_def.index_param)
-    if len(index_limits) == 0:
-        index_limits = [None]
+    limits: Dict[str, List[Any]] = {}
+    index_limits = deduce_param_limits(consts, command_def.index_param)
+    if len(index_limits) != 0:
+        limits["index"] = index_limits
 
-    setter_limits = deduce_param_limit_values(consts, command_def.setter_param)
-    for index_limit in index_limits:
-        if len(setter_limits) == 0:
-            args = {} if index_limit is None else {"index": index_limit}
-            examples.append(DeserializedCommand(command_contract.code, args))
-            continue
+    setter_limits = deduce_param_limits(consts, command_def.setter_param)
+    if len(setter_limits) != 0:
+        limits["value"] = setter_limits
 
-        for setter_limit in setter_limits:
-            args = {"value": setter_limit}
-            if index_limit is not None:
-                args["index"] = index_limit
-            examples.append(DeserializedCommand(command_contract.code, args))
+    for i, param in enumerate(command_def.params):
+        param_limits = deduce_param_limits(consts, param)
+        limits[f"arg{i}"] = param_limits
 
+    combinations = (
+        dict(zip(limits.keys(), values))
+        for values in itertools.product(*limits.values())
+    )
+
+    examples: List[Command] = [
+        DeserializedCommand(command_contract.code, args_comb)
+        for args_comb in combinations
+    ]
+    
+    return examples
+
+def deduce_command_examples_for_contract(protocol: Protocol, command_contract: CommandContract) -> List[str]:
+    commands = deduce_command_examples_for_contract_as_commands(protocol.consts, command_contract)
+
+    command_def = command_contract.command_def
+    if command_def is None:
+        return []
+
+    examples: List[str] = []
+    string_identifiers = _normalize_string_identifiers(command_contract)
+
+    serializer = CommandSerializer(protocol)
+    for command in commands:
+        command_args_str = serializer.serialize_command_args(command, command_def)
+        for string_identifier in string_identifiers:
+            examples.append(string_identifier + command_args_str)
+        
     return examples
 
 
 def deduce_single_command_example_for_contract(
-    consts: DeviceParamConstants,
+    protocol: Protocol,
     command_contract: CommandContract,
 ) -> Optional[str]:
-    examples = deduce_command_examples_for_contract(consts, command_contract)
+    examples = deduce_command_examples_for_contract(protocol, command_contract)
     if len(examples) == 0:
         return None
     return examples[0]
