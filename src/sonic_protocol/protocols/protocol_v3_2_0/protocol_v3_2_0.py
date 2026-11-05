@@ -6,7 +6,7 @@ from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocol_list import ProtocolList
 
 from .commands.commands import (
-    get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
+    PluginVarType, get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
     get_plugin_info, get_plugin_str_var, get_plugin_uint16_var, get_plugin_uint32_var, get_plugin_uint8_var,
     get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, set_plugin_str_var, set_plugin_uint16_var,
     set_plugin_uint32_var, set_plugin_uint8_var, do_plugin_action, enable_plugin
@@ -24,7 +24,7 @@ from ..protocol_v3_1_0.protocol_v3_1_0 import Protocol_v3_1_0
 # }
 
 
-class Protocol_v3_next_one(ProtocolList):
+class Protocol_v3_2_0(ProtocolList):
     """
         Each Protocol should contain a doc string comment about:
         changes in this protocol and why they were necessary
@@ -35,9 +35,8 @@ class Protocol_v3_next_one(ProtocolList):
 
     @property
     def version(self) -> Version:
-        assert(False)
         # TODO determine the next version we need
-        return Version(0, 0, 0)
+        return Version(3, 2, 0)
     
     @property
     def previous_protocol(self) -> ProtocolList | None:
@@ -53,7 +52,9 @@ class Protocol_v3_next_one(ProtocolList):
 
     @property
     def custom_data_types(self) -> Dict[str, type]:
-        data_types = {}
+        data_types = {
+            "E_PLUGIN_VAR_TYPE": PluginVarType
+        }
         data_types.update(self._previous_protocol.custom_data_types)
     
         return data_types
