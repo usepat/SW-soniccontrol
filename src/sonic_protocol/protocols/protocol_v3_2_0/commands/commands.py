@@ -41,8 +41,6 @@ import numpy as np
 # )
 
 class PluginVarType(NumStrEnum):
-    UINT8 = NumStrValue(0, "uint8")
-    UINT16 = NumStrValue(1, "uint16")
     UINT32 = NumStrValue(2, "uint32")
     FLOAT32 = NumStrValue(3, "float32")
     STR = NumStrValue(4, "str")
@@ -50,6 +48,10 @@ class PluginVarType(NumStrEnum):
 
 
 plugin_index_param = CommandParamDef(
+    name=EFieldName.PLUGIN_INDEX,
+    param_type=FieldType(np.uint8)
+)
+index_param = CommandParamDef(
     name=EFieldName.INDEX,
     param_type=FieldType(np.uint8)
 )
@@ -112,7 +114,7 @@ get_plugin_info = CommandContract(
 get_plugin_var_info = CommandContract(
     code=CommandCode.GET_PLUGIN_VAR_INFO,
     command_def=CommandDef(
-        params=[plugin_name_param, plugin_index_param],
+        params=[plugin_index_param, index_param],
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?plugin_var_info"]
         )
@@ -121,7 +123,7 @@ get_plugin_var_info = CommandContract(
         fields=[
             AnswerFieldDef(EFieldName.INDEX, FieldType(np.uint8)),
             AnswerFieldDef(EFieldName.NAME, FieldType(str)),
-            AnswerFieldDef(EFieldName.TYPE, FieldType(PluginVarType)),
+            AnswerFieldDef(EFieldName.TYPE, FieldType(field_type=PluginVarType)),
         ]
     ),
     user_manual_attrs=UserManualAttrs(
@@ -175,72 +177,47 @@ def create_get_plugin_var_command_contract(command_code: CommandCode, field_type
     )
 
 
-set_plugin_uint8_var = create_set_plugin_var_command_contract(
-    CommandCode.SET_PLUGIN_UINT8_VAR,
-    np.uint8,
-    "!set_plugin_uint8_var"
-)
-set_plugin_uint16_var = create_set_plugin_var_command_contract(
-    CommandCode.SET_PLUGIN_UINT8_VAR,
-    np.uint16,
-    "!set_plugin_uint16_var"
-)
-set_plugin_uint32_var = create_set_plugin_var_command_contract(
-    CommandCode.SET_PLUGIN_UINT8_VAR,
+set_plugin_uint_var = create_set_plugin_var_command_contract(
+    CommandCode.SET_PLUGIN_UINT_VAR,
     np.uint32,
-    "!set_plugin_uint32_var"
+    "!plugin_uint_var"
 )
 set_plugin_float_var = create_set_plugin_var_command_contract(
     CommandCode.SET_PLUGIN_FLOAT_VAR,
-    np.float32,
-    "!set_plugin_float_var"
+    float,
+    "!plugin_float_var"
 )
 set_plugin_bool_var = create_set_plugin_var_command_contract(
     CommandCode.SET_PLUGIN_BOOL_VAR,
     bool,
-    "!set_plugin_bool_var"
-)
-set_plugin_str_var = create_set_plugin_var_command_contract(
-    CommandCode.SET_PLUGIN_STR_VAR,
-    str,
-    "!set_plugin_str_var"
+    "!plugin_bool_var"
 )
 
-get_plugin_uint8_var = create_get_plugin_var_command_contract(
-    CommandCode.GET_PLUGIN_UINT8_VAR,
-    np.uint8,
-    "!get_plugin_uint8_var"
-)
-get_plugin_uint16_var = create_get_plugin_var_command_contract(
-    CommandCode.GET_PLUGIN_UINT8_VAR,
-    np.uint16,
-    "!get_plugin_uint16_var"
-)
-get_plugin_uint32_var = create_get_plugin_var_command_contract(
-    CommandCode.GET_PLUGIN_UINT8_VAR,
+get_plugin_uint_var = create_get_plugin_var_command_contract(
+    CommandCode.GET_PLUGIN_UINT_VAR,
     np.uint32,
-    "!get_plugin_uint32_var"
+    "!plugin_uint_var"
 )
 get_plugin_float_var = create_get_plugin_var_command_contract(
     CommandCode.GET_PLUGIN_FLOAT_VAR,
-    np.float32,
-    "!get_plugin_float_var"
+    float,
+    "!plugin_float_var"
 )
 get_plugin_bool_var = create_get_plugin_var_command_contract(
     CommandCode.GET_PLUGIN_BOOL_VAR,
     bool,
-    "!get_plugin_bool_var"
+    "!plugin_bool_var"
 )
 get_plugin_str_var = create_get_plugin_var_command_contract(
     CommandCode.GET_PLUGIN_STR_VAR,
     str,
-    "!get_plugin_str_var"
+    "!plugin_str_var"
 )
 
 get_plugin_action_info = CommandContract(
     code=CommandCode.GET_PLUGIN_ACTION_INFO,
     command_def=CommandDef(
-        params=[plugin_name_param, plugin_index_param],
+        params=[plugin_index_param, index_param],
         sonic_text_attrs=SonicTextCommandAttrs(
             string_identifier=["?plugin_action_info"]
         )
@@ -269,7 +246,6 @@ do_plugin_action = CommandContract(
     answer_def=AnswerDef(
         fields=[
             AnswerFieldDef(EFieldName.ERROR_CODE, FieldType(np.uint8)),
-            AnswerFieldDef(EFieldName.MESSAGE, FieldType(str)),
         ]
     ),
     user_manual_attrs=UserManualAttrs(

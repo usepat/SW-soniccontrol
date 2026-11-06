@@ -7,9 +7,9 @@ from sonic_protocol.protocol_list import ProtocolList
 
 from .commands.commands import (
     PluginVarType, get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
-    get_plugin_info, get_plugin_str_var, get_plugin_uint16_var, get_plugin_uint32_var, get_plugin_uint8_var,
-    get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, set_plugin_str_var, set_plugin_uint16_var,
-    set_plugin_uint32_var, set_plugin_uint8_var, do_plugin_action, enable_plugin
+    get_plugin_info, get_plugin_str_var, get_plugin_uint_var,
+    get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, 
+    set_plugin_uint_var, do_plugin_action, enable_plugin
 )
 
 # Import latest protocol
@@ -65,9 +65,9 @@ class Protocol_v3_2_0(ProtocolList):
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:
         command_contract_list: List[CommandContract] = [
             get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
-            get_plugin_info, get_plugin_str_var, get_plugin_uint16_var, get_plugin_uint32_var, get_plugin_uint8_var,
-            get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, set_plugin_str_var, set_plugin_uint16_var,
-            set_plugin_uint32_var, set_plugin_uint8_var, do_plugin_action, enable_plugin
+            get_plugin_info, get_plugin_str_var, get_plugin_uint_var,
+            get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, 
+            set_plugin_uint_var, do_plugin_action, enable_plugin
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             pass

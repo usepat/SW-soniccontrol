@@ -262,18 +262,16 @@ class CommandCode(ICommandCode):
     DO_PLUGIN_ACTION = 614
     ENABLE_PLUGIN = 615
 
-    GET_PLUGIN_UINT8_VAR = 620
-    GET_PLUGIN_UINT16_VAR = 621
-    GET_PLUGIN_UINT32_VAR = 622
+    GET_PLUGIN_UINT_VAR = 620
     GET_PLUGIN_FLOAT_VAR = 623
     GET_PLUGIN_STR_VAR = 624
     GET_PLUGIN_BOOL_VAR = 625
 
-    SET_PLUGIN_UINT8_VAR = 630
-    SET_PLUGIN_UINT16_VAR = 631
-    SET_PLUGIN_UINT32_VAR = 632
+    SET_PLUGIN_UINT_VAR = 630
     SET_PLUGIN_FLOAT_VAR = 633
-    SET_PLUGIN_STR_VAR = 634
+    # setting plugin str var is not supported at the moment. 
+    # Because that is more complex. We have to either use fixed size strings or dynamic allocated ones.
+    # SET_PLUGIN_STR_VAR = 634
     SET_PLUGIN_BOOL_VAR = 635
     
     # can we delete those?
