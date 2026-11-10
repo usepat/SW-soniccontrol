@@ -70,10 +70,13 @@ def get_simulation_exe() -> Path | None:
     if "FIRMWARE_BUILD_DIR_PATH" not in os.environ:
         return None
     firmware_build_dir = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"]).expanduser().resolve()
+    if PLATFORM == System.WINDOWS:
+        return firmware_build_dir / "windows/platform_windows/src/device/device_main.exe"
     return firmware_build_dir / "linux/platform_linux/src/device/device_main"
 
 @attrs.define()
 class AppConfig:
     remote_server_url: str | None = attrs.field(default=None)
+    spinbox_repeat_mode: str = attrs.field(default="slow")
 
 APP_CONFIG = AppConfig() # This variable can be changed depending on the cmd args. Is done in sonic control gui

@@ -24,12 +24,12 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
 
     f_range: RelativeFrequencySIVar = attrs.field(
         converter=cls_converter(RelativeFrequencySIVar),
-        default=RelativeFrequencySIVar(value=8000),
+        factory=lambda: RelativeFrequencySIVar(value=8000),
         metadata={"enum": EFieldName.WIPE_F_RANGE},
     )
     f_step: RelativeFrequencySIVar = attrs.field(
         converter=cls_converter(RelativeFrequencySIVar),
-        default=RelativeFrequencySIVar(10),
+        factory=lambda: RelativeFrequencySIVar(10),
         metadata={"enum": EFieldName.WIPE_F_STEP},
         validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
     )
@@ -50,7 +50,7 @@ It is a special protocol optimized to enhance the cleaning effect of ultrasound,
     )
     gain: GainSIVar = attrs.field(
         converter=cls_converter(GainSIVar),
-        default=GainSIVar(150),
+        factory=lambda: GainSIVar(150),
         metadata={"enum": EFieldName.WIPE_GAIN},
     )
 

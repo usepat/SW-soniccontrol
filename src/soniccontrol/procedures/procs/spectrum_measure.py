@@ -21,22 +21,22 @@ This is very useful in an explorative study to find the optimal driving frequenc
 """
     
     gain: GainSIVar = attrs.field(
-        default=GainSIVar(20),
+        factory=lambda: GainSIVar(20),
         converter=cls_converter(GainSIVar),
     )
 
     f_start: AbsoluteFrequencySIVar = attrs.field(
-        default=AbsoluteFrequencySIVar(1000000),
+        factory=lambda: AbsoluteFrequencySIVar(1000000),
         converter=cls_converter(AbsoluteFrequencySIVar),
     )
     
     f_stop: AbsoluteFrequencySIVar = attrs.field(
-        default=AbsoluteFrequencySIVar(2000000),
+        factory=lambda: AbsoluteFrequencySIVar(2000000),
         converter=cls_converter(AbsoluteFrequencySIVar)
     )
     
     f_step: RelativeFrequencySIVar = attrs.field(
-        default=RelativeFrequencySIVar(100000),
+        factory=lambda: RelativeFrequencySIVar(100000),
         converter=cls_converter(RelativeFrequencySIVar),
         validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
     )

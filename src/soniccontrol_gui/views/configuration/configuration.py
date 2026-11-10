@@ -49,7 +49,7 @@ class ATConfig:
     atk: float = attrs.field(default=0)
     att: AttSiVar = attrs.field(
         converter=cls_converter(AttSiVar),
-        default=AttSiVar(), 
+        factory=AttSiVar,
         #metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}
     )
 

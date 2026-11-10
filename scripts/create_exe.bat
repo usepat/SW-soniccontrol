@@ -12,6 +12,8 @@ if defined PYTHON_EXE (
     set "_PYTHON_EXE=%PROJECT_ROOT%\.venv\Scripts\python.exe"
 )
 
+set "_CREATE_EXE_PY=%SCRIPT_DIR%create_exe.py"
+
 if defined MAIN_SCRIPT (
     set "_MAIN_SCRIPT=%MAIN_SCRIPT%"
 ) else (
@@ -67,48 +69,23 @@ if not exist "%_PYTHON_EXE%" (
 	exit /b 1
 )
 
-if not exist "%_MAIN_SCRIPT%" (
-	echo SonicControl entrypoint not found at "%_MAIN_SCRIPT%".
+if not exist "%_CREATE_EXE_PY%" (
+    echo SonicControl packaging helper not found at "%_CREATE_EXE_PY%".
 	exit /b 1
 )
 
-if not exist "%_SONIC_SCRIPT_EXAMPLES%" (
-	echo sonic_script_examples not found at "%_SONIC_SCRIPT_EXAMPLES%".
-	exit /b 1
-)
+set "PYTHON_EXE=%_PYTHON_EXE%"
+set "MAIN_SCRIPT=%_MAIN_SCRIPT%"
+set "SONIC_SCRIPT_EXAMPLES=%_SONIC_SCRIPT_EXAMPLES%"
+set "DIST_DIR=%_DIST_DIR%"
+set "WORK_DIR=%_WORK_DIR%"
+set "SPEC_DIR=%_SPEC_DIR%"
+set "ICON_FILE="
+set "VERSION_FILE="
 
-if not exist "%_DIST_DIR%" mkdir "%_DIST_DIR%"
-if not exist "%_WORK_DIR%" mkdir "%_WORK_DIR%"
-if not exist "%_SPEC_DIR%" mkdir "%_SPEC_DIR%"
+if defined ICON_FILE set "ICON_FILE=%ICON_FILE%"
+if defined VERSION_FILE set "VERSION_FILE=%VERSION_FILE%"
 
-if /i "%~1"=="--dry-run" (
-	echo PROJECT_ROOT=%PROJECT_ROOT%
-	echo PYTHON_EXE=%_PYTHON_EXE%
-	echo MAIN_SCRIPT=%_MAIN_SCRIPT%
-	echo DIST_DIR=%_DIST_DIR%
-	echo WORK_DIR=%_WORK_DIR%
-	echo SPEC_DIR=%_SPEC_DIR%
-	exit /b 0
-)
-
-set "EXTRA_PYINSTALLER_ARGS=%*"
-
-"%_PYTHON_EXE%" -m PyInstaller --noconfirm --onedir --windowed ^
---name "SonicControl" ^
-%_ICON_ARG% ^
-%_VERSION_ARG% ^
---collect-all soniccontrol_gui ^
---collect-all soniccontrol ^
---collect-all sonic_protocol ^
---collect-all tkinter ^
---hidden-import=PIL._tkinter_finder ^
---hidden-import=PIL._imagingtk ^
---collect-all PIL ^
-%EXTRA_PYINSTALLER_ARGS% ^
---add-data "%_SONIC_SCRIPT_EXAMPLES%;sonic_script_examples" ^
---distpath "%_DIST_DIR%" ^
---workpath "%_WORK_DIR%" ^
---specpath "%_SPEC_DIR%" ^
-"%_MAIN_SCRIPT%"
+"%_PYTHON_EXE%" "%_CREATE_EXE_PY%" %*
 
 exit /b %ERRORLEVEL%

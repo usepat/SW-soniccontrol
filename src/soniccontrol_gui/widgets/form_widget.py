@@ -1,4 +1,7 @@
 import abc
+import asyncio
+import subprocess
+import sys
 from enum import Enum
 import inspect
 from tkinter.ttk import Style
@@ -8,6 +11,7 @@ import copy
 import attrs
 import cattrs
 from pathlib import Path
+from soniccontrol.app_config import APP_CONFIG
 from sonic_protocol.schema import SIPrefix, SIUnit
 from soniccontrol.data_capturing.converter import create_cattrs_converter_for_forms
 from soniccontrol_gui.ui_component import UIComponent
@@ -30,6 +34,11 @@ class EntryStyle(Enum):
     PRIMARY = "primary.TEntry"
     SUCCESS = "success.TEntry"
     DANGER = "danger.TEntry"
+
+class SpinBoxStyle(Enum):
+    PRIMARY = "primary.TSpinbox"
+    SUCCESS = "success.TSpinbox"
+    DANGER = "danger.TSpinbox"
 
 
 T = TypeVar("T")
@@ -142,7 +151,10 @@ class FieldViewBase(abc.ABC, Generic[T], View):
     def value(self, v: T) -> None: ...
 
     @abc.abstractmethod
-    def bind_value_change(self, command: Callable[[T], None]) -> None: ...
+    def bind_value_change(self, command: Callable[..., None]) -> None: ...
+
+    def flash_success(self) -> None:
+        return None
 
 
 PrimitiveT = TypeVar("PrimitiveT", str, float, int)
@@ -381,12 +393,20 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                     raise ValueError(f"Could not determine value type from {self._si_var_class}")
             else:
                 raise ValueError(f"SIVar class {self._si_var_class} does not have proper generic type information")
-        
 
+        self._display_decimals: int | None = None
         if default_value is None:
             display_value = ""
         else:
-            display_value = str(default_value.value)
+            current_value = default_value.value
+            if self._is_float_sivar():
+                self._display_decimals = min(
+                    self._count_decimals(str(current_value)),
+                    self._max_decimals_for_prefix_change(default_value.si_prefix),
+                )
+            else:
+                self._display_decimals = None
+            display_value = self._format_display_value(current_value, default_value.si_prefix)
 
         self._str_value: ttk.StringVar = ttk.StringVar(value=display_value)
         self._value: Union[SIVar, None] = _default_value
@@ -400,11 +420,6 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
         # Example usage in attrs field metadata:
         # metadata={"field_view_kwargs": {"treat_zero_as_none": True}}
         self._treat_zero_as_none = field_view_kwargs.get("treat_zero_as_none", False)
-
-        super().__init__(master, *args, **kwargs)
-        # We pop earlier so that the super__init__ does not fail,
-        # but we need restore because the same Object might be used for other views(ATConfig)
-        kwargs['field_view_kwargs'] = field_view_kwargs
         self._callback: Callable[[Union[SIVar, None]], None] = lambda _: None
         self._trace_id = self._str_value.trace_add("write", self._parse_str_value)
 
@@ -413,6 +428,18 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
 
         # Flag to prevent recursive scale updates
         self._updating_scale = False
+        self._custom_spinbox_increment: float | int | None = None
+        self._spinbox_wheel_bind_ids: dict[str, str] = {}
+        self._spinbox_repeat_key: str | None = None
+        self._spinbox_repeat_job: str | None = None
+        self._spinbox_release_job = None
+        self._spinbox_release_key = None
+        self._spinbox_release_time = None
+        super().__init__(master, *args, **kwargs)
+        # We pop earlier so that the super__init__ does not fail,
+        # but we need restore because the same Object might be used for other views(ATConfig)
+        kwargs['field_view_kwargs'] = field_view_kwargs
+        
 
     def _clamp_value_with_feedback(self, value, prefix, update_callback: Optional[Callable[[Any], None]] = None):
         """
@@ -431,7 +458,7 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             
         if self._value.is_value_in_range(value, prefix):
             # Value is in range - reset to normal style
-            self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
+            self._set_input_validity_style(True)
             self._is_valid = True
             return value, False
             
@@ -464,29 +491,289 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             self.after_cancel(self._style_reset_timer)
             
         # Show warning style
-        self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+        self._set_input_validity_style(False)
         self._is_valid = False
         
         # Reset style after delay
         def _reset_style():
             self._style_reset_timer = None
             if hasattr(self, '_get_input_widget'):
-                self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
+                self._set_input_validity_style(True)
                 self._is_valid = True
                 
         self._style_reset_timer = self.after(1500, _reset_style)
 
-    def _update_str_value_without_trace(self, new_value: str):
+    def _update_str_value_without_trace(self, new_value: str, *, preserve_display_decimals: bool = False):
         """Update the string value without triggering the trace callback to avoid recursion."""
         try:
             self._str_value.trace_remove("write", self._trace_id)
         except ValueError:
             pass  # Trace might not exist
         self._str_value.set(new_value)
+        if self._is_float_sivar() and not preserve_display_decimals:
+            self._display_decimals = self._count_decimals(new_value)
         self._trace_id = self._str_value.trace_add("write", self._parse_str_value)
+
+    def _handle_decimal_point_keypress(self, event):
+        if not self._is_float_sivar():
+            return None
+
+        widget = event.widget
+        text = widget.get()
+        dot_index = text.find(".")
+
+        if dot_index == -1:
+            # No existing decimal separator: allow normal insertion at cursor.
+            return
+
+        # Existing decimal separator: jump behind it and select the fractional part.
+        widget.icursor(dot_index + 1)
+        widget.selection_range(dot_index + 1, ttk.END)
+        return "break"
+
+    def _get_spinbox_repeat_delay_ms(self) -> int:
+        mode = getattr(APP_CONFIG, "spinbox_repeat_mode", "slow")
+        if isinstance(mode, str) and mode.lower() == "fast":
+            return 60
+        return 500
+
+    def _get_spinbox_initial_delay_ms(self) -> int:
+        return 350
+
+    def _stop_spinbox_repeat(self, _event=None):
+        if self._spinbox_repeat_job is not None:
+            self.after_cancel(self._spinbox_repeat_job)
+            self._spinbox_repeat_job = None
+        self._spinbox_repeat_key = None
+
+    def _repeat_spinbox_step(self):
+        self._spinbox_repeat_job = None
+
+        if self._spinbox_repeat_key is None:
+            return
+
+        self._spinbox_step()
+
+        self._spinbox_repeat_job = self.after(
+            self._get_spinbox_repeat_delay_ms(),
+            self._repeat_spinbox_step,
+        )
+
+    def _flush_value_change(self, **kwargs):
+        is_valid = getattr(self, "_is_valid", True)
+        if not is_valid:
+            return
+        self._callback(self.value, flush=True, **kwargs)
+
+    def _clear_input_focus(self):
+        widget = self._get_input_widget()
+        try:
+            widget.selection_clear()
+        except Exception:
+            pass
+        try:
+            widget.icursor(0)
+        except Exception:
+            pass
+        try:
+            self.focus_set()
+        except Exception:
+            pass
+        try:
+            self.winfo_toplevel().focus_set()
+        except Exception:
+            pass
+
+    def _handle_enter_keypress(self, event=None):
+        self._parse_str_value()
+        if self._is_valid:
+            self._clear_input_focus()
+            self._flush_value_change()
+        return "break"
+
+    def flash_success(self) -> None:
+        widget = self._get_input_widget()
+        if widget is None:
+            return
+
+        if self._use_spinbox:
+            widget.configure(style=SpinBoxStyle.SUCCESS.value)
+        else:
+            widget.configure(style=EntryStyle.SUCCESS.value)
+        if self._style_reset_timer:
+            self.after_cancel(self._style_reset_timer)
+        self._style_reset_timer = self.after(600, lambda: self._set_input_validity_style(True))
+
+    def _focus_spinbox_on_wheel(self, _event):
+        if self._use_spinbox and hasattr(self, 'spinbox'):
+            self.spinbox.focus_set()
+            # Place insertion cursor in the entry text area so keyboard editing starts immediately.
+            self.spinbox.icursor(ttk.END)
+            self.spinbox.selection_clear()
+
+    def _focus_spinbox_on_wheel_if_hovered(self, event):
+        if not (self._use_spinbox and hasattr(self, 'spinbox')):
+            return
+
+        hovered_widget = self.winfo_containing(event.x_root, event.y_root)
+        if hovered_widget is None:
+            return
+
+        hovered_name = str(hovered_widget)
+        spinbox_name = str(self.spinbox)
+        if hovered_name == spinbox_name or hovered_name.startswith(f"{spinbox_name}."):
+            self._focus_spinbox_on_wheel(event)
+
+    def _bind_spinbox_wheel_fallback(self):
+        if not (self._use_spinbox and hasattr(self, 'spinbox')):
+            return
+
+        top = self.winfo_toplevel()
+        for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            bind_id = top.bind(sequence, self._focus_spinbox_on_wheel_if_hovered, add="+")
+            if bind_id:
+                self._spinbox_wheel_bind_ids[sequence] = bind_id
+
+    def _unbind_spinbox_wheel_fallback(self):
+        if not self._spinbox_wheel_bind_ids:
+            return
+
+        top = self.winfo_toplevel()
+        for sequence, bind_id in self._spinbox_wheel_bind_ids.items():
+            top.unbind(sequence, bind_id)
+        self._spinbox_wheel_bind_ids.clear()
+
+    def _is_float_sivar(self) -> bool:
+        return self._value_type is float
+
+    def _max_decimals_for_prefix(self, prefix: SIPrefix) -> int:
+        exponent_delta = prefix.exponent - self._si_var_meta.si_prefix_min.exponent
+        return max(0, exponent_delta)
+
+    def _max_decimals_for_prefix_change(self, prefix: SIPrefix) -> int:
+        return min(3, self._max_decimals_for_prefix(prefix))
+
+    def _count_decimals(self, text: str) -> int:
+        if "." not in text:
+            return 0
+        return len(text.split(".", 1)[1])
+
+    def _reset_display_decimals_for_prefix(self, prefix: SIPrefix) -> None:
+        if not self._is_float_sivar():
+            return
+
+        max_decimals = self._max_decimals_for_prefix_change(prefix)
+        if self._value is None:
+            self._display_decimals = max_decimals
+            return
+
+        previous_display_decimals = self._display_decimals
+        self._display_decimals = None
+        try:
+            converted_text = self._format_display_value(
+                self._value.value,
+                prefix,
+                cap_for_prefix_change=True,
+            )
+        finally:
+            self._display_decimals = previous_display_decimals
+
+        self._display_decimals = min(self._count_decimals(converted_text), max_decimals)
+
+    def _get_display_decimals(self, prefix: SIPrefix) -> int:
+        max_decimals = self._max_decimals_for_prefix(prefix)
+
+        current_display_decimals = self._display_decimals
+        if current_display_decimals is None:
+            current_display_decimals = self._count_decimals(self._str_value.get().strip())
+            if current_display_decimals is None:
+                return max_decimals
+            return max(0, min(max_decimals, current_display_decimals))
+
+        return max(0, min(max_decimals, current_display_decimals))
+
+    def _truncate_numeric_value(
+        self,
+        value: int | float,
+        prefix: SIPrefix,
+        *,
+        cap_for_prefix_change: bool = False,
+    ) -> float:
+        if not self._is_float_sivar():
+            return float(value)
+
+        max_decimals = (
+            self._max_decimals_for_prefix_change(prefix)
+            if cap_for_prefix_change
+            else self._max_decimals_for_prefix(prefix)
+        )
+        if max_decimals <= 0:
+            return self._value_type(float(value))
+
+        from decimal import Decimal, ROUND_DOWN
+        quantizer = Decimal("1").scaleb(-max_decimals)
+        truncated = Decimal(str(float(value))).quantize(quantizer, rounding=ROUND_DOWN)
+        return float(truncated)
+
+    def _normalize_numeric_value(
+        self,
+        value: int | float,
+        prefix: SIPrefix,
+        *,
+        cap_for_prefix_change: bool = False,
+    ):
+        # For float-based SIVars, decimal precision depends on distance to the minimum prefix.
+        if self._is_float_sivar():
+            max_decimals = (
+                self._max_decimals_for_prefix_change(prefix)
+                if cap_for_prefix_change
+                else self._max_decimals_for_prefix(prefix)
+            )
+            rounded = round(float(value), max_decimals)
+            return self._value_type(rounded)
+
+        return self._value_type(value)
+
+    def _strip_trailing_zeroes(self, text: str) -> str:
+        if "." not in text:
+            return text
+
+        integer_part, fractional_part = text.split(".", 1)
+        trimmed_fraction = fractional_part.rstrip("0")
+        if trimmed_fraction:
+            return f"{integer_part}.{trimmed_fraction}"
+        return integer_part
+
+    def _format_display_value(
+        self,
+        value: int | float,
+        prefix: SIPrefix,
+        *,
+        cap_for_prefix_change: bool = False,
+    ) -> str:
+        if self._is_float_sivar():
+            max_decimals = (
+                self._max_decimals_for_prefix_change(prefix)
+                if cap_for_prefix_change
+                else self._max_decimals_for_prefix(prefix)
+            )
+            if self._display_decimals is not None:
+                decimals = min(self._display_decimals, max_decimals)
+            else:
+                decimals = max_decimals
+
+            if decimals == 0:
+                return str(int(round(float(value))))
+
+            format_str = f"{{:.{decimals}f}}"
+            return self._strip_trailing_zeroes(format_str.format(float(value)))
+
+        return str(value)
 
     def destroy(self):
         """Clean up resources when widget is destroyed."""
+        self._stop_spinbox_repeat()
+        self._unbind_spinbox_wheel_fallback()
         # Cancel any pending timer
         if self._style_reset_timer:
             self.after_cancel(self._style_reset_timer)
@@ -500,12 +787,15 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
         from sonic_protocol.schema import SIUnit, SIPrefix
         self.label = ttk.Label(self, text=self._field_name)
         self.entry = ttk.Entry(self, textvariable=self._str_value, width=12)
+        self.entry.bind("<KeyPress-period>", self._handle_decimal_point_keypress)
+        self.entry.bind("<KeyPress-KP_Decimal>", self._handle_decimal_point_keypress)
+        self.entry.bind("<Return>", self._handle_enter_keypress)
 
         if not self._abstract_si_var:
             # Normal case: use meta to determine allowed prefixes
             prefixes: List[SIPrefix] = []
             for p in SIPrefix:
-                if self._si_var_meta.si_prefix_min <= p <= self._si_var_meta.si_prefix_max:
+                if self._si_var_meta.si_prefix_min <= p <= self._si_var_meta.si_prefix_max and not p in self._si_var_meta.hidden_prefix:
                     prefixes.append(p)
             def _prefix_label(p: SIPrefix) -> str:
                 unit_str = self._si_var_meta.si_unit.value if self._si_var_meta else ""
@@ -577,7 +867,20 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
 
                     self._show_clamp_feedback()
                 
-                self._update_str_value_without_trace(str(self._value.value))
+                self._reset_display_decimals_for_prefix(prefix)
+                self._value.value = self._normalize_numeric_value(
+                    self._value.value,
+                    prefix,
+                    cap_for_prefix_change=True,
+                )
+                self._update_str_value_without_trace(
+                    self._format_display_value(
+                        self._value.value,
+                        prefix,
+                        cap_for_prefix_change=True,
+                    ),
+                    preserve_display_decimals=True,
+                )
                 
                 if self._use_scale:
                     self._update_scale_range()
@@ -590,7 +893,7 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                     self._update_spinbox_range()
                 self._callback(self._value)
             except Exception:
-                self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+                self._set_input_validity_style(False)
 
         if self.si_prefix_combobox is not None:
             self.si_prefix_combobox.bind("<<ComboboxSelected>>", _on_prefix_change)
@@ -601,11 +904,6 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             
             self.scale_min_label = ttk.Label(self.scale_frame, text="0")
             self.scale_max_label = ttk.Label(self.scale_frame, text="100")
-            
-            self.scale_frame.grid_columnconfigure(1, weight=1)  # Scale takes most space
-            self.scale_min_label.grid(row=0, column=0, padx=2)
-            self.scale.grid(row=0, column=1, sticky=ttk.EW, padx=5)
-            self.scale_max_label.grid(row=0, column=2, padx=2)
             
             self._update_scale_range()
             if self._value is not None:
@@ -623,11 +921,14 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                             self._value = self._si_var_class(value=scaled_value, si_prefix=SIPrefix.NONE, si_meta=self._si_var_meta)
                         else:
                             self._value = self._si_var_class(value=scaled_value, si_prefix=SIPrefix.NONE)
-                        self._update_str_value_without_trace(str(scaled_value))
+                        self._update_str_value_without_trace(
+                            self._format_display_value(scaled_value, SIPrefix.NONE),
+                            preserve_display_decimals=True,
+                        )
                         self._callback(self._value)
                         return
                     except Exception:
-                        self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+                        self._set_input_validity_style(False)
                         return
                     
                 try:
@@ -645,25 +946,53 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                     
                     scaled_value, was_clamped = self._clamp_value_with_feedback(
                         scaled_value, self._value.si_prefix, update_scale_position)
-                    
-                    self._value.value = scaled_value
-                    self._update_str_value_without_trace(str(scaled_value))
+
+                    if self._is_float_sivar():
+                        scaled_value = self._normalize_numeric_value(scaled_value, self._value.si_prefix)
+                        formatted_value = self._format_display_value(scaled_value, self._value.si_prefix)
+                        self._value.value = scaled_value
+                        self._update_str_value_without_trace(formatted_value, preserve_display_decimals=True)
+                    else:
+                        self._value.value = scaled_value
+                        self._update_str_value_without_trace(str(scaled_value))
+
                     self._callback(self._value)
                 except Exception:
-                    self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+                    self._set_input_validity_style(False)
             
             self.scale.configure(command=_on_scale_change)
             #WidgetRegistry.register_widget(self.scale, "scale", self.widget_name)
         
         if self._use_spinbox:
             self.spinbox = ttk.Spinbox(self, textvariable=self._str_value, width=12)
+            self.spinbox.bind("<KeyPress-period>", self._handle_decimal_point_keypress)
+            self.spinbox.bind("<KeyPress-KP_Decimal>", self._handle_decimal_point_keypress)
+            self.spinbox.bind("<Return>", self._handle_enter_keypress)
+            self.spinbox.bind("<MouseWheel>", self._focus_spinbox_on_wheel)
+            self.spinbox.bind("<Button-4>", self._focus_spinbox_on_wheel)
+            self.spinbox.bind("<Button-5>", self._focus_spinbox_on_wheel)
+            self.spinbox.bind("<KeyRelease-Up>", self._handle_spinbox_keyrelease)
+            self.spinbox.bind("<KeyRelease-Down>", self._handle_spinbox_keyrelease)
+            self.spinbox.bind("<FocusOut>", self._stop_spinbox_repeat, add="+")
+            self.spinbox_increment_var = ttk.StringVar(value="")
+            self.spinbox_increment_frame = ttk.Frame(self)
+            self.spinbox_increment_label = ttk.Label(self.spinbox_increment_frame, text="step")
+            self.spinbox_increment_entry = ttk.Entry(self.spinbox_increment_frame, textvariable=self.spinbox_increment_var, width=7)
+
+            self.spinbox_increment_entry.bind("<Return>", self._apply_spinbox_increment_from_input)
+            self.spinbox_increment_entry.bind("<FocusOut>", self._apply_spinbox_increment_from_input)
+           
             self._update_spinbox_range()
             
             def _on_spinbox_change():
                 self._parse_str_value()
             
             self.spinbox.configure(command=_on_spinbox_change)
+            self.spinbox.bind("<KeyPress-Up>", self.on_spinbox_arrow)
+            self.spinbox.bind("<KeyPress-Down>", self.on_spinbox_arrow)
+            self._bind_spinbox_wheel_fallback()
             WidgetRegistry.register_widget(self.spinbox, "spinbox", self.widget_name)
+            WidgetRegistry.register_widget(self.spinbox_increment_entry, "spinbox_increment_entry", self.widget_name)
 
         if self.si_prefix_combobox is not None:
             WidgetRegistry.register_widget(self.si_prefix_combobox, "unit_combobox", self.widget_name)
@@ -678,6 +1007,88 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                 self.subscribe_focus_to_scroll(self.spinbox, self._top_scroll_frame)
             else:
                 self.subscribe_focus_to_scroll(self.entry, self._top_scroll_frame)
+
+    def on_spinbox_arrow(self, event):
+        if not self._use_spinbox or event.widget is not self.spinbox:
+            return None
+
+        key = event.keysym
+
+        if key not in ("Up", "Down"):
+            return None
+
+        # Detect X11 synthetic autorepeat:
+        # KeyRelease followed by KeyPress with matching timestamp.
+        if self._spinbox_release_job is not None:
+
+            is_autorepeat = (
+                self._spinbox_release_key == key
+                and self._spinbox_release_time == event.time
+            )
+
+            self.after_cancel(self._spinbox_release_job)
+            self._spinbox_release_job = None
+            self._spinbox_release_key = None
+            self._spinbox_release_time = None
+
+            if is_autorepeat:
+                return "break"
+
+        # Ignore additional OS autorepeat KeyPress events.
+        if self._spinbox_repeat_key == key:
+            return "break"
+
+        self._stop_spinbox_repeat()
+        self._spinbox_repeat_key = key
+        self._spinbox_step()
+        self._spinbox_repeat_job = self.after(
+            self._get_spinbox_initial_delay_ms(),
+            self._repeat_spinbox_step,
+        )
+        return "break"
+
+    def _spinbox_step(self):
+        if self._spinbox_repeat_key is None:
+            return
+
+        virtual_event = (
+            "<<Increment>>"
+            if self._spinbox_repeat_key == "Up"
+            else "<<Decrement>>"
+        )
+
+        self.spinbox.event_generate(virtual_event)
+
+    def _handle_spinbox_keyrelease(self, event):
+        if not self._use_spinbox or event.widget is not self.spinbox:
+            return None
+
+
+        if event.keysym not in ("Up", "Down"):
+            return None
+
+        # Remember the release, but don't stop immediately.
+        self._spinbox_release_key = event.keysym
+        self._spinbox_release_time = event.time
+
+        if self._spinbox_release_job is not None:
+            self.after_cancel(self._spinbox_release_job)
+
+        self._spinbox_release_job = self.after(
+            10,
+            self._finalize_spinbox_release,
+            event.keysym,
+        )
+
+        return "break"
+
+    def _finalize_spinbox_release(self, key):
+        self._spinbox_release_job = None
+        self._spinbox_release_key = None
+        self._spinbox_release_time = None
+
+        if self._spinbox_repeat_key == key:
+            self._stop_spinbox_repeat()
 
     def _update_scale_range(self) -> None:
         """Update the scale widget range based on the current prefix and metadata range."""
@@ -715,8 +1126,8 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                     min_text = f"{int(range_min)}"
                     max_text = f"{int(range_max)}"
                 else:
-                    min_text = f"{range_min:.1f}"
-                    max_text = f"{range_max:.1f}"
+                    min_text = self._format_display_value(range_min, current_prefix)
+                    max_text = self._format_display_value(range_max, current_prefix)
                 
                 self.scale_min_label.configure(text=min_text)
                 self.scale_max_label.configure(text=max_text)
@@ -727,6 +1138,61 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             if hasattr(self, 'scale_min_label') and hasattr(self, 'scale_max_label'):
                 self.scale_min_label.configure(text="0")
                 self.scale_max_label.configure(text="100")
+
+    def _get_auto_spinbox_increment(self, range_span: float) -> float | int:
+        if self._value_type is int:
+            if range_span <= 100:
+                return 1
+            if range_span <= 1000:
+                return 10
+            if range_span <= 10000:
+                return 100
+            if range_span <= 100000:
+                return 1000
+            return 10000
+
+        if range_span <= 1:
+            return 0.01
+        if range_span <= 10:
+            return 0.1
+        if range_span <= 100:
+            return 1.0
+        if range_span <= 1000:
+            return 10.0
+        return 100.0
+
+    def _set_increment_entry_value(self, increment: float | int) -> None:
+        if not hasattr(self, 'spinbox_increment_var'):
+            return
+
+        if self._value_type is int:
+            self.spinbox_increment_var.set(str(int(increment)))
+        else:
+            self.spinbox_increment_var.set(f"{float(increment):g}")
+
+    def _apply_spinbox_increment_from_input(self, *_args) -> None:
+        if not self._use_spinbox or not hasattr(self, 'spinbox') or not hasattr(self, 'spinbox_increment_var'):
+            return
+
+        text = self.spinbox_increment_var.get().strip()
+        if text == "":
+            self._custom_spinbox_increment = None
+            self._update_spinbox_range()
+            return
+
+        try:
+            if self._value_type is int:
+                increment = max(1, int(float(text)))
+            else:
+                increment = float(text)
+                if increment <= 0:
+                    raise ValueError("Increment must be > 0")
+
+            self._custom_spinbox_increment = increment
+            self.spinbox.configure(increment=increment)
+            self._set_increment_entry_value(increment)
+        except Exception:
+            self._update_spinbox_range()
 
     def _update_spinbox_range(self) -> None:
         """Update the spinbox widget range based on the current prefix and metadata range."""
@@ -757,39 +1223,29 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             
             # Calculate smart increment based on the range and prefix
             range_span = range_max - range_min
-            
+            auto_increment = self._get_auto_spinbox_increment(range_span)
+            increment = self._custom_spinbox_increment if self._custom_spinbox_increment is not None else auto_increment
+
             if self._value_type is int:
-                # For integers, use sensible step sizes
-                if range_span <= 100:
-                    increment = 1
-                elif range_span <= 1000:
-                    increment = 10
-                elif range_span <= 10000:
-                    increment = 100
-                elif range_span <= 100000:
-                    increment = 1000
-                else:
-                    increment = 10000
-                    
-                self.spinbox.configure(from_=int(range_min), to=int(range_max), increment=increment)
+                self.spinbox.configure(from_=int(range_min), to=int(range_max), increment=int(increment))
             else:
-                # For floats, use decimal increments based on the range
-                if range_span <= 1:
-                    increment = 0.01
-                elif range_span <= 10:
-                    increment = 0.1
-                elif range_span <= 100:
-                    increment = 1.0
-                elif range_span <= 1000:
-                    increment = 10.0
-                else:
-                    increment = 100.0
-                    
-                self.spinbox.configure(from_=range_min, to=range_max, increment=increment)
+                decimals = self._get_display_decimals(current_prefix)
+                self.spinbox.configure(
+                    from_=range_min,
+                    to=range_max,
+                    increment=float(increment),
+                    format=f"%.{decimals}f",
+                )
+
+            if self._custom_spinbox_increment is None:
+                self._set_increment_entry_value(auto_increment)
+            else:
+                self._set_increment_entry_value(increment)
                 
         except Exception:
             # Fallback to default range
             self.spinbox.configure(from_=0, to=100, increment=1)
+            self._set_increment_entry_value(1)
 
     def _get_input_widget(self):
         """Get the currently visible input widget (entry or spinbox)."""
@@ -798,11 +1254,25 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
         else:
             return self.entry
 
+    def _set_input_validity_style(self, is_valid: bool) -> None:
+        if self._use_spinbox and hasattr(self, 'spinbox'):
+            style = SpinBoxStyle.PRIMARY.value if is_valid else SpinBoxStyle.DANGER.value
+            # For ttkbootstrap Spinbox, using entry style can hide arrow chrome.
+            do = True
+            if do:
+                self.spinbox.configure(style=style)
+            #self.spinbox.configure(bootstyle=style)
+            return
+        style = EntryStyle.PRIMARY.value if is_valid else EntryStyle.DANGER.value
+        self._get_input_widget().configure(style=style)
+
     def _initialize_publish(self) -> None:
         # Configure columns with better proportions
         self.grid_columnconfigure(0, weight=0, minsize=80)      # Label: fixed width
         self.grid_columnconfigure(1, weight=1, minsize=120)     # Entry/Spinbox: expandable
         self.grid_columnconfigure(2, weight=0, minsize=60)      # Unit: fixed width
+        self.grid_columnconfigure(3, weight=0, minsize=0)
+        self.grid_columnconfigure(4, weight=0, minsize=0)
 
         # Place the basic widgets in row 0
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky=ttk.W)
@@ -827,10 +1297,22 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             elif self.si_unit_label is not None:
                 self.si_unit_label.grid(row=0, column=2, padx=5, pady=5, sticky=ttk.W)
 
+        if self._use_spinbox and hasattr(self, 'spinbox_increment_frame'):
+            increment_column = 4 if self._abstract_si_var else 3
+            self.spinbox_increment_frame.grid(row=0, column=increment_column, padx=5, pady=5, sticky=ttk.E)
+            self.spinbox_increment_label.pack(side=ttk.LEFT, padx=(0, 4))
+            self.spinbox_increment_entry.pack(side=ttk.LEFT)
+
         # Place scale below all other widgets if enabled
         if self._use_scale:
+            self.scale_frame.grid_columnconfigure(1, weight=1)  # Scale takes most space
+            self.scale_min_label.grid(row=0, column=0, padx=2)
+            self.scale.grid(row=0, column=1, sticky=ttk.EW, padx=5)
+            self.scale_max_label.grid(row=0, column=2, padx=2)
+
             self.grid_rowconfigure(1, weight=1)
-            self.scale_frame.grid(row=1, column=0, columnspan=4, padx=5, pady=5, sticky=ttk.NSEW)
+            scale_colspan = 4 if (self._use_spinbox and self._abstract_si_var) else 3
+            self.scale_frame.grid(row=1, column=0, columnspan=scale_colspan, padx=5, pady=5, sticky=ttk.NSEW)
         else:
             self.grid_rowconfigure(0, weight=1)
 
@@ -856,7 +1338,7 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
         if v is None and not getattr(self, '_is_optional', False):
             # don't overwrite current value; mark as invalid and update UI
             try:
-                self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+                self._set_input_validity_style(False)
             except Exception:
                 pass
             self._is_valid = False
@@ -880,7 +1362,9 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             # Maybe check if meta matches(si_unit)
             
             # Update the string value without triggering trace recursion
-            self._update_str_value_without_trace(str(v.value))
+            self._update_str_value_without_trace(
+                self._format_display_value(v.value, v.si_prefix)
+            )
             
             # Update combobox to reflect the prefix of the new SIVar
             if self.si_prefix_combobox is not None:
@@ -906,12 +1390,12 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             if self._is_optional:
                 self._value = None
                 self._is_valid = True
-                self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
+                self._set_input_validity_style(True)
                 self._callback(self._value)
                 return
             else:
                 self._is_valid = False
-                self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+                self._set_input_validity_style(False)
                 return
         try:
             # Determine prefix and unit
@@ -925,16 +1409,47 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
             else:
                 current_prefix = list(self._prefix_map.values())[0] if self._prefix_map else SIPrefix.NONE
 
+            if (
+                self._is_float_sivar()
+                and text.endswith(".")
+                and self._max_decimals_for_prefix(current_prefix) > 0
+            ):
+                # Keep the active decimal count in sync while the user is editing a
+                # temporary trailing decimal point, so the widget format stays aligned.
+                self._display_decimals = 0
+                if self._use_spinbox and hasattr(self, 'spinbox'):
+                    self._update_spinbox_range()
+                self._is_valid = False
+                self._set_input_validity_style(False)
+                return
+
             value = self._value_type(text)
+            decimal_clamped = False
+            if self._is_float_sivar():
+                entered_decimals = self._count_decimals(text)
+                max_decimals = self._max_decimals_for_prefix(current_prefix)
+                if entered_decimals > max_decimals:
+                    decimal_clamped = True
+                    value = self._truncate_numeric_value(value, current_prefix)
+                    self._display_decimals = max_decimals
+                    self._show_clamp_feedback()
+                    self._update_spinbox_range()
+                else:
+                    self._display_decimals = min(entered_decimals, max_decimals)
+                    self._update_spinbox_range()
 
             if self._treat_zero_as_none and self._is_optional and value == 0:
                 self._value = None
                 self._is_valid = True
-                self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
+                self._set_input_validity_style(True)
                 self._callback(self._value)
                 return
-            if value != 0:
-                self._update_str_value_without_trace(str(value))
+            value = self._normalize_numeric_value(value, current_prefix)
+            formatted_value = self._format_display_value(value, current_prefix)
+            self._update_str_value_without_trace(
+                formatted_value,
+                preserve_display_decimals=True,
+            )
 
             # Create or update SIVar
             if self._value:
@@ -959,13 +1474,13 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                 min_val = self._value.get_min_value_in_prefix(current_prefix)
                 max_val = self._value.get_max_value_in_prefix(current_prefix)
                 if value < min_val or value > max_val:
-                    self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+                    self._set_input_validity_style(False)
                     self._is_valid = False
                 else:
-                    self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
+                    self._set_input_validity_style(True)
                     self._is_valid = True
             else:
-                self._get_input_widget().configure(style=EntryStyle.PRIMARY.value)
+                self._set_input_validity_style(True)
                 self._is_valid = True
 
             if self._value is not None:
@@ -979,9 +1494,12 @@ class SITypeFieldView(FieldViewBase[Union[SIVar, Optional[SIVar]]]):
                 if self._use_spinbox and hasattr(self, 'spinbox'):
                     self._update_spinbox_range()
 
+            if decimal_clamped and self._is_valid:
+                self._show_clamp_feedback()
+
         except Exception as _:
             self._is_valid = False
-            self._get_input_widget().configure(style=EntryStyle.DANGER.value)
+            self._set_input_validity_style(False)
         self._callback(self.value)
 
 
@@ -1753,10 +2271,10 @@ class DictFieldView(FieldViewBase):
                 value_type = self._types[0]
             self._add_entry(key, value, value_type)
 
-    def _on_value_change(self, *_args):
-        self._callback(self.value)
+    def _on_value_change(self, *args, **kwargs):
+        self._callback(self.value, **kwargs)
 
-    def bind_value_change(self, command: Callable[[Dict[str, str]], None]) -> None: 
+    def bind_value_change(self, command: Callable[..., None]) -> None:
         self._callback = command
 
 
@@ -1794,13 +2312,13 @@ class TupleFieldView(FieldViewBase[tuple]):
             self._fields.append(field_view)
 
             def bind_index(index):
-                def _update(val):  
+                def _update(val, **kwargs):
                     # tuples are immutable, so we have to do it like this
                     lst = list(self._value)
                     lst[index] = val
                     self._value = tuple(lst)
 
-                    self._callback(self._value) 
+                    self._callback(self._value, **kwargs)
                 return _update
             # This is to ensure that values attributes are always up to date with the actual values of the field_views            
             field_view.bind_value_change(bind_index(i))            
@@ -1879,9 +2397,9 @@ class ObjectFieldView(FieldViewBase[dict]):
             self._value[field_name] = field_view.value
 
             def set_dict_value(key):
-                def _set_dict_value(val):
+                def _set_dict_value(val, **kwargs):
                     self._value[key] = val
-                    self._callback(self._value) # we only return the attributes to update. More performant
+                    self._callback(self._value, **kwargs) # we only return the attributes to update. More performant
                 return _set_dict_value
             field_view.bind_value_change(set_dict_value(field_name))
 
@@ -1915,12 +2433,18 @@ class ObjectFieldView(FieldViewBase[dict]):
         self._callback(copy.deepcopy(self._value)) # We use deepcopy to avoid reference issues
 
 
-    def bind_value_change(self, command: Callable[[dict], None]) -> None: 
+    def bind_value_change(self, command: Callable[..., None]) -> None:
         self._callback = command
+
+    def flash_field_success(self, field_name: str) -> None:
+        field_view = self._fields.get(field_name)
+        if field_view is not None and hasattr(field_view, "flash_success"):
+            field_view.flash_success()
 
 class FormWidget(UIComponent):
     def __init__(self, parent: UIComponent, parent_view: View | ttk.Frame, 
-                 title: str, form_class: type, widget_name: str, model_dict: dict | None = None, field_hooks: FieldHookRegistry = {}, use_scroll: bool = True):
+                 title: str, form_class: type, widget_name: str, model_dict: dict | None = None, field_hooks: FieldHookRegistry = {}, use_scroll: bool = True,
+                 model_change_callback: Optional[Callable[[dict], None]] = None):
         """
             args:
                 model_dict: Is a dictionary that is one way bound target to source. So if the form gets updated, it updates the dictionary too, but not vice versa.
@@ -1944,7 +2468,23 @@ class FormWidget(UIComponent):
         # bind the model dict to the view
         self._model_dict = {} if model_dict is None else model_dict
         self._model_dict.update(**self._attr_view.value)
-        self._attr_view.bind_value_change(lambda value: self._model_dict.update(**value))
+
+        def update_model(value: dict, **kwargs) -> None:
+            self._model_dict.update(**value)
+            if model_change_callback is not None:
+                model_change_callback(self._model_dict, **kwargs)
+
+        self._attr_view.bind_value_change(update_model)
+
+    def flash_field_success(self, field_name: str) -> None:
+        if hasattr(self._attr_view, "flash_field_success"):
+            self._attr_view.flash_field_success(field_name)
+
+    @property
+    def fields(self) -> dict[str, FieldViewBase]:
+        if hasattr(self._attr_view, "_fields"):
+            return self._attr_view._fields
+        return {}
 
     @property
     def converter(self) -> cattrs.Converter:
@@ -1964,6 +2504,10 @@ class FormWidget(UIComponent):
             return self._converter.structure(self._attr_view.value, self._attrs_class)
         except cattrs.ClassValidationError as e:
             raise e
+
+    @property
+    def valid(self) -> bool:
+        return self._attr_view.valid
     
     @attrs_object.setter
     def attrs_object(self, value: Any):
@@ -2203,4 +2747,3 @@ class FormWidgetView(View):
 
     def hide(self) -> None:
         self.pack_forget()
-

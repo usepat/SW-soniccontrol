@@ -44,6 +44,9 @@ class Protocol_v3_next_one(ProtocolList):
     def command_code_cls(self) -> type[ICommandCode]:
         return CommandCode
 
+    def convert_command_code_for_validation(self, code: int) -> int:
+        return code
+
     @property
     def custom_data_types(self) -> Dict[str, type]:
         data_types = {}

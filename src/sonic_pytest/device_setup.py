@@ -11,9 +11,9 @@ if TYPE_CHECKING:
     from soniccontrol.sonic_device import SonicDevice
 
 
-DEFAULT_TEST_SETUP_DEBUG_INDEX = 5
-DEFAULT_PROCEDURE_SETUP_DEBUG_INDEX = 6
-RESET_AT1_CONFIG_DEBUG_INDEX = 7
+DEFAULT_TEST_SETUP_DEBUG_INDEX = 10
+DEFAULT_PROCEDURE_SETUP_DEBUG_INDEX = 11
+RESET_AT1_CONFIG_DEBUG_INDEX = 12
 
 
 def _supports_debug_test(device: SonicDevice) -> bool:
@@ -23,7 +23,7 @@ def _supports_debug_test(device: SonicDevice) -> bool:
 def _manual_setup_commands(device_type: DeviceType) -> list[tuple[str, bool]]:
     commands: list[tuple[str, bool]] = [
         ("!stop", True),
-        ("!debug_test3", True),
+        (f"!debug_test{DEFAULT_TEST_SETUP_DEBUG_INDEX}", True),
         ("!clear_errors", True),
     ]
 

@@ -25,7 +25,13 @@ def _install_ttkbootstrap_scale_guard() -> None:
     original_scale_size = StyleBuilderTTK.scale_size
 
     def guarded_scale_size(self, size):
-        return _clamp_scaled_size(original_scale_size(self, size))
+        try:
+            return _clamp_scaled_size(original_scale_size(self, size))
+        except tk.TclError:
+            # The Tcl interpreter may already be torn down while tests or transient
+            # windows recreate the Tk app. Fall back to the raw size in that case so
+            # widget creation can continue without crashing.
+            return _clamp_scaled_size(size)
 
     StyleBuilderTTK.scale_size = guarded_scale_size
     _SCALE_GUARD_INSTALLED = True

@@ -244,7 +244,9 @@ class StatusBarView(View):
                 label = self._status_field_labels[status_field]
                 label.configure(text=text)
 
-            self.update()
+            # The async Tk main loop handles drawing and input events. Calling
+            # update() here starts a nested Tk loop inside the updater task,
+            # preventing queued async Home commands from running until it exits.
         except tk.TclError:
             return
 

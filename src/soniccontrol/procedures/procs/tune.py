@@ -24,7 +24,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
 
     f_step: RelativeFrequencySIVar = attrs.field(
         converter=cls_converter(RelativeFrequencySIVar),
-        default=RelativeFrequencySIVar(1, SIPrefix.KILO),
+        factory=lambda: RelativeFrequencySIVar(1, SIPrefix.KILO),
         metadata={"enum": EFieldName.TUNE_F_STEP},
     )
     t_time: HolderArgs = attrs.field(
@@ -43,7 +43,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
     )
     f_shift: RelativeFrequencySIVar = attrs.field(
         converter=cls_converter(RelativeFrequencySIVar),
-        default=RelativeFrequencySIVar(0),
+        factory=lambda: RelativeFrequencySIVar(0),
         metadata={"enum": EFieldName.TUNE_F_SHIFT},
     )
 
@@ -54,7 +54,7 @@ It is helpful when certain parameters are expected to change significantly, e.g.
     )
     gain: GainSIVar = attrs.field(
         converter=cls_converter(GainSIVar),
-        default=GainSIVar(80),
+        factory=lambda: GainSIVar(80),
         metadata={"enum": EFieldName.TUNE_GAIN},
     )
 
