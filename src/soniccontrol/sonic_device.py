@@ -3,7 +3,7 @@ import asyncio
 from collections import deque
 from datetime import datetime, timezone, timedelta
 import time
-from typing import List
+from typing import List, Optional
 import logging
 import attrs
 
@@ -437,7 +437,9 @@ class SonicDevice:
         except Exception as e:
             pass
 
-    async def update_datetime(self, t: datetime = datetime.now(timezone.utc)) -> None:
+    async def update_datetime(self, t: Optional[datetime] = None) -> None:
+        if t is None:
+            t = datetime.now(timezone.utc)
         t += timedelta(seconds=self.ping / 2)
         cmd = commands.SetDateTime(Timestamp.to_timestamp(t))
         await self.execute_command(cmd)
