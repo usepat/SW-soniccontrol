@@ -249,12 +249,20 @@ class _UIStringsEN:
     HOME_HELP_FREQUENCY: Final[
         str
     ] = "The frequency ranges from 100kHz to 10MHz"#"Here should be a description of the frequency entry."
-    HOME_HELP_GAIN: Final[str] = "The gain ranges from 0% to 150%"#"Here should be a description of the gain entry."
+    HOME_HELP_GAIN: Final[str] = "The gain ranges from 1% to 150%"#"Here should be a description of the gain entry."
     HOME_HELP_CATCH: Final[str] = ""#"Here should be a description of the catch entry."
     HOME_HELP_WIPE: Final[str] = ""#"Here should be a description of the wipe entry."
+    HOME_HELP_AUTO_SEND: Final[str] = (
+        "Auto send is enabled by default. Changed parameters are sent automatically "
+        "after 250 milliseconds without further changes."
+    )
     HOME_HELP_SET_VALUES: Final[
         str
-    ] = "The 'Send' button sets all currently configured parameters."
+    ] = (
+        "Select 'Manual send' to switch to legacy mode, where parameters are only "
+        "sent when you click 'Send'. The 'Send' button sets all currently configured "
+        "parameters. Select 'Auto send' to return to automatic sending."
+    )
     HOME_HELP_OUTPUT: Final[
         str
     ] = "The Sonicamp device sends it's answer to the requested configuration in the Feedback frame."

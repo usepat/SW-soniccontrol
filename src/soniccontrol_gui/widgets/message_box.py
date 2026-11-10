@@ -68,6 +68,10 @@ class MessageBoxView(tk.Toplevel, View):
     def __init__(self, root, message: str, title: str, dialog_options: list[DialogOptions], *args, **kwargs):
         super().__init__(root, *args, **kwargs)
         self.title(title)
+        self.transient(root.winfo_toplevel())
+        # The input grab affects all application windows, not just the parent.
+        # Keep the modal dialog visible even when another window is selected.
+        self.attributes("-topmost", True)
         self.protocol("WM_DELETE_WINDOW", self.destroy)
 
         self._message = message
@@ -125,6 +129,7 @@ class MessageBoxView(tk.Toplevel, View):
             self._create_bold_text()
         self._fit_to_content()
         self._center_window()
+        self.lift()
         self.focus_set()
         self.grab_set()
 
