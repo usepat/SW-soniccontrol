@@ -18,6 +18,9 @@ if [[ ! -x "$PYTHON_EXE" ]]; then
   exit 1
 fi
 
+
+MAIN_SCRIPT="${MAIN_SCRIPT:-$WORKSPACE_DIR/src/soniccontrol_gui/__main__.py}"
+
 if [[ ! -f "$MAIN_SCRIPT" ]]; then
   echo "SonicControl entrypoint not found at $MAIN_SCRIPT" >&2
   exit 1
