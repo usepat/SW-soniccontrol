@@ -70,6 +70,8 @@ def get_simulation_exe() -> Path | None:
     if "FIRMWARE_BUILD_DIR_PATH" not in os.environ:
         return None
     firmware_build_dir = Path(os.environ["FIRMWARE_BUILD_DIR_PATH"]).expanduser().resolve()
+    if PLATFORM == System.WINDOWS:
+        return firmware_build_dir / "windows/platform_windows/src/device/device_main.exe"
     return firmware_build_dir / "linux/platform_linux/src/device/device_main"
 
 @attrs.define()
