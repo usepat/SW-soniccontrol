@@ -25,17 +25,17 @@ You can set t_off to 0 if you want the signal to never be turned off."""
 
     f_start: AbsoluteFrequencySIVar = attrs.field(
         converter=cls_converter(AbsoluteFrequencySIVar),
-        default=AbsoluteFrequencySIVar(1, SIPrefix.MEGA),
+        factory=lambda: AbsoluteFrequencySIVar(1, SIPrefix.MEGA),
         metadata={"enum": EFieldName.RAMP_F_START},
     )
     f_stop: AbsoluteFrequencySIVar = attrs.field(
         converter=cls_converter(AbsoluteFrequencySIVar),
-        default=AbsoluteFrequencySIVar(2, SIPrefix.MEGA),
+        factory=lambda: AbsoluteFrequencySIVar(2, SIPrefix.MEGA),
         metadata={"enum": EFieldName.RAMP_F_STOP},
     )
     f_step: RelativeFrequencySIVar = attrs.field(
         converter=cls_converter(RelativeFrequencySIVar),
-        default=RelativeFrequencySIVar(100, SIPrefix.KILO),
+        factory=lambda: RelativeFrequencySIVar(100, SIPrefix.KILO),
         metadata={"enum": EFieldName.RAMP_F_STEP},
         validator=custom_validator_factory(RelativeFrequencySIVar, RelativeFrequencySIVar(10), RelativeFrequencySIVar(5, SIPrefix.MEGA))
     )
@@ -52,7 +52,7 @@ You can set t_off to 0 if you want the signal to never be turned off."""
     )
     gain: GainSIVar = attrs.field(
         converter=cls_converter(GainSIVar),
-        default=GainSIVar(50),
+        factory=lambda: GainSIVar(50),
         metadata={"enum": EFieldName.RAMP_GAIN},
     )
 

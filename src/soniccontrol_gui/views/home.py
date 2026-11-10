@@ -1,39 +1,40 @@
 import asyncio
 import copy
-from typing import Callable
+from collections.abc import Callable
+
 from async_tkinter_loop import async_handler
+import attrs
+import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
-from sonic_protocol.schema import DeviceType, SIPrefix
+
+from sonic_protocol.field_names import EFieldName
 from sonic_protocol.python_parser import commands
+from sonic_protocol.schema import DeviceType, SIPrefix, Signal
+from sonic_protocol.si_unit import AbsoluteFrequencySIVar, cls_converter, DescaleGainSIVar, GainSIVar, SwfSIVar
+from soniccontrol.sonic_device import SonicDevice
+from soniccontrol.utils.events import PropertyChangeEvent
+from soniccontrol_gui.constants import sizes, ui_labels
+from soniccontrol_gui.resources import images
 from soniccontrol_gui.ui_component import UIComponent
-from sonic_protocol.si_unit import AbsoluteFrequencySIVar, DescaleGainSIVar, GainSIVar, SwfSIVar, cls_converter
+from soniccontrol_gui.utils.debounce_job import DebounceJob
+from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView, View
-from soniccontrol.sonic_device import SonicDevice
-from soniccontrol_gui.widgets.form_widget import FormWidget
-from soniccontrol_gui.utils.debounce_job import DebounceJob
-
-import ttkbootstrap as ttk
-import attrs
-
-from soniccontrol.utils.events import PropertyChangeEvent
-from soniccontrol_gui.utils.image_loader import ImageLoader
 from soniccontrol_gui.views.core.app_state import ExecutionState
-from soniccontrol_gui.resources import images
-from soniccontrol_gui.constants import ui_labels, sizes
+from soniccontrol_gui.widgets.form_widget import FormWidget
 
 @attrs.define
 class TransducerState:
     """Configuration data for the home view controls."""
     frequency: AbsoluteFrequencySIVar = attrs.field(
         converter=cls_converter(AbsoluteFrequencySIVar),
-        default=AbsoluteFrequencySIVar(100000),
+        factory=lambda: AbsoluteFrequencySIVar(100000),
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )
     signal: bool = attrs.field(default=False, metadata={"field_view_kwargs":{"bootstyle": "round-toggle" }})
     gain: GainSIVar = attrs.field(
         converter=cls_converter(GainSIVar),
-        default=GainSIVar(value=1),
+        factory=lambda: GainSIVar(value=1),
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )
 
@@ -42,13 +43,13 @@ class DescaleTransducerState:
     """Configuration data for the home view controls."""
     swf: SwfSIVar = attrs.field(
         converter=cls_converter(SwfSIVar),
-        default=SwfSIVar(5),
+        factory=lambda: SwfSIVar(5),
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )
     signal: bool = attrs.field(default=False, metadata={"field_view_kwargs":{"bootstyle": "round-toggle" }})
     gain: DescaleGainSIVar = attrs.field(
         converter=cls_converter(DescaleGainSIVar),
-        default=DescaleGainSIVar(value=1),
+        factory=lambda: DescaleGainSIVar(value=1),
         metadata={"field_view_kwargs": {"use_scale": True, "use_spinbox": True}}                                        
     )
 
@@ -63,15 +64,18 @@ class Home(UIComponent):
         else:
             self._config = TransducerState()
             self._config_old = TransducerState()
+
+        
         self._model_sync_lock = asyncio.Lock()
-        # Adjust frequency range based on device type
-                    # You can adjust min/max ranges here later
+        self._auto_send_enabled = True
+        self._programmatic_form_update = False
+        self._initial_device_state_loaded = False
         
         self._view = HomeView(parent.view)
         super().__init__(parent, self._view)
 
         self._info_frame = DeviceInfoFrame(self, self._view.info_frame_slot, "home", self._device) 
-        
+        self._model_change_debounce = DebounceJob(self._sync_changed_model, self._view)
         # Create the form widget for the configuration
         self._form_widget = FormWidget(
             self, 
@@ -83,26 +87,96 @@ class Home(UIComponent):
             use_scroll=False,
             model_change_callback=self._on_form_model_changed,
         )
-        self._model_change_debounce = DebounceJob(self._sync_changed_model, self._view)
-        
-        self._view.set_send_button_command(self._on_send_pressed)
+        self._apply_config_state(self._config)
 
-    def _on_form_model_changed(self, _: dict) -> None:
-        self._model_change_debounce()
+        self._view.set_auto_send_button_command(self._toggle_auto_send)
+        self._view.set_send_button_command(self._on_send_pressed)
+        self._view.set_send_button_enabled(not self._auto_send_enabled)
+        self._view.after_idle(async_handler(self._fetch_device_transducer_state))
+
+    def _on_form_model_changed(self, _: dict, **kwargs) -> None:
+        if self._programmatic_form_update:
+            return
+        if not self._initial_device_state_loaded:
+            return
+        if self._auto_send_enabled:
+            if kwargs.get("flush"):
+                self._sync_changed_model()
+            else:
+                self._model_change_debounce()
+
+    def _apply_config_state(self, state: TransducerState | DescaleTransducerState) -> None:
+        # Keep UI form model and both config snapshots aligned and detached.
+        self._programmatic_form_update = True
+        try:
+            self._form_widget.attrs_object = copy.deepcopy(state)
+        finally:
+            self._programmatic_form_update = False
+
+        self._config = copy.deepcopy(state)
+        self._config_old = copy.deepcopy(state)
+
+    async def _fetch_device_transducer_state(self) -> None:
+        answer = await self._device.get_update()
+        try:
+            if not answer.is_valid:
+                return
+
+            if self._device.info.device_type == DeviceType.DESCALE:
+                state = DescaleTransducerState(
+                    swf=answer[EFieldName.SWF],
+                    gain=answer[EFieldName.GAIN],
+                    signal=answer[EFieldName.SIGNAL] == Signal.ON,
+                )
+            else:
+                state = TransducerState(
+                    frequency=answer[EFieldName.FREQUENCY],
+                    gain=answer[EFieldName.GAIN],
+                    signal=answer[EFieldName.SIGNAL] == Signal.ON,
+                )
+
+            async with self._model_sync_lock:
+                self._apply_config_state(state)
+        finally:
+            self._initial_device_state_loaded = True
+        
+
+    def _collect_changed_fields(self, config: TransducerState | DescaleTransducerState) -> list[str]:
+        changed_fields: list[str] = []
+        if isinstance(config, DescaleTransducerState):
+            assert isinstance(self._config_old, DescaleTransducerState)
+            if int(config.swf.to_prefix(SIPrefix.NONE)) != int(self._config_old.swf.to_prefix(SIPrefix.NONE)):
+                changed_fields.append("swf")
+            if config.gain.to_prefix(SIPrefix.NONE) != self._config_old.gain.to_prefix(SIPrefix.NONE):
+                changed_fields.append("gain")
+            if config.signal != self._config_old.signal:
+                changed_fields.append("signal")
+            return changed_fields
+
+        assert isinstance(config, TransducerState)
+        assert isinstance(self._config_old, TransducerState)
+        if int(config.frequency.to_prefix(SIPrefix.NONE)) != int(self._config_old.frequency.to_prefix(SIPrefix.NONE)):
+            changed_fields.append("frequency")
+        if config.gain.to_prefix(SIPrefix.NONE) != self._config_old.gain.to_prefix(SIPrefix.NONE):
+            changed_fields.append("gain")
+        if config.signal != self._config_old.signal:
+            changed_fields.append("signal")
+        return changed_fields
 
     @async_handler
     async def _sync_changed_model(self) -> None:
         async with self._model_sync_lock:
             if not self._form_widget.valid:
                 return
-
             config = self._form_widget.attrs_object
+            changed_fields: list[str] = []
             if isinstance(config, DescaleTransducerState):
                 assert isinstance(self._config_old, DescaleTransducerState)
                 swf = int(config.swf.to_prefix(SIPrefix.NONE))
                 if swf != int(self._config_old.swf.to_prefix(SIPrefix.NONE)):
                     await self._device.execute_command(commands.SetSwf(swf))
                     self._config_old.swf = copy.deepcopy(config.swf)
+                    changed_fields.append("swf")
             else:
                 assert isinstance(config, TransducerState)
                 assert isinstance(self._config_old, TransducerState)
@@ -110,11 +184,13 @@ class Home(UIComponent):
                 if frequency != int(self._config_old.frequency.to_prefix(SIPrefix.NONE)):
                     await self._device.execute_command(commands.SetFrequency(frequency))
                     self._config_old.frequency = copy.deepcopy(config.frequency)
+                    changed_fields.append("frequency")
 
             gain = config.gain.to_prefix(SIPrefix.NONE)
             if gain != self._config_old.gain.to_prefix(SIPrefix.NONE):
                 await self._device.execute_command(commands.SetGain(gain))
                 self._config_old.gain = copy.deepcopy(config.gain)
+                changed_fields.append("gain")
 
             if config.signal != self._config_old.signal:
                 if config.signal:
@@ -122,11 +198,17 @@ class Home(UIComponent):
                 else:
                     await self._device.set_signal_off()
                 self._config_old.signal = config.signal
+                changed_fields.append("signal")
+
+            for field_name in changed_fields:
+                if field_name in self._form_widget.fields:
+                    self._form_widget.flash_field_success(field_name)
 
     @async_handler
     async def _on_send_pressed(self) -> None:
         async with self._model_sync_lock:
             config = self._form_widget.attrs_object
+            changed_fields = self._collect_changed_fields(config)
             if isinstance(config, DescaleTransducerState):
                 assert isinstance(self._config_old, DescaleTransducerState)
                 swf = int(config.swf.to_prefix(SIPrefix.NONE))
@@ -148,10 +230,20 @@ class Home(UIComponent):
                 await self._device.set_signal_off()
             self._config_old.signal = config.signal
 
+            for field_name in changed_fields:
+                if field_name in self._form_widget.fields:
+                    self._form_widget.flash_field_success(field_name)
+
+    def _toggle_auto_send(self) -> None:
+        self._auto_send_enabled = not self._auto_send_enabled
+        self._view._auto_send_button.config(text=ui_labels.MANUAL_SEND_LABEL if self._auto_send_enabled else ui_labels.AUTO_SEND_LABEL)
+        self._view.set_send_button_enabled(not self._auto_send_enabled)
+
+
     def on_execution_state_changed(self, e: PropertyChangeEvent) -> None:
         execution_state: ExecutionState = e.new_value.execution_state
         self._info_frame.on_execution_state_changed(e)
-        self._view.set_send_button_enabled(execution_state == ExecutionState.IDLE)
+        self._view.set_send_button_enabled(execution_state == ExecutionState.IDLE and self._auto_send_enabled)
 
     @property 
     def freq(self) -> int:
@@ -195,6 +287,10 @@ class HomeView(TabView):
         
         # Form slot - this is where the FormWidget will be placed
         self._form_slot = ttk.Frame(self._control_frame)
+
+        self._auto_send_button = ttk.Button(
+            self._control_frame, text=ui_labels.MANUAL_SEND_LABEL
+        )
         
         self._send_button = ttk.Button(
             self._control_frame, text=ui_labels.SEND_LABEL
@@ -217,11 +313,14 @@ class HomeView(TabView):
         # Layout the form slot first - ensure it expands to use all available space
         self._form_slot.pack(side=ttk.LEFT, fill=ttk.BOTH, expand=True, padx=(sizes.LARGE_PADDING, sizes.MEDIUM_PADDING), pady=sizes.LARGE_PADDING)
         # Layout the send button on the right side (fixed size, not expanding)
+        self._auto_send_button.pack(side=ttk.RIGHT, padx=(0, sizes.LARGE_PADDING), pady=sizes.LARGE_PADDING)
         self._send_button.pack(side=ttk.RIGHT, padx=(0, sizes.LARGE_PADDING), pady=sizes.LARGE_PADDING)
 
     def set_send_button_command(self, command: Callable[[], None]) -> None:
         self._send_button.configure(command=command)
 
+    def set_auto_send_button_command(self, command: Callable[[], None]) -> None:
+            self._auto_send_button.configure(command=command)
 
     def set_send_button_enabled(self, enabled: bool) -> None:
         self._send_button.configure(state=ttk.NORMAL if enabled else ttk.DISABLED)

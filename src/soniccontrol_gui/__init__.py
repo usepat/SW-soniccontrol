@@ -6,6 +6,7 @@ import traceback
 from PIL import Image
 
 from soniccontrol_gui.plugins.ui_plugin import register_ui_plugins
+from soniccontrol_gui.utils.tk_input_methods import configure_tk_input_methods
 from soniccontrol_gui.widgets.message_box import MessageBox
 Image.CUBIC = Image.BICUBIC # FIX: because ttk.bootstrap sets an deprecated, removed value
 
@@ -123,6 +124,7 @@ def start_gui(remote_server_url: str | None):
         simulation_exe_path=get_simulation_exe()
     )
     root = main_window.view
+    configure_tk_input_methods(root)
     for seq in ("<MouseWheel>", "<Button-4>", "<Button-5>"):  # Win/mac + X11
         root.unbind_class("TCombobox", seq)
     if PLATFORM != System.WINDOWS:

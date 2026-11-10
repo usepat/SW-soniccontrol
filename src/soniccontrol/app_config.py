@@ -75,5 +75,6 @@ def get_simulation_exe() -> Path | None:
 @attrs.define()
 class AppConfig:
     remote_server_url: str | None = attrs.field(default=None)
+    spinbox_repeat_mode: str = attrs.field(default="slow")
 
 APP_CONFIG = AppConfig() # This variable can be changed depending on the cmd args. Is done in sonic control gui

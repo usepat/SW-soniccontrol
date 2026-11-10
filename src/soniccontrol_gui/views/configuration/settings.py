@@ -7,6 +7,7 @@ from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
 from soniccontrol_gui.view import TabView
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol.app_config import APP_CONFIG
 from soniccontrol_gui.constants import sizes, ui_labels
 from soniccontrol_gui.resources import images
 from soniccontrol_gui.utils.image_loader import ImageLoader
@@ -25,6 +26,7 @@ class Settings(UIComponent):
 
         super().__init__(parent, self._view, self._logger)
         self._view.set_updater_interval(updater.iteration_interval)
+        self._view.set_spinbox_repeat_mode(APP_CONFIG.spinbox_repeat_mode)
         self._view.set_apply_settings_command(async_handler(self._apply_settings))
 
     async def _apply_settings(self) -> None:
@@ -33,6 +35,8 @@ class Settings(UIComponent):
         self._logger.debug("Stopped updater")
         self._updater.iteration_interval = self._view.get_updater_interval()
         self._logger.debug("Set updater interval to %i", self._view.get_updater_interval())
+        APP_CONFIG.spinbox_repeat_mode = self._view.get_spinbox_repeat_mode()
+        self._logger.debug("Set spinbox repeat mode to %s", APP_CONFIG.spinbox_repeat_mode)
         self._updater.start()
         self._logger.debug("Started updater")
 
@@ -73,9 +77,23 @@ class SettingsView(TabView):
         self._updater_interval_entry: ttk.Entry = ttk.Entry(
             self._settings_frame, textvariable=self._updater_interval, style=ttk.DARK
         )
+        self._spinbox_repeat_mode_label: ttk.Label = ttk.Label(
+            self._settings_frame,
+            text=ui_labels.SPINBOX_REPEAT_MODE_LABEL,
+            style=ttk.DARK,
+        )
+        self._spinbox_repeat_mode: ttk.StringVar = ttk.StringVar(value=ui_labels.SPINBOX_REPEAT_SLOW)
+        self._spinbox_repeat_mode_entry: ttk.Combobox = ttk.Combobox(
+            self._settings_frame,
+            textvariable=self._spinbox_repeat_mode,
+            values=[ui_labels.SPINBOX_REPEAT_FAST, ui_labels.SPINBOX_REPEAT_SLOW],
+            state="readonly",
+            style=ttk.DARK,
+        )
 
         WidgetRegistry.register_widget(self._apply_settings_button, "apply_settings_button", tab_name)
         WidgetRegistry.register_widget(self._updater_interval_entry, "updater_interval_entry", tab_name)
+        WidgetRegistry.register_widget(self._spinbox_repeat_mode_entry, "spinbox_repeat_mode_entry", tab_name)
 
     def _initialize_publish(self) -> None:
         self._settings_frame.pack(expand=True, fill=ttk.BOTH)
@@ -105,6 +123,20 @@ class SettingsView(TabView):
             pady=sizes.MEDIUM_PADDING,
             sticky=ttk.EW,
         )
+        self._spinbox_repeat_mode_label.grid(
+            row=1,
+            column=1,
+            padx=sizes.MEDIUM_PADDING,
+            pady=sizes.MEDIUM_PADDING,
+            sticky=ttk.EW,
+        )
+        self._spinbox_repeat_mode_entry.grid(
+            row=1,
+            column=2,
+            padx=sizes.MEDIUM_PADDING,
+            pady=sizes.MEDIUM_PADDING,
+            sticky=ttk.EW,
+        )
 
     def set_apply_settings_command(self, command: Callable[[], None]) -> None:
         self._apply_settings_button.configure(command=command)
@@ -114,3 +146,14 @@ class SettingsView(TabView):
 
     def get_updater_interval(self) -> int:
         return self._updater_interval.get()
+
+    def set_spinbox_repeat_mode(self, mode: str) -> None:
+        if mode == "fast":
+            self._spinbox_repeat_mode.set(ui_labels.SPINBOX_REPEAT_FAST)
+            return
+        self._spinbox_repeat_mode.set(ui_labels.SPINBOX_REPEAT_SLOW)
+
+    def get_spinbox_repeat_mode(self) -> str:
+        if self._spinbox_repeat_mode.get() == ui_labels.SPINBOX_REPEAT_FAST:
+            return "fast"
+        return "slow"
