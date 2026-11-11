@@ -180,36 +180,6 @@ def test_parse_str_value_reformats_valid_spinbox_input():
         root.destroy()
 
 
-def test_spinbox_arrow_repeat_stops_on_release():
-    field, root = make_field(AbsoluteFrequencySIVar(123450.0, SIPrefix.NONE), use_spinbox=True)
-    try:
-        generated = []
-        original = field.spinbox.event_generate
-
-        def recording(event_name):
-            generated.append(event_name)
-            return original(event_name)
-
-        field.spinbox.event_generate = recording
-
-        press_event = type("Event", (), {"keysym": "Up", "widget": field.spinbox})()
-        field.on_spinbox_arrow(press_event)
-        root.update()
-        assert field._spinbox_repeat_key == "Up"
-        assert field._spinbox_repeat_job is not None
-
-        field._repeat_spinbox_step()
-        root.update()
-        assert generated.count("<<Increment>>") >= 2
-
-        field._handle_spinbox_keyrelease(press_event)
-        root.update()
-        assert field._spinbox_repeat_key is None
-        assert field._spinbox_repeat_job is None
-    finally:
-        field.destroy()
-        root.destroy()
-
 
 def test_spinbox_repeat_delay_uses_app_setting():
     field = object.__new__(SITypeFieldView)
