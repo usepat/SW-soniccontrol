@@ -13,7 +13,7 @@ from sonic_pytest.gui.workflows import send_over_serial_monitor
 def set_configuration_at1_values(atf: str, atk: str, att: str) -> None:
     controller = GuiController()
     controller.set_widget_text(widget_names.CONFIGURATION_AT_CONFIG_1_ATF_ENTRY_UNIT, "Hz")
-    controller.set_widget_text(widget_names.CONFIGURATION_AT_CONFIG_1_ATT_ENTRY_UNIT, "C°")
+    # ATT has a fixed Celsius label, not a selectable unit combobox.
     controller.set_widget_text(widget_names.CONFIGURATION_AT_CONFIG_1_ATF_ENTRY, atf)
     controller.set_widget_text(widget_names.CONFIGURATION_AT_CONFIG_1_ATK_ENTRY, atk)
     controller.set_widget_text(widget_names.CONFIGURATION_AT_CONFIG_1_ATT_ENTRY, att)
