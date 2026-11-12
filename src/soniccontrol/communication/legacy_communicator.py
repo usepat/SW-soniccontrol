@@ -13,6 +13,8 @@ from soniccontrol.app_config import ENCODING
 from soniccontrol.utils.events import Event
 from soniccontrol.app_config import PLATFORM, System
 
+LEGACY_BAUDRATE = 115200
+
 @attrs.define()
 class LegacyCommunicator(Communicator):
     MESSAGE_ID_MAX_CLIENT: Final[int] = 2 ** 16 - 1 # 65535 is the max for uint16. so we cannot go higher than that.
@@ -25,7 +27,7 @@ class LegacyCommunicator(Communicator):
         init=False, default=None, repr=False
     )
     _logger: logging.Logger = attrs.field(default=logging.getLogger())
-
+    _protocol: Protocol = attrs.field(default=None)
     _command_queue: asyncio.Queue = attrs.field(default=asyncio.Queue(), init=False)
     _restart: bool = attrs.field(default=False, init=False)
     _message_counter: int = attrs.field(default=0, init=False)
@@ -48,12 +50,12 @@ class LegacyCommunicator(Communicator):
         self._logger.info("try open communication")
         
         if isinstance(connection, SerialConnection):
-            connection.baudrate = 9600
+            connection.baudrate = LEGACY_BAUDRATE
 
         self._restart = False 
         self._reader, self._writer = await self._connection.open_connection()
-        #self._writer.write(b"!SERIAL\n")
-        #await self._writer.drain()
+        # self._writer.write(b"!SERIAL\n")
+        # await self._writer.drain()
         timeout = 10  # Crystal devices takes a long time to respond after connecting
         while True:
             try:
@@ -166,9 +168,9 @@ class LegacyCommunicator(Communicator):
     async def send_and_wait_for_response(self, request: str, **kwargs) -> str:
         if not self._connection_opened.is_set():
             raise ConnectionError("Communicator is not connected")
-        code_value = kwargs.get('code')
+        code_value = kwargs.get('code', None)
         if code_value is None or not isinstance(code_value, int):
-            raise ConnectionError("Command code not included in kwargs or is not an integer")
+            code_value = self.deduce_command_code(request)
         code: int = code_value
         async with self._send_lock:
             MAX_RETRIES = 3 
@@ -208,6 +210,18 @@ class LegacyCommunicator(Communicator):
         self._logger.info("Disconnected from device")
         if not(self._restart):
             self.emit(Event(Communicator.DISCONNECTED_EVENT))
+
+
+    def deduce_command_code(self, request_str: str) -> int:
+        """Return the last matching command code, or zero when none matches."""
+        for command in self._protocol.command_contracts.values():
+            if command is None or command.command_def is None:
+                continue
+
+            identifiers = command.command_def.sonic_text_attrs.string_identifier
+            if any(identifier in request_str for identifier in identifiers):
+                return command.code
+        return -1
 
 
 

@@ -64,13 +64,13 @@ class DeviceBuilder:
         device_type: DeviceType = DeviceType.CRYSTAL
         is_release: bool = True
 
-        comm = LegacyCommunicator(_logger=self._logger)
+        comm = LegacyCommunicator()
         await comm.open_communication(connection)
         
         # create device
         self._builder_logger.info("The device is a %s with a %s build and understands the protocol %s", device_type.value, "release", str(protocol_version))
         protocol = operator_protocol_factory.build_protocol_for(ProtocolType(protocol_version, device_type, is_release))
-            
+        comm._protocol = protocol 
         info = FirmwareInfo(device_type=device_type, protocol_version=protocol_version, is_release=is_release)
         device = SonicDevice(comm, protocol, info, logger=self._logger)
     

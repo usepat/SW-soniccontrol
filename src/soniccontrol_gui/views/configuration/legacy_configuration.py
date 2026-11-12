@@ -93,6 +93,7 @@ class ATConfigFrame(UIComponent):
 class ATConfigFrameView(View):
     def __init__(self, master: ttk.Frame, index: int, *args, **kwargs):
         self._index = index
+        self._widget_name = ""
         super().__init__(master, *args, **kwargs)
         self._widget_name = self.scoped_widget_name(f"at_config.{index}")
 

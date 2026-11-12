@@ -13,6 +13,7 @@ import tkinter as tk
 from sonic_protocol.python_parser import commands
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import APP_CONFIG
+from soniccontrol.communication.legacy_communicator import LEGACY_BAUDRATE
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, redetect_connection
 from soniccontrol.network.connection import RemoteServerConnection
@@ -357,8 +358,7 @@ class ConnectionWindow(TopLevelWindow):
             raise ValueError("No port selected")
         self._is_connecting = True
 
-        baudrate = DEFAULT_MODBUS_BAUDRATE
-
+        baudrate = LEGACY_BAUDRATE if self._view.is_legacy_device else DEFAULT_MODBUS_BAUDRATE 
         
         # assures ports were already loaded, needed for tests
         await self._loaded_ports.wait()
