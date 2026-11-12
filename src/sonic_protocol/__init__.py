@@ -1,1 +1,2 @@
 from sonic_protocol.user_manual_compiler import build_manual
+from sonic_protocol.python_parser import commands as cmds

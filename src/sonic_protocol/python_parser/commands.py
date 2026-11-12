@@ -638,3 +638,99 @@ class SetDateTime(Command):
         super().__init__(code=CommandCode.SET_DATETIME)
 
     value: Timestamp = attrs.field(alias=EFieldName.TIMESTAMP.name)
+
+
+@attrs.define()
+class GetNumPlugins(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_NUM_PLUGINS)
+
+@attrs.define()
+class GetPluginInfo(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_PLUGIN_INFO)
+
+    index: int = attrs.field(alias=EFieldName.PLUGIN_INDEX.name)
+
+@attrs.define()
+class GetPluginVarInfo(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_PLUGIN_INFO)
+
+    arg0: int = attrs.field(alias=EFieldName.PLUGIN_INDEX.name)
+    arg1: int = attrs.field(alias=EFieldName.INDEX.name)
+
+@attrs.define()
+class GetPluginActionInfo(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_PLUGIN_ACTION_INFO)
+
+    arg0: int = attrs.field(alias=EFieldName.PLUGIN_INDEX.name)
+    arg1: int = attrs.field(alias=EFieldName.INDEX.name)
+
+@attrs.define()
+class GetPluginVarUint(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_PLUGIN_UINT_VAR)
+
+    arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
+    arg1: str = attrs.field(alias=EFieldName.NAME.name)
+
+@attrs.define()
+class GetPluginVarFloat(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_PLUGIN_FLOAT_VAR)
+
+    arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
+    arg1: str = attrs.field(alias=EFieldName.NAME.name)
+
+@attrs.define()
+class GetPluginVarBool(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_PLUGIN_BOOL_VAR)
+
+    arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
+    arg1: str = attrs.field(alias=EFieldName.NAME.name)
+
+@attrs.define()
+class GetPluginVarStr(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_PLUGIN_STR_VAR)
+
+    arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
+    arg1: str = attrs.field(alias=EFieldName.NAME.name)
+
+@attrs.define()
+class SetPluginVarUint(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_PLUGIN_UINT_VAR)
+
+    arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
+    arg1: str = attrs.field(alias=EFieldName.NAME.name)
+    setter: int = attrs.field(alias=EFieldName.VALUE.name)
+
+@attrs.define()
+class SetPluginVarFloat(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_PLUGIN_FLOAT_VAR)
+
+    arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
+    arg1: str = attrs.field(alias=EFieldName.NAME.name)
+    setter: float = attrs.field(alias=EFieldName.VALUE.name)
+
+@attrs.define()
+class SetPluginVarBool(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_PLUGIN_BOOL_VAR)
+
+    arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
+    arg1: str = attrs.field(alias=EFieldName.NAME.name)
+    setter: bool = attrs.field(alias=EFieldName.VALUE.name)
+
+@attrs.define()
+class DoPluginAction(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.DO_PLUGIN_ACTION)
+
+    arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
+    arg1: str = attrs.field(alias=EFieldName.NAME.name)

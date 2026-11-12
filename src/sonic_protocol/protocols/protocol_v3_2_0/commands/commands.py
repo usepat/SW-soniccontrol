@@ -2,8 +2,9 @@ import copy
 from enum import Enum, IntEnum
 from typing import List
 from sonic_protocol.field_names import EFieldName
+from sonic_protocol.groups import GROUPS
 from sonic_protocol.schema import (
-    CommandParamDef, ControlMode, FieldType, NumStrEnum, NumStrValue, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
+    CommandParamDef, ControlMode, FieldType, NumStrEnum, NumStrValue, Procedure, SIPrefix, SIUnit, SonicTextAnswerFieldAttrs, SonicTextCommandAttrs, UserManualAttrs, CommandDef, AnswerDef,
     AnswerFieldDef, CommandContract, SystemState, TransducerState, Anomaly, Version
 )
 from sonic_protocol.command_codes import CommandCode
@@ -84,7 +85,7 @@ get_num_plugins = CommandContract(
         description="gets the number of available plugins"
     ),
     is_release=True,
-    tags=["plugin"]
+    group_id=GROUPS.plugin
 )
 
 get_plugin_info = CommandContract(
@@ -108,7 +109,7 @@ get_plugin_info = CommandContract(
         description="gets the metadata for the specified plugin"
     ),
     is_release=True,
-    tags=["plugin"]
+    group_id=GROUPS.plugin
 )
 
 get_plugin_var_info = CommandContract(
@@ -124,13 +125,14 @@ get_plugin_var_info = CommandContract(
             AnswerFieldDef(EFieldName.INDEX, FieldType(np.uint8)),
             AnswerFieldDef(EFieldName.NAME, FieldType(str)),
             AnswerFieldDef(EFieldName.TYPE, FieldType(field_type=PluginVarType)),
+            AnswerFieldDef(EFieldName.IS_WRITABLE, FieldType(field_type=bool)),
         ]
     ),
     user_manual_attrs=UserManualAttrs(
         description="gets the metadata for a plugin variable"
     ),
     is_release=True,
-    tags=["plugin"]
+    group_id=GROUPS.plugin
 )
 
 def create_set_plugin_var_command_contract(command_code: CommandCode, field_type, command_identifiers: str | List[str]):
@@ -152,7 +154,7 @@ def create_set_plugin_var_command_contract(command_code: CommandCode, field_type
             description="sets the plugin variable with appropriate type. Returns error on type mismatch"
         ),
         is_release=True,
-        tags=["plugin"]
+        group_id=GROUPS.plugin
     )
 
 def create_get_plugin_var_command_contract(command_code: CommandCode, field_type, command_identifiers: str | List[str]):
@@ -173,7 +175,7 @@ def create_get_plugin_var_command_contract(command_code: CommandCode, field_type
             description="gets the plugin variable with appropriate type. Returns error on type mismatch"
         ),
         is_release=True,
-        tags=["plugin"]
+        group_id=GROUPS.plugin
     )
 
 
@@ -196,22 +198,22 @@ set_plugin_bool_var = create_set_plugin_var_command_contract(
 get_plugin_uint_var = create_get_plugin_var_command_contract(
     CommandCode.GET_PLUGIN_UINT_VAR,
     np.uint32,
-    "!plugin_uint_var"
+    "?plugin_uint_var"
 )
 get_plugin_float_var = create_get_plugin_var_command_contract(
     CommandCode.GET_PLUGIN_FLOAT_VAR,
     float,
-    "!plugin_float_var"
+    "?plugin_float_var"
 )
 get_plugin_bool_var = create_get_plugin_var_command_contract(
     CommandCode.GET_PLUGIN_BOOL_VAR,
     bool,
-    "!plugin_bool_var"
+    "?plugin_bool_var"
 )
 get_plugin_str_var = create_get_plugin_var_command_contract(
     CommandCode.GET_PLUGIN_STR_VAR,
     str,
-    "!plugin_str_var"
+    "?plugin_str_var"
 )
 
 get_plugin_action_info = CommandContract(
@@ -232,7 +234,7 @@ get_plugin_action_info = CommandContract(
         description="gets the metadata for a plugin action"
     ),
     is_release=True,
-    tags=["plugin"]
+    group_id=GROUPS.plugin
 )
 
 do_plugin_action = CommandContract(
@@ -252,7 +254,7 @@ do_plugin_action = CommandContract(
         description="executes a plugin action. Returns an error code. Plugin should follow C standard. 0 means success"
     ),
     is_release=True,
-    tags=["plugin"]
+    group_id=GROUPS.plugin
 )
 
 enable_plugin = CommandContract(
@@ -273,7 +275,28 @@ enable_plugin = CommandContract(
         description="enables or disables a plugin"
     ),
     is_release=True,
-    tags=["plugin"]
+    group_id=GROUPS.plugin
+)
+
+run_proc = CommandContract(
+    code=CommandCode.RUN_PROC,
+    command_def=CommandDef(
+        index_param=CommandParamDef(EFieldName.PROCEDURE, FieldType(Procedure)),
+        sonic_text_attrs=SonicTextCommandAttrs(
+            string_identifier=["!run_proc", "run_proc"]
+        )
+    ),
+    answer_def=AnswerDef(
+        fields=[
+            AnswerFieldDef(EFieldName.PROCEDURE, FieldType(Procedure), 
+                           sonic_text_attrs=SonicTextAnswerFieldAttrs(prefix="proc: "))
+        ]
+    ),
+    user_manual_attrs=UserManualAttrs(
+        description="starts a procedure"
+    ),
+    is_release=True,
+    group_id=GROUPS.procedures.procedure
 )
 
 

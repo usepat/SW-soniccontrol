@@ -27,6 +27,7 @@ class GROUPS:
     transducer = GroupId("transducer")
     generic = GroupId("generic")
     testing = GroupId("testing")
+    plugin = GroupId("plugin")
 
 @dataclass(frozen=True)
 class GroupSpec:

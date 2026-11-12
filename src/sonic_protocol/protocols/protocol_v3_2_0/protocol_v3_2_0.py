@@ -9,7 +9,7 @@ from .commands.commands import (
     PluginVarType, get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
     get_plugin_info, get_plugin_str_var, get_plugin_uint_var,
     get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, 
-    set_plugin_uint_var, do_plugin_action, enable_plugin
+    set_plugin_uint_var, do_plugin_action, enable_plugin, run_proc
 )
 
 # Import latest protocol
@@ -67,7 +67,7 @@ class Protocol_v3_2_0(ProtocolList):
             get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
             get_plugin_info, get_plugin_str_var, get_plugin_uint_var,
             get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, 
-            set_plugin_uint_var, do_plugin_action, enable_plugin
+            set_plugin_uint_var, do_plugin_action, enable_plugin, run_proc
         ]
         if protocol_type.device_type == DeviceType.DESCALE:
             pass

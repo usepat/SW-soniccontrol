@@ -200,30 +200,6 @@ class SonicDevice:
         suppress_exception_log: bool = False,
         **kwargs
     ) -> Answer:
-        """
-        Executes a command by sending a message to the SonicDevice device and updating the status accordingly.
-
-        Args:
-            message (Union[str, Command]): The command message to execute. It can be either a string or a Command object.
-            argument (Any, optional): The argument to pass to the command. Defaults to an empty string.
-            **status_kwargs_if_valid_command: Additional keyword arguments to update the status if the command is valid.
-
-        Returns:
-            str: The string representation of the command's answer.
-
-        Raises:
-            Exception: If an error occurs during command execution or device disconnection.
-
-        Note:
-            - If the command is not found in the SonicDevice device's commands, it will be executed as a new command.
-            - The status of the device will be updated with the command's status result and any additional status keyword arguments.
-            - The command's answer will be returned as a string.
-
-        Example:
-            >>> sonicamp = SonicDevice()
-            >>> await sonicamp.execute_command("!ON", raise_exception=True)
-            "Device powered on."
-        """
         if should_log:
             command_str = command if isinstance(command, str) else str(command.__class__)
             self._logger.info("Execute command %s", command_str)
@@ -278,6 +254,30 @@ class SonicDevice:
         suppress_exception_log: bool = False,
         **kwargs
     ) -> Answer:
+        """
+        Executes a command by sending a message to the SonicDevice device and updating the status accordingly.
+
+        Args:
+            message (Union[str, Command]): The command message to execute. It can be either a string or a Command object.
+            argument (Any, optional): The argument to pass to the command. Defaults to an empty string.
+            **status_kwargs_if_valid_command: Additional keyword arguments to update the status if the command is valid.
+
+        Returns:
+            str: The string representation of the command's answer.
+
+        Raises:
+            Exception: If an error occurs during command execution or device disconnection.
+
+        Note:
+            - If the command is not found in the SonicDevice device's commands, it will be executed as a new command.
+            - The status of the device will be updated with the command's status result and any additional status keyword arguments.
+            - The command's answer will be returned as a string.
+
+        Example:
+            >>> sonicamp = SonicDevice()
+            >>> await sonicamp.execute_command("!ON", raise_exception=True)
+            "Device powered on."
+        """
         if not self._uses_modbus():
             return await self._execute_command_impl(
                 command,

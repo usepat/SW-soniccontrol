@@ -207,6 +207,7 @@ class EFieldName(IEFieldName):
     TYPE = 207
     ENABLED = 208
     PLUGIN_INDEX = 209
+    IS_WRITABLE = 210
     
 
     

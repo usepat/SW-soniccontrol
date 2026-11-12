@@ -222,6 +222,7 @@ class CommandCode(ICommandCode):
     SET_STOP = 500
     SET_CONTINUE = 501
     SET_PAUSE = 502
+    RUN_PROC = 503
 
     GET_NUM_TESTS = 510
     GET_TEST_INFO = 511

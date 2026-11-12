@@ -221,6 +221,12 @@ class Procedure(NumStrEnum):
     DUTY_CYCLE = NumStrValue(6, "duty_cycle")
     ANOMALY_ROUTINE = NumStrValue(7, "anomaly_routine")
 
+    # 128 and after are reserved for plugin procedures
+    PLUGIN_PROC0 = NumStrValue(128, "plugin_proc0")
+    PLUGIN_PROC1 = NumStrValue(129, "plugin_proc1")
+    PLUGIN_PROC2 = NumStrValue(130, "plugin_proc2")
+    PLUGIN_PROC3 = NumStrValue(131, "plugin_proc3")
+
 class Anomaly(NumStrEnum):
     SUBMERGED = NumStrValue(0, "submerged")
     AIR = NumStrValue(1, "air")
