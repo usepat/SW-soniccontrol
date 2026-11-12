@@ -23,11 +23,11 @@ def make_command(code: CommandCode, identifiers: str | list[str]) -> CommandCont
         (["?info", "?i"], "?i", CommandCode.GET_INFO),
         ("?info", "prefix ?info\n", CommandCode.GET_INFO),
         ("!gain", "!gain=50", CommandCode.GET_INFO),
-        ("?info", "?unknown", 0),
-        ("?info", "?INFO", 0),
-        ("?info", "?inf", 0),
-        ("?info", "", 0),
-        ([], "?info", 0),
+        ("?info", "?unknown", -1),
+        ("?info", "?INFO", -1),
+        ("?info", "?inf", -1),
+        ("?info", "", -1),
+        ([], "?info", -1),
     ],
 )
 def test_deduce_command_code_matches_identifiers(identifiers, request_str, expected):
@@ -52,7 +52,7 @@ def test_deduce_command_code_skips_missing_contracts_and_definitions():
     }
     communicator = LegacyCommunicator(protocol=protocol)
 
-    assert communicator.deduce_command_code("?info") == 0
+    assert communicator.deduce_command_code("?info") == -1
 
 
 def test_deduce_command_code_returns_zero_for_empty_protocol():
@@ -60,10 +60,10 @@ def test_deduce_command_code_returns_zero_for_empty_protocol():
     protocol.command_contracts = {}
     communicator = LegacyCommunicator(protocol=protocol)
 
-    assert communicator.deduce_command_code("?info") == 0
+    assert communicator.deduce_command_code("?info") == -1
 
 
-def test_deduce_command_code_uses_last_matching_contract():
+def test_deduce_command_code_uses_first_matching_contract():
     protocol = Mock(spec=Protocol)
     protocol.command_contracts = {
         CommandCode.GET_INFO: make_command(CommandCode.GET_INFO, "?"),
@@ -71,4 +71,4 @@ def test_deduce_command_code_uses_last_matching_contract():
     }
     communicator = LegacyCommunicator(protocol=protocol)
 
-    assert communicator.deduce_command_code("?info") == CommandCode.LEGACY_PVAL
+    assert communicator.deduce_command_code("?info") == CommandCode.GET_INFO
