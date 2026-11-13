@@ -1,6 +1,6 @@
 from importlib import metadata
 import sys
-from typing import List, Set
+from typing import Awaitable, Callable, List, Set
 
 import attrs
 import abc
@@ -10,6 +10,7 @@ from sonic_protocol.protocol_list import ProtocolList
 from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
 from soniccontrol.sonic_device import SonicDevice
+from soniccontrol.fw_device.connection import Connection
 from soniccontrol.plugin_discovery import discover_plugins
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import View
@@ -51,12 +52,41 @@ class DevicePlugin:
     protocol_factory: ProtocolList
 
 
+@attrs.define(hash=True)
+class StandaloneDevicePlugin:
+    """Device-window plugin owning its transport, without a Sonic protocol."""
+
+    connection_mode: str
+    connect: Callable[[tk.Tk, "PluginConnection"], Awaitable[DeviceWindow]]
+
+
+@attrs.define()
+class PluginConnection(Connection):
+    plugin: StandaloneDevicePlugin = attrs.field()
+    channel: int = attrs.field(default=0)
+
+    async def open_connection(self):
+        raise NotImplementedError("The device plugin owns its transport")
+
+    async def close_connection(self) -> None:
+        # The device window closes its plugin-owned transport.
+        return None
+
+
 class DevicePluginRegistry:
     _registered_plugins: Set[DevicePlugin] = set()
+    _standalone_plugins: Set[StandaloneDevicePlugin] = set()
 
     @staticmethod
-    def register_device_plugin(plugin: DevicePlugin):
-        DevicePluginRegistry._registered_plugins.add(plugin)
+    def register_device_plugin(plugin: DevicePlugin | StandaloneDevicePlugin):
+        if isinstance(plugin, StandaloneDevicePlugin):
+            DevicePluginRegistry._standalone_plugins.add(plugin)
+        else:
+            DevicePluginRegistry._registered_plugins.add(plugin)
+
+    @staticmethod
+    def get_standalone_plugins() -> List[StandaloneDevicePlugin]:
+        return list(DevicePluginRegistry._standalone_plugins)
 
     @staticmethod
     def get_device_plugins() -> List[DevicePlugin]:

@@ -50,6 +50,7 @@ HOME_SIGNAL_BUTTON = 'home.Home Controls.signal.checkbutton'
 HOME_GAIN_VAR = 'home.gain_var'
 HOME_GAIN_ENTRY = 'home.Home Controls.gain.entry_str'
 HOME_SEND_BUTTON = 'home.send_button'
+HOME_AUTO_SEND_BUTTON = 'home.auto_send_button'
 
 # Serial Monitor constants
 SERIAL_MONITOR_READ_BUTTON = 'serial_monitor.read_button'

@@ -54,7 +54,7 @@ class DeviceWindow(TopLevelWindow):
     CLOSE_EVENT = "Close"
     RECONNECT_EVENT = "Reconnect"
 
-    def __init__(self, logger: logging.Logger, deviceWindowView: "DeviceWindowView", communicator: Communicator, window_name: str | None = None):
+    def __init__(self, logger: logging.Logger, deviceWindowView: "DeviceWindowView", communicator: Communicator | None = None, window_name: str | None = None):
         self._logger = logger
         self._communicator = communicator
         self._view = deviceWindowView
@@ -67,9 +67,10 @@ class DeviceWindow(TopLevelWindow):
     
         self._app_state.app_execution_context = AppExecutionContext(ExecutionState.IDLE, None)
 
-        self._communicator.subscribe(Communicator.DISCONNECTED_EVENT, lambda _e: self.on_disconnect())
+        if self._communicator is not None:
+            self._communicator.subscribe(Communicator.DISCONNECTED_EVENT, lambda _e: self.on_disconnect())
         # This needs to be here, for the edge case, that the communicator got disconnected, before it could be subscribed
-        if not self._communicator.connection_opened.is_set():
+        if self._communicator is not None and not self._communicator.connection_opened.is_set():
             self.on_disconnect()
 
     @property
@@ -96,6 +97,8 @@ class DeviceWindow(TopLevelWindow):
         return None
 
     async def _close_communication_safely(self, restart: bool = False) -> None:
+        if self._communicator is None:
+            return
         try:
             await self._communicator.close_communication(restart)
         except Exception as e:

@@ -17,7 +17,7 @@ from soniccontrol.communication.legacy_communicator import LEGACY_BAUDRATE
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, redetect_connection
 from soniccontrol.network.connection import RemoteServerConnection
-from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry
+from soniccontrol_gui.plugins.device_plugin import DevicePluginRegistry, PluginConnection
 from soniccontrol_gui.plugins.ui_plugin import UIPluginRegistry, UIPluginSlotComponent
 from soniccontrol_gui.ui_component import TopLevelWindow
 from soniccontrol_gui.utils.widget_registry import WidgetRegistry
@@ -42,6 +42,7 @@ class ConnectionMode(Enum):
     LEGACY_CRYSTAL = "legacy_crystal"
     CONFIGURATOR = "configurator"
     DIAGNOSTICS_TOOL = "diagnostics_tool"
+    LUCID_CONTROL = "lucid_control"
 
 CONNECTION_MODE_ENV_VAR = "SONICCONTROL_CONNECTION_MODES"
 
@@ -51,6 +52,7 @@ CONNECTION_MODE_LABELS = {
     ConnectionMode.LEGACY_CRYSTAL: ui_labels.IS_LEGACY_DEVICE_LABEL,
     ConnectionMode.CONFIGURATOR: ui_labels.CONNECTION_MODE_CONFIGURATOR_LABEL,
     ConnectionMode.DIAGNOSTICS_TOOL: ui_labels.CONNECTION_MODE_DIAGNOSTICS_TOOL_LABEL,
+    ConnectionMode.LUCID_CONTROL: "Lucid Control",
 }
 
 CONNECTION_MODE_BY_LABEL = {
@@ -59,9 +61,12 @@ CONNECTION_MODE_BY_LABEL = {
 
 
 def get_enabled_connection_modes() -> List[ConnectionMode]:
+    available_modes = [mode for mode in ConnectionMode if mode != ConnectionMode.LUCID_CONTROL]
+    if any(p.connection_mode == "lucid_control" for p in DevicePluginRegistry.get_standalone_plugins()):
+        available_modes.append(ConnectionMode.LUCID_CONTROL)
     configured_modes = os.environ.get(CONNECTION_MODE_ENV_VAR)
     if not configured_modes:
-        return list(ConnectionMode)
+        return available_modes
 
     enabled_modes: List[ConnectionMode] = []
     for configured_mode in configured_modes.split(","):
@@ -69,7 +74,9 @@ def get_enabled_connection_modes() -> List[ConnectionMode]:
         if not normalized_mode:
             continue
         try:
-            enabled_modes.append(ConnectionMode(normalized_mode))
+            mode = ConnectionMode(normalized_mode)
+            if mode in available_modes:
+                enabled_modes.append(mode)
         except ValueError:
             continue
 
@@ -122,6 +129,8 @@ class DeviceWindowManager:
         
 
     async def attempt_reconnection(self, connection: Connection, is_legacy_device: bool = False, startup_mode: StartupMode = StartupMode.DEFAULT) -> DeviceWindow:
+        if isinstance(connection, PluginConnection):
+            return await self.attempt_connection(connection)
         try:
             new_connection = await redetect_connection(connection)
         except asyncio.TimeoutError:
@@ -131,6 +140,13 @@ class DeviceWindowManager:
 
         
     async def attempt_connection(self, connection: Connection, is_legacy_device: bool = False, startup_mode: StartupMode = StartupMode.DEFAULT) -> DeviceWindow:
+        if isinstance(connection, PluginConnection):
+            window = await connection.plugin.connect(self._root, connection)
+            try:
+                return await self._open_device_window(window, connection)
+            except BaseException:
+                window.close()
+                raise
         logger = create_logger_for_connection(connection.connection_name, files.LOG_DIR)
         logger.debug("Established serial connection")
 
@@ -364,6 +380,11 @@ class ConnectionWindow(TopLevelWindow):
         await self._loaded_ports.wait()
 
         dev_info = self._dev_infos[dev_display_name]
+        if self._view.connection_mode == ConnectionMode.LUCID_CONTROL:
+            plugin = next(p for p in DevicePluginRegistry.get_standalone_plugins() if p.connection_mode == "lucid_control")
+            connection = PluginConnection(dev_display_name, dev_info, plugin, self._view.lucid_channel)
+            await self._attempt_connection(connection)
+            return
         # force_remove_connection is only used for remote devices at the moment. But may change in the future
         connection = create_connection_to_device(dev_info, baudrate, force_remove_connection=self._on_connection_already_open, is_modbus=self._view.is_modbus_device)
         
@@ -518,6 +539,13 @@ class ConnectionWindowView(ttk.Window, View):
         self._connect_via_url_button.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._connection_mode_menue.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
         self._is_modbus_device_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
+        self._lucid_channel = tk.StringVar(self, "0")
+        self._lucid_channel_frame = ttk.Frame(self._url_connection_frame)
+        ttk.Label(self._lucid_channel_frame, text="Channel").pack(side=ttk.LEFT)
+        ttk.Combobox(self._lucid_channel_frame, textvariable=self._lucid_channel,
+                     values=["0", "1", "2", "3"], state="readonly", width=3).pack(side=ttk.LEFT)
+        self._connection_mode_menue.bind("<<ComboboxSelected>>", lambda _: self._update_connection_controls())
+        self._update_connection_controls()
         if show_simulation_button:
             self._simulation_frame.pack(side=ttk.BOTTOM, fill=ttk.X, padx=sizes.SMALL_PADDING, pady=sizes.MEDIUM_PADDING)
             self._connect_to_simulation_button.pack(side=ttk.LEFT, fill=ttk.X, expand=True, padx=sizes.SMALL_PADDING)
@@ -546,6 +574,20 @@ class ConnectionWindowView(ttk.Window, View):
     @property
     def loading_text(self) -> str:
         return self._loading_text.get()
+
+    def _update_connection_controls(self) -> None:
+        standalone = self.connection_mode == ConnectionMode.LUCID_CONTROL
+        self.enable_connect_to_simulation_button(not standalone)
+        if standalone:
+            self._is_modbus_device_box.pack_forget()
+            self._lucid_channel_frame.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
+        else:
+            self._lucid_channel_frame.pack_forget()
+            self._is_modbus_device_box.pack(side=ttk.LEFT, padx=sizes.SMALL_PADDING)
+
+    @property
+    def lucid_channel(self) -> int:
+        return int(self._lucid_channel.get())
     
     @property
     def is_legacy_device(self) -> bool:

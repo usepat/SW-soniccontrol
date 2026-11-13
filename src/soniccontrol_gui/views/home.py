@@ -291,7 +291,8 @@ class HomeView(TabView):
         self._auto_send_button = ttk.Button(
             self._control_frame, text=ui_labels.MANUAL_SEND_LABEL
         )
-        
+        WidgetRegistry.register_widget(self._auto_send_button, "auto_send_button", tab_name)
+
         self._send_button = ttk.Button(
             self._control_frame, text=ui_labels.SEND_LABEL
         )
