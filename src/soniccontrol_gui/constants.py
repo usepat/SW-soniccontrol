@@ -154,6 +154,7 @@ class _UIStringsEN:
     DEVICE_LOG_SETTINGS_LABEL: Final[str] = "Device Log Settings"
     FLASHER_LABEL: Final[str] = "Flasher"
     PROCEDURES_LABEL: Final[str] = "Procedures"
+    FIRMWARE_PLUGINS_LABEL: Final[str] = "Firmware Plugins"
     SONIC_LABEL: Final[str] = "sonic"
     SPECTRUM_MEASURE_TITLE: Final[str] = "Spectrum Measure"
     SONIC_MEASURE_LABEL: Final[str] = "Sonic Measure"
@@ -283,6 +284,8 @@ class _UIStringsEN:
     FORM_ADD_ENTRY: Final[str] = "Add Entry"
     CONFIGURING_LABEL: Final[str] = "configure device"
     FETCH_CONFIG_LABEL: Final[str] = "fetch configuration"
+    FETCH_LABEL: Final[str] = "Fetch"
+    WRITE_LABEL: Final[str] = "Write"
     WAITING_FOR_ANSWER: Final[str] = "Waiting for answer"
     START_CONFIGURATOR: Final[str] = "--start-configurator"
     USE_FIRMWARE_GUI: Final[str] = "--gui"
@@ -299,6 +302,8 @@ class _UIStringsEN:
     ERROR_MSG_CONNECTION_ALREADY_OPEN: Final[str] = "There is already a connection open for this serial port, do you want to close it?"
     DOWNLOAD: Final[str] = "Download"
     UPDATE_LABEL: Final[str] = "Update"
+    VARIABLES: Final[str] = "Variables"
+    ACTIONS: Final[str] = "Actions"
     
 
 ui_labels: Final[_UIStringsEN] = _UIStringsEN()

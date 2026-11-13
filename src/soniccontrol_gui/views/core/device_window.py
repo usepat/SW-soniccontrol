@@ -25,6 +25,7 @@ from soniccontrol.scripting.interpreter_engine import InterpreterEngine
 from soniccontrol.sonic_device import SonicDevice
 from soniccontrol_gui.views.configuration.device_settings import DeviceSettingsTab
 from soniccontrol_gui.views.configuration.settings import Settings
+from soniccontrol_gui.views.control.firmware_plugins import FirmwarePluginsTab
 from soniccontrol_gui.views.control.log_storage import LogStorage, NotDeviceLogFilter
 from soniccontrol.updater import Updater
 from soniccontrol_gui.constants import sizes, ui_labels
@@ -276,6 +277,8 @@ class KnownDeviceWindow(DeviceWindow):
                 flashing_view = self._flashing.view
 
             self._device_settings_tab = DeviceSettingsTab(self, self._device)
+            self._firmware_plugins_tab = FirmwarePluginsTab(self, self._device)
+
             # Views
             self._logger.debug("Created all views, add them as tabs")
             self._view.add_tab_views([
@@ -287,7 +290,8 @@ class KnownDeviceWindow(DeviceWindow):
                 self._configuration.view, 
                 self._settings.view,
                 flashing_view,
-                self._device_settings_tab.view
+                self._device_settings_tab.view,
+                self._firmware_plugins_tab.view
             ], right_one=False)
             views = [
                 self._info.view,

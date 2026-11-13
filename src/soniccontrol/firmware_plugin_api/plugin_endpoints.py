@@ -54,9 +54,12 @@ class FirmwarePluginEndpoints:
         value = answer[EFieldName.VALUE]
         return value
 
-    async def fetch_vars(self):
+    async def fetch_vars(self) -> dict[str, type[VarType]]:
+        result: dict[str, type[VarType]] = {}
         for var_name in self._var_defs:
-            await self.fetch_var(var_name)
+            value = await self.fetch_var(var_name)
+            result[var_name] = value
+        return result
 
     async def assign_var(self, var_name: str, value: VarType) -> None:
         if var_name not in self._var_defs:
@@ -81,6 +84,10 @@ class FirmwarePluginEndpoints:
 
         await self._device.execute_command(cmd, raise_exception=True, disconnect_on_exception=False)
 
+    async def assign_vars(self, vars: dict[str, Any]) -> None:
+        for name, value in vars.items():
+            await self.assign_var(name, value)
+
     async def do_action(self, action_name: str) -> int:
         if action_name not in self._action_defs:
             raise KeyError(f"action with name '{action_name}' is not known for plugin '{self._plugin_name}'")
@@ -89,3 +96,4 @@ class FirmwarePluginEndpoints:
         answer = await self._device.execute_command(cmd,  raise_exception=True, disconnect_on_exception=False)
         error_code = cast(int, answer[EFieldName.ERROR_CODE])
         return error_code
+

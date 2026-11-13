@@ -1602,7 +1602,6 @@ class DictFieldView(FieldViewBase):
         if not self._types:
             self._types = [str]
         super().__init__(master, *args, **kwargs)
-        kwargs["field_view_kwargs"] = field_view_kwargs
 
         self.value = self._default_value
 
@@ -1621,7 +1620,6 @@ class DictFieldView(FieldViewBase):
         self._id = 0 if not hasattr(self, "_id") else (self._id + 1)
         return self._id
     
-
 
     def _add_entry(self, key: str = "", value: Any = None, value_type: type | None = None) -> None:
         entry_id = self._generate_entry_id()
@@ -1846,7 +1844,6 @@ class ObjectFieldView(FieldViewBase[dict]):
         self._fields: Dict[str, FieldViewBase] = {}
         field_view_kwargs = kwargs.pop("field_view_kwargs", {}) # Others also rely on it so dont pop
         super().__init__(master, *args, **kwargs)
-        kwargs["field_view_kwargs"] = field_view_kwargs
             
 
     def _initialize_children(self) -> None:

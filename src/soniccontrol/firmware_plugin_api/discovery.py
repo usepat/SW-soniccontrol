@@ -17,8 +17,8 @@ def convert_to_var_type(plugin_var_type: PluginVarType) -> type[VarType]:
     }[plugin_var_type]
 
 
-async def discover_firmware_plugins(device: SonicDevice) -> list[FirmwarePluginEndpoints]:
-    plugins: list[FirmwarePluginEndpoints] = []
+async def discover_firmware_plugins(device: SonicDevice) -> dict[str, FirmwarePluginEndpoints]:
+    plugins: dict[str, FirmwarePluginEndpoints] = {}
 
     answer = await device.execute_command(cmds.GetNumPlugins())
     num_plugins = cast(int, answer[EFieldName.COUNT])
@@ -45,6 +45,6 @@ async def discover_firmware_plugins(device: SonicDevice) -> list[FirmwarePluginE
             answer = await device.execute_command(cmds.GetPluginActionInfo(plugin_index, action_index))
             action_names.append(answer[EFieldName.NAME])
 
-        plugins.append(FirmwarePluginEndpoints(device, plugin_name, version, var_defs, action_names))
+        plugins[plugin_name] = FirmwarePluginEndpoints(device, plugin_name, version, var_defs, action_names)
 
     return plugins
