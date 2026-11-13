@@ -1,6 +1,7 @@
 from typing import Callable, Iterable, cast
 import attrs
 import ttkbootstrap as ttk
+from ttkbootstrap.scrolled import ScrolledFrame
 from async_tkinter_loop import async_handler
 
 from soniccontrol.firmware_plugin_api.discovery import discover_firmware_plugins
@@ -34,7 +35,7 @@ class ActionListView(View):
         super().__init__(master, *args, **kwargs)
 
     def _initialize_children(self) -> None:
-        self._scroll_frame = ttk.ScrolledFrame(self)
+        self._scroll_frame = ScrolledFrame(self)
 
     def _initialize_publish(self) -> None:
         self.pack(fill=ttk.BOTH)
@@ -43,6 +44,12 @@ class ActionListView(View):
     def add_action(self, text: str, command: Callable[[], None]) -> None:
         ttk.Button(self._scroll_frame, text=text, command=command).pack(
             side=ttk.BOTTOM, fill=ttk.X, pady=sizes.MEDIUM_PADDING)
+
+    def show(self) -> None:
+        self.pack(expand=True, fill=ttk.BOTH)
+
+    def hide(self) -> None:
+        self.pack_forget()
 
 
 def get_attrs_class_for_plugin(plugin_name: str, var_defs: dict[str, VarDef]) -> type:
@@ -96,6 +103,7 @@ class FirmwarePluginsTab(UIComponent):
             vars_form.view.hide()
 
             action_list = ActionList(self, self._view.actions_frame, endpoints) # type: ignore
+            action_list.view.hide()
 
             self._plugin_controls[name] = FirmwarePluginsTab.PluginControls(
                 endpoints,
@@ -153,16 +161,15 @@ class FirmwarePluginsTabView(TabView):
         self._action_slot = ttk.LabelFrame(self._plugin_controls_frame , text=ui_labels.ACTIONS)
 
     def _initialize_publish(self) -> None:
+        self.pack(fill=ttk.BOTH)
         self._control_frame.pack(side=ttk.TOP, fill=ttk.X, pady=sizes.MEDIUM_PADDING)
         self._assign_vars_button.pack(side=ttk.RIGHT)
         self._fetch_vars_button.pack(side=ttk.RIGHT, padx=sizes.MEDIUM_PADDING)
-        self._plugin_cbx.pack(side=ttk.LEFT)
+        self._plugin_cbx.pack(side=ttk.LEFT, fill=ttk.X, expand=True)
 
-        self._plugin_controls_frame.pack(fill=ttk.BOTH, pady=sizes.MEDIUM_PADDING, padx=sizes.MEDIUM_PADDING)
-        self._plugin_controls_frame.grid_rowconfigure(index=0, weight=2, pad=sizes.SMALL_PADDING)
-        self._plugin_controls_frame.grid_rowconfigure(index=1, weight=1, pad=sizes.SMALL_PADDING)
-        self._var_form_slot.grid(row=0, column=0)
-        self._action_slot.grid(row=1, column=0)
+        self._plugin_controls_frame.pack(fill=ttk.BOTH, expand=True, pady=sizes.MEDIUM_PADDING, padx=sizes.MEDIUM_PADDING)
+        self._var_form_slot.pack(fill=ttk.BOTH, side=ttk.TOP, expand=True)
+        self._action_slot.pack(fill=ttk.BOTH, side=ttk.BOTTOM)
 
     @property
     def selected_plugin(self) -> str:

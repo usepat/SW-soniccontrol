@@ -39,12 +39,6 @@ class View(ttk.Frame):
     def root(self):
         return self.winfo_toplevel()
 
-    def hide(self):
-        super().hide() # type: ignore
-
-    def show(self):
-        super().show() # type: ignore
-
     @abc.abstractmethod
     def _initialize_children(self) -> None:
         ...

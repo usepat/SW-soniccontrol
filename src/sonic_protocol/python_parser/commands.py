@@ -655,7 +655,7 @@ class GetPluginInfo(Command):
 @attrs.define()
 class GetPluginVarInfo(Command):
     def __attrs_post_init__(self):
-        super().__init__(code=CommandCode.GET_PLUGIN_INFO)
+        super().__init__(code=CommandCode.GET_PLUGIN_VAR_INFO)
 
     arg0: int = attrs.field(alias=EFieldName.PLUGIN_INDEX.name)
     arg1: int = attrs.field(alias=EFieldName.INDEX.name)
@@ -707,7 +707,7 @@ class SetPluginVarUint(Command):
 
     arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
     arg1: str = attrs.field(alias=EFieldName.NAME.name)
-    setter: int = attrs.field(alias=EFieldName.VALUE.name)
+    value: int = attrs.field(alias=EFieldName.VALUE.name)
 
 @attrs.define()
 class SetPluginVarFloat(Command):
@@ -716,7 +716,7 @@ class SetPluginVarFloat(Command):
 
     arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
     arg1: str = attrs.field(alias=EFieldName.NAME.name)
-    setter: float = attrs.field(alias=EFieldName.VALUE.name)
+    value: float = attrs.field(alias=EFieldName.VALUE.name)
 
 @attrs.define()
 class SetPluginVarBool(Command):
@@ -725,7 +725,7 @@ class SetPluginVarBool(Command):
 
     arg0: str = attrs.field(alias=EFieldName.PLUGIN_NAME.name)
     arg1: str = attrs.field(alias=EFieldName.NAME.name)
-    setter: bool = attrs.field(alias=EFieldName.VALUE.name)
+    value: bool = attrs.field(alias=EFieldName.VALUE.name)
 
 @attrs.define()
 class DoPluginAction(Command):

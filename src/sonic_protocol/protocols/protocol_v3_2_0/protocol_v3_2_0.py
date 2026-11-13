@@ -50,6 +50,9 @@ class Protocol_v3_2_0(ProtocolList):
     def command_code_cls(self) -> type[ICommandCode]:
         return CommandCode
 
+    def convert_command_code_for_validation(self, code: int) -> int:
+        return code
+
     @property
     def custom_data_types(self) -> Dict[str, type]:
         data_types = {
@@ -63,16 +66,15 @@ class Protocol_v3_2_0(ProtocolList):
         return self._previous_protocol.supports_device_type(device_type)
 
     def _get_command_contracts_for(self, protocol_type: ProtocolType) -> Dict[ICommandCode, CommandContract]:
-        command_contract_list: List[CommandContract] = [
-            get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
-            get_plugin_info, get_plugin_str_var, get_plugin_uint_var,
-            get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, 
-            set_plugin_uint_var, do_plugin_action, enable_plugin, run_proc
-        ]
-        if protocol_type.device_type == DeviceType.DESCALE:
-            pass
-        if protocol_type.device_type == DeviceType.MVP_WORKER:
-            pass
+        command_contract_list: List[CommandContract] = []
+
+        if protocol_type.device_type in [DeviceType.DESCALE, DeviceType.MVP_WORKER, DeviceType.POSTMAN]:
+            command_contract_list.extend([
+                get_plugin_action_info, get_num_plugins, get_plugin_bool_var, get_plugin_float_var,
+                get_plugin_info, get_plugin_str_var, get_plugin_uint_var,
+                get_plugin_var_info, set_plugin_bool_var, set_plugin_float_var, 
+                set_plugin_uint_var, do_plugin_action, enable_plugin, run_proc
+            ])
         command_contract_dict = self._previous_protocol._get_command_contracts_for(protocol_type)
         command_contract_dict.update({
             command_contract.code: command_contract for command_contract in command_contract_list 
