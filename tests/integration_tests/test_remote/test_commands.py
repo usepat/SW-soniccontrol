@@ -90,7 +90,9 @@ async def test_deduced_commands(remote_controller, progress_writer):
         CommandCode.SET_FLASH_115200,
         CommandCode.SET_FLASH_9600,
         CommandCode.SET_FLASH_USB,
-        CommandCode.START_CUSTOMIZER
+        CommandCode.START_CUSTOMIZER,
+        # The physical interface is fixed by hardware commissioning.
+        CommandCode.SET_MODBUS_INTERFACE,
     ]
 
     if info.device_type != DeviceType.DIAGNOSTICS_TOOL:

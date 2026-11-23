@@ -12,6 +12,8 @@ class CommandSerializer:
     def _serialize_field(self, obj: Any) -> str:
         if isinstance(obj, Enum):
             return str(obj.value)
+        elif isinstance(obj, bool):
+            return "true" if obj else "false"
         elif isinstance(obj, bytes):
             return str(b64encode(obj, altchars=b"-_"))
         else:

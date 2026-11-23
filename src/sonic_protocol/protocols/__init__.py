@@ -4,3 +4,4 @@ from .protocol_v2_0_0.protocol_v2_0_0 import Protocol_v2_0_0
 from .protocol_v3_0_0.protocol_v3_0_0 import Protocol_v3_0_0
 from .protocol_v3_1_0.protocol_v3_1_0 import Protocol_v3_1_0
 from .protocol_v3_2_0.protocol_v3_2_0 import Protocol_v3_2_0
+from .protocol_v4_0_0.protocol_v4_0_0 import Protocol_v4_0_0

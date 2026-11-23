@@ -13,6 +13,7 @@ class BaseCommandCode(ICommandCode):
     GET_LOGGER_LIST_SIZE = 10
     GET_LOGGER_LIST_ITEM = 11
     SET_LOG_LEVEL = 12
+    SAVE_LOG_LEVELS = 13
 
     GET_NUM_FILES = 15
     GET_FILE_INFO = 16
@@ -86,6 +87,7 @@ class CommandCode(ICommandCode):
     GET_LOGGER_LIST_SIZE = BaseCommandCode.GET_LOGGER_LIST_SIZE.value
     GET_LOGGER_LIST_ITEM = BaseCommandCode.GET_LOGGER_LIST_ITEM.value
     SET_LOG_LEVEL = BaseCommandCode.SET_LOG_LEVEL.value
+    SAVE_LOG_LEVELS = BaseCommandCode.SAVE_LOG_LEVELS.value
 
     SET_DATETIME = BaseCommandCode.SET_DATETIME.value
     GET_DATETIME = BaseCommandCode.GET_DATETIME.value
@@ -178,6 +180,8 @@ class CommandCode(ICommandCode):
     SET_DUTY_CYCLE = 401
     SET_DUTY_CYCLE_T_OFF = 402
     SET_DUTY_CYCLE_T_ON = 403
+    SET_DUTY_CYCLE_PROC = 404
+    SET_DUTY_CYCLE_DISABLE_PSU_DURING_OFF = 405
 
     GET_RAMP = 410
     SET_RAMP = 411

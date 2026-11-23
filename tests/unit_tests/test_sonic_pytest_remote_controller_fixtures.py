@@ -15,6 +15,11 @@ from sonic_pytest.remote_controller.fixtures import (
     DEFAULT_MODBUS_PARITY as FIXTURE_DEFAULT_MODBUS_PARITY,
     DEFAULT_MODBUS_SLAVE_ID as FIXTURE_DEFAULT_MODBUS_SLAVE_ID,
 )
+from sonic_pytest.plugin_data import (
+    mark_modbus_device_prepared,
+    modbus_device_preparation_is_required,
+)
+from tests.integration_tests.test_modbus import test_modbus as modbus_tests
 
 
 def test_modbus_connection_defaults_match_shared_defaults():
@@ -81,3 +86,43 @@ async def test_resolve_current_device_info_falls_back_to_cached_usb_identity(mon
     assert first == original
     assert second == redetected
     assert fw_device._RESOLVED_DEVICE_INFOS_BY_PATH[(None, requested_port)] == redetected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("connection_fails", [False, True])
+async def test_modbus_compliance_invalidates_shared_preparation(monkeypatch, connection_fails):
+    plugin = SimpleNamespace(
+        is_simulation=False,
+        modbus_serial_port="/dev/ttyUSB0",
+        serial_port="/dev/ttyACM0",
+        remote_server_url=None,
+        log_path=None,
+        _shared_modbus_device_prepared=False,
+    )
+    node = SimpleNamespace(get_closest_marker=lambda _: None)
+    mark_modbus_device_prepared(plugin)
+    assert not modbus_device_preparation_is_required(plugin, node)
+
+    controller = SimpleNamespace(
+        stop_running_processes=AsyncMock(),
+        disconnect=AsyncMock(),
+    )
+    connect = AsyncMock(return_value=controller)
+    if connection_fails:
+        connect.side_effect = ConnectionError("Maintenance connection failed")
+    monkeypatch.setattr(modbus_tests, "get_sonic_control_plugin", lambda _: plugin)
+    monkeypatch.setattr(modbus_tests, "connect_via_serial_port", connect)
+    monkeypatch.setattr(
+        modbus_tests, "restart_maintenance_controller", AsyncMock(return_value=controller)
+    )
+    request = SimpleNamespace(config=None)
+    fixture = modbus_tests.remote_controller.__wrapped__(request)
+    if connection_fails:
+        with pytest.raises(ConnectionError, match="Maintenance connection failed"):
+            await anext(fixture)
+    else:
+        assert await anext(fixture) is controller
+        await fixture.aclose()
+        controller.disconnect.assert_awaited_once()
+
+    assert modbus_device_preparation_is_required(plugin, node)

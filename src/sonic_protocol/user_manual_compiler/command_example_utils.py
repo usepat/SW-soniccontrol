@@ -126,9 +126,8 @@ def _append_type_specific_examples(param_limits: List[Any], param_def: CommandPa
         _append_unique(param_limits, f"<{_schema_name_label(param_def.name)}_str>")
 
     elif _is_enum_field_type(field_type):
-        enum_members = list(getattr(field_type, "__members__", {}))
-        for enum in enum_members:
-            _append_unique(param_limits, enum.lower() if isinstance(enum, str) else enum)
+        for member in field_type:
+            _append_unique(param_limits, member)
 
     elif issubclass(field_type, numbers.Integral) and not issubclass(field_type, bool) and len(param_limits) == 0:
         param_limits.append(0)
@@ -161,7 +160,10 @@ def deduce_param_limit_values(consts: DeviceParamConstants, param_def: CommandPa
 
 
 def deduce_param_limits(consts: DeviceParamConstants, param_def: CommandParamDef | None) -> List[str]:
-    return [str(value) for value in deduce_param_limit_values(consts, param_def)]
+    return [
+        str(value.value) if isinstance(value, Enum) else str(value)
+        for value in deduce_param_limit_values(consts, param_def)
+    ]
 
 
 def deduce_single_param_example_value(consts: DeviceParamConstants, param_def: CommandParamDef | None) -> Any:
@@ -268,6 +270,8 @@ def generate_answer_field_example(
         example_value = _example_value_for_field_type(field_def)
     if example_value is None:
         raise ValueError("Answer field example value missing")
+    if isinstance(example_value, Enum):
+        example_value = example_value.value
     field_example += str(example_value) + " "
     if field_type.si_prefix:
         field_example += field_type.si_prefix.value

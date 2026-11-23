@@ -2,7 +2,7 @@ import pytest
 import pytest_asyncio
 
 from sonic_protocol.command_codes import CommandCode
-from sonic_protocol.schema import Loglevel, Signal, SIPrefix
+from sonic_protocol.schema import Loglevel, Signal, SIPrefix, TransducerState
 from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCommunicator
 from soniccontrol.procedures.procedure import ProcedureType
 from sonic_pytest.remote_controller.asserts import assert_answer, send_command_and_check_response
@@ -69,9 +69,9 @@ async def setup_valid_wipe_args(remote_controller, args: WipeArgs | None = None)
     return wipe_args
 
 
-async def setup_valid_at_configs(remote_controller) -> None:
-    atf_values = [500000, 1000000, 3000000, 4000000]
-
+async def setup_valid_at_configs(
+    remote_controller, atf_values: tuple[int, ...] = (500_000, 1_000_000, 3_000_000, 4_000_000),
+) -> None:
     for index, atf_value in enumerate(atf_values, start=1):
         await send_command_and_check_response(
             remote_controller,
@@ -255,3 +255,70 @@ async def test_if_wipe_does_not_crash(remote_controller, disable_procedure_logge
         await asyncio.sleep(2)
         answer = await remote_controller.get_update()
         assert_answer(answer, {EFieldName.PROCEDURE: Procedure.WIPE})
+
+
+@pytest.mark.allowed_devices(DeviceType.MVP_WORKER)
+@pytest.mark.skip_if_proc_not_enabled(ProcedureType.WIPE)
+
+
+
+
+
+@pytest.mark.asyncio(loop_scope="package")
+async def test_duty_cycle_runs_wipe_in_on_phases_only(remote_controller, disable_procedure_logger):
+    child = commands.SetDutyCycleProc(Procedure.WIPE)
+    if not remote_controller.device.has_command(child):
+        pytest.skip("Device does not support selecting a duty-cycle child procedure")
+    duty_cycle = await remote_controller.send_command("?duty_cycle", raise_exception=False)
+    if duty_cycle.command_code == CommandCode.E_COMMAND_NOT_PERMITTED and duty_cycle.message == "Procedure not activated":
+        pytest.skip("Duty cycle is disabled on this device")
+    assert duty_cycle.is_valid, duty_cycle.message
+
+    center_hz = 500_000
+    wipe_range_hz = 8_000
+    await setup_valid_at_configs(remote_controller, (center_hz,) * 4)
+    await setup_valid_wipe_args(
+        remote_controller, WipeArgs(f_range=wipe_range_hz, f_step=2_000, gain=50),
+    )
+    for command in (commands.SetDutyCycleTOn(1), commands.SetDutyCycleTOff(1), child):
+        await send_command_and_check_response(remote_controller, command, check_command_not_permitted=True)
+
+    clock = asyncio.get_running_loop().time
+    phase_seconds = 60
+    transition_slack = 2
+    frequencies = set()
+    started_at = clock()
+    await send_command_and_check_response(
+        remote_controller, "!duty_cycle", check_command_not_permitted=True,
+    )
+
+    while True:
+        before_update = clock() - started_at
+        answer = await remote_controller.get_update()
+        elapsed = clock() - started_at
+        assert answer.is_valid, f"Invalid duty-cycle update at {elapsed:.1f}s: {answer.message}"
+        assert answer[EFieldName.PROCEDURE] == Procedure.DUTY_CYCLE, (
+            f"Duty cycle stopped at {elapsed:.1f}s"
+        )
+        # BUSY tracks the duty-cycle phase even during WIPE's brief signal pauses.
+        state = answer[EFieldName.TRANSDUCER_STATE]
+
+        # A request that straddles a transition cannot identify which phase it sampled.
+        if transition_slack <= before_update and elapsed < phase_seconds - transition_slack:
+            assert state == TransducerState.BUSY, f"Expected BUSY at {elapsed:.1f}s, got {state}"
+            if answer[EFieldName.SIGNAL] == Signal.ON:
+                frequency = answer[EFieldName.FREQUENCY]
+                assert center_hz - wipe_range_hz <= frequency <= center_hz + wipe_range_hz, (
+                    f"WIPE frequency {frequency} Hz was outside the configured sweep at {elapsed:.1f}s"
+                )
+                frequencies.add(frequency)
+        elif before_update >= phase_seconds + transition_slack:
+            assert len(frequencies) > 1, f"WIPE did not sweep during the first ON phase: {frequencies}"
+            if elapsed < 2 * phase_seconds - transition_slack:
+                assert state == TransducerState.IDLE, f"Expected IDLE at {elapsed:.1f}s, got {state}"
+                assert answer[EFieldName.SIGNAL] == Signal.OFF, f"Signal was not OFF at {elapsed:.1f}s"
+            elif before_update >= 2 * phase_seconds - transition_slack and state == TransducerState.BUSY:
+                break
+
+        assert elapsed < 2 * phase_seconds + 8, "WIPE did not resume in the second ON phase"
+        await asyncio.sleep(0.3)

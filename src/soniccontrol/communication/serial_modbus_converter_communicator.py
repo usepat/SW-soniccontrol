@@ -69,13 +69,14 @@ class SerialModbusConverterCommunicator(Communicator):
             answer.field_value_dict,
         )
 
-        if answer.is_valid and answer.message == "":
+        message = answer.message
+        if answer.is_valid and message == "":
             self._logger.info(
                 "Serial monitor Modbus command succeeded without a textual response: request=%s, fields=%s",
                 request,
                 answer.field_value_dict,
             )
-            return self.EMPTY_SUCCESS_MESSAGE
+            message = self.EMPTY_SUCCESS_MESSAGE
 
         if not answer.is_valid:
             self._logger.warning(
@@ -84,8 +85,12 @@ class SerialModbusConverterCommunicator(Communicator):
                 answer.message,
                 answer.field_value_dict,
             )
+            raise RuntimeError(answer.message or "Invalid Modbus response")
 
-        return answer.message
+        if answer.command_code is None:
+            self._logger.error("Serial monitor Modbus response has no command code: %s", request)
+            raise RuntimeError("Modbus response has no command code")
+        return f"{answer.command_code}#{message}"
 
 
     async def read_message(self) -> str: 

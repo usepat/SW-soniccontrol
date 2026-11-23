@@ -41,7 +41,7 @@ class AnswerValidatorBuilder:
         elif field_type is float:
             value_str = r"[\+\-]?\d+(\.\d+)?"
         elif field_type is bool:
-            value_str = r"([Tt]rue)|([Ff]alse)|0|1"
+            value_str = r"[Tt]rue|[Ff]alse|0|1"
         elif field_type is str:
             value_str = r".*"
         elif field_type is bytes:

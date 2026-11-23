@@ -162,6 +162,8 @@ class EFieldName(IEFieldName):
     RAMP_T_OFF = 169
     DUTY_CYCLE_T_OFF = 170
     DUTY_CYCLE_T_ON = 171
+    DUTY_CYCLE_PROC = 172
+    DUTY_CYCLE_DISABLE_PSU_DURING_OFF = 173
 
     # Legacy Fields
     LEGACY_RANG = 174

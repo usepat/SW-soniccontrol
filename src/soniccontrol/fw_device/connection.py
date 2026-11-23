@@ -220,7 +220,7 @@ class ModbusConnection(Connection):
             parity=self.parity_to_string(), 
             stopbits=1 if self.parity != Parity.NO else 2,
             timeout=1.5, 
-            retries=1
+            retries=3
         )
         return self._client
 

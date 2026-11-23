@@ -8,7 +8,7 @@ ExecStart={{ python_venv }}/bin/soniccontrol_server --port={{ port }} --host=0.0
 Restart=always
 RestartSec=3
 User={{ user }}
-Group={{ user }}
+Group={{ group }}
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full

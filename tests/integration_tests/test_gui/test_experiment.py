@@ -30,7 +30,9 @@ async def reset_experiment_state(device_window=None) -> None:
         await controller.execute_events_until_idle()
     finally:
         if paused_updater and updater is not None and device is not None and device.communicator.connection_opened.is_set():
-            updater.start()
+            # Pumping GUI events can run the deferred Modbus updater startup.
+            if not updater.running.is_set():
+                updater.start()
             await controller.execute_events_until_idle()
 
     for _ in range(4):

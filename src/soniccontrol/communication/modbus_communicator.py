@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from pathlib import Path
 import struct
 from datetime import datetime
 from enum import Enum
@@ -15,10 +16,11 @@ from sonic_protocol.command_codes import BaseCommandCode, CommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
 from sonic_protocol.python_parser.answer import Answer, ValidationStatus
-from sonic_protocol.python_parser.commands import Command, FlashUSB, GetSwf, GetUpdateDescale, RestartDevice, SetOff, SetOn, SetSwf
-from sonic_protocol.schema import BuildType, CommandContract, CommandParamDef, DeviceType, FieldType, ProtocolType, Timestamp, Version
+from sonic_protocol.python_parser.commands import Command, FlashUSB, GetSwf, SonicForce, GetFreq, GetUpdateWorker, GetUpdateDescale, RestartDevice, SetOff, SetOn, SetSwf, SetFrequency
+from sonic_protocol.schema import BuildType, CommandContract, CommandParamDef, DeviceType, FieldType, Protocol, ProtocolType, Timestamp, Version
 from soniccontrol.communication.communicator import Communicator
 from soniccontrol.fw_device.connection import Connection, ModbusConnection
+from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 
 
 @attrs.define()
@@ -322,6 +324,11 @@ class ModbusCommunicator(Communicator):
             header = await self._read_response_header()
             if header is None:
                 return 0, "Error reading modbus response header"
+            if len(header) != self.RESPONSE_HEADER_REGISTERS:
+                return 0, (
+                    "Invalid modbus response header length: "
+                    f"expected {self.RESPONSE_HEADER_REGISTERS} registers, got {len(header)}"
+                )
 
             execution_flag, response_len = header
             if execution_flag == 0:
@@ -548,42 +555,82 @@ class ModbusCommunicator(Communicator):
 
 
 
+async def search_for_modbus_device(communicator: ModbusCommunicator, url: str, dev_info: FwDeviceInfo | None = None, name: str = "ModbusConnection", retries: int = 1) -> ModbusConnection | None:
+    """
+        Searches over all possible/common modbus communication configs. And connects the communicator.
+        It disconnects the communicator when nothing was found.
+
+        Returns the connection on success and None on failure
+    """
+    for baud in [9600, 19200, 115200]:
+            for paritiy in Parity.__iter__():
+                for _ in range(retries):
+                    try:
+                        connection = ModbusConnection(name, dev_info, url, baud, paritiy)
+                        await communicator.open_communication(connection)
+                    except Exception as e:
+                        
+                        continue
+                    else:
+                        print(f"{baud}-{paritiy} conncted") 
+                        return connection
+                print(f"{baud}-{paritiy} failed trying next one")
+                try:
+                    await communicator.close_communication()
+                except:
+                    pass
+
 async def main():
-    connection = ModbusConnection("Test", None, url="/dev/ttyUSB0", baudrate=9600, parity=Parity.EVEN)
-    communicator = ModbusCommunicator()
-    await communicator.open_communication(connection)#
     protocol = protocol_list.build_protocol_for(ProtocolType(
-        Version(3, 0, 0),
-        DeviceType.DESCALE
-    ))
-    command_contract = protocol.command_contracts.get(CommandCode.SET_ON)
-    assert command_contract
-    answer = await communicator.send_command_and_validate(command_contract, SetOn())
-    print(answer)
-    command_contract = protocol.command_contracts.get(CommandCode.GET_UPDATE_DESCALE_V3_0_0)
-    assert command_contract
-    answer = await communicator.send_command_and_validate(command_contract, GetUpdateDescale())
-    print(answer)
-    command_contract = protocol.command_contracts.get(CommandCode.GET_UPDATE_DESCALE_V3_0_0)
-    assert command_contract
-    answer = await communicator.send_command_and_validate(command_contract, GetUpdateDescale())
-    print(answer)
-    command_contract = protocol.command_contracts.get(CommandCode.GET_UPDATE_DESCALE_V3_0_0)
-    assert command_contract
-    answer = await communicator.send_command_and_validate(command_contract, GetUpdateDescale())
-    print(answer)
-    command_contract = protocol.command_contracts.get(CommandCode.SET_OFF)
-    assert command_contract
-    answer = await communicator.send_command_and_validate(command_contract, SetOff())
-    print(answer)
-    command_contract = protocol.command_contracts.get(CommandCode.SET_SWF)
-    assert command_contract
-    answer = await communicator.send_command_and_validate(command_contract, SetSwf(5))
-    print(answer)
-    command_contract = protocol.command_contracts.get(CommandCode.GET_SWF)
-    assert command_contract
-    answer = await communicator.send_command_and_validate(command_contract, GetSwf())
-    print(answer)
+                                Version(3, 0, 0),
+                                DeviceType.MVP_WORKER
+                            ))
+    communicator = ModbusCommunicator()
+    connection = None
+    try:
+        
+        connection = await search_for_modbus_device(communicator, "/dev/ttyUSB0")
+        command_contract = protocol.command_contracts.get(CommandCode.SONIC_FORCE)
+        assert command_contract
+        answer = await communicator.send_command_and_validate(command_contract, SonicForce())
+        command_contract = protocol.command_contracts.get(CommandCode.SET_ON)
+        assert command_contract
+        answer = await communicator.send_command_and_validate(command_contract, SetOn())
+        print(answer)
+        command_contract = protocol.command_contracts.get(CommandCode.GET_UPDATE_WORKER_V3_0_0)
+        assert command_contract
+        answer = await communicator.send_command_and_validate(command_contract, GetUpdateWorker())
+        print(answer)
+        command_contract = protocol.command_contracts.get(CommandCode.GET_UPDATE_WORKER_V3_0_0)
+        assert command_contract
+        answer = await communicator.send_command_and_validate(command_contract, GetUpdateWorker())
+        print(answer)
+        command_contract = protocol.command_contracts.get(CommandCode.GET_UPDATE_WORKER_V3_0_0)
+        assert command_contract
+        answer = await communicator.send_command_and_validate(command_contract, GetUpdateWorker())
+        print(answer)
+        command_contract = protocol.command_contracts.get(CommandCode.SET_OFF)
+        assert command_contract
+        answer = await communicator.send_command_and_validate(command_contract, SetOff())
+        print(answer)
+        command_contract = protocol.command_contracts.get(CommandCode.SET_FREQ)
+        assert command_contract
+        answer = await communicator.send_command_and_validate(command_contract, SetFrequency(1000000))
+        print(answer)
+        command_contract = protocol.command_contracts.get(CommandCode.GET_FREQ)
+        assert command_contract
+        answer = await communicator.send_command_and_validate(command_contract, GetFreq())
+        print(answer)
+    except Exception as e:
+        print(e)
+    finally:
+        try:
+            await communicator.close_communication()
+            if connection:
+                await connection.close_connection()
+        except:
+            pass
+
 
 if __name__ == "__main__":
     asyncio.run(main())

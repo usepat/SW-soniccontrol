@@ -92,6 +92,7 @@ You can create a simulation executable of the firmware and provide the path to i
 
 The Remote server can be started via `soniccontrol_server`. There exists also a launch target for it **Python: Remote Server** to debug it. You have to provide to the server the cmd argument `--host=0.0.0.0`, so that it listens also for connections not coming from the local machine.  
 You can enable the server on start up of the computer via `enable_server_on_startup`. That creates a systemd unit file, that registers the application as *sonic_control_server.service*. If you want to start it directly you have to do `sudo systemctl start sonic_control_server`.  
+Run `enable_server_on_startup` from your activated virtual environment as your normal user. It requests sudo privileges in the terminal only to install the unit file and run systemctl. The service runs as your user and primary group, using the same virtual environment. When invoked through sudo, it uses the original user's `SUDO_UID`; running directly as root without a non-root caller is rejected.
 After starting the server you can connect to it by executing `soniccontrol_gui --remote-url=http://host:port`, where port is by default *8080* if it was not set via cmd args on the server.  
 
 ## How to set up the documentation

@@ -9,7 +9,7 @@ from pymodbus.client import AsyncModbusSerialClient
 from pymodbus.exceptions import ModbusIOException
 from sonic_protocol.schema import DeviceType
 from soniccontrol import Parity, RemoteController, commands
-from sonic_pytest.plugin_data import SonicControlPlugin, get_sonic_control_plugin
+from sonic_pytest.plugin_data import SonicControlPlugin, get_sonic_control_plugin, mark_modbus_device_unprepared
 from sonic_pytest.remote_controller.fixtures import (
     apply_modbus_user_settings,
     connect_via_serial_port,
@@ -156,6 +156,7 @@ async def assert_modbus_client_responds(modbus_client: ModbusClientContext) -> N
 async def remote_controller(request):
     ctx = get_modbus_test_context(request)
     plugin = ctx.plugin
+    mark_modbus_device_unprepared(plugin)
     serial_port = ctx.serial_port
     maintenance_controller = await connect_via_serial_port(serial_port, plugin.remote_server_url, plugin.log_path)
     try:

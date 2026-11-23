@@ -4,7 +4,7 @@ import attrs
 from sonic_protocol.command_codes import CommandCode, ICommandCode
 from sonic_protocol.field_names import EFieldName
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity, UartInterface
-from sonic_protocol.schema import ControlMode, Loglevel, Timestamp
+from sonic_protocol.schema import ControlMode, Loglevel, Procedure, Timestamp
 
 
 class Command:
@@ -349,6 +349,18 @@ class SetDutyCycleTOff(Command):
     value: int = attrs.field(alias=EFieldName.DUTY_CYCLE_T_OFF.name)
 
 @attrs.define()
+class SetDutyCycleProc(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_DUTY_CYCLE_PROC)
+    value: Procedure = attrs.field(alias=EFieldName.DUTY_CYCLE_PROC.name)
+
+@attrs.define()
+class SetDutyCycleDisablePsuDuringOff(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_DUTY_CYCLE_DISABLE_PSU_DURING_OFF)
+    value: bool = attrs.field(alias=EFieldName.DUTY_CYCLE_DISABLE_PSU_DURING_OFF.name)
+
+@attrs.define()
 class SonicForce(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SONIC_FORCE)
@@ -447,6 +459,11 @@ class SetLogLevel(Command):
 
     index: str = attrs.field(alias=EFieldName.LOGGER_NAME.name)
     value: Loglevel = attrs.field(alias=EFieldName.LOG_LEVEL.name)
+
+@attrs.define()
+class SaveLogLevels(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SAVE_LOG_LEVELS)
 
 @attrs.define()
 class GetNumLoggers(Command):

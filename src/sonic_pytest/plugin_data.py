@@ -50,3 +50,7 @@ def modbus_device_preparation_is_required(plugin: SonicControlPlugin, node) -> b
 
 def mark_modbus_device_prepared(plugin: SonicControlPlugin) -> None:
     plugin._shared_modbus_device_prepared = True
+
+
+def mark_modbus_device_unprepared(plugin: SonicControlPlugin) -> None:
+    plugin._shared_modbus_device_prepared = False
