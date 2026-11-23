@@ -1,6 +1,7 @@
 import contextlib
 import asyncio
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 import pytest
@@ -18,12 +19,41 @@ from soniccontrol.fw_device.connection import CLIConnection, ModbusConnection
 from soniccontrol.fw_device import create_connection_to_device, create_device_discovery, resolve_current_device_info
 from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE, DEFAULT_MODBUS_PARITY, DEFAULT_MODBUS_SLAVE_ID
 from soniccontrol import RemoteController, DeviceType
-from sonic_pytest.device_setup import apply_default_test_setup_over_remote_controller, reset_remote_controller_test_state
+from sonic_pytest.device_setup import (
+    apply_default_test_setup_over_remote_controller,
+    persist_test_log_level,
+    reset_remote_controller_test_state,
+)
 from sonic_pytest.plugin_data import SonicControlPlugin, get_sonic_control_plugin, mark_modbus_device_prepared, modbus_device_preparation_is_required
 from sonic_pytest.fixtures import create_worker_process_impl
 
 
 create_worker_process = pytest_asyncio.fixture(create_worker_process_impl, scope="package", loop_scope="package")
+
+
+@dataclass
+class _PreparedTestState:
+    skipped_item: pytest.Item | None = None
+
+
+@pytest.fixture(scope="package")
+def prepared_remote_test_state():
+    return _PreparedTestState()
+
+
+def _can_reuse_test_state(request, state: _PreparedTestState) -> bool:
+    if state.skipped_item is None:
+        return False
+    if request.node.get_closest_marker("skip_remote_test_setup") is not None:
+        return False
+    if request.node.get_closest_marker("reprepare_modbus_device") is not None:
+        return False
+    if request.node.module is not state.skipped_item.module:
+        return False
+    items = request.session.items
+    index = items.index(request.node)
+    return index > 0 and items[index - 1] is state.skipped_item
+
 
 async def reset_remote_controller_state(remote_controller: RemoteController) -> None:
     await reset_remote_controller_test_state(remote_controller)
@@ -55,6 +85,7 @@ async def connect_via_serial_port(
     log_path: Path,
     timeout_s: float = 10.0,
     retry_interval_s: float = 0.25,
+    force_remove_connection: bool = True,
 ) -> RemoteController:
     deadline = asyncio.get_running_loop().time() + timeout_s
     last_error: Exception | None = None
@@ -63,7 +94,7 @@ async def connect_via_serial_port(
         controller: RemoteController | None = None
         try:
             dev = await resolve_device_info(serial_port, remote_server_url)
-            connection = create_connection_to_device(dev, force_remove_connection=True)
+            connection = create_connection_to_device(dev, force_remove_connection=force_remove_connection)
             controller = await RemoteController.connect(connection, log_path)
             await controller.stop_updater()
 
@@ -190,6 +221,7 @@ async def prepare_modbus_device(plugin_config: SonicControlPlugin, log_path: Pat
     maintenance_controller = await connect_via_serial_port(serial_port, plugin_config.remote_server_url, log_path)
     try:
         await maintenance_controller.stop_running_processes()
+        await persist_test_log_level(maintenance_controller)
         maintenance_controller = await ensure_modbus_settings_controller(
             maintenance_controller,
             serial_port,
@@ -256,11 +288,13 @@ async def build_remote_controller_with_restart(
     data_dir: Path,
     log_path: Path,
     restart_executor: Callable[[commands.Command, RemoteController], Awaitable[RemoteController]] | None = None,
+    reuse_test_setup: bool = False,
 ) -> RemoteController:
     connection = await create_connection(plugin_config, data_dir, ["--board-type=simulation"])
     controller = await RemoteController.connect(connection, log_path, restart_executor=restart_executor)
     await controller.stop_updater()
-    await controller.stop_running_processes()
+    if not reuse_test_setup:
+        await controller.stop_running_processes()
 
     device_type: DeviceType = plugin_config.device_type
     assert controller.is_connected, "Controller not connected to device"
@@ -269,11 +303,13 @@ async def build_remote_controller_with_restart(
     if device_type == DeviceType.POSTMAN:
         worker_controller = await controller.connect_to_worker()
         await worker_controller.stop_updater()
-        await worker_controller.stop_running_processes()
-        await apply_default_test_setup_over_remote_controller(worker_controller, worker_controller.device_info.device_type)
+        if not reuse_test_setup:
+            await worker_controller.stop_running_processes()
+            await apply_default_test_setup_over_remote_controller(worker_controller, worker_controller.device_info.device_type)
         return worker_controller
 
-    await apply_default_test_setup_over_remote_controller(controller, actual_device_type)
+    if not reuse_test_setup:
+        await apply_default_test_setup_over_remote_controller(controller, actual_device_type)
 
     return controller
 
@@ -290,15 +326,16 @@ async def package_remote_controller(request, tmp_path_factory, create_worker_pro
 
     data_dir: Path = tmp_path_factory.mktemp("data")
     controller = await build_remote_controller(plugin_config, data_dir, log_path)
-
-    yield controller
-
-    with contextlib.suppress(Exception):
-        await controller.disconnect()
+    try:
+        await persist_test_log_level(controller)
+        yield controller
+    finally:
+        with contextlib.suppress(Exception):
+            await controller.disconnect()
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
-async def remote_controller(request, tmp_path_factory, create_worker_process, package_remote_controller):
+async def remote_controller(request, tmp_path_factory, create_worker_process, package_remote_controller, prepared_remote_test_state):
     plugin_config = get_sonic_control_plugin(request.config)
     log_path: Path = plugin_config.log_path
 
@@ -308,9 +345,11 @@ async def remote_controller(request, tmp_path_factory, create_worker_process, pa
         return
 
     data_dir: Path = tmp_path_factory.mktemp("data")
-    if modbus_device_preparation_is_required(plugin_config, request.node):
+    needs_preparation = modbus_device_preparation_is_required(plugin_config, request.node)
+    if needs_preparation:
         await prepare_modbus_device(plugin_config, log_path)
         mark_modbus_device_prepared(plugin_config)
+        prepared_remote_test_state.skipped_item = None
 
     async def restart_via_maintenance_channel(
         restart_command: commands.Command,
@@ -346,12 +385,19 @@ async def remote_controller(request, tmp_path_factory, create_worker_process, pa
         data_dir,
         log_path,
         restart_executor=restart_via_maintenance_channel,
+        reuse_test_setup=_can_reuse_test_state(request, prepared_remote_test_state),
     )
     try:
         yield controller
     finally:
-        with contextlib.suppress(Exception):
-            await controller.disconnect()
+        disconnected = False
+        try:
+            with contextlib.suppress(Exception):
+                await controller.disconnect()
+                disconnected = True
+        finally:
+            if not disconnected:
+                prepared_remote_test_state.skipped_item = None
 
 
 
@@ -395,12 +441,29 @@ async def performance_monitor(remote_controller, request):
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package", autouse=True)
-async def default_remote_test_setup(request, remote_controller):
+async def default_remote_test_setup(request, remote_controller, performance_monitor, prepared_remote_test_state):
+    reuse_test_setup = _can_reuse_test_state(request, prepared_remote_test_state)
+    prepared_remote_test_state.skipped_item = None
+    disabled_proc = None
+    for mark in request.node.iter_markers(name="skip_if_proc_not_enabled"):
+        if not mark.args:
+            raise ValueError("skip_if_proc_not_enabled requires a Procedure argument")
+        proc = mark.args[0]
+        if not remote_controller.is_procedure_enabled(proc):
+            disabled_proc = proc
+            break
+
     if request.node.get_closest_marker("skip_remote_test_setup") is not None:
+        if disabled_proc is not None:
+            pytest.skip(f"The device has not the procedure {disabled_proc.name} enabled")
         yield
         return
 
-    await reset_remote_controller_state(remote_controller)
+    if not reuse_test_setup:
+        await reset_remote_controller_state(remote_controller)
+    if disabled_proc is not None:
+        prepared_remote_test_state.skipped_item = request.node
+        pytest.skip(f"The device has not the procedure {disabled_proc.name} enabled")
     yield
 
 

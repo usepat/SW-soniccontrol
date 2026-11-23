@@ -93,6 +93,9 @@ async def test_deduced_commands(remote_controller, progress_writer):
         CommandCode.START_CUSTOMIZER,
         # The physical interface is fixed by hardware commissioning.
         CommandCode.SET_MODBUS_INTERFACE,
+        # Test setup sets and saves a known level over the maintenance connection.
+        CommandCode.SET_LOG_LEVEL,
+        CommandCode.SAVE_LOG_LEVELS,
     ]
 
     if info.device_type != DeviceType.DIAGNOSTICS_TOOL:

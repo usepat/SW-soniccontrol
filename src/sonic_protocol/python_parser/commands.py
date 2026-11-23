@@ -194,6 +194,11 @@ class SetWipe(Command):
         super().__init__(code=CommandCode.SET_WIPE)
 
 @attrs.define()
+class SetDutyCycle(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.SET_DUTY_CYCLE)
+
+@attrs.define()
 class SetScan(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.SET_SCAN)
@@ -379,6 +384,11 @@ class GetRamp(Command):
 class GetWipe(Command):
     def __attrs_post_init__(self):
         super().__init__(code=CommandCode.GET_WIPE)
+
+@attrs.define()
+class GetDutyCycle(Command):
+    def __attrs_post_init__(self):
+        super().__init__(code=CommandCode.GET_DUTY_CYCLE)
 
 @attrs.define()
 class GetTune(Command):

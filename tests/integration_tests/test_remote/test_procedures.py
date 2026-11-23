@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 import pytest_asyncio
 
@@ -7,6 +9,8 @@ from soniccontrol.communication.postman_proxy_communicator import PostmanProxyCo
 from soniccontrol.procedures.procedure import ProcedureType
 from sonic_pytest.remote_controller.asserts import assert_answer, send_command_and_check_response
 from sonic_pytest.device_setup import apply_default_procedure_setup_over_remote_controller
+from sonic_pytest.plugin_data import get_sonic_control_plugin
+from sonic_pytest.remote_controller.fixtures import connect_via_serial_port
 from soniccontrol import EFieldName, Procedure, RamperArgs, WipeArgs, commands, DeviceType
 import asyncio
 
@@ -159,26 +163,29 @@ async def start_ramp_and_assert_running(remote_controller) -> None:
 
 @pytest_asyncio.fixture(autouse=True, scope="function", loop_scope="package")
 async def setup_procedures(request, remote_controller):
-    # Here we check for each test, it can be execute 
-    # by checking if the given procedure is enabled by the skip_if_proc_not_enabled marker
-
-    for mark in request.node.iter_markers(name="skip_if_proc_not_enabled"):
-        if not mark.args:
-            raise ValueError("skip_if_proc_not_enabled requires a Procedure argument")
-        
-        proc: ProcedureType = mark.args[0]
-        proc_enabled = remote_controller.is_procedure_enabled(proc)
-
-        if not proc_enabled:
-            pytest.skip(f"The device has not the procedure {proc.name} enabled")
-
     # even if the procedures are not enabled, setting attributes of them works always
     # so no checks needed here
     await apply_default_procedure_setup_over_remote_controller(remote_controller)
 
     yield
 
-    await send_command_and_check_response(remote_controller, commands.SetStop(), raise_exception = False, check_command_not_permitted=True)
+    stop_controller = remote_controller
+    plugin = get_sonic_control_plugin(request.config)
+    if not remote_controller.is_connected() and plugin.modbus_serial_port is not None and plugin.serial_port is not None:
+        logging.getLogger(__name__).warning(
+            "Modbus disconnected; stopping the procedure over the maintenance port"
+        )
+        stop_controller = await connect_via_serial_port(
+            plugin.serial_port, plugin.remote_server_url, plugin.log_path,
+            force_remove_connection=False,
+        )
+    try:
+        await send_command_and_check_response(
+            stop_controller, commands.SetStop(), raise_exception=False, check_command_not_permitted=True
+        )
+    finally:
+        if stop_controller is not remote_controller:
+            await stop_controller.disconnect()
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="package")
@@ -269,7 +276,7 @@ async def test_duty_cycle_runs_wipe_in_on_phases_only(remote_controller, disable
     child = commands.SetDutyCycleProc(Procedure.WIPE)
     if not remote_controller.device.has_command(child):
         pytest.skip("Device does not support selecting a duty-cycle child procedure")
-    duty_cycle = await remote_controller.send_command("?duty_cycle", raise_exception=False)
+    duty_cycle = await remote_controller.send_command(commands.GetDutyCycle(), raise_exception=False)
     if duty_cycle.command_code == CommandCode.E_COMMAND_NOT_PERMITTED and duty_cycle.message == "Procedure not activated":
         pytest.skip("Duty cycle is disabled on this device")
     assert duty_cycle.is_valid, duty_cycle.message
@@ -289,7 +296,7 @@ async def test_duty_cycle_runs_wipe_in_on_phases_only(remote_controller, disable
     frequencies = set()
     started_at = clock()
     await send_command_and_check_response(
-        remote_controller, "!duty_cycle", check_command_not_permitted=True,
+        remote_controller, commands.SetDutyCycle(), check_command_not_permitted=True,
     )
 
     while True:

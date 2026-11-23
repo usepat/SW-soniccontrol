@@ -98,6 +98,15 @@ async def apply_default_test_setup_over_remote_controller(
         await controller.send_command(command, raise_exception=not allow_fail)
 
 
+async def persist_test_log_level(controller: RemoteController) -> None:
+    set_level = commands.SetLogLevel("global", Loglevel.ERROR)
+    if controller.device.has_command(set_level):
+        await controller.send_command(set_level, raise_exception=True)
+        save_levels = commands.SaveLogLevels()
+        if controller.device.has_command(save_levels):
+            await controller.send_command(save_levels, raise_exception=True)
+
+
 async def reset_remote_controller_test_state(remote_controller: RemoteController) -> None:
     if _supports_debug_test(remote_controller.device):
         answer = await remote_controller.send_command(

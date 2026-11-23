@@ -84,6 +84,17 @@ To run soniccontrol GUI, either run `soniccontrol_gui` as a command in the cli o
 
 For the cli version of soniccontrol run `soniccontrol' as a command in the cli.
 
+### Standalone Serial Monitor
+
+Select the **Serial Monitor** plugin tab alongside the flashing tools and click
+**Open Serial Monitor**.
+No Sonic device or port selection is needed in the launcher. In the monitor
+window, choose a local serial port or type its path, set the baud rate, and
+click **Connect**. The monitor displays incoming UTF-8 text as it arrives and
+sends each input line with a trailing LF when you press Enter or click **Send**.
+Use **Disconnect** to release the port without closing the window. You can then
+change the port or baud rate and connect again without losing the output.
+
 ### Running SonicControl with a simulation
 
 You can create a simulation executable of the firmware and provide the path to it over the `SIMULATION_EXE_PATH` environment variable. If you then start Sonic Control, a **Connect to simulation** button will appear in the connection window.  

@@ -368,7 +368,7 @@ class KnownDeviceWindow(DeviceWindow):
 
 
 class DeviceWindowView(tk.Toplevel, View):
-    def __init__(self, root, *args, **kwargs) -> None:
+    def __init__(self, root, *args, split: bool = True, **kwargs) -> None:
         title = kwargs.pop("title", "Device Window")
         super().__init__(root, *args, **kwargs)
         initialize_toplevel_view(self)
@@ -399,7 +399,8 @@ class DeviceWindowView(tk.Toplevel, View):
         self._notebook_right.pack(side=ttk.LEFT, fill=ttk.BOTH)
 
         self._paned_window.add(self._notebook_left, minsize=600)
-        self._paned_window.add(self._notebook_right, minsize=300)
+        if split:
+            self._paned_window.add(self._notebook_right, minsize=300)
 
         self._notebook_right.add_tabs(
             [],

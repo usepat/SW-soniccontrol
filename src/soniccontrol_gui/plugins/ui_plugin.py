@@ -14,7 +14,7 @@ from sonic_protocol.protocol import LatestProtocol
 from sonic_protocol.schema import DeviceType
 from soniccontrol.app_config import APP_CONFIG
 from soniccontrol.sonic_device import SonicDevice
-from soniccontrol_gui.constants import _Files
+from soniccontrol_gui.constants import _Files, ui_labels
 from soniccontrol.plugin_discovery import discover_plugins
 from soniccontrol_gui.ui_component import UIComponent
 from soniccontrol_gui.view import TabView, TkinterView, View
@@ -132,8 +132,21 @@ class UIPluginRegistry:
         return list(UIPluginRegistry._registered_plugins)
 
 
+class SerialMonitorUIFactory(UIComponentFactory):
+    def __call__(self, master, parent: UIComponent, *args, **kwargs) -> UIComponent:
+        from soniccontrol_gui.views.core.serial_monitor_window import SerialMonitorLauncherView
+
+        return UIComponent(parent, SerialMonitorLauncherView(master, *args, **kwargs))
+
+    def get_name(self) -> str:
+        return ui_labels.SERIAL_MONITOR_LABEL
+
+
+_serial_monitor_plugin = UIPlugin("ConnectionWindow", SerialMonitorUIFactory())
+
 
 def register_ui_plugins():
+    UIPluginRegistry.register_ui_plugin(_serial_monitor_plugin)
     group = "soniccontrol_gui.ui_plugins"
 
     for plugin in discover_plugins(group):

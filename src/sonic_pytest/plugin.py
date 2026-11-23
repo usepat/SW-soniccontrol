@@ -46,7 +46,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "skip_if_proc_not_enabled(proc): mark test to run only if the proc is enabled on the device",
+        "skip_if_proc_not_enabled(proc): skip disabled procedures; reuse clean setup for the next test in the same module",
     )
     config.addinivalue_line(
         "markers",

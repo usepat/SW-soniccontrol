@@ -1,8 +1,10 @@
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
+from sonic_protocol.command_codes import CommandCode
 from sonic_protocol.protocols.protocol_v3_0_0.types.types import Parity
+from sonic_protocol.schema import Loglevel
 
 import soniccontrol.fw_device as fw_device
 from soniccontrol.fw_device import create_connection_to_device, resolve_current_device_info
@@ -10,6 +12,8 @@ from soniccontrol.fw_device.connection import ModbusConnection
 from soniccontrol.fw_device.fw_device_info import FwDeviceInfo
 from soniccontrol.modbus_defaults import DEFAULT_MODBUS_BAUDRATE, DEFAULT_MODBUS_PARITY, DEFAULT_MODBUS_SLAVE_ID
 from soniccontrol_gui.views.configuration.device_settings import ModbusSettings
+from sonic_pytest.device_setup import persist_test_log_level
+from sonic_pytest.remote_controller import fixtures as remote_fixtures
 from sonic_pytest.remote_controller.fixtures import (
     DEFAULT_MODBUS_BAUDRATE as FIXTURE_DEFAULT_MODBUS_BAUDRATE,
     DEFAULT_MODBUS_PARITY as FIXTURE_DEFAULT_MODBUS_PARITY,
@@ -126,3 +130,141 @@ async def test_modbus_compliance_invalidates_shared_preparation(monkeypatch, con
         controller.disconnect.assert_awaited_once()
 
     assert modbus_device_preparation_is_required(plugin, node)
+
+
+@pytest.mark.asyncio
+async def test_disabled_procedure_skips_reuse_reset_until_test_runs(monkeypatch):
+    reset = AsyncMock()
+    monkeypatch.setattr(remote_fixtures, "reset_remote_controller_state", reset)
+    proc = SimpleNamespace(name="RAMP")
+    mark = SimpleNamespace(args=(proc,))
+
+    module = object()
+
+    def node(disabled=False, reprepare=False):
+        return SimpleNamespace(
+            module=module,
+            get_closest_marker=lambda name: True if name == "reprepare_modbus_device" and reprepare else None,
+            iter_markers=lambda name: [mark] if disabled and name == "skip_if_proc_not_enabled" else [],
+        )
+
+    nodes = [node(disabled=True), node(disabled=True), node(), node(), node(reprepare=True)]
+    session = SimpleNamespace(items=nodes)
+    controller = SimpleNamespace(is_procedure_enabled=lambda _: False)
+    state = remote_fixtures._PreparedTestState()
+
+    for index, item in enumerate(nodes):
+        request = SimpleNamespace(node=item, session=session)
+        fixture = remote_fixtures.default_remote_test_setup.__wrapped__(request, controller, None, state)
+        if index < 2:
+            with pytest.raises(pytest.skip.Exception):
+                await anext(fixture)
+        else:
+            assert await anext(fixture) is None
+            await fixture.aclose()
+        assert reset.await_count == [1, 1, 1, 2, 3][index]
+
+
+def test_reuse_requires_immediately_preceding_known_clean_skip():
+    module = object()
+    first = SimpleNamespace(module=module)
+    intervening = object()
+    node = SimpleNamespace(module=module, get_closest_marker=lambda _: None)
+    state = remote_fixtures._PreparedTestState(skipped_item=first)
+    request = SimpleNamespace(
+        node=node,
+        session=SimpleNamespace(items=[first, intervening, node]),
+    )
+    assert not remote_fixtures._can_reuse_test_state(request, state)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("reuse", [False, True])
+async def test_controller_reconnection_only_reuses_explicitly_clean_setup(monkeypatch, reuse):
+    controller = SimpleNamespace(
+        stop_updater=AsyncMock(),
+        stop_running_processes=AsyncMock(),
+        is_connected=True,
+        device_info=SimpleNamespace(device_type=remote_fixtures.DeviceType.MVP_WORKER),
+    )
+    setup = AsyncMock()
+    monkeypatch.setattr(remote_fixtures, "create_connection", AsyncMock(return_value=object()))
+    monkeypatch.setattr(remote_fixtures.RemoteController, "connect", AsyncMock(return_value=controller))
+    monkeypatch.setattr(remote_fixtures, "apply_default_test_setup_over_remote_controller", setup)
+    plugin = SimpleNamespace(device_type=remote_fixtures.DeviceType.MVP_WORKER)
+
+    result = await remote_fixtures.build_remote_controller_with_restart(
+        plugin, None, None, reuse_test_setup=reuse
+    )
+
+    assert result is controller
+    assert controller.stop_running_processes.await_count == (0 if reuse else 1)
+    assert setup.await_count == (0 if reuse else 1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("connected", [False, True])
+async def test_procedure_cleanup_uses_maintenance_after_modbus_disconnect(monkeypatch, connected):
+    remote = SimpleNamespace(is_connected=lambda: connected)
+    maintenance = SimpleNamespace(disconnect=AsyncMock())
+    connect = AsyncMock(return_value=maintenance)
+    stop = AsyncMock()
+    monkeypatch.setattr(procedure_tests, "apply_default_procedure_setup_over_remote_controller", AsyncMock())
+    monkeypatch.setattr(procedure_tests, "connect_via_serial_port", connect)
+    monkeypatch.setattr(procedure_tests, "send_command_and_check_response", stop)
+    plugin = SimpleNamespace(
+        modbus_serial_port="/dev/ttyUSB0", serial_port="/dev/ttyACM0",
+        remote_server_url=None, log_path=None,
+    )
+    monkeypatch.setattr(procedure_tests, "get_sonic_control_plugin", lambda _: plugin)
+    fixture = procedure_tests.setup_procedures.__wrapped__(SimpleNamespace(config=None), remote)
+
+    await anext(fixture)
+    with pytest.raises(StopAsyncIteration):
+        await anext(fixture)
+
+    stop.assert_awaited_once()
+    assert stop.await_args.args[0] is (remote if connected else maintenance)
+    assert connect.await_count == (0 if connected else 1)
+    if not connected:
+        assert connect.await_args.kwargs["force_remove_connection"] is False
+    assert maintenance.disconnect.await_count == (0 if connected else 1)
+
+
+@pytest.mark.asyncio
+async def test_procedure_cleanup_disconnects_maintenance_when_stop_fails(monkeypatch):
+    remote = SimpleNamespace(is_connected=lambda: False)
+    maintenance = SimpleNamespace(disconnect=AsyncMock())
+    plugin = SimpleNamespace(
+        modbus_serial_port="/dev/ttyUSB0", serial_port="/dev/ttyACM0",
+        remote_server_url=None, log_path=None,
+    )
+    monkeypatch.setattr(procedure_tests, "apply_default_procedure_setup_over_remote_controller", AsyncMock())
+    monkeypatch.setattr(procedure_tests, "connect_via_serial_port", AsyncMock(return_value=maintenance))
+    monkeypatch.setattr(
+        procedure_tests, "send_command_and_check_response", AsyncMock(side_effect=RuntimeError("stop failed"))
+    )
+    monkeypatch.setattr(procedure_tests, "get_sonic_control_plugin", lambda _: plugin)
+    fixture = procedure_tests.setup_procedures.__wrapped__(SimpleNamespace(config=None), remote)
+
+    await anext(fixture)
+    with pytest.raises(RuntimeError, match="stop failed"):
+        await anext(fixture)
+    maintenance.disconnect.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_maintenance_connection_can_preserve_existing_remote_connection(monkeypatch):
+    device = object()
+    connection = object()
+    controller = SimpleNamespace(stop_updater=AsyncMock())
+    create_connection = Mock(return_value=connection)
+    monkeypatch.setattr(remote_fixtures, "resolve_device_info", AsyncMock(return_value=device))
+    monkeypatch.setattr(remote_fixtures, "create_connection_to_device", create_connection)
+    monkeypatch.setattr(remote_fixtures.RemoteController, "connect", AsyncMock(return_value=controller))
+    monkeypatch.setattr(remote_fixtures, "_has_valid_deduced_protocol", lambda _: True)
+
+    assert await remote_fixtures.connect_via_serial_port(
+        "/dev/ttyACM0", None, None, force_remove_connection=False
+    ) is controller
+    create_connection.assert_called_once_with(device, force_remove_connection=False)
