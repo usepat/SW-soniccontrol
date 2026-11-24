@@ -4,7 +4,7 @@
 
 For the current Windows release flow, there are two artifacts that matter:
 
-- `dist/SonicControl/SonicControl.exe` from `scripts/create_exe.bat`
+- `dist/SonicControl<version>/SonicControl<version>.exe` from `scripts/create_exe.bat`, for example `dist/SonicControlv4.4.0/SonicControlv4.4.0.exe`
 - `dist/SonicControlInstaller/SonicControl<version>.exe` from `scripts/installer.iss`, for example `SonicControlv4.4.0.exe`
 
 Run `scripts/create_exe.bat` before compiling the installer. It reads the
@@ -40,7 +40,7 @@ This is acceptable for development labs, test benches, and managed internal syst
 ## Recommended signing order
 
 1. Build the application with PyInstaller.
-2. Sign `dist/SonicControl/SonicControl.exe` and any extra shipped `.exe` or `.dll` files, including bundled tools such as `picotool.exe` and `arm-none-eabi-*.exe` if they are redistributed.
+2. Sign `dist/SonicControl<version>/SonicControl<version>.exe` and any extra shipped `.exe` or `.dll` files, including bundled tools such as `picotool.exe` and `arm-none-eabi-*.exe` if they are redistributed.
 3. Build the installer with Inno Setup.
 4. Sign the versioned installer in `dist/SonicControlInstaller/`.
 
@@ -70,7 +70,7 @@ For example, a common installed path is `C:\Program Files (x86)\Windows Kits\10\
 The `/f` argument must point to an existing certificate file on disk, typically a `.pfx`. In the examples below, `soniccontrol-signing.pfx` is a filename, not a certificate nickname or Windows certificate store entry.
 
 ```powershell
-signtool sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f C:\secure\soniccontrol-signing.pfx /p <password> dist\SonicControl\SonicControl.exe
+signtool sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f C:\secure\soniccontrol-signing.pfx /p <password> dist\SonicControlv4.4.0\SonicControlv4.4.0.exe
 
 signtool sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f C:\secure\soniccontrol-signing.pfx /p <password> dist\SonicControlInstaller\SonicControlv4.4.0.exe
 ```
@@ -80,7 +80,7 @@ If your certificate lives in the Windows certificate store instead of a `.pfx` f
 If `signtool` reports `Store IsDiskFile() failed` with `0x80070003`, one of the file paths passed on the command line does not exist. For this project, check these first:
 
 - the `.pfx` path passed to `/f`
-- `dist\SonicControl\SonicControl.exe`
+- `dist\SonicControl<version>\SonicControl<version>.exe`
 - the versioned installer in `dist/SonicControlInstaller/`
 
 Timestamping matters. Without it, the signature may become invalid once the certificate expires.
@@ -162,7 +162,7 @@ For internal rollout, install that public certificate on client machines. A typi
 
 For this repository, a pragmatic default is:
 
-- always sign `SonicControl.exe`
+- always sign `SonicControl<version>.exe`
 - always sign the versioned installer
 - sign `picotool.exe` if it is shipped with the application or installer
 - sign `arm-none-eabi-*.exe` tools if they are shipped with the application or installer

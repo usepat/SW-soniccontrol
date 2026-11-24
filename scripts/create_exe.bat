@@ -93,10 +93,11 @@ set "VERSION_FILE="
 if defined ICON_FILE set "ICON_FILE=%ICON_FILE%"
 if defined VERSION_FILE set "VERSION_FILE=%VERSION_FILE%"
 
-set "_BUNDLE_NAME=SonicControl"
-if defined SONICCONTROL_BUILD_SUFFIX set "_BUNDLE_NAME=SonicControl%_SONICCONTROL_VERSION%%SONICCONTROL_BUILD_SUFFIX%"
+set "_BUNDLE_NAME=SonicControl%_SONICCONTROL_VERSION%%SONICCONTROL_BUILD_SUFFIX%"
+echo Bundle Name: "%_BUNDLE_NAME%"
 "%_PYTHON_EXE%" "%_CREATE_EXE_PY%" --name "%_BUNDLE_NAME%" %*
 if errorlevel 1 exit /b %ERRORLEVEL%
+
 
 for %%A in (%*) do if /i "%%~A"=="--dry-run" exit /b 0
 > "%_DIST_DIR%\soniccontrol_version.iss" echo #define SonicControlVersion "%_SONICCONTROL_VERSION%"
