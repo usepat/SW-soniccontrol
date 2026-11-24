@@ -74,6 +74,13 @@ if not exist "%_CREATE_EXE_PY%" (
 	exit /b 1
 )
 
+set "_SONICCONTROL_VERSION="
+for /f "delims=" %%V in ('git -C "%PROJECT_ROOT%" describe --tags --abbrev^=0 --match "v[0-9]*"') do set "_SONICCONTROL_VERSION=%%V"
+if not defined _SONICCONTROL_VERSION (
+    echo No SonicControl version tag found. Fetch the SonicControl Git tags before building.
+    exit /b 1
+)
+
 set "PYTHON_EXE=%_PYTHON_EXE%"
 set "MAIN_SCRIPT=%_MAIN_SCRIPT%"
 set "SONIC_SCRIPT_EXAMPLES=%_SONIC_SCRIPT_EXAMPLES%"
@@ -86,6 +93,11 @@ set "VERSION_FILE="
 if defined ICON_FILE set "ICON_FILE=%ICON_FILE%"
 if defined VERSION_FILE set "VERSION_FILE=%VERSION_FILE%"
 
-"%_PYTHON_EXE%" "%_CREATE_EXE_PY%" %*
+set "_BUNDLE_NAME=SonicControl"
+if defined SONICCONTROL_BUILD_SUFFIX set "_BUNDLE_NAME=SonicControl%_SONICCONTROL_VERSION%%SONICCONTROL_BUILD_SUFFIX%"
+"%_PYTHON_EXE%" "%_CREATE_EXE_PY%" --name "%_BUNDLE_NAME%" %*
+if errorlevel 1 exit /b %ERRORLEVEL%
 
+for %%A in (%*) do if /i "%%~A"=="--dry-run" exit /b 0
+> "%_DIST_DIR%\soniccontrol_version.iss" echo #define SonicControlVersion "%_SONICCONTROL_VERSION%"
 exit /b %ERRORLEVEL%

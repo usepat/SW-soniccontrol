@@ -12,8 +12,11 @@ OUTPUT_DIR="$PROJECT_ROOT/output"
 BUILD_DIR="$PROJECT_ROOT/build"
 APPDIR_TEMPLATE="$PROJECT_ROOT/scripts/linux_deployment/SonicControl.AppDir"
 APPDIR_BUILD="$BUILD_DIR/SonicControl.AppDir"
-DIST_DIR="$BUILD_DIR/dist/SonicControl"
+DIST_DIR="${DIST_DIR:-$BUILD_DIR/dist}"
 APPIMAGE_TOOL="$PROJECT_ROOT/tools/appimagetool-x86_64.AppImage"
+CREATE_EXE="$PROJECT_ROOT/scripts/create_exe.sh"
+BUNDLE_NAME="$(bash "$CREATE_EXE" --print-name)"
+APPIMAGE="$OUTPUT_DIR/$BUNDLE_NAME.AppImage"
 
 cd "$PROJECT_ROOT"
 
@@ -31,19 +34,20 @@ mkdir -p "$APPDIR_BUILD/usr/bin"
 
 
 # create a standalone executable for the app
-bash "$PROJECT_ROOT/scripts/create_exe.sh"
+DIST_DIR="$DIST_DIR" bash "$CREATE_EXE"
 
-if [[ ! -d "$DIST_DIR" ]]; then
-	echo "PyInstaller output not found at $DIST_DIR" >&2
+if [[ ! -f "$DIST_DIR/$BUNDLE_NAME/$BUNDLE_NAME" ]]; then
+	echo "PyInstaller executable not found at $DIST_DIR/$BUNDLE_NAME/$BUNDLE_NAME" >&2
 	exit 1
 fi
 
 # copy the executable into the app dir folder
-cp -r "$DIST_DIR" "$APPDIR_BUILD/usr/bin/"
+cp -r "$DIST_DIR/$BUNDLE_NAME" "$APPDIR_BUILD/usr/bin/"
+ln -s "$BUNDLE_NAME/$BUNDLE_NAME" "$APPDIR_BUILD/usr/bin/soniccontrol-launcher"
 
 # Make App Run and Application executable
 chmod +x "$APPDIR_BUILD/AppRun"
-chmod +x "$APPDIR_BUILD/usr/bin/SonicControl/SonicControl"
+chmod +x "$APPDIR_BUILD/usr/bin/$BUNDLE_NAME/$BUNDLE_NAME"
 
 if [[ ! -x "$APPIMAGE_TOOL" ]]; then
 	echo "AppImageTool not found or not executable at $APPIMAGE_TOOL" >&2
@@ -51,7 +55,7 @@ if [[ ! -x "$APPIMAGE_TOOL" ]]; then
 fi
 
 # create the final app image
-ARCH=x86_64 "$APPIMAGE_TOOL" "$APPDIR_BUILD" "$OUTPUT_DIR/SonicControl.AppImage"
+ARCH=x86_64 "$APPIMAGE_TOOL" "$APPDIR_BUILD" "$APPIMAGE"
 
 # make the app image executable
-chmod +x "$OUTPUT_DIR/SonicControl.AppImage"
+chmod +x "$APPIMAGE"

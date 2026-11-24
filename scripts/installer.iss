@@ -1,16 +1,17 @@
 ; Paths are resolved relative to this script file.
 #define AppName "SonicControl"
+#include "..\dist\soniccontrol_version.iss"
 #define DistDir "..\\dist\\SonicControl"
 #define InstallerOutputDir "..\\dist\\SonicControlInstaller"
 
 ; Define your application
 [Setup]
 AppName={#AppName}
-AppVersion=1.0
+AppVersion={#SonicControlVersion}
 DefaultDirName={pf}\{#AppName}
 DefaultGroupName={#AppName}
 OutputDir={#InstallerOutputDir}
-OutputBaseFilename=SonicControlInstaller
+OutputBaseFilename={#AppName}{#SonicControlVersion}
 Compression=lzma
 SolidCompression=yes
 

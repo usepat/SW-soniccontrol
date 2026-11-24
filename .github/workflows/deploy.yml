@@ -11,6 +11,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -24,13 +26,21 @@ jobs:
         pip install -e .
   
     - name: Run build script
-      run: call ./scripts/create_exe.bat ${{ github.workspace }}
-      shell: cmd
+      run: |
+        $env:PYTHON_EXE = (Get-Command python).Source
+        .\scripts\create_exe.bat
 
     - name: Compile .ISS to .EXE Installer
       uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
       with:
         path: scripts/installer.iss
+
+    - name: Upload SonicControl installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: SonicControl installer for Windows
+        path: dist/SonicControlInstaller/*.exe
+        if-no-files-found: error
 
     - name: Zip SonicControl
       run: |

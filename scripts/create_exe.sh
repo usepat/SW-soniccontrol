@@ -13,6 +13,16 @@ ICON_FILE="${ICON_FILE:-}"
 VERSION_FILE="${VERSION_FILE:-}"
 CREATE_EXE_PY="$SCRIPT_DIR/create_exe.py"
 
+if ! VERSION="$(git -C "$WORKSPACE_DIR" describe --tags --abbrev=0 --match 'v[0-9]*')"; then
+  echo "No SonicControl version tag found. Fetch the SonicControl Git tags before building." >&2
+  exit 1
+fi
+BUNDLE_NAME="SonicControl${VERSION}${SONICCONTROL_BUILD_SUFFIX:-}"
+if [[ "${1:-}" == "--print-name" ]]; then
+  printf '%s\n' "$BUNDLE_NAME"
+  exit 0
+fi
+
 if [[ ! -x "$PYTHON_EXE" ]]; then
   echo "Python executable not found at $PYTHON_EXE" >&2
   exit 1
@@ -51,4 +61,4 @@ WORK_DIR="$WORK_DIR" \
 SPEC_DIR="$SPEC_DIR" \
 ICON_FILE="$ICON_FILE" \
 VERSION_FILE="$VERSION_FILE" \
-"$PYTHON_EXE" "$CREATE_EXE_PY" "${EXTRA_ARGS[@]}"
+"$PYTHON_EXE" "$CREATE_EXE_PY" --name "$BUNDLE_NAME" "${EXTRA_ARGS[@]}"
