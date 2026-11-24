@@ -44,7 +44,12 @@ jobs:
 
     - name: Zip SonicControl
       run: |
-        Compress-Archive -Path "./dist/SonicControl" -DestinationPath "./SonicControl.zip" -Update
+        $versionLine = Get-Content ".\dist\soniccontrol_version.iss"
+        if ($versionLine -notmatch '^#define SonicControlVersion "([^"]+)"$') {
+          throw "Invalid SonicControl version file"
+        }
+        $bundleName = "SonicControl$($Matches[1])"
+        Compress-Archive -Path ".\dist\$bundleName" -DestinationPath ".\SonicControl.zip" -Update
 
     - name: Upload SonicControl zip archive
       uses: actions/upload-artifact@v4
