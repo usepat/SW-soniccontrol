@@ -169,6 +169,14 @@ class ProcedureController(EventManager):
                 proc_type = ProcedureType.DUTY_CYCLE
             case protocol_defs.Procedure.ANOMALY_ROUTINE:
                 proc_type = ProcedureType.ANOMALY_ROUTINE
+            case protocol_defs.Procedure.PLUGIN_PROC0:
+                proc_type = ProcedureType.PLUGIN_PROC0
+            case protocol_defs.Procedure.PLUGIN_PROC1:
+                proc_type = ProcedureType.PLUGIN_PROC1
+            case protocol_defs.Procedure.PLUGIN_PROC2:
+                proc_type = ProcedureType.PLUGIN_PROC2
+            case protocol_defs.Procedure.PLUGIN_PROC3:
+                proc_type = ProcedureType.PLUGIN_PROC3
             case _:
                 assert False, f"Case not covered: {procedure}"
         self._remote_procedure_state.update(proc_type)

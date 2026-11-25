@@ -28,6 +28,10 @@ class ProcedureType(Enum):
     AUTO_LEGACY = "Auto_Legacy"
     DUTY_CYCLE = "DutyCycle"
     ANOMALY_ROUTINE = "AnomalyRoutine"
+    PLUGIN_PROC0 = "plugin_proc0"
+    PLUGIN_PROC1 = "plugin_proc1"
+    PLUGIN_PROC2 = "plugin_proc2"
+    PLUGIN_PROC3 = "plugin_proc3"
 
 @attrs.define(init=False)
 class ProcedureArgs:
